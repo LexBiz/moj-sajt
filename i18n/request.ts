@@ -4,8 +4,9 @@ import {getRequestConfig} from 'next-intl/server';
 // В проекте локализация делается через локальные `translations.ts`,
 // поэтому здесь возвращаем пустые messages.
 export default getRequestConfig(async ({locale}) => {
+  const safeLocale = locale ?? 'ru'
   return {
-    locale,
+    locale: safeLocale,
     messages: {}
   };
 });
