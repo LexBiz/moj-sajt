@@ -344,7 +344,7 @@ export default function Home() {
                               <span className="text-yellow-400 text-[6px]">⭐</span>
                               <span className="text-yellow-400 text-[6px]">⭐</span>
                             </div>
-                            <p className="text-[5px] text-slate-300 italic">"{t.review1.slice(0, 60)}..."</p>
+                            <p className="text-[5px] text-slate-300 italic">«{t.review1.slice(0, 60)}...»</p>
                             <div className="mt-1 text-[5px] text-slate-400">{t.review1Name}</div>
                           </div>
                         </div>
@@ -372,13 +372,13 @@ export default function Home() {
                           {/* Code typing animation after "click" */}
                           <div className="bg-slate-950/80 rounded p-2 mt-2 text-left font-mono space-y-0.5">
                             <div className="code-line text-[5px] text-green-400">
-                              <span className="text-purple-400">const</span> <span className="text-blue-400">message</span> = <span className="text-yellow-300">"Привіт! 👋"</span>
+                              <span className="text-purple-400">const</span> <span className="text-blue-400">message</span> = <span className="text-yellow-300">{'"Привіт! 👋"'}</span>
                             </div>
                             <div className="code-line text-[5px] text-green-400">
                               <span className="text-purple-400">await</span> <span className="text-blue-400">sendWhatsApp</span>()
                             </div>
                             <div className="code-line text-[5px] text-green-400">
-                              <span className="text-slate-500">// Підключення...</span>
+                              <span className="text-slate-500">{'// Підключення...'}</span>
                             </div>
                             <div className="code-line text-[5px] text-green-400">
                               ✅ <span className="text-green-300">Готово!</span>
@@ -1054,7 +1054,7 @@ export default function Home() {
                 <span className="text-yellow-400">⭐</span>
               </div>
               <p className="text-slate-300 italic mb-6">
-                "{t.review1}"
+                «{t.review1}»
               </p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
@@ -1076,7 +1076,7 @@ export default function Home() {
                 <span className="text-yellow-400">⭐</span>
               </div>
               <p className="text-slate-300 italic mb-6">
-                "{t.review2}"
+                «{t.review2}»
               </p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-teal-400 flex items-center justify-center text-white font-bold">
@@ -1098,7 +1098,7 @@ export default function Home() {
                 <span className="text-yellow-400">⭐</span>
               </div>
               <p className="text-slate-300 italic mb-6">
-                "{t.review3}"
+                «{t.review3}»
               </p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white font-bold">
