@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { translations, type Lang } from './translations'
 
 export default function Home() {
@@ -9,13 +9,14 @@ export default function Home() {
   const t = translations[lang]
   
   // Show scroll to top button after scrolling
-  useState(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 500)
     }
+    handleScroll()
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  })
+  }, [])
   
   const projects = [
     {
