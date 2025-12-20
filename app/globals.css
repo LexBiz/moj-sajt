@@ -132,5 +132,25 @@
     perspective: 1000px;
     transform-style: preserve-3d;
   }
+  
+  /* GPU acceleration for smooth animations */
+  .gpu-accelerated {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+  
+  /* Smooth scrolling on all devices */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Disable scrolling during animations */
+  .no-scroll {
+    overflow: hidden;
+    touch-action: none;
+  }
 }
 

@@ -26,27 +26,37 @@ export default function Home() {
     setCurrentProjectIndex(0)
   }, [projectFilter])
   
-  // Swipe handlers for mobile
+  // Swipe handlers with debounce
+  const [isAnimating, setIsAnimating] = useState(false)
+  
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isAnimating) return
     setTouchStart(e.targetTouches[0].clientX)
   }
   
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (isAnimating) return
     setTouchEnd(e.targetTouches[0].clientX)
   }
   
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
+    if (!touchStart || !touchEnd || isAnimating) return
     
     const distance = touchStart - touchEnd
     const isLeftSwipe = distance > 50
     const isRightSwipe = distance < -50
     
-    if (isLeftSwipe) {
-      setCurrentProjectIndex((prev) => (prev + 1) % filteredProjects.length)
-    }
-    if (isRightSwipe) {
-      setCurrentProjectIndex((prev) => (prev - 1 + filteredProjects.length) % filteredProjects.length)
+    if (isLeftSwipe || isRightSwipe) {
+      setIsAnimating(true)
+      
+      if (isLeftSwipe) {
+        setCurrentProjectIndex((prev) => (prev + 1) % filteredProjects.length)
+      }
+      if (isRightSwipe) {
+        setCurrentProjectIndex((prev) => (prev - 1 + filteredProjects.length) % filteredProjects.length)
+      }
+      
+      setTimeout(() => setIsAnimating(false), 600)
     }
     
     setTouchStart(0)
@@ -1002,8 +1012,15 @@ export default function Home() {
           {/* 3D Carousel Controls */}
           <div className="flex items-center justify-center gap-6 mb-8">
             <button
-              onClick={() => setCurrentProjectIndex((currentProjectIndex - 1 + filteredProjects.length) % filteredProjects.length)}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white text-xl font-bold shadow-xl hover:scale-110 transition-all"
+              onClick={() => {
+                if (!isAnimating) {
+                  setIsAnimating(true)
+                  setCurrentProjectIndex((currentProjectIndex - 1 + filteredProjects.length) % filteredProjects.length)
+                  setTimeout(() => setIsAnimating(false), 600)
+                }
+              }}
+              disabled={isAnimating}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white text-xl font-bold shadow-xl hover:scale-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ←
             </button>
@@ -1011,8 +1028,15 @@ export default function Home() {
               {currentProjectIndex + 1} / {filteredProjects.length}
             </div>
             <button
-              onClick={() => setCurrentProjectIndex((currentProjectIndex + 1) % filteredProjects.length)}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white text-xl font-bold shadow-xl hover:scale-110 transition-all"
+              onClick={() => {
+                if (!isAnimating) {
+                  setIsAnimating(true)
+                  setCurrentProjectIndex((currentProjectIndex + 1) % filteredProjects.length)
+                  setTimeout(() => setIsAnimating(false), 600)
+                }
+              }}
+              disabled={isAnimating}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white text-xl font-bold shadow-xl hover:scale-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               →
             </button>
@@ -1038,17 +1062,14 @@ export default function Home() {
                   style={{
                     width: isActive ? '90%' : '70%',
                     maxWidth: isActive ? '500px' : '350px',
-                    transform: `
-                      translateX(${offset * 120}%) 
-                      rotateY(${offset * 45}deg) 
-                      scale(${isActive ? 1 : 0.85})
-                      translateZ(${isActive ? '0px' : '-200px'})
-                    `,
+                    transform: `translate3d(${offset * 120}%, 0, ${isActive ? '0px' : '-200px'}) rotateY(${offset * 45}deg) scale(${isActive ? 1 : 0.85})`,
                     opacity: absOffset > 2 ? 0 : isActive ? 1 : 0.6,
                     zIndex: isActive ? 10 : 10 - absOffset,
                     pointerEvents: isActive ? 'auto' : 'none',
-                    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    willChange: 'transform, opacity'
+                    transition: 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease',
+                    backfaceVisibility: 'hidden',
+                    transformStyle: 'preserve-3d',
+                    display: absOffset > 2 ? 'none' : 'block'
                   }}
                 >
               {/* Project Preview - Live Preview */}
