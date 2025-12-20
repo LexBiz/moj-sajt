@@ -6,6 +6,9 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>('ru')
   const [projectFilter, setProjectFilter] = useState<string>('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [currentProjectIndex, setCurrentProjectIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState(0)
+  const [touchEnd, setTouchEnd] = useState(0)
   const t = translations[lang]
   
   // Show scroll to top button after scrolling
@@ -17,6 +20,38 @@ export default function Home() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+  
+  // Reset carousel when filter changes
+  useEffect(() => {
+    setCurrentProjectIndex(0)
+  }, [projectFilter])
+  
+  // Swipe handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+  
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > 50
+    const isRightSwipe = distance < -50
+    
+    if (isLeftSwipe) {
+      setCurrentProjectIndex((prev) => (prev + 1) % filteredProjects.length)
+    }
+    if (isRightSwipe) {
+      setCurrentProjectIndex((prev) => (prev - 1 + filteredProjects.length) % filteredProjects.length)
+    }
+    
+    setTouchStart(0)
+    setTouchEnd(0)
+  }
   
   const projects = [
     {
@@ -845,6 +880,34 @@ export default function Home() {
                 </div>
               </div>
             </article>
+
+            {/* Case 5 */}
+            <article className="card-hover rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-cyan-100 p-8 shadow-lg">
+              <div className="flex items-start justify-between mb-4">
+                <div className="text-4xl">💰</div>
+                <span className="text-xs font-semibold text-cyan-600 bg-cyan-100 px-3 py-1 rounded-full">Fintech</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">
+                {t.karenFinance}
+              </h3>
+              <p className="text-slate-300 mb-6">
+                {t.karenFinanceDesc}
+              </p>
+              <div className="bg-slate-900 rounded-2xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">{t.approvedRequests}</span>
+                  <span className="text-2xl font-bold gradient-text">500+</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">{t.averageTime}</span>
+                  <span className="text-2xl font-bold gradient-text">24{lang === 'ru' ? 'ч' : lang === 'ua' ? 'г' : 'h'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">{t.clientRating}</span>
+                  <span className="text-lg font-semibold text-white">5/5</span>
+                </div>
+              </div>
+            </article>
           </div>
 
           <div className="mt-12 text-center">
@@ -936,18 +999,58 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Projects Grid */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
-            {filteredProjects.map((project, index) => (
-            <div 
-              key={project.id}
-              className="group relative card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 overflow-hidden shadow-2xl"
-              style={{
-                animation: `code-appear 0.5s ease-out forwards`,
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0
-              }}
+          {/* 3D Carousel Controls */}
+          <div className="flex items-center justify-center gap-6 mb-8">
+            <button
+              onClick={() => setCurrentProjectIndex((currentProjectIndex - 1 + filteredProjects.length) % filteredProjects.length)}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white text-xl font-bold shadow-xl hover:scale-110 transition-all"
             >
+              ←
+            </button>
+            <div className="text-slate-400 text-sm font-medium">
+              {currentProjectIndex + 1} / {filteredProjects.length}
+            </div>
+            <button
+              onClick={() => setCurrentProjectIndex((currentProjectIndex + 1) % filteredProjects.length)}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white text-xl font-bold shadow-xl hover:scale-110 transition-all"
+            >
+              →
+            </button>
+          </div>
+
+          {/* 3D Carousel Container */}
+          <div 
+            className="relative h-[600px] sm:h-[700px] perspective-1000"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="absolute inset-0 flex items-center justify-center">
+              {filteredProjects.map((project, index) => {
+                const offset = index - currentProjectIndex
+                const absOffset = Math.abs(offset)
+                const isActive = offset === 0
+                
+                return (
+                <div 
+                  key={project.id}
+                  className="group absolute rounded-3xl bg-slate-900 border-2 border-slate-700 overflow-hidden shadow-2xl"
+                  style={{
+                    width: isActive ? '90%' : '70%',
+                    maxWidth: isActive ? '500px' : '350px',
+                    transform: `
+                      translateX(${offset * 120}%) 
+                      rotateY(${offset * 45}deg) 
+                      scale(${isActive ? 1 : 0.85})
+                      translateZ(${isActive ? '0px' : '-200px'})
+                    `,
+                    opacity: absOffset > 2 ? 0 : isActive ? 1 : 0.6,
+                    zIndex: isActive ? 10 : 10 - absOffset,
+                    pointerEvents: isActive ? 'auto' : 'none',
+                    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    willChange: 'transform, opacity'
+                  }}
+                >
               {/* Project Preview - Live Preview */}
               <div className="relative h-40 sm:h-48 lg:h-56 overflow-hidden bg-slate-800">
                 {/* Live website iframe */}
@@ -1037,7 +1140,24 @@ export default function Home() {
                   <span className="sm:hidden">{lang === 'ru' ? 'Открыть' : lang === 'ua' ? 'Відкрити' : 'Open'}</span>
                 </a>
               </div>
+                </div>
+              )
+              })}
             </div>
+          </div>
+
+          {/* Indicator Dots */}
+          <div className="flex items-center justify-center gap-2 mt-8">
+            {filteredProjects.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentProjectIndex(index)}
+                className={`transition-all ${
+                  index === currentProjectIndex
+                    ? 'w-8 h-2 bg-gradient-to-r from-indigo-500 to-purple-500'
+                    : 'w-2 h-2 bg-slate-600 hover:bg-slate-500'
+                } rounded-full`}
+              />
             ))}
           </div>
         </div>

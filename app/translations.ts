@@ -141,6 +141,11 @@ export const translations = {
     requestsProcessed: "Первых заказов",
     leadQuality: "Средний чек",
     works247: "Конверсия",
+    karenFinance: "KAREN Finance — Финтех платформа",
+    karenFinanceDesc: "Сервис ипотек, кредитов и лизинга в ЧР с калькулятором, автоматизацией заявок и работой с иностранцами.",
+    approvedRequests: "Одобренных заявок",
+    averageTime: "Среднее время ответа",
+    clientRating: "Рейтинг клиентов",
     discussYourProject: "Обсудить ваш проект",
     
     // Reviews
@@ -333,6 +338,11 @@ export const translations = {
     requestsProcessed: "Перших замовлень",
     leadQuality: "Середній чек",
     works247: "Конверсія",
+    karenFinance: "KAREN Finance — Фінтех платформа",
+    karenFinanceDesc: "Сервіс іпотек, кредитів та лізингу в ЧР з калькулятором, автоматизацією заявок та роботою з іноземцями.",
+    approvedRequests: "Схвалених заявок",
+    averageTime: "Середній час відповіді",
+    clientRating: "Рейтинг клієнтів",
     discussYourProject: "Обговорити ваш проект",
     
     // Reviews
@@ -525,6 +535,11 @@ export const translations = {
     requestsProcessed: "First orders",
     leadQuality: "Average check",
     works247: "Conversion",
+    karenFinance: "KAREN Finance — Fintech Platform",
+    karenFinanceDesc: "Mortgage, loan and leasing service in CZ with calculator, request automation and work with foreigners.",
+    approvedRequests: "Approved requests",
+    averageTime: "Average response time",
+    clientRating: "Client rating",
     discussYourProject: "Discuss your project",
     
     // Reviews

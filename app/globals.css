@@ -127,5 +127,10 @@
   .code-line:nth-child(3) { animation-delay: 0.5s; }
   .code-line:nth-child(4) { animation-delay: 0.7s; }
   .code-line:nth-child(5) { animation-delay: 0.9s; }
+  
+  .perspective-1000 {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
 }
 
