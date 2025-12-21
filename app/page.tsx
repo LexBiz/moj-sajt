@@ -183,6 +183,18 @@ export default function Home() {
       tech: ['Next.js', 'TypeScript', 'Tailwind'],
       color: 'violet',
       screenshot: 'temoweb.jpg'
+    },
+    {
+      id: 11,
+      name: 'KAREN Finance',
+      desc: lang === 'ru' ? 'Финтех-платформа для управления финансами с современным интерфейсом, аналитикой и фокусом на безопасность данных' : lang === 'ua' ? 'Фінтех-платформа для управління фінансами з сучасним інтерфейсом, аналітикою та фокусом на безпеку даних' : 'Fintech platform for financial management with modern interface, analytics and focus on data security',
+      url: 'https://karenfinance.cz/',
+      category: 'ecommerce',
+      gradient: 'from-blue-900 via-indigo-900 to-purple-900',
+      icon: '💰',
+      tech: ['React', 'TypeScript', 'Tailwind'],
+      color: 'blue',
+      screenshot: 'karen.jpg'
     }
   ]
   
@@ -1592,7 +1604,7 @@ export default function Home() {
       {showScrollTop && (
         <a
           href="#top"
-          className="fixed bottom-6 right-6 z-50 shine inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-2xl hover:shadow-3xl hover:scale-110 transition-all"
+          className="fixed bottom-6 right-4 sm:right-6 z-50 shine inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-2xl hover:shadow-3xl hover:scale-110 transition-all"
           onClick={(e) => {
             e.preventDefault()
             window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1603,7 +1615,7 @@ export default function Home() {
       )}
 
       {/* Quick Navigation - Mobile */}
-      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-2 md:hidden">
+      <div className="fixed bottom-6 left-4 z-50 flex flex-col gap-2 md:hidden">
         <a href="#services" className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800/90 backdrop-blur-sm text-white shadow-xl hover:scale-110 transition-all border border-slate-700">
           <span className="text-lg">📋</span>
         </a>
