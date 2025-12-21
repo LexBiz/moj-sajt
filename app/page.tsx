@@ -194,15 +194,15 @@ export default function Home() {
     <main className="min-h-screen">
       {/* HEADER with glassmorphism */}
       <header className="sticky top-0 z-50 backdrop-blur-lg bg-slate-900/80 border-b border-slate-700/50 shadow-sm">
-        <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <a href="#top" className="flex items-center gap-2 group">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-4">
+          <a href="#top" className="flex items-center gap-2 group shrink-0">
             <div className="flex items-center gap-2">
               <img 
                 src="/logo.png" 
                 alt="TemoWeb" 
                 className="h-7 sm:h-8 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
               />
-              <span className="text-base sm:text-lg font-bold tracking-tight gradient-text">
+              <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight gradient-text whitespace-nowrap">
                 TemoWeb
               </span>
             </div>
@@ -213,11 +213,11 @@ export default function Home() {
             <a href="#reviews" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">{t.reviews}</a>
             <a href="#faq" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">{t.faq}</a>
           </nav>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-800/50 rounded-full p-0.5 sm:p-1">
-              <button onClick={() => setLang('ru')} className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === 'ru' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}>RU</button>
-              <button onClick={() => setLang('ua')} className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === 'ua' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}>UA</button>
-              <button onClick={() => setLang('en')} className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-all ${lang === 'en' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}>EN</button>
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <div className="flex items-center gap-0.5 bg-slate-800/50 rounded-full p-0.5">
+              <button onClick={() => setLang('ru')} className={`px-1.5 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all whitespace-nowrap ${lang === 'ru' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}>RU</button>
+              <button onClick={() => setLang('ua')} className={`px-1.5 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all whitespace-nowrap ${lang === 'ua' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}>UA</button>
+              <button onClick={() => setLang('en')} className={`px-1.5 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all whitespace-nowrap ${lang === 'en' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}>EN</button>
             </div>
             <a
               href="#contact"
@@ -1074,20 +1074,25 @@ export default function Home() {
                 >
               {/* Project Preview - Live Preview */}
               <div className="relative h-40 sm:h-48 lg:h-56 overflow-hidden bg-slate-800">
-                {/* Live website iframe */}
+                {/* Live website iframe - загружается ТОЛЬКО для активной карточки */}
                 {project.category !== 'bots' ? (
-                  <iframe 
-                    src={project.url}
-                    className="absolute inset-0 w-full h-full pointer-events-none"
-                    style={{
-                      transform: 'scale(0.5)',
-                      transformOrigin: 'top left',
-                      width: '200%',
-                      height: '200%'
-                    }}
-                    loading="lazy"
-                    title={`${project.name} preview`}
-                  />
+                  isActive ? (
+                    <iframe 
+                      src={project.url}
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                      style={{
+                        transform: 'scale(0.5)',
+                        transformOrigin: 'top left',
+                        width: '200%',
+                        height: '200%'
+                      }}
+                      title={`${project.name} preview`}
+                    />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br ${project.gradient} flex items-center justify-center`}>
+                      <div className="text-5xl opacity-30">{project.icon}</div>
+                    </div>
+                  )
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br ${project.gradient} flex items-center justify-center`}>
                     <div className="text-7xl opacity-40">{project.icon}</div>

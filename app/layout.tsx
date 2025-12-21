@@ -43,6 +43,14 @@ export default function RootLayout({
 
   return (
     <html lang="ru" className={inter.variable}>
+      <head>
+        {/* Preconnect для ускорения загрузки */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://sphynxdubai.ae" />
+        <link rel="dns-prefetch" href="https://bossdetaling.eu" />
+        <link rel="dns-prefetch" href="https://t.me" />
+      </head>
       <body className="font-sans">
         {/* Pageview analytics + conversion events (no cookies by default) */}
         {plausibleDomain ? (
