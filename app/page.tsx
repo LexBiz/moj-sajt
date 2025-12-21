@@ -237,50 +237,50 @@ export default function Home() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '1s'}}></div>
         </div>
         
-        <div className="relative mx-auto max-w-7xl px-6 py-20 sm:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-20 lg:py-32">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 backdrop-blur-sm px-4 py-2 text-sm font-medium text-slate-300 shadow-lg ring-1 ring-slate-200 mb-8">
-                <span className="relative flex h-2 w-2">
+              <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-300 shadow-lg ring-1 ring-slate-200 mb-6 sm:mb-8 max-w-full">
+                <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                {t.openForProjects}
+                <span className="truncate">{t.openForProjects}</span>
               </div>
               
-              <h1 className="text-balance text-5xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
+              <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-white leading-tight">
                 {t.heroTitle}
               </h1>
-              <p className="mt-6 text-xl leading-relaxed text-slate-300">
+              <p className="mt-4 sm:mt-6 text-base sm:text-lg lg:text-xl leading-relaxed text-slate-300">
                 {t.heroDesc}
               </p>
               
               {/* Stats */}
-              <div className="mt-10 grid grid-cols-3 gap-6">
+              <div className="mt-8 sm:mt-10 grid grid-cols-3 gap-3 sm:gap-6">
                 <div>
-                  <div className="text-3xl font-bold text-white">50+</div>
-                  <div className="text-sm text-slate-400 mt-1">{t.projects}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">50+</div>
+                  <div className="text-xs sm:text-sm text-slate-400 mt-1">{t.projects}</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-white">98%</div>
-                  <div className="text-sm text-slate-400 mt-1">{t.satisfied}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">98%</div>
+                  <div className="text-xs sm:text-sm text-slate-400 mt-1">{t.satisfied}</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-white">5+</div>
-                  <div className="text-sm text-slate-400 mt-1">{t.yearsExp}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">5+</div>
+                  <div className="text-xs sm:text-sm text-slate-400 mt-1">{t.yearsExp}</div>
                 </div>
               </div>
               
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <a
                   href="#contact"
-                  className="shine inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4 text-base font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-xl hover:shadow-2xl hover:scale-105"
+                  className="shine inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-xl hover:shadow-2xl hover:scale-105"
                 >
                   🚀 {t.startProject}
                 </a>
                 <a
                   href="#cases"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-slate-300 bg-slate-900 px-8 py-4 text-base font-semibold text-white hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-slate-300 bg-slate-900 px-5 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-white hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl"
                 >
                   📁 {t.viewCases}
                 </a>
