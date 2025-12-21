@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
+import { AnalyticsEvents } from './components/Analytics'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -34,9 +36,38 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+  const plausibleSrc = process.env.NEXT_PUBLIC_PLAUSIBLE_SRC || 'https://plausible.io/js/script.js'
+  const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID
+  const cfToken = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN
+
   return (
     <html lang="ru" className={inter.variable}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {/* Pageview analytics + conversion events (no cookies by default) */}
+        {plausibleDomain ? (
+          <Script strategy="afterInteractive" defer data-domain={plausibleDomain} src={plausibleSrc} />
+        ) : null}
+
+        {/* Session recordings + heatmaps (free) */}
+        {clarityId ? (
+          <Script id="ms-clarity" strategy="afterInteractive">
+            {`(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "${clarityId}");`}
+          </Script>
+        ) : null}
+
+        {/* Optional: Cloudflare Web Analytics (pageviews only) */}
+        {cfToken ? (
+          <Script
+            strategy="afterInteractive"
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: cfToken })}
+          />
+        ) : null}
+
+        <AnalyticsEvents plausibleEnabled={Boolean(plausibleDomain)} />
+        {children}
+      </body>
     </html>
   )
 }
