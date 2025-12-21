@@ -1540,18 +1540,20 @@ export default function Home() {
               </a>
             </div>
             
-            <div className="mt-12 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+            <div className="mt-8 sm:mt-12 grid grid-cols-3 gap-3 sm:gap-6 lg:gap-8 max-w-2xl mx-auto px-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">24{lang === 'en' ? 'h' : 'ч'}</div>
-                <div className="text-sm text-slate-300 mt-1">{t.respondFast}</div>
+                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">24{lang === 'en' ? 'h' : 'ч'}</div>
+                <div className="text-[10px] sm:text-xs lg:text-sm text-slate-300 mt-1 leading-tight">{t.respondFast}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">{lang === 'en' ? 'Free' : lang === 'ua' ? 'Безкоштовно' : 'Бесплатно'}</div>
-                <div className="text-sm text-slate-300 mt-1">{t.freeConsult}</div>
+                <div className="text-base sm:text-2xl lg:text-3xl font-bold text-white leading-tight">
+                  {lang === 'en' ? 'Free' : lang === 'ua' ? 'Безкоштовно' : 'Бесплатно'}
+                </div>
+                <div className="text-[10px] sm:text-xs lg:text-sm text-slate-300 mt-1 leading-tight">{t.freeConsult}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">0€</div>
-                <div className="text-sm text-slate-300 mt-1">{t.untilAgree}</div>
+                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">0€</div>
+                <div className="text-[10px] sm:text-xs lg:text-sm text-slate-300 mt-1 leading-tight">{t.untilAgree}</div>
               </div>
             </div>
           </div>
