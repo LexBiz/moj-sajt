@@ -252,13 +252,17 @@ export default function Home() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-300 shadow-lg ring-1 ring-slate-200 mb-6 sm:mb-8 max-w-full">
+              <a 
+                href="#contact"
+                className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-300 shadow-lg ring-1 ring-slate-200 mb-6 sm:mb-8 max-w-full hover:bg-slate-800/90 hover:ring-2 hover:ring-green-400/50 hover:scale-105 transition-all cursor-pointer"
+                title={lang === 'ru' ? 'Связаться со мной' : lang === 'ua' ? 'Зв\'язатися зі мною' : 'Contact me'}
+              >
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
                 <span className="truncate">{t.openForProjects}</span>
-              </div>
+              </a>
               
               <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-white leading-tight">
                 {t.heroTitle}
@@ -636,6 +640,12 @@ export default function Home() {
                   <span>{t.ready57days}</span>
                 </li>
               </ul>
+              <a
+                href="#contact"
+                className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                {lang === 'ru' ? 'Заказать' : lang === 'ua' ? 'Замовити' : 'Order'}
+              </a>
             </article>
 
             <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
@@ -666,6 +676,12 @@ export default function Home() {
                   <span>{t.ready710days}</span>
                 </li>
               </ul>
+              <a
+                href="#contact"
+                className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                {lang === 'ru' ? 'Заказать' : lang === 'ua' ? 'Замовити' : 'Order'}
+              </a>
             </article>
 
             <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
@@ -679,19 +695,25 @@ export default function Home() {
                 {t.telegramBotsDesc}
               </p>
               <ul className="mt-6 space-y-3">
-                <li className="flex items-start gap-2 text-sm">
+                <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
                   <span>Автоответчик 24/7</span>
                 </li>
-                <li className="flex items-start gap-2 text-sm">
+                <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
                   <span>Сбор заявок</span>
                 </li>
-                <li className="flex items-start gap-2 text-sm">
+                <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
                   <span>Интеграции</span>
                 </li>
               </ul>
+              <a
+                href="#contact"
+                className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                {lang === 'ru' ? 'Заказать' : lang === 'ua' ? 'Замовити' : 'Order'}
+              </a>
             </article>
 
             <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
@@ -705,19 +727,25 @@ export default function Home() {
                 {t.crmAutoDesc}
               </p>
               <ul className="mt-6 space-y-3">
-                <li className="flex items-start gap-2 text-sm">
+                <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
                   <span>Учёт клиентов</span>
                 </li>
-                <li className="flex items-start gap-2 text-sm">
+                <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
                   <span>Автоматизация рутины</span>
                 </li>
-                <li className="flex items-start gap-2 text-sm">
+                <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
                   <span>Отчётность</span>
                 </li>
               </ul>
+              <a
+                href="#contact"
+                className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                {lang === 'ru' ? 'Заказать' : lang === 'ua' ? 'Замовити' : 'Order'}
+              </a>
             </article>
 
             
