@@ -38,11 +38,13 @@ function LeadForm({ lang }: { lang: Lang }) {
         
         // Google Ads Conversion Event
         if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', 'conversion', {
+          const txId = data?.lead?.id ? String(data.lead.id) : null
+          const payload: Record<string, string> = {
             // IMPORTANT: this must match the Conversion label from Google Ads UI
-            'send_to': 'AW-17819376047/bCp9CKrjx9QbEk-z-LBC',
-            'transaction_id': data?.lead?.id ? String(data.lead.id) : undefined
-          })
+            send_to: 'AW-17819376047/bCp9CKrjx9QbEk-z-LBC',
+          }
+          if (txId) payload.transaction_id = txId
+          ;(window as any).gtag('event', 'conversion', payload)
         }
         
         setTimeout(() => setSuccess(false), 5000)
