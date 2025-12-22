@@ -2,6 +2,118 @@
 import { useEffect, useState } from 'react'
 import { translations, type Lang } from './translations'
 
+// Lead Form Component
+function LeadForm({ lang }: { lang: Lang }) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone })
+      })
+
+      if (response.ok) {
+        setSuccess(true)
+        setName('')
+        setPhone('')
+        setTimeout(() => setSuccess(false), 5000)
+      } else {
+        setError(lang === 'ru' ? 'Ошибка отправки' : lang === 'ua' ? 'Помилка відправки' : 'Submit error')
+      }
+    } catch (err) {
+      setError(lang === 'ru' ? 'Ошибка отправки' : lang === 'ua' ? 'Помилка відправки' : 'Submit error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="mt-16 max-w-md mx-auto">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-slate-700 shadow-2xl">
+        <h3 className="text-2xl font-bold text-white text-center mb-2">
+          {lang === 'ru' ? 'Оставить заявку' : lang === 'ua' ? 'Залишити заявку' : 'Leave a request'}
+        </h3>
+        <p className="text-slate-300 text-center mb-6 text-sm">
+          {lang === 'ru' 
+            ? '✅ Бесплатная консультация • ⚡ Ответ за 24 часа'
+            : lang === 'ua'
+            ? '✅ Безкоштовна консультація • ⚡ Відповідь за 24 години'
+            : '✅ Free consultation • ⚡ Reply in 24 hours'}
+        </p>
+
+        {success ? (
+          <div className="bg-green-500/10 border border-green-500/50 rounded-lg px-6 py-4 text-center">
+            <div className="text-4xl mb-2">✅</div>
+            <p className="text-green-400 font-semibold">
+              {lang === 'ru' ? 'Заявка отправлена!' : lang === 'ua' ? 'Заявку відправлено!' : 'Request sent!'}
+            </p>
+            <p className="text-green-300 text-sm mt-1">
+              {lang === 'ru' ? 'Свяжусь с вами в течение 24 часов' : lang === 'ua' ? 'Зв\'яжуся з вами протягом 24 годин' : 'I\'ll contact you within 24 hours'}
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={lang === 'ru' ? 'Ваше имя' : lang === 'ua' ? 'Ваше ім\'я' : 'Your name'}
+                required
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+            <div>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={lang === 'ru' ? 'Телефон' : lang === 'ua' ? 'Телефон' : 'Phone'}
+                required
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/50 rounded-lg px-4 py-2 text-red-400 text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl hover:scale-105"
+            >
+              {loading 
+                ? (lang === 'ru' ? 'Отправка...' : lang === 'ua' ? 'Відправка...' : 'Sending...')
+                : (lang === 'ru' ? 'Отправить заявку' : lang === 'ua' ? 'Відправити заявку' : 'Send request')}
+            </button>
+
+            <p className="text-xs text-slate-400 text-center">
+              {lang === 'ru'
+                ? 'Нажимая кнопку, вы соглашаетесь с обработкой данных'
+                : lang === 'ua'
+                ? 'Натискаючи кнопку, ви погоджуєтесь з обробкою даних'
+                : 'By clicking the button, you agree to data processing'}
+            </p>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const [lang, setLang] = useState<Lang>('ru')
   const [projectFilter, setProjectFilter] = useState<string>('all')
@@ -1579,6 +1691,9 @@ export default function Home() {
                 {t.writeTelegram}
               </a>
             </div>
+
+            {/* Lead Form */}
+            <LeadForm lang={lang} />
             
             <div className="mt-8 sm:mt-12 grid grid-cols-3 gap-3 sm:gap-6 lg:gap-8 max-w-2xl mx-auto px-4">
               <div className="text-center">
