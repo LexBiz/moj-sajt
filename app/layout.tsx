@@ -73,6 +73,20 @@ export default function RootLayout({
           />
         ) : null}
 
+        {/* Google Ads Conversion Tracking */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17819376047"
+        />
+        <Script id="google-ads-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17819376047');
+          `}
+        </Script>
+
         <AnalyticsEvents plausibleEnabled={Boolean(plausibleDomain)} />
         {children}
       </body>

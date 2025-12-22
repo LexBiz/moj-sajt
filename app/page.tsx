@@ -34,6 +34,16 @@ function LeadForm({ lang }: { lang: Lang }) {
         setName('')
         setPhone('')
         setAgreed(false)
+        
+        // Google Ads Conversion Event
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'conversion', {
+            'send_to': 'AW-17819376047/lead_submit',
+            'value': 1.0,
+            'currency': 'EUR'
+          })
+        }
+        
         setTimeout(() => setSuccess(false), 5000)
       } else {
         setError(lang === 'ru' ? 'Ошибка отправки' : lang === 'ua' ? 'Помилка відправки' : 'Submit error')
