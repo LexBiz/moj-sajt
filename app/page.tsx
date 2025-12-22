@@ -30,6 +30,7 @@ function LeadForm({ lang }: { lang: Lang }) {
       })
 
       if (response.ok) {
+        const data = await response.json().catch(() => null)
         setSuccess(true)
         setName('')
         setPhone('')
@@ -38,9 +39,9 @@ function LeadForm({ lang }: { lang: Lang }) {
         // Google Ads Conversion Event
         if (typeof window !== 'undefined' && (window as any).gtag) {
           (window as any).gtag('event', 'conversion', {
-            'send_to': 'AW-17819376047/lead_submit',
-            'value': 1.0,
-            'currency': 'EUR'
+            // IMPORTANT: this must match the Conversion label from Google Ads UI
+            'send_to': 'AW-17819376047/bCp9CKrjx9QbEk-z-LBC',
+            'transaction_id': data?.lead?.id ? String(data.lead.id) : undefined
           })
         }
         
