@@ -6,12 +6,19 @@ import { translations, type Lang } from './translations'
 function LeadForm({ lang }: { lang: Lang }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!agreed) {
+      setError(lang === 'ru' ? 'Необходимо согласие на обработку данных' : lang === 'ua' ? 'Необхідна згода на обробку даних' : 'Data processing consent required')
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -26,6 +33,7 @@ function LeadForm({ lang }: { lang: Lang }) {
         setSuccess(true)
         setName('')
         setPhone('')
+        setAgreed(false)
         setTimeout(() => setSuccess(false), 5000)
       } else {
         setError(lang === 'ru' ? 'Ошибка отправки' : lang === 'ua' ? 'Помилка відправки' : 'Submit error')
@@ -84,6 +92,25 @@ function LeadForm({ lang }: { lang: Lang }) {
               />
             </div>
 
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="privacy-consent"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
+              />
+              <label htmlFor="privacy-consent" className="text-xs text-slate-400 cursor-pointer">
+                {lang === 'ru' ? (
+                  <>Я согласен с <a href="/privacy" target="_blank" className="text-indigo-400 hover:text-indigo-300 underline">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</>
+                ) : lang === 'ua' ? (
+                  <>Я згоден з <a href="/privacy" target="_blank" className="text-indigo-400 hover:text-indigo-300 underline">політикою конфіденційності</a> та даю згоду на обробку персональних даних</>
+                ) : (
+                  <>I agree to the <a href="/privacy" target="_blank" className="text-indigo-400 hover:text-indigo-300 underline">privacy policy</a> and consent to personal data processing</>
+                )}
+              </label>
+            </div>
+
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg px-4 py-2 text-red-400 text-sm text-center">
                 {error}
@@ -92,21 +119,13 @@ function LeadForm({ lang }: { lang: Lang }) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreed}
               className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl hover:scale-105"
             >
               {loading 
                 ? (lang === 'ru' ? 'Отправка...' : lang === 'ua' ? 'Відправка...' : 'Sending...')
                 : (lang === 'ru' ? 'Отправить заявку' : lang === 'ua' ? 'Відправити заявку' : 'Send request')}
             </button>
-
-            <p className="text-xs text-slate-400 text-center">
-              {lang === 'ru'
-                ? 'Нажимая кнопку, вы соглашаетесь с обработкой данных'
-                : lang === 'ua'
-                ? 'Натискаючи кнопку, ви погоджуєтесь з обробкою даних'
-                : 'By clicking the button, you agree to data processing'}
-            </p>
           </form>
         )}
       </div>
@@ -1737,6 +1756,9 @@ export default function Home() {
                 <a href="#services" className="text-sm text-slate-400 hover:text-white transition-colors">{t.services}</a>
                 <a href="#cases" className="text-sm text-slate-400 hover:text-white transition-colors">{t.cases}</a>
                 <a href="#faq" className="text-sm text-slate-400 hover:text-white transition-colors">{t.faq}</a>
+                <a href="/privacy" className="text-sm text-slate-400 hover:text-white transition-colors">
+                  {lang === 'ru' ? 'Конфиденциальность' : lang === 'ua' ? 'Конфіденційність' : 'Privacy'}
+                </a>
               </div>
             </div>
           </div>
