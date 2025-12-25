@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { translations, type Lang } from './translations'
+import Calculator from './components/Calculator'
 
 // Lead Form Component
 function LeadForm({ lang }: { lang: Lang }) {
@@ -950,6 +951,36 @@ export default function Home() {
         </div>
       </section>
 
+      {/* CALCULATOR */}
+      <section className="border-t border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500 rounded-full filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-6 py-20 sm:py-24">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-indigo-300 shadow-lg ring-1 ring-indigo-500/20 mb-6">
+              <span className="text-2xl">💰</span>
+              <span>{lang === 'ru' ? 'Интерактивный расчёт' : lang === 'ua' ? 'Інтерактивний розрахунок' : 'Interactive calculator'}</span>
+            </div>
+            <h2 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl mb-4">
+              {lang === 'ru' ? 'Рассчитайте стоимость ' : lang === 'ua' ? 'Розрахуйте вартість ' : 'Calculate cost of '}
+              <span className="gradient-text">{lang === 'ru' ? 'вашего проекта' : lang === 'ua' ? 'вашого проекту' : 'your project'}</span>
+            </h2>
+            <p className="text-lg text-slate-300">
+              {lang === 'ru' 
+                ? 'Ответьте на несколько вопросов и получите ориентировочную стоимость за 2 минуты'
+                : lang === 'ua'
+                ? 'Дайте відповідь на кілька питань і отримайте орієнтовну вартість за 2 хвилини'
+                : 'Answer a few questions and get an estimated cost in 2 minutes'}
+            </p>
+          </div>
+
+          <Calculator lang={lang} />
+        </div>
+      </section>
+
       {/* CASES / PORTFOLIO */}
       <section id="cases" className="border-t border-slate-700 bg-slate-900">
         <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
@@ -1240,10 +1271,10 @@ export default function Home() {
                 const isActive = offset === 0
                 
                 return (
-                <div 
-                  key={project.id}
+            <div 
+              key={project.id}
                   className="group absolute rounded-3xl bg-slate-900 border-2 border-slate-700 overflow-hidden shadow-2xl"
-                  style={{
+              style={{
                     width: isActive ? '90%' : '70%',
                     maxWidth: isActive ? '500px' : '350px',
                     transform: `translate3d(${offset * 120}%, 0, ${isActive ? '0px' : '-200px'}) rotateY(${offset * 45}deg) scale(${isActive ? 1 : 0.85})`,
@@ -1275,14 +1306,14 @@ export default function Home() {
                   ) : (
                     <div className={`absolute inset-0 bg-gradient-to-br ${project.gradient} flex items-center justify-center`}>
                       <div className="text-5xl opacity-30">{project.icon}</div>
-                    </div>
+                        </div>
                   )
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br ${project.gradient} flex items-center justify-center`}>
                     <div className="text-7xl opacity-40">{project.icon}</div>
-                  </div>
+                      </div>
                 )}
-                
+                    
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/10 transition-colors"></div>
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
@@ -1350,7 +1381,7 @@ export default function Home() {
                   <span className="sm:hidden">{lang === 'ru' ? 'Открыть' : lang === 'ua' ? 'Відкрити' : 'Open'}</span>
                 </a>
               </div>
-                </div>
+            </div>
               )
               })}
             </div>
@@ -1723,7 +1754,7 @@ export default function Home() {
                 {t.writeTelegram}
               </a>
             </div>
-
+            
             {/* Lead Form */}
             <LeadForm lang={lang} />
             
