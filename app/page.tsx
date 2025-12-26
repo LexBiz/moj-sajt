@@ -409,9 +409,12 @@ export default function Home() {
                 <span className="truncate">{t.openForProjects}</span>
               </a>
               
-              <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-white leading-tight">
+              <h1 className="text-balance text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-300 leading-tight">
                 {t.heroTitle}
               </h1>
+              <h2 className="mt-3 sm:mt-4 text-balance text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight gradient-text leading-tight">
+                {(t as any).heroSubtitle || t.heroTitle}
+              </h2>
               <p className="mt-4 sm:mt-6 text-base sm:text-lg lg:text-xl leading-relaxed text-slate-300">
                 {t.heroDesc}
               </p>
@@ -951,6 +954,46 @@ export default function Home() {
               <p className="mt-6 text-base leading-relaxed text-slate-300">
                 {t.packagePremiumDesc}
               </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* TRUST SECTION - Почему со мной просто и понятно */}
+      <section className="border-t border-slate-700 bg-slate-900">
+        <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl mb-6">
+              {t.trustTitle}
+            </h2>
+            <p className="text-lg leading-relaxed text-slate-300">
+              {(t as any).trustDesc || ''}
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mt-16">
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-4">🎯</div>
+              <h3 className="text-lg font-bold text-white mb-3">{t.howIThink}</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">{t.howIThinkDesc}</p>
+            </article>
+
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-4">💬</div>
+              <h3 className="text-lg font-bold text-white mb-3">{t.howICommunicate}</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">{t.howICommunicateDesc}</p>
+            </article>
+
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-4">⚡</div>
+              <h3 className="text-lg font-bold text-white mb-3">{t.howIWork}</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">{t.howIWorkDesc}</p>
+            </article>
+
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-4">✋</div>
+              <h3 className="text-lg font-bold text-white mb-3">{t.honesty}</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">{t.honestyDesc}</p>
             </article>
           </div>
         </div>

@@ -9,14 +9,15 @@ export const translations = {
     
     // Hero
     openForProjects: "Открыт для новых проектов",
-    heroTitle: "Перестаньте терять клиентов, которые уже ищут ваши услуги",
-    heroDesc: "Я автоматизирую сбор и обработку заявок для сервисного бизнеса. Ваши клиенты не уйдут к конкурентам из-за долгого ответа или неудобной формы связи.",
-    heroOffer: "Чат-бот для приёма заявок за 3 дня",
+    heroTitle: "Заявки теряются в чатах, а клиенты уходят к конкурентам?",
+    heroSubtitle: "Я наведу порядок в ваших заявках за 3-7 дней",
+    heroDesc: "Я, Артём, внедряю в ваш бизнес простые системы (чат-боты, понятные сайты), которые работают 24/7. Вы перестанете терять деньги, а ваши клиенты наконец смогут до вас дозвониться.",
+    heroOffer: "Первый бот — за 3 дня",
     projects: "Внедрённых систем",
     satisfied: "Клиентов видят рост заявок",
     yearsExp: "К конверсии в среднем",
-    startProject: "Получить бесплатный аудит",
-    viewCases: "Посмотреть результаты",
+    startProject: "Бесплатно покажу, где вы теряете заявки",
+    viewCases: "Посмотреть примеры работ",
     
     // Problems
     problemsTitle: "С разработчиками часто сложно — и это бьёт по бизнесу",
@@ -41,16 +42,16 @@ export const translations = {
     resultDesc: "Не «сделать сайт», а получить обращения, порядок, автоматизацию и спокойствие.",
     
     // Services
-    servicesTitle: "Услуги и прозрачные цены",
-    servicesDesc: "Без скрытых платежей. Цена = результат, который вы получите",
-    chatBotExpress: "Чат-бот за 3 дня — быстрое решение",
-    chatBotExpressDesc: "Автономный секретарь в Telegram/WhatsApp. Ловит заявки 24/7, задаёт уточняющие вопросы, записывает контакты в вашу таблицу. Решение для теста гипотезы.",
-    simpleWebsite: "Сайт-визитка, который конвертирует",
-    simpleWebsiteDesc: "Не просто «про нас», а инструмент захвата заявок. Чёткий призыв, форма связи, прямая выгода для клиента. Без воды — только результат.",
-    landingPage: "Лендинг для рекламной кампании",
-    landingPageDesc: "Максимальная конверсия трафика в заявки. Настроенная аналитика, чёткое УТП, быстрая загрузка. Для тех, кто льёт трафик и считает каждого клиента.",
-    crmAuto: "Единый пульт для всех заявок (CRM)",
-    crmAutoDesc: "Порядок в работе с клиентами: все заявки в одном месте, автоматические напоминания, отчётность. Вы контролируете процесс, а не тонете в хаосе.",
+    servicesTitle: "Как я решаю вашу проблему",
+    servicesDesc: "Три уровня — от быстрого старта до полной автоматизации",
+    chatBotExpress: "Быстрое решение",
+    chatBotExpressDesc: "Чат-бот в Telegram/WhatsApp, который за 3 дня начнёт ловить заявки, пока вы спите. Клиенты пишут — бот отвечает, собирает контакты и отправляет вам.",
+    simpleWebsite: "Комплексный порядок",
+    simpleWebsiteDesc: "Бот + простой сайт-ловушка для трафика, который превращает просмотры в контакты. Ваши клиенты видят, чем вы занимаетесь, и сразу оставляют заявку.",
+    landingPage: "Полная автоматизация",
+    landingPageDesc: "Бот + сайт + подключение к вашей CRM или таблице. Все заявки в одном месте, с напоминаниями. Вы больше не теряете ни одного клиента.",
+    crmAuto: "Полная автоматизация",
+    crmAutoDesc: "Бот + сайт + подключение к вашей CRM или таблице. Все заявки в одном месте, с напоминаниями. Вы больше не теряете ни одного клиента.",
     complexAI: "Полная автоматизация бизнес-процессов",
     complexAIDesc: "Связываем все части вашего бизнеса: от первого касания клиента до повторной продажи. Максимальная автоматизация, минимум рутины.",
     
@@ -85,20 +86,21 @@ export const translations = {
     reviewsDesc: "Реальные отзывы от реальных людей",
     
     // Trust
-    trustTitle: "Почему это работает",
+    trustTitle: "Почему со мной — просто и понятно",
+    trustDesc: "Я сам через это прошёл. Тонул в бесконечных чатах, терял клиентов, потому что не успевал ответить. Теперь я помогаю таким же, как я, владельцам бизнеса. Я не буду заваливать вас терминами. Я спрошу: «Где болит?», а потом сделаю систему, которая эту боль снимет. Честно и без воды.",
     
     // Process
     processTitle: "Процесс: от идеи до результата",
     
     // Trust cards
-    howIThink: "Деньги клиента должны окупиться",
-    howIThinkDesc: "Я не продаю технологии. Я продаю решение, которое окупит себя за 1-2 месяца за счёт сэкономленного времени и новых клиентов.",
-    howICommunicate: "Как я общаюсь",
-    howICommunicateDesc: "Коротко, по делу, с вариантами и рекомендацией.",
-    howIWork: "Как я работаю",
-    howIWorkDesc: "Фиксируем цель, согласуем объём, делаю по шагам, показываю результат.",
-    honesty: "Честность по границам",
-    honestyDesc: "Если вашу проблему можно решить бесплатной формой, я скажу об этом. Я берусь за проекты, где мой труд принесёт вам реальную финансовую выгоду.",
+    howIThink: "Я решаю проблемы, а не продаю технологии",
+    howIThinkDesc: "Мне не важно, будет это бот или сайт. Важно, чтобы у вас появился порядок в заявках и больше клиентов.",
+    howICommunicate: "Говорю на человеческом языке",
+    howICommunicateDesc: "Никаких «интеграций API» и «функционала». Только: «Вот что будет работать, вот сколько стоит, вот когда будет готово».",
+    howIWork: "Делаю быстро и по шагам",
+    howIWorkDesc: "Первый результат — через 3-7 дней. Дальше — по необходимости. Вы всегда понимаете, что происходит.",
+    honesty: "Если вам не нужно — скажу сразу",
+    honestyDesc: "Если вашу проблему решит простая гугл-форма — я вам так и скажу. Работаю только там, где могу принести реальную пользу.",
     
     // Service features
     adaptiveDesign: "Адаптивный дизайн",
@@ -186,14 +188,14 @@ export const translations = {
     faqTitle: "Частые вопросы",
     
     // Footer
-    readyTitle: "Теряете клиентов?",
-    readyDesc: "Получите бесплатный аудит за 15 минут. Я изучу ваши каналы приёма заявок и покажу 2-3 точки, где вы теряете деньги.",
+    readyTitle: "Теряете заявки?",
+    readyDesc: "Напишите мне в Telegram или WhatsApp. Я бесплатно покажу, где у вас утечка клиентов, и что с этим можно сделать. Без воды, за 15 минут.",
     writeEmail: "Написать на почту",
     writeTelegram: "Написать в Telegram",
     writeWhatsapp: "Написать в WhatsApp",
-    respondFast: "Отвечаю быстро",
-    freeConsult: "Бесплатный аудит",
-    untilAgree: "за 15 минут",
+    respondFast: "Отвечаю в течение часа",
+    freeConsult: "Бесплатная консультация",
+    untilAgree: "15 минут",
     rights: "Все права защищены",
   },
   
@@ -207,14 +209,15 @@ export const translations = {
     
     // Hero
     openForProjects: "Відкритий для нових проектів",
-    heroTitle: "Припиніть втрачати клієнтів, які вже шукають ваші послуги",
-    heroDesc: "Я автоматизую збір та обробку заявок для сервісного бізнесу. Ваші клієнти не підуть до конкурентів через довгу відповідь або незручну форму зв'язку.",
-    heroOffer: "Чат-бот для прийому заявок за 3 дні",
+    heroTitle: "Заявки губляться в чатах, а клієнти йдуть до конкурентів?",
+    heroSubtitle: "Я наведу порядок у ваших заявках за 3-7 днів",
+    heroDesc: "Я, Артем, впроваджую у ваш бізнес прості системи (чат-боти, зрозумілі сайти), які працюють 24/7. Ви перестанете втрачати гроші, а ваші клієнти нарешті зможуть до вас додзвонитися.",
+    heroOffer: "Перший бот — за 3 дні",
     projects: "Впроваджених систем",
     satisfied: "Клієнтів бачать ріст заявок",
     yearsExp: "До конверсії в середньому",
-    startProject: "Отримати безкоштовний аудит",
-    viewCases: "Переглянути результати",
+    startProject: "Безкоштовно покажу, де ви втрачаєте заявки",
+    viewCases: "Переглянути приклади робіт",
     
     // Problems
     problemsTitle: "З розробниками часто складно — і це б'є по бізнесу",
@@ -239,16 +242,16 @@ export const translations = {
     resultDesc: "Не «зробити сайт», а отримати звернення, порядок, автоматизацію та спокій.",
     
     // Services
-    servicesTitle: "Послуги та прозорі ціни",
-    servicesDesc: "Без прихованих платежів. Ціна = результат, який ви отримаєте",
-    chatBotExpress: "Чат-бот за 3 дні — швидке рішення",
-    chatBotExpressDesc: "Автономний секретар в Telegram/WhatsApp. Ловить заявки 24/7, ставить уточнюючі питання, записує контакти у вашу таблицю. Рішення для тесту гіпотези.",
-    simpleWebsite: "Сайт-візитка, що конвертує",
-    simpleWebsiteDesc: "Не просто «про нас», а інструмент захоплення заявок. Чіткий заклик, форма зв'язку, пряма вигода для клієнта. Без води — тільки результат.",
-    landingPage: "Лендінг для рекламної кампанії",
-    landingPageDesc: "Максимальна конверсія трафіку в заявки. Налаштована аналітика, чітке УТП, швидке завантаження. Для тих, хто ллє трафік і рахує кожного клієнта.",
-    crmAuto: "Єдиний пульт для всіх заявок (CRM)",
-    crmAutoDesc: "Порядок у роботі з клієнтами: всі заявки в одному місці, автоматичні нагадування, звітність. Ви контролюєте процес, а не тонете в хаосі.",
+    servicesTitle: "Як я вирішую вашу проблему",
+    servicesDesc: "Три рівні — від швидкого старту до повної автоматизації",
+    chatBotExpress: "Швидке рішення",
+    chatBotExpressDesc: "Чат-бот в Telegram/WhatsApp, який за 3 дні почне ловити заявки, поки ви спите. Клієнти пишуть — бот відповідає, збирає контакти і відправляє вам.",
+    simpleWebsite: "Комплексний порядок",
+    simpleWebsiteDesc: "Бот + простий сайт-пастка для трафіку, який перетворює перегляди на контакти. Ваші клієнти бачать, чим ви займаєтеся, і одразу залишають заявку.",
+    landingPage: "Повна автоматизація",
+    landingPageDesc: "Бот + сайт + підключення до вашої CRM або таблиці. Всі заявки в одному місці, з нагадуваннями. Ви більше не втрачаєте жодного клієнта.",
+    crmAuto: "Повна автоматизація",
+    crmAutoDesc: "Бот + сайт + підключення до вашої CRM або таблиці. Всі заявки в одному місці, з нагадуваннями. Ви більше не втрачаєте жодного клієнта.",
     complexAI: "Повна автоматизація бізнес-процесів",
     complexAIDesc: "Зв'язуємо всі частини вашого бізнесу: від першого дотику клієнта до повторного продажу. Максимальна автоматизація, мінімум рутини.",
     
@@ -283,20 +286,21 @@ export const translations = {
     reviewsDesc: "Реальні відгуки від реальних людей",
     
     // Trust
-    trustTitle: "Чому зі мною спокійно",
+    trustTitle: "Чому зі мною — просто і зрозуміло",
+    trustDesc: "Я сам через це пройшов. Тонув у нескінченних чатах, втрачав клієнтів, бо не встигав відповісти. Тепер я допомагаю таким же, як я, власникам бізнесу. Я не буду заваллювати вас термінами. Я запитаю: «Де болить?», а потім зроблю систему, яка цей біль знімає. Чесно і без води.",
     
     // Process
     processTitle: "Процес: від ідеї до результату",
     
     // Trust cards
-    howIThink: "Як я думаю",
-    howIThinkDesc: "Гроші, час і ризики важливіші за «ідеальну реалізацію».",
-    howICommunicate: "Як я спілкуюся",
-    howICommunicateDesc: "Коротко, по справі, з варіантами та рекомендацією.",
-    howIWork: "Як я працюю",
-    howIWorkDesc: "Фіксуємо мету, узгоджуємо обсяг, роблю по кроках, показую результат.",
-    honesty: "Чесність по межах",
-    honestyDesc: "Якщо задача не дасть ефекту — скажу до старту.",
+    howIThink: "Я вирішую проблеми, а не продаю технології",
+    howIThinkDesc: "Мені не важливо, чи це буде бот чи сайт. Важливо, щоб у вас з'явився порядок у заявках і більше клієнтів.",
+    howICommunicate: "Говорю людською мовою",
+    howICommunicateDesc: "Ніяких «інтеграцій API» і «функціоналу». Тільки: «Ось що буде працювати, ось скільки коштує, ось коли буде готово».",
+    howIWork: "Роблю швидко і по кроках",
+    howIWorkDesc: "Перший результат — через 3-7 днів. Далі — за необхідності. Ви завжди розумієте, що відбувається.",
+    honesty: "Якщо вам не потрібно — скажу одразу",
+    honestyDesc: "Якщо вашу проблему вирішить проста гугл-форма — я вам так і скажу. Працюю тільки там, де можу принести реальну користь.",
     
     // Service features
     adaptiveDesign: "Адаптивний дизайн",
@@ -384,14 +388,14 @@ export const translations = {
     faqTitle: "Часті питання",
     
     // Footer
-    readyTitle: "Готові почати?",
-    readyDesc: "Опишіть задачу простими словами: що хочете покращити і який результат потрібен. Я поставлю кілька запитань і запропоную зрозумілий наступний крок.",
+    readyTitle: "Втрачаєте заявки?",
+    readyDesc: "Напишіть мені в Telegram або WhatsApp. Я безкоштовно покажу, де у вас витік клієнтів, і що з цим можна зробити. Без води, за 15 хвилин.",
     writeEmail: "Написати на пошту",
     writeTelegram: "Написати в Telegram",
     writeWhatsapp: "Написати в WhatsApp",
-    respondFast: "Відповідаю швидко",
-    freeConsult: "Перша консультація",
-    untilAgree: "Поки не домовимося",
+    respondFast: "Відповідаю протягом години",
+    freeConsult: "Безкоштовна консультація",
+    untilAgree: "15 хвилин",
     rights: "Усі права захищені",
   },
   
@@ -405,14 +409,15 @@ export const translations = {
     
     // Hero
     openForProjects: "Open for new projects",
-    heroTitle: "Stop losing clients who are already looking for your services",
-    heroDesc: "I automate lead collection and processing for service businesses. Your clients won't leave for competitors due to slow response or inconvenient contact forms.",
-    heroOffer: "Chat-bot for lead capture in 3 days",
+    heroTitle: "Leads are lost in chats, and clients go to competitors?",
+    heroSubtitle: "I'll organize your leads in 3-7 days",
+    heroDesc: "I'm Artem, I implement simple systems (chatbots, clear websites) into your business that work 24/7. You'll stop losing money, and your clients will finally be able to reach you.",
+    heroOffer: "First bot — in 3 days",
     projects: "Systems implemented",
     satisfied: "Clients see lead growth",
     yearsExp: "Avg conversion boost",
-    startProject: "Get free audit",
-    viewCases: "View results",
+    startProject: "I'll show you where you're losing leads for free",
+    viewCases: "View work examples",
     
     // Problems
     problemsTitle: "Working with developers is often difficult — and it hurts business",
@@ -437,16 +442,16 @@ export const translations = {
     resultDesc: "Not 'make a website', but get inquiries, order, automation and peace of mind.",
     
     // Services
-    servicesTitle: "Services and transparent prices",
-    servicesDesc: "No hidden fees. Price = result you get",
-    chatBotExpress: "Chat-bot in 3 days — fast solution",
-    chatBotExpressDesc: "Autonomous assistant in Telegram/WhatsApp. Captures leads 24/7, asks qualifying questions, logs contacts to your sheet. Solution for hypothesis testing.",
-    simpleWebsite: "Converting business card site",
-    simpleWebsiteDesc: "Not just 'about us', but a lead capture tool. Clear call-to-action, contact form, direct value for client. No fluff — only results.",
-    landingPage: "Landing for ad campaigns",
-    landingPageDesc: "Maximum traffic-to-lead conversion. Configured analytics, clear UVP, fast loading. For those who run ads and count every client.",
-    crmAuto: "Unified dashboard for all leads (CRM)",
-    crmAutoDesc: "Order in client work: all leads in one place, automatic reminders, reports. You control the process, not drowning in chaos.",
+    servicesTitle: "How I solve your problem",
+    servicesDesc: "Three levels — from quick start to full automation",
+    chatBotExpress: "Quick solution",
+    chatBotExpressDesc: "Chatbot in Telegram/WhatsApp that will start catching leads in 3 days while you sleep. Clients write — bot responds, collects contacts and sends them to you.",
+    simpleWebsite: "Comprehensive order",
+    simpleWebsiteDesc: "Bot + simple traffic trap website that turns views into contacts. Your clients see what you do and immediately leave a request.",
+    landingPage: "Full automation",
+    landingPageDesc: "Bot + website + connection to your CRM or spreadsheet. All leads in one place, with reminders. You no longer lose a single client.",
+    crmAuto: "Full automation",
+    crmAutoDesc: "Bot + website + connection to your CRM or spreadsheet. All leads in one place, with reminders. You no longer lose a single client.",
     complexAI: "Full business process automation",
     complexAIDesc: "Connecting all parts of your business: from first touch to repeat sale. Maximum automation, minimum routine.",
     
@@ -481,20 +486,21 @@ export const translations = {
     reviewsDesc: "Real reviews from real people",
     
     // Trust
-    trustTitle: "Why it's calm with me",
+    trustTitle: "Why it's simple and clear with me",
+    trustDesc: "I've been through it myself. I was drowning in endless chats, losing clients because I couldn't respond in time. Now I help business owners like me. I won't overwhelm you with jargon. I'll ask: 'What hurts?' and then build a system that fixes that pain. Honestly and without fluff.",
     
     // Process
     processTitle: "Process: from idea to result",
     
     // Trust cards
-    howIThink: "How I think",
-    howIThinkDesc: "Money, time and risks are more important than 'perfect implementation'.",
-    howICommunicate: "How I communicate",
-    howICommunicateDesc: "Short, to the point, with options and recommendations.",
-    howIWork: "How I work",
-    howIWorkDesc: "We fix the goal, agree on scope, do it in steps, show results.",
-    honesty: "Honest about boundaries",
-    honestyDesc: "If the task won't work — I'll say it before we start.",
+    howIThink: "I solve problems, not sell technology",
+    howIThinkDesc: "I don't care if it's a bot or a website. What matters is that you get order in your leads and more clients.",
+    howICommunicate: "I speak human language",
+    howICommunicateDesc: "No 'API integrations' and 'functionality'. Just: 'Here's what will work, here's the cost, here's when it'll be ready'.",
+    howIWork: "I work fast and step by step",
+    howIWorkDesc: "First result in 3-7 days. Then as needed. You always understand what's happening.",
+    honesty: "If you don't need it — I'll say it right away",
+    honestyDesc: "If your problem can be solved with a simple Google form — I'll tell you. I only work where I can bring real value.",
     
     // Service features
     adaptiveDesign: "Adaptive design",
@@ -582,14 +588,14 @@ export const translations = {
     faqTitle: "Frequently asked questions",
     
     // Footer
-    readyTitle: "Ready to start?",
-    readyDesc: "Describe the task in simple words: what you want to improve and what result you need. I'll ask a few questions and suggest a clear next step.",
+    readyTitle: "Losing leads?",
+    readyDesc: "Message me on Telegram or WhatsApp. I'll show you for free where your client leak is and what can be done about it. No fluff, 15 minutes.",
     writeEmail: "Email me",
     writeTelegram: "Message on Telegram",
     writeWhatsapp: "Message on WhatsApp",
-    respondFast: "Fast response",
-    freeConsult: "First consultation",
-    untilAgree: "Until we agree",
+    respondFast: "Reply within an hour",
+    freeConsult: "Free consultation",
+    untilAgree: "15 minutes",
     rights: "All rights reserved",
   }
 }
