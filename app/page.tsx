@@ -416,6 +416,12 @@ export default function Home() {
                 {t.heroDesc}
               </p>
               
+              {/* Key Offer */}
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-sm px-5 py-3 text-sm font-semibold border-2 border-indigo-500/30 shadow-lg">
+                <span className="text-2xl">🤖</span>
+                <span className="text-white">{t.heroOffer}</span>
+              </div>
+              
               {/* Stats */}
               <div className="mt-8 sm:mt-10 grid grid-cols-3 gap-3 sm:gap-6">
                 <div>
@@ -427,7 +433,7 @@ export default function Home() {
                   <div className="text-xs sm:text-sm text-slate-400 mt-1">{t.satisfied}</div>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold text-white">5+</div>
+                  <div className="text-2xl sm:text-3xl font-bold gradient-text">+30%</div>
                   <div className="text-xs sm:text-sm text-slate-400 mt-1">{t.yearsExp}</div>
                 </div>
               </div>
@@ -500,7 +506,7 @@ export default function Home() {
                             <div className="text-[5px] text-slate-400">{t.satisfied}</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-[10px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">5+</div>
+                            <div className="text-[10px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">+30%</div>
                             <div className="text-[5px] text-slate-400">{t.yearsExp}</div>
                           </div>
                         </div>
@@ -522,8 +528,8 @@ export default function Home() {
                             <div className="text-[5px] text-slate-400">500-800 €</div>
                           </div>
                           <div className="bg-slate-700/50 border border-pink-500/30 rounded-lg p-2">
-                            <div className="text-[6px] font-bold text-white mb-0.5">{t.telegramBots}</div>
-                            <div className="text-[5px] text-slate-400">600-1000 €</div>
+                            <div className="text-[6px] font-bold text-white mb-0.5">{t.chatBotExpress}</div>
+                            <div className="text-[5px] text-slate-400">500 €</div>
                           </div>
                           <div className="bg-slate-700/50 border border-green-500/30 rounded-lg p-2">
                             <div className="text-[6px] font-bold text-white mb-0.5">{t.crmAuto}</div>
@@ -627,7 +633,7 @@ export default function Home() {
                               <div className="text-[5px] text-slate-400">{t.satisfied}</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-[10px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">5+</div>
+                              <div className="text-[10px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">+30%</div>
                               <div className="text-[5px] text-slate-400">{t.yearsExp}</div>
                             </div>
                           </div>
@@ -760,29 +766,31 @@ export default function Home() {
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {/* Individual Services */}
-            <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
-              <div className="text-4xl mb-4">🌐</div>
-              <h3 className="text-xl font-bold tracking-tight text-white">{t.simpleWebsite}</h3>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 50 €' : lang === 'ua' ? 'від 50 €' : 'from 50 €'}</span>
+            {/* NEW: Chat-bot Express — FIRST and HIGHLIGHTED */}
+            <article className="card-hover rounded-3xl bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-2 border-indigo-500 p-8 shadow-2xl relative scale-105">
+              <div className="absolute top-4 right-4 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">
+                🔥 {lang === 'ru' ? 'Старт за 3 дня' : lang === 'ua' ? 'Старт за 3 дні' : 'Start in 3 days'}
               </div>
-              <p className="mt-1 text-sm text-slate-500">2 000 ₴ / 1 250 CZK</p>
+              <div className="text-4xl mb-4">🤖</div>
+              <h3 className="text-xl font-bold tracking-tight text-white">{t.chatBotExpress}</h3>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 500 €' : lang === 'ua' ? 'від 500 €' : 'from 500 €'}</span>
+              </div>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
-                {t.simpleWebsiteDesc}
+                {t.chatBotExpressDesc}
               </p>
               <ul className="mt-6 space-y-3">
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>{t.adaptiveDesign}</span>
+                  <span>{lang === 'ru' ? 'Готов за 3 дня' : lang === 'ua' ? 'Готовий за 3 дні' : 'Ready in 3 days'}</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>{t.contactForm}</span>
+                  <span>{lang === 'ru' ? 'Работает 24/7' : lang === 'ua' ? 'Працює 24/7' : 'Works 24/7'}</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>{t.ready57days}</span>
+                  <span>{lang === 'ru' ? 'Интеграция с Google Sheets' : lang === 'ua' ? 'Інтеграція з Google Sheets' : 'Google Sheets integration'}</span>
                 </li>
               </ul>
               <a
@@ -793,13 +801,13 @@ export default function Home() {
               </a>
             </article>
 
+            {/* Landing Page */}
             <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
               <div className="text-4xl mb-4">🚀</div>
               <h3 className="text-xl font-bold tracking-tight text-white">{t.landingPage}</h3>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 300 €' : lang === 'ua' ? 'від 300 €' : 'from 300 €'}</span>
+                <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 400 €' : lang === 'ua' ? 'від 400 €' : 'from 400 €'}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">12 000 ₴ / 7 500 CZK</p>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
                 {t.landingPageDesc}
               </p>
@@ -829,28 +837,28 @@ export default function Home() {
               </a>
             </article>
 
+            {/* Business Card Site */}
             <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
-              <div className="text-4xl mb-4">🤖</div>
-              <h3 className="text-xl font-bold tracking-tight text-white">{t.telegramBots}</h3>
+              <div className="text-4xl mb-4">🌐</div>
+              <h3 className="text-xl font-bold tracking-tight text-white">{t.simpleWebsite}</h3>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 500 €' : lang === 'ua' ? 'від 500 €' : 'from 500 €'}</span>
+                <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 50 €' : lang === 'ua' ? 'від 50 €' : 'from 50 €'}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">20 000 ₴ / 12 500 CZK</p>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
-                {t.telegramBotsDesc}
+                {t.simpleWebsiteDesc}
               </p>
               <ul className="mt-6 space-y-3">
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>Автоответчик 24/7</span>
+                  <span>{t.adaptiveDesign}</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>Сбор заявок</span>
+                  <span>{t.contactForm}</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>Интеграции</span>
+                  <span>{t.ready57days}</span>
                 </li>
               </ul>
               <a
@@ -861,28 +869,28 @@ export default function Home() {
               </a>
             </article>
 
+            {/* CRM */}
             <article className="card-hover rounded-3xl bg-slate-900 border-2 border-slate-700 p-8 shadow-lg">
               <div className="text-4xl mb-4">⚙️</div>
               <h3 className="text-xl font-bold tracking-tight text-white">{t.crmAuto}</h3>
               <div className="mt-4 flex items-baseline gap-2">
                 <span className="text-3xl font-bold gradient-text">{lang === 'ru' ? 'от 800 €' : lang === 'ua' ? 'від 800 €' : 'from 800 €'}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">32 000 ₴ / 20 000 CZK</p>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
                 {t.crmAutoDesc}
               </p>
               <ul className="mt-6 space-y-3">
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>Учёт клиентов</span>
+                  <span>{lang === 'ru' ? 'Учёт клиентов' : lang === 'ua' ? 'Облік клієнтів' : 'Client accounting'}</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>Автоматизация рутины</span>
+                  <span>{lang === 'ru' ? 'Автоматизация рутины' : lang === 'ua' ? 'Автоматизація рутини' : 'Routine automation'}</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-green-400">✓</span>
-                  <span>Отчётность</span>
+                  <span>{lang === 'ru' ? 'Отчётность' : lang === 'ua' ? 'Звітність' : 'Reporting'}</span>
                 </li>
               </ul>
               <a
@@ -900,19 +908,18 @@ export default function Home() {
               <p className="text-center text-slate-400 mb-8">{lang === 'ru' ? 'Экономия до 30% при выборе пакета' : lang === 'ua' ? 'Економія до 30% при виборі пакету' : 'Save up to 30% with package'}</p>
             </div>
 
-            {/* Standard Package */}
+            {/* Starter Package */}
             <article className="card-hover rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-green-600 p-8 shadow-xl">
               <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                 💚 {lang === 'ru' ? 'Старт' : lang === 'ua' ? 'Старт' : 'Start'}
               </div>
               <div className="text-4xl mb-4">📦</div>
-              <h3 className="text-2xl font-bold tracking-tight text-white">{t.packageStandard}</h3>
+              <h3 className="text-2xl font-bold tracking-tight text-white">{t.packageStarter}</h3>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold gradient-text">{lang === 'ru' ? 'от 1200 €' : lang === 'ua' ? 'від 1200 €' : 'from 1200 €'}</span>
+                <span className="text-4xl font-bold gradient-text">{lang === 'ru' ? 'от 500 €' : lang === 'ua' ? 'від 500 €' : 'from 500 €'}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">48K ₴ / 30K CZK</p>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
-                {t.packageStandardDesc}
+                {t.packageStarterDesc}
               </p>
             </article>
 
@@ -924,9 +931,8 @@ export default function Home() {
               <div className="text-4xl mb-4">🚀</div>
               <h3 className="text-2xl font-bold tracking-tight text-white">{t.packagePro}</h3>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold gradient-text">{lang === 'ru' ? 'от 2000 €' : lang === 'ua' ? 'від 2000 €' : 'from 2000 €'}</span>
+                <span className="text-4xl font-bold gradient-text">{lang === 'ru' ? 'от 1400 €' : lang === 'ua' ? 'від 1400 €' : 'from 1400 €'}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-400">80K ₴ / 50K CZK</p>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
                 {t.packageProDesc}
               </p>
@@ -940,9 +946,8 @@ export default function Home() {
               <div className="text-4xl mb-4">💎</div>
               <h3 className="text-2xl font-bold tracking-tight text-white">{t.packagePremium}</h3>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold gradient-text">{lang === 'ru' ? 'от 3000 €' : lang === 'ua' ? 'від 3000 €' : 'from 3000 €'}</span>
+                <span className="text-4xl font-bold gradient-text">{lang === 'ru' ? 'от 2500 €' : lang === 'ua' ? 'від 2500 €' : 'from 2500 €'}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-400">120K ₴ / 75K CZK</p>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
                 {t.packagePremiumDesc}
               </p>

@@ -18,11 +18,11 @@ export interface CalculatorData {
 }
 
 const services = {
-  website: { base: 50, name: { ru: 'Веб-визитка', ua: 'Веб-візитка', en: 'Business card website' }, icon: '🌐' },
+  bot: { base: 500, name: { ru: 'Чат-бот за 3 дня', ua: 'Чат-бот за 3 дні', en: 'Chat-bot in 3 days' }, icon: '🤖' },
   landing: { base: 400, name: { ru: 'Лендинг', ua: 'Лендінг', en: 'Landing page' }, icon: '🚀' },
-  bot: { base: 500, name: { ru: 'Telegram-бот', ua: 'Telegram-бот', en: 'Telegram bot' }, icon: '🤖' },
+  website: { base: 50, name: { ru: 'Веб-визитка', ua: 'Веб-візитка', en: 'Business card website' }, icon: '🌐' },
   crm: { base: 800, name: { ru: 'CRM / Автоматизация', ua: 'CRM / Автоматизація', en: 'CRM / Automation' }, icon: '⚙️' },
-  package: { base: 1200, name: { ru: 'Готовый пакет', ua: 'Готовий пакет', en: 'Ready package' }, icon: '📦' },
+  package: { base: 1400, name: { ru: 'Полный пакет', ua: 'Повний пакет', en: 'Full package' }, icon: '📦' },
 }
 
 const regions = {
@@ -405,9 +405,6 @@ export default function Calculator({ lang, onComplete }: CalculatorProps) {
                 <div className="text-4xl sm:text-5xl font-bold text-white mb-3">
                   {text.from} {min} {text.to} {max} €
                 </div>
-                <div className="text-xs text-slate-400">
-                  {Math.round(min * 40)} — {Math.round(max * 40)} ₴ / {Math.round(min * 25)} — {Math.round(max * 25)} CZK
-                </div>
                 <p className="text-xs text-slate-400 mt-4 leading-relaxed">
                   {text.disclaimer}
                 </p>
@@ -448,4 +445,5 @@ export default function Calculator({ lang, onComplete }: CalculatorProps) {
     </div>
   )
 }
+
 
