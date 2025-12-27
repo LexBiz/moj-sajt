@@ -9,10 +9,10 @@ export const translations = {
     
     // Hero
     openForProjects: "Открыт для новых проектов",
-    heroTitle: "От устаревших сайтов — к AI-системам заявок 2026",
-    heroSubtitle: "Делаю и то, и другое",
-    heroDesc: "Я, Артём, создаю классические сайты и боты ИЛИ полноценные AI-системы с памятью клиента, обработкой голоса и фото. Вы выбираете свой уровень — от базового решения до технологий будущего.",
-    heroOffer: "Базовое решение — от 500€ | AI-система — от 1500€",
+    heroTitle: "Заявки теряются в чатах, а клиенты уходят к конкурентам?",
+    heroSubtitle: "Я наведу порядок в ваших заявках за 3-7 дней",
+    heroDesc: "Я, Артём, внедряю в ваш бизнес простые системы (чат-боты, понятные сайты), которые работают 24/7. Вы перестанете терять деньги, а ваши клиенты наконец смогут до вас дозвониться.",
+    heroOffer: "Первый бот — за 3 дня",
     projects: "Внедрённых систем",
     satisfied: "Клиентов видят рост заявок",
     yearsExp: "К конверсии в среднем",
@@ -86,12 +86,12 @@ export const translations = {
     techStackAutoDesc: "A/B тесты диалогов, генерация контента GPT-4, автонапоминания",
     
     // New Packages
-    packageStarter: "БАЗОВЫЙ — Классика",
-    packageStarterDesc: "Сайт или бот — классическое решение, которое работает годами. Проверено временем.",
-    packagePro: "PRO — AI-система",
-    packageProDesc: "AI-система с 3 фичами на выбор: память клиента, голос/фото, оплата в чате, A/B тесты",
-    packagePremium: "ENTERPRISE — Полный цикл AI",
-    packagePremiumDesc: "Полная AI-автоматизация: от первого касания до повторных продаж. Персональный AI-ассистент для вашей команды",
+    packageStarter: "ПАКЕТ «СТАРТ» — Классика, которая работает",
+    packageStarterDesc: "Telegram-бот с кнопочным меню • Автоматическая запись в Google-таблицу • Уведомления в Telegram • Гарантия работы • Вы перестанете терять заявки ночью и в выходные • Все контакты в одной таблице • Система работает 24/7 • Срок: 5-7 дней • Поддержка 14 дней",
+    packagePro: "ПАКЕТ «PRO» — AI-система с выбором фич",
+    packageProDesc: "Всё из пакета «СТАРТ» + AI-ядро на DeepSeek API • Выбор 3 фич из 5: память клиента, голос/фото, оплата в чате, A/B тесты, генерация контента • Конверсия +30-50% • Средний чек +15% • Повторные продажи +25% • Срок: 10-14 дней • Поддержка 30 дней • Экономия 30% против заказа фич по отдельности",
+    packagePremium: "ПАКЕТ «ENTERPRISE» — Полный цикл AI",
+    packagePremiumDesc: "Всё из «PRO» + мультиканальная система (сайт, Telegram, Instagram, WhatsApp) • AI-ассистент менеджера • Полная CRM-интеграция • Автоматические воронки • Кастомный дашборд • Приоритетная поддержка • Полная автоматизация отдела продаж • Сокращение расходов на менеджеров на 40-60% • Рост повторных продаж на 50-70% • Срок: 21-28 дней • Поддержка 90 дней",
     
     // Cases
     casesTitle: "Реальные кейсы и результаты",
@@ -322,12 +322,12 @@ export const translations = {
     techStackAutoDesc: "A/B тести діалогів, генерація контенту GPT-4, автонагадування",
     
     // New Packages
-    packageStarter: "БАЗОВИЙ — Класика",
-    packageStarterDesc: "Сайт або бот — класичне рішення, що працює роками. Перевірено часом.",
-    packagePro: "PRO — AI-система",
-    packageProDesc: "AI-система з 3 фічами на вибір: пам'ять клієнта, голос/фото, оплата в чаті, A/B тести",
-    packagePremium: "ENTERPRISE — Повний цикл AI",
-    packagePremiumDesc: "Повна AI-автоматизація: від першого дотику до повторних продажів. Персональний AI-асистент для вашої команди",
+    packageStarter: "ПАКЕТ «СТАРТ» — Класика, яка працює",
+    packageStarterDesc: "Telegram-бот з кнопковим меню • Автоматичний запис в Google-таблицю • Сповіщення в Telegram • Гарантія роботи • Ви перестанете втрачати заявки вночі та у вихідні • Всі контакти в одній таблиці • Система працює 24/7 • Термін: 5-7 днів • Підтримка 14 днів",
+    packagePro: "ПАКЕТ «PRO» — AI-система з вибором фіч",
+    packageProDesc: "Все з пакету «СТАРТ» + AI-ядро на DeepSeek API • Вибір 3 фіч з 5: пам'ять клієнта, голос/фото, оплата в чаті, A/B тести, генерація контенту • Конверсія +30-50% • Середній чек +15% • Повторні продажі +25% • Термін: 10-14 днів • Підтримка 30 днів • Економія 30% проти замовлення фіч окремо",
+    packagePremium: "ПАКЕТ «ENTERPRISE» — Повний цикл AI",
+    packagePremiumDesc: "Все з «PRO» + мультиканальна система (сайт, Telegram, Instagram, WhatsApp) • AI-асистент менеджера • Повна CRM-інтеграція • Автоматичні воронки • Кастомний дашборд • Пріоритетна підтримка • Повна автоматизація відділу продажів • Скорочення витрат на менеджерів на 40-60% • Зростання повторних продажів на 50-70% • Термін: 21-28 днів • Підтримка 90 днів",
     
     // Cases
     casesTitle: "Реальні кейси та результати",
@@ -558,12 +558,12 @@ export const translations = {
     techStackAutoDesc: "A/B testing dialogues, GPT-4 content generation, auto-reminders",
     
     // New Packages
-    packageStarter: "BASIC — Classic",
-    packageStarterDesc: "Site or bot — classic solution that works for years. Time-tested.",
-    packagePro: "PRO — AI System",
-    packageProDesc: "AI system with 3 features to choose: client memory, voice/photo, chat payment, A/B tests",
-    packagePremium: "ENTERPRISE — Full AI Cycle",
-    packagePremiumDesc: "Full AI automation: from first touch to repeat sales. Personal AI assistant for your team",
+    packageStarter: "PACKAGE «START» — Classic that works",
+    packageStarterDesc: "Telegram bot with button menu • Automatic recording to Google Sheets • Telegram notifications • Work guarantee • You'll stop losing leads at night and on weekends • All contacts in one table • System works 24/7 • Timeline: 5-7 days • 14 days support",
+    packagePro: "PACKAGE «PRO» — AI system with feature choice",
+    packageProDesc: "Everything from «START» + AI core on DeepSeek API • Choose 3 features from 5: client memory, voice/photo, chat payment, A/B tests, content generation • Conversion +30-50% • Average check +15% • Repeat sales +25% • Timeline: 10-14 days • 30 days support • 30% savings vs ordering features separately",
+    packagePremium: "PACKAGE «ENTERPRISE» — Full AI cycle",
+    packagePremiumDesc: "Everything from «PRO» + multi-channel system (website, Telegram, Instagram, WhatsApp) • Manager AI assistant • Full CRM integration • Automatic funnels • Custom dashboard • Priority support • Full sales department automation • Manager costs reduction by 40-60% • Repeat sales growth by 50-70% • Timeline: 21-28 days • 90 days support",
     
     // Cases
     casesTitle: "Real cases and results",
