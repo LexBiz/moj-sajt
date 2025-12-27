@@ -18,11 +18,12 @@ export interface CalculatorData {
 }
 
 const services = {
-  bot: { base: 500, name: { ru: 'Чат-бот за 3 дня', ua: 'Чат-бот за 3 дні', en: 'Chat-bot in 3 days' }, icon: '🤖' },
-  landing: { base: 400, name: { ru: 'Лендинг', ua: 'Лендінг', en: 'Landing page' }, icon: '🚀' },
-  website: { base: 50, name: { ru: 'Веб-визитка', ua: 'Веб-візитка', en: 'Business card website' }, icon: '🌐' },
-  crm: { base: 800, name: { ru: 'CRM / Автоматизация', ua: 'CRM / Автоматизація', en: 'CRM / Automation' }, icon: '⚙️' },
-  package: { base: 1400, name: { ru: 'Полный пакет', ua: 'Повний пакет', en: 'Full package' }, icon: '📦' },
+  bot: { base: 500, name: { ru: 'Telegram-бот (классика)', ua: 'Telegram-бот (класика)', en: 'Telegram bot (classic)' }, icon: '🤖' },
+  website: { base: 400, name: { ru: 'Сайт-визитка / Лендинг', ua: 'Сайт-візитка / Лендінг', en: 'Business card / Landing' }, icon: '🌐' },
+  package: { base: 1000, name: { ru: 'Готовый пакет (сайт + бот + CRM)', ua: 'Готовий пакет (сайт + бот + CRM)', en: 'Ready package (site + bot + CRM)' }, icon: '📦' },
+  aiBot: { base: 1500, name: { ru: 'AI-бот с памятью клиента', ua: 'AI-бот з пам\'яттю клієнта', en: 'AI bot with client memory' }, icon: '🧠' },
+  aiSite: { base: 1800, name: { ru: 'AI-система (голос/фото)', ua: 'AI-система (голос/фото)', en: 'AI system (voice/photo)' }, icon: '🎙️' },
+  aiEnterprise: { base: 3000, name: { ru: 'ENTERPRISE — Полный AI-цикл', ua: 'ENTERPRISE — Повний AI-цикл', en: 'ENTERPRISE — Full AI cycle' }, icon: '⚡' },
 }
 
 const regions = {
