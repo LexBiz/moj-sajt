@@ -759,13 +759,25 @@ export default function Home() {
       {/* SERVICES - Premium cards */}
       <section id="services" className="border-t border-slate-700 bg-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-12">
             <h2 className="text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              {t.servicesTitle.split(lang === 'ru' ? 'прозрачные цены' : lang === 'ua' ? 'прозорі ціни' : 'transparent prices')[0]}<span className="gradient-text">{lang === 'ru' ? 'прозрачные цены' : lang === 'ua' ? 'прозорі ціни' : 'transparent prices'}</span>
+              {t.servicesTitle}
             </h2>
             <p className="mt-4 text-lg text-slate-300">
               {t.servicesDesc}
             </p>
+          </div>
+          
+          {/* Dual positioning grid */}
+          <div className="max-w-6xl mx-auto mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+              <h3 className="font-bold text-white text-lg">{(t as any).servicesClassic || 'Классические решения'}</h3>
+              <p className="text-sm text-slate-400 mt-1">{lang === 'ru' ? 'От 500€' : lang === 'ua' ? 'Від 500€' : 'From 500€'}</p>
+            </div>
+            <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 rounded-xl p-4 border-2 border-indigo-500/50">
+              <h3 className="font-bold gradient-text text-lg">{(t as any).servicesAI || 'AI-возможности 2026+'}</h3>
+              <p className="text-sm text-indigo-300 mt-1">{lang === 'ru' ? 'От 1500€' : lang === 'ua' ? 'Від 1500€' : 'From 1500€'}</p>
+            </div>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -953,6 +965,159 @@ export default function Home() {
               </div>
               <p className="mt-6 text-base leading-relaxed text-slate-300">
                 {t.packagePremiumDesc}
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* EVOLUTION SECTION - Эволюция бизнеса */}
+      <section className="border-t border-slate-700 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl mb-4">
+              {(t as any).evolutionTitle || (lang === 'ru' ? 'Эволюция вашего бизнеса' : lang === 'ua' ? 'Еволюція вашого бізнесу' : 'Your business evolution')}
+            </h2>
+            <p className="text-lg text-slate-300">
+              {(t as any).evolutionDesc || (lang === 'ru' ? 'Начните с базового, растите вместе с технологиями' : lang === 'ua' ? 'Почніть з базового, ростіть разом з технологіями' : 'Start basic, grow with technology')}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Stage 1 */}
+            <article className="rounded-2xl bg-slate-800 border-2 border-slate-700 p-8 relative">
+              <div className="text-center">
+                <div className="text-5xl mb-4">📱</div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  {(t as any).evolutionStage1 || (lang === 'ru' ? 'Этап 1: Базовый' : lang === 'ua' ? 'Етап 1: Базовий' : 'Stage 1: Basic')}
+                </h3>
+                <p className="text-sm text-slate-400 mb-4">{lang === 'ru' ? 'Сейчас' : lang === 'ua' ? 'Зараз' : 'Now'}</p>
+                <ul className="text-left space-y-2 text-sm text-slate-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-500">•</span>
+                    <span>{lang === 'ru' ? 'Простой сайт' : lang === 'ua' ? 'Простий сайт' : 'Simple website'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-500">•</span>
+                    <span>{lang === 'ru' ? 'Форма заявки' : lang === 'ua' ? 'Форма заявки' : 'Contact form'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-500">•</span>
+                    <span>{lang === 'ru' ? 'Ручная работа' : lang === 'ua' ? 'Ручна робота' : 'Manual work'}</span>
+                  </li>
+                </ul>
+              </div>
+            </article>
+
+            {/* Stage 2 */}
+            <article className="rounded-2xl bg-slate-800 border-2 border-indigo-700 p-8 relative transform scale-105">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 px-3 py-1 rounded-full text-xs font-bold text-white">
+                {lang === 'ru' ? 'Популярно' : lang === 'ua' ? 'Популярно' : 'Popular'}
+              </div>
+              <div className="text-center">
+                <div className="text-5xl mb-4">⚡</div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  {(t as any).evolutionStage2 || (lang === 'ru' ? 'Этап 2: Автоматизированный' : lang === 'ua' ? 'Етап 2: Автоматизований' : 'Stage 2: Automated')}
+                </h3>
+                <p className="text-sm text-indigo-300 mb-4">{lang === 'ru' ? '3-6 месяцев' : lang === 'ua' ? '3-6 місяців' : '3-6 months'}</p>
+                <ul className="text-left space-y-2 text-sm text-slate-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400">✓</span>
+                    <span>{lang === 'ru' ? 'Сайт + бот' : lang === 'ua' ? 'Сайт + бот' : 'Website + bot'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400">✓</span>
+                    <span>{lang === 'ru' ? 'Автоответы' : lang === 'ua' ? 'Автовідповіді' : 'Auto-replies'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400">✓</span>
+                    <span>{lang === 'ru' ? 'CRM-интеграция' : lang === 'ua' ? 'CRM-інтеграція' : 'CRM integration'}</span>
+                  </li>
+                </ul>
+              </div>
+            </article>
+
+            {/* Stage 3 */}
+            <article className="rounded-2xl bg-gradient-to-br from-indigo-900 to-purple-900 border-2 border-purple-500 p-8 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 px-3 py-1 rounded-full text-xs font-bold text-white">
+                2026+
+              </div>
+              <div className="text-center">
+                <div className="text-5xl mb-4">🧠</div>
+                <h3 className="text-xl font-bold gradient-text mb-3">
+                  {(t as any).evolutionStage3 || (lang === 'ru' ? 'Этап 3: AI-управляемый' : lang === 'ua' ? 'Етап 3: AI-керований' : 'Stage 3: AI-powered')}
+                </h3>
+                <p className="text-sm text-purple-300 mb-4">{lang === 'ru' ? 'Будущее' : lang === 'ua' ? 'Майбутнє' : 'Future'}</p>
+                <ul className="text-left space-y-2 text-sm text-indigo-200">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-400">★</span>
+                    <span>{lang === 'ru' ? 'Система с памятью' : lang === 'ua' ? 'Система з пам\'яттю' : 'System with memory'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-400">★</span>
+                    <span>{lang === 'ru' ? 'Голос/фото в заявках' : lang === 'ua' ? 'Голос/фото в заявках' : 'Voice/photo in requests'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-400">★</span>
+                    <span>{lang === 'ru' ? 'A/B тесты диалогов' : lang === 'ua' ? 'A/B тести діалогів' : 'A/B testing dialogues'}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-400">★</span>
+                    <span>{lang === 'ru' ? 'AI-генерация контента' : lang === 'ua' ? 'AI-генерація контенту' : 'AI content generation'}</span>
+                  </li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* TECH STACK 2026 */}
+      <section className="border-t border-slate-700 bg-slate-900">
+        <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-indigo-300 shadow-lg ring-1 ring-indigo-500/20 mb-6">
+              <span className="text-2xl">⚙️</span>
+              <span>2026+</span>
+            </div>
+            <h2 className="text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl mb-4">
+              {(t as any).techStackTitle || 'Tech Stack 2026'}
+            </h2>
+            <p className="text-lg text-slate-300">
+              {(t as any).techStackDesc || (lang === 'ru' ? 'Технологии, которые я использую для AI-систем' : lang === 'ua' ? 'Технології, які я використовую для AI-систем' : 'Technologies I use for AI systems')}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-3">🧠</div>
+              <h3 className="text-lg font-bold text-white mb-2">{(t as any).techStackAI || 'AI-ядро'}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                {(t as any).techStackAIDesc || 'DeepSeek API с долгосрочной памятью (PostgreSQL + векторная БД)'}
+              </p>
+            </article>
+
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-3">🎤📸</div>
+              <h3 className="text-lg font-bold text-white mb-2">{(t as any).techStackMulti || (lang === 'ru' ? 'Мультимодальность' : 'Multimodal')}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                {(t as any).techStackMultiDesc || 'Whisper (голос), Vision API (фото), Claude 3.5 (документы)'}
+              </p>
+            </article>
+
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-3">🔗</div>
+              <h3 className="text-lg font-bold text-white mb-2">{(t as any).techStackIntegrations || (lang === 'ru' ? 'Интеграции' : 'Integrations')}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                {(t as any).techStackIntegrationsDesc || 'Stripe/Fondy (оплата), Telegram/WhatsApp API, Airtable как CRM'}
+              </p>
+            </article>
+
+            <article className="rounded-2xl bg-slate-800 border border-slate-700 p-6 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-3">⚡</div>
+              <h3 className="text-lg font-bold text-white mb-2">{(t as any).techStackAuto || (lang === 'ru' ? 'Автоматизация' : 'Automation')}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                {(t as any).techStackAutoDesc || 'A/B тесты диалогов, генерация контента GPT-4, автонапоминания'}
               </p>
             </article>
           </div>
@@ -1839,6 +2004,12 @@ export default function Home() {
               </a>
               <p className="text-center text-slate-400 max-w-md">
                 {lang === 'ru' ? 'Превращаю бизнес-задачи в работающие решения' : lang === 'ua' ? 'Перетворюю бізнес-задачі у працюючі рішення' : 'Turn business tasks into working solutions'}
+              </p>
+            </div>
+            
+            <div className="text-center mb-8">
+              <p className="text-sm text-indigo-300/80 italic">
+                {(t as any).footerTagline || (lang === 'ru' ? 'Работаем на стыке технологий 2024-2026: классическая разработка × AI-автоматизация' : lang === 'ua' ? 'Працюємо на стику технологій 2024-2026: класична розробка × AI-автоматизація' : 'Working at the intersection of 2024-2026 technologies: classical development × AI automation')}
               </p>
             </div>
             
