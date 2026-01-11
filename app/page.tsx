@@ -613,9 +613,9 @@ export default function Home() {
               
               <div className="relative space-y-10">
                 <div className="space-y-4 text-center">
-                  <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent">
+                  <h2 className="text-3xl sm:text-5xl font-black text-white">
                     {t.formTitle}
-            </h2>
+                  </h2>
                   <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">{t.formSubtitle}</p>
           </div>
                 <form className="space-y-6 max-w-2xl mx-auto" onSubmit={onSubmit}>
