@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { MessageSquare, Zap, CheckCircle2, Users, Calendar, TrendingUp, Scissors, Car, GraduationCap, Wrench, Briefcase } from 'lucide-react'
 
 type Lang = 'ua' | 'ru' | 'cz'
 
@@ -284,12 +285,13 @@ export default function Home() {
         .animate-float { animation: float 8s ease-in-out infinite; }
       `}</style>
 
-      <main className="relative min-h-screen bg-slate-950 text-white overflow-x-hidden">
+      <main className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950" />
-          <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-gradient" />
-          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/15 via-slate-950/50 to-transparent" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f46e510_1px,transparent_1px),linear-gradient(to_bottom,#4f46e510_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+          <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl animate-gradient" />
+          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-500/15 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/8 rounded-full blur-3xl animate-float" />
         </div>
 
         <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/70 border-b border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
@@ -328,10 +330,12 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[0] = el }}
             className={`relative transition-all duration-1000 ${visibleSections.has(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-gradient-to-br from-slate-800/50 via-slate-800/40 to-slate-900/50 border border-white/10 rounded-[32px] p-10 sm:p-16 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden group hover:border-white/20 transition-all duration-500">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
-              <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full blur-3xl" />
-              <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-pink-500/15 rounded-full blur-3xl" />
+            <div className="relative bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 border border-white/10 rounded-[32px] p-10 sm:p-16 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden group hover:border-white/20 transition-all duration-500">
+              {/* ИЗОБРАЖЕНИЕ №1 (16:9) — Sora hero background */}
+              <div className="absolute inset-0 opacity-10">
+                <img src="/hero-ai.jpg" alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/80 to-slate-900/90" />
               
               <div className="relative space-y-8 text-center">
                 <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 px-5 py-2.5 text-xs text-indigo-100 uppercase tracking-[0.2em] font-bold backdrop-blur-sm shadow-lg">
@@ -372,24 +376,37 @@ export default function Home() {
             className={`transition-all duration-1000 delay-150 ${visibleSections.has(1) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
-              <div className="space-y-10">
+              {/* ИЗОБРАЖЕНИЕ №2 (21:9) — Sora flow background */}
+              <div className="absolute inset-0 opacity-5">
+                <img src="/flow-bg.jpg" alt="" className="w-full h-full object-cover blur-sm" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 to-slate-900/90" />
+              
+              <div className="relative space-y-10">
                 <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center">
                   {t.howTitle}
                 </h2>
                 <div className="grid gap-8 sm:grid-cols-3">
-                  {t.howSteps.map((step, idx) => (
-                    <div
-                      key={idx}
-                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-3xl p-8 backdrop-blur-sm transition-all duration-500 hover:border-indigo-400/50 hover:shadow-[0_20px_60px_rgba(99,102,241,0.3)] hover:-translate-y-2 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="relative space-y-4 text-center">
-                        <div className="text-6xl">{step.icon}</div>
-                        <h3 className="text-xl font-black text-white leading-snug">{step.title}</h3>
-                        <p className="text-sm text-slate-300 leading-relaxed">{step.text}</p>
+                  {t.howSteps.map((step, idx) => {
+                    const icons = [MessageSquare, Zap, CheckCircle2]
+                    const Icon = icons[idx]
+                    return (
+                      <div
+                        key={idx}
+                        className="group relative bg-gradient-to-br from-white/8 to-white/[0.02] border border-white/10 rounded-3xl p-8 backdrop-blur-sm transition-all duration-500 hover:border-indigo-400/50 hover:shadow-[0_20px_60px_rgba(99,102,241,0.3)] hover:-translate-y-2 overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative space-y-4 text-center">
+                          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 flex items-center justify-center">
+                            <Icon className="w-8 h-8 text-indigo-300" strokeWidth={1.5} />
+                          </div>
+                          <div className="w-12 mx-auto h-0.5 bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
+                          <h3 className="text-xl font-black text-white leading-snug">{step.title}</h3>
+                          <p className="text-sm text-slate-300 leading-relaxed">{step.text}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 <div className="text-center pt-4">
                   <a
@@ -414,18 +431,24 @@ export default function Home() {
                   {t.whoTitle}
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-5">
-                  {t.whoList.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-base font-bold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/10 hover:text-white hover:shadow-[0_10px_40px_rgba(99,102,241,0.2)] hover:-translate-y-1 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <span className="relative flex items-center gap-3">
-                        <span className="w-2 h-2 rounded-full bg-indigo-400 group-hover:animate-pulse" />
-                        {item}
-                      </span>
-                    </div>
-                  ))}
+                  {t.whoList.map((item, idx) => {
+                    const whoIcons = [Scissors, Car, GraduationCap, Wrench, Briefcase]
+                    const Icon = whoIcons[idx] || Briefcase
+                    return (
+                      <div
+                        key={idx}
+                        className="group relative bg-gradient-to-br from-white/8 to-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/10 hover:shadow-[0_10px_40px_rgba(99,102,241,0.2)] hover:-translate-y-1 overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <span className="relative flex items-center gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-400/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon className="w-5 h-5 text-indigo-300" strokeWidth={1.5} />
+                          </span>
+                          <span className="text-base font-bold text-slate-200 group-hover:text-white transition-colors">{item}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
                 <p className="text-lg text-slate-300 leading-relaxed text-center italic">{t.whoText}</p>
                 <div className="text-center pt-4">
@@ -639,6 +662,16 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* ОПЦИОНАЛЬНО: ИЗОБРАЖЕНИЕ №3 (1:1) — брендовый акцент */}
+          {/* 
+          <div className="flex justify-center py-16">
+            <div className="relative w-48 h-48 rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+              <img src="/brand-square.jpg" alt="" className="w-full h-full object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+            </div>
+          </div>
+          */}
 
           <footer className="py-12 text-center">
             <a
