@@ -285,24 +285,29 @@ export default function Home() {
         .animate-float { animation: float 8s ease-in-out infinite; }
       `}</style>
 
-      <main className="relative min-h-screen bg-gradient-to-br from-white via-gray-50 to-slate-100 text-slate-900 overflow-x-hidden">
+      <main className="relative min-h-screen bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 text-slate-900 overflow-x-hidden">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/40 via-white to-transparent" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e0e7ff15_1px,transparent_1px),linear-gradient(to_bottom,#e0e7ff15_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-          <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-200/20 rounded-full blur-3xl animate-gradient" />
-          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-200/20 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-100/15 rounded-full blur-3xl animate-float" />
+          {/* Subtle dot pattern for premium tech feel */}
+          <div className="absolute inset-0 opacity-[0.15]" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(100 116 139) 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }} />
+          {/* Soft mesh gradient overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-200/30 via-transparent to-transparent" />
+          {/* Minimal glow accents */}
+          <div className="absolute top-0 -left-20 w-96 h-96 bg-slate-300/15 rounded-full blur-3xl animate-gradient" />
+          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-slate-300/15 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
         </div>
 
-        <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200 shadow-sm">
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200 shadow-sm">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 group">
               <div className="relative">
                 <img src="/logo.png" alt="TemoWeb" className="h-10 w-10 rounded-xl border border-gray-200 shadow-md transition-transform group-hover:scale-110 group-hover:rotate-3" />
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-300/10 to-slate-400/10 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-indigo-600 font-bold">TemoWeb</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-700 font-bold">TemoWeb</p>
                 <p className="text-[11px] text-slate-600">{t.headerSubtitle}</p>
               </div>
             </div>
@@ -313,7 +318,7 @@ export default function Home() {
                   onClick={() => setLang(lng)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
                     lang === lng
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 border-transparent text-white shadow-lg scale-105'
+                      ? 'bg-gradient-to-r from-slate-800 to-slate-700 border-transparent text-white shadow-lg scale-105'
                       : 'bg-white border-gray-200 text-slate-700 hover:bg-gray-50 hover:border-gray-300 hover:scale-105 shadow-sm'
                   }`}
                 >
@@ -335,7 +340,7 @@ export default function Home() {
               <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                 {/* LEFT: TEXT CONTENT */}
                 <div className="space-y-6 lg:pr-8">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-300 px-4 py-2 text-xs text-indigo-700 uppercase tracking-[0.2em] font-bold shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-300 px-4 py-2 text-xs text-slate-700 uppercase tracking-[0.2em] font-bold shadow-sm">
                     ⚡ {t.badge}
                   </span>
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.1] bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent">
@@ -347,9 +352,9 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <a
                       href={ctaHref}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base sm:text-lg font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-105 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-8 py-4 text-base sm:text-lg font-black text-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(0,0,0,0.25)] hover:scale-105 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative flex items-center gap-2">
                         <span>{t.ctaPrimary}</span>
                         <span className="text-xl">→</span>
@@ -362,7 +367,7 @@ export default function Home() {
                       {t.ctaSecondary}
                     </a>
                   </div>
-                  <p className="text-xs sm:text-sm text-indigo-600 font-semibold">{t.ctaNote}</p>
+                  <p className="text-xs sm:text-sm text-slate-600 font-semibold">{t.ctaNote}</p>
                 </div>
 
                 {/* RIGHT: SORA IMAGE */}
@@ -401,14 +406,14 @@ export default function Home() {
                     return (
                       <div
                         key={idx}
-                        className="group relative bg-white border border-gray-200 rounded-3xl p-8 shadow-md transition-all duration-500 hover:border-indigo-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.15)] hover:-translate-y-2 overflow-hidden"
+                        className="group relative bg-white border border-slate-200 rounded-3xl p-8 shadow-md transition-all duration-500 hover:border-slate-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 overflow-hidden"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative space-y-4 text-center">
-                          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 border border-indigo-200 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Icon className="w-8 h-8 text-indigo-600" strokeWidth={1.5} />
+                          <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon className="w-8 h-8 text-slate-700" strokeWidth={1.5} />
                           </div>
-                          <div className="w-12 mx-auto h-0.5 bg-gradient-to-r from-transparent via-indigo-300 to-transparent" />
+                          <div className="w-12 mx-auto h-0.5 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
                           <h3 className="text-xl font-black text-slate-900 leading-snug">{step.title}</h3>
                           <p className="text-sm text-slate-600 leading-relaxed">{step.text}</p>
                         </div>
@@ -419,7 +424,7 @@ export default function Home() {
                 <div className="text-center pt-4">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.6)] hover:scale-110"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
                   >
                     {t.howCta}
                   </a>
@@ -445,12 +450,12 @@ export default function Home() {
                     return (
                       <div
                         key={idx}
-                        className="group relative bg-white border border-gray-200 rounded-2xl px-6 py-5 shadow-sm transition-all duration-300 hover:border-indigo-300 hover:bg-indigo-50/30 hover:shadow-md hover:-translate-y-1 overflow-hidden"
+                        className="group relative bg-white border border-gray-200 rounded-2xl px-6 py-5 shadow-sm transition-all duration-300 hover:border-slate-300 hover:bg-slate-50/30 hover:shadow-md hover:-translate-y-1 overflow-hidden"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-50 to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <span className="relative flex items-center gap-4">
-                          <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 border border-indigo-200 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Icon className="w-5 h-5 text-indigo-600" strokeWidth={1.5} />
+                          <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Icon className="w-5 h-5 text-slate-700" strokeWidth={1.5} />
                           </span>
                           <span className="text-base font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{item}</span>
                         </span>
@@ -462,7 +467,7 @@ export default function Home() {
                 <div className="text-center pt-4">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.6)] hover:scale-110"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
                   >
                     {t.whoCta}
                   </a>
@@ -506,7 +511,7 @@ export default function Home() {
                 <div className="text-center pt-6">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.6)] hover:scale-110"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
                   >
                     {t.resultCta}
                   </a>
@@ -602,13 +607,13 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[4] = el }}
             className={`transition-all duration-1000 delay-[600ms] ${visibleSections.has(4) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-200 rounded-[32px] p-10 sm:p-14 shadow-[0_30px_100px_rgba(99,102,241,0.12)] overflow-hidden hover:border-indigo-300 hover:shadow-[0_35px_120px_rgba(99,102,241,0.18)] transition-all duration-500">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-100/40 rounded-full blur-3xl" />
-              <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-purple-100/40 rounded-full blur-3xl" />
+            <div className="relative bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 border-2 border-slate-200 rounded-[32px] p-10 sm:p-14 shadow-[0_30px_100px_rgba(99,102,241,0.12)] overflow-hidden hover:border-slate-300 hover:shadow-[0_35px_120px_rgba(99,102,241,0.18)] transition-all duration-500">
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-slate-200/30 rounded-full blur-3xl" />
+              <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-slate-200/30 rounded-full blur-3xl" />
               
               <div className="relative space-y-10">
                 <div className="space-y-4 text-center">
-                  <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 via-indigo-800 to-purple-800 bg-clip-text text-transparent">
+                  <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent">
                     {t.formTitle}
                   </h2>
                   <p className="text-lg text-slate-700 leading-relaxed max-w-2xl mx-auto">{t.formSubtitle}</p>
@@ -620,7 +625,7 @@ export default function Home() {
                       <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-xl bg-white border border-gray-300 px-5 py-4 text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm text-base"
+                        className="w-full rounded-xl bg-white border border-gray-300 px-5 py-4 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 transition-all shadow-sm text-base"
                         placeholder={t.name}
                         type="text"
                       />
@@ -630,7 +635,7 @@ export default function Home() {
                       <input
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
-                        className="w-full rounded-xl bg-white border border-gray-300 px-5 py-4 text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm text-base"
+                        className="w-full rounded-xl bg-white border border-gray-300 px-5 py-4 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 transition-all shadow-sm text-base"
                         placeholder={t.contact}
                         type="text"
                         required
@@ -643,7 +648,7 @@ export default function Home() {
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl bg-white border border-gray-300 px-5 py-4 text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm resize-none text-base"
+                      className="w-full rounded-xl bg-white border border-gray-300 px-5 py-4 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 transition-all shadow-sm resize-none text-base"
                       placeholder={t.comment}
                     />
                   </div>
@@ -655,9 +660,9 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-12 py-6 text-xl font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-12 py-6 text-xl font-black text-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(0,0,0,0.25)] hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative">{loading ? '...' : t.formCta}</span>
                     </button>
                   </div>
@@ -688,7 +693,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-all duration-300 group"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 group-hover:animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:animate-pulse" />
               {t.footerAbout}
             </a>
           </footer>
