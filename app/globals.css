@@ -9,10 +9,12 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
     @apply antialiased text-white bg-slate-900;
+    overflow-x: hidden;
   }
 }
 

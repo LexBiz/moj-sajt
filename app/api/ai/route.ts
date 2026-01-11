@@ -15,12 +15,38 @@ function getLang(lang?: AiRequest['lang']) {
   return lang === 'ru' || lang === 'cz' ? lang : 'ua'
 }
 
-function buildFallback({ businessType, channel, pain, question, lang }: AiRequest) {
+function buildFallback({ businessType, channel, pain, question, lang, mode }: AiRequest) {
   const lng = getLang(lang)
   const business = businessType || (lng === 'ru' ? 'не указано' : lng === 'cz' ? 'neuvedeno' : 'не вказано')
   const channels = channel || (lng === 'ru' ? 'не указано' : lng === 'cz' ? 'neuvedeno' : 'не вказано')
   const pains = pain || (lng === 'ru' ? 'не указано' : lng === 'cz' ? 'neuvedeno' : 'не вказано')
   const q = question || (lng === 'ru' ? 'без вопроса' : lng === 'cz' ? 'bez otázky' : 'без питання')
+
+  const qLower = (question || '').toLowerCase()
+  const isPrice =
+    qLower.includes('дорог') ||
+    qLower.includes('цена') ||
+    qLower.includes('сколько') ||
+    qLower.includes('варт') ||
+    qLower.includes('cena') ||
+    qLower.includes('kolik')
+
+  // Post mode: short, non-repeating, answer the new question
+  if (mode === 'post') {
+    if (lng === 'ru') {
+      return isPrice
+        ? `Про “дорого” — это не переплата за чат‑бота, а экономия на потерях и ручной работе: меньше пропущенных заявок, быстрее ответы без звонков, и понятный статус по каждому клиенту. Базовую схему я уже показала — тут важна окупаемость в твоих каналах (${channels}).`
+        : `Я отвечу по вопросу: “${q}”. Базовую схему я уже показала — тут добавлю новую деталь: система держит единый статус заявки и не даёт ей “утечь” между каналами (${channels}), поэтому меньше ручной рутины и потерь.`
+    }
+    if (lng === 'cz') {
+      return isPrice
+        ? `K “je to drahé” — není to platba za chatbot, ale úspora ztrát a ruční práce: méně ztracených poptávek, rychlejší reakce bez volání, jasný status u každého klienta. Základní schéma už jsem ukázal — tady jde o návratnost v kanálech (${channels}).`
+        : `Odpovím k dotazu: “${q}”. Základní schéma už jsem ukázal — tady přidám novou věc: systém drží jednotný status poptávky a nenechá ji “utéct” mezi kanály (${channels}), takže méně ruční práce a ztrát.`
+    }
+    return isPrice
+      ? `Про “дорого” — це не оплата за чат‑бота, а економія на втратах і ручній роботі: менше пропущених заявок, швидша відповідь без дзвінків, і прозорий статус по кожному клієнту. Базову схему я вже показала — тут важлива окупність у твоїх каналах (${channels}).`
+      : `Відповім по питанню: “${q}”. Базову схему я вже показала — додам нову деталь: система тримає єдиний статус заявки і не дає їй “утекти” між каналами (${channels}), тому менше ручної рутини й втрат.`
+  }
 
   if (lng === 'ru') {
     return `Как система работает в твоём бизнесе\n\nКлиент: оставляет заявку/сообщение и задаёт вопрос (“${q}”).\nСистема:\n- фиксирует заявку и источник: ${channels}\n- уточняет детали под ${business}\n- отвечает по частым вопросам и снимает сомнения по фактам\n- отправляет тебе контакт и краткий итог\n\nРезультат: меньше ручных переписок и потерь, заявки не пропадают. Это одна система (страница + логика + автоматизация + AI).`
@@ -143,15 +169,17 @@ function buildPrompt({ businessType, channel, pain, question, lang, mode }: AiRe
   ].join('\n')
 }
 
+type OpenAiResult = { content: string | null; summary: string | null; error?: string }
+
 async function callOpenAI(
   prompt: string,
   history?: { role: 'user' | 'assistant'; content: string }[],
   lang?: AiRequest['lang']
-) {
+): Promise<OpenAiResult | null> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     console.error('OPENAI_API_KEY is missing; using fallback')
-    return null
+    return { content: null, summary: null, error: 'missing_api_key' }
   }
   const lng = getLang(lang)
   const langSystem =
@@ -188,7 +216,7 @@ async function callOpenAI(
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     console.error('OpenAI HTTP error', response.status, text.slice(0, 500))
-    return null
+    return { content: null, summary: null, error: `http_${response.status}` }
   }
 
   const json = (await response.json()) as any
@@ -215,12 +243,13 @@ export async function POST(request: NextRequest) {
       recommendation: answer,
       summary,
       provider: aiResult?.content ? 'openai' : 'fallback',
+      provider_detail: aiResult && !aiResult.content ? aiResult.error || 'unknown' : null,
     })
   } catch (error) {
     console.error('AI route error', error)
     const fallback = buildFallback({ lang: 'ua' })
     return NextResponse.json(
-      { answer: fallback, recommendation: fallback, summary: null, provider: 'fallback' },
+      { answer: fallback, recommendation: fallback, summary: null, provider: 'fallback', provider_detail: 'exception' },
       { status: 200 }
     )
   }

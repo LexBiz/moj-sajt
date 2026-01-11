@@ -54,6 +54,19 @@ const translations: Record<Lang, Record<string, string>> = {
     fieldPain: 'Біль',
     fieldAi: 'AI',
     fieldContact: 'Контакт',
+    debugFallback: '⚠️ AI зараз у резервному режимі (fallback). Якщо відповіді “однакові” — перевір ключ OpenAI на сервері.',
+    errFillBusiness: 'Заповніть або впишіть свій бізнес',
+    errFillChannel: 'Заповніть або впишіть свій канал',
+    errFillPain: 'Заповніть або опишіть, що дратує',
+    errNeedBusiness: 'Спочатку вкажіть тип бізнесу',
+    errNeedChannels: 'Спочатку вкажіть канали',
+    errNeedPains: 'Спочатку вкажіть біль',
+    errLimit3: 'Максимум 3 питання. Якщо готово — продовжуй до контакту.',
+    aiDefaultFirst: 'Покажи, як система вже працює саме в моєму бізнесі',
+    aiDefaultNext: 'Уточни по системі',
+    aiErrorGeneric: 'Не вдалось отримати відповідь. Спробуй ще раз або продовжуй до контакту.',
+    contactErrNeed: 'Додайте email або @telegram',
+    contactErrFailed: 'Не вдалось надіслати. Перевірте контакт або спробуйте пізніше.',
   },
   ru: {
     systemLabel: 'Система приёма клиентов',
@@ -103,6 +116,19 @@ const translations: Record<Lang, Record<string, string>> = {
     fieldPain: 'Боль',
     fieldAi: 'AI',
     fieldContact: 'Контакт',
+    debugFallback: '⚠️ AI сейчас в резервном режиме (fallback). Если ответы “одинаковые” — проверь ключ OpenAI на сервере.',
+    errFillBusiness: 'Заполни или впиши свой бизнес',
+    errFillChannel: 'Заполни или впиши свой канал',
+    errFillPain: 'Заполни или опиши, что бесит',
+    errNeedBusiness: 'Сначала укажи тип бизнеса',
+    errNeedChannels: 'Сначала укажи каналы',
+    errNeedPains: 'Сначала укажи боль',
+    errLimit3: 'Максимум 3 вопроса. Готово — переходи к контакту.',
+    aiDefaultFirst: 'Покажи, как система уже работает именно в моём бизнесе',
+    aiDefaultNext: 'Уточни по системе',
+    aiErrorGeneric: 'Не удалось получить ответ. Попробуй ещё раз или переходи к контакту.',
+    contactErrNeed: 'Добавь email или @telegram',
+    contactErrFailed: 'Не удалось отправить. Проверь контакт или попробуй позже.',
   },
   cz: {
     systemLabel: 'Systém pro příjem klientů',
@@ -152,6 +178,19 @@ const translations: Record<Lang, Record<string, string>> = {
     fieldPain: 'Bolest',
     fieldAi: 'AI',
     fieldContact: 'Kontakt',
+    debugFallback: '⚠️ AI běží v záložním režimu (fallback). Pokud odpovědi vypadají “stejné”, zkontroluj OpenAI klíč na serveru.',
+    errFillBusiness: 'Vyplň nebo napiš svůj byznys',
+    errFillChannel: 'Vyplň nebo napiš svůj kanál',
+    errFillPain: 'Vyplň nebo popiš, co tě štve',
+    errNeedBusiness: 'Nejdřív vyber typ byznysu',
+    errNeedChannels: 'Nejdřív vyber kanály',
+    errNeedPains: 'Nejdřív vyber problém',
+    errLimit3: 'Maximálně 3 otázky. Hotovo — pokračuj na kontakt.',
+    aiDefaultFirst: 'Ukaž, jak systém funguje přímo v mém byznysu',
+    aiDefaultNext: 'Upřesni to ohledně systému',
+    aiErrorGeneric: 'Nepodařilo se získat odpověď. Zkus to znovu nebo pokračuj na kontakt.',
+    contactErrNeed: 'Přidej email nebo @telegram',
+    contactErrFailed: 'Nepodařilo se odeslat. Zkontroluj kontakt nebo zkus později.',
   },
 }
 
@@ -264,11 +303,11 @@ const aiSuggestions: Record<Lang, string[]> = {
 }
 
 type FormState = {
-  businessType: string
+  businessType: string // stores option value (e.g. 'salon' | 'service' | 'online' | 'other')
   businessCustom: string
-  channels: string[]
+  channels: string[] // stores option values
   channelCustom: string
-  pains: string[]
+  pains: string[] // stores option values
   painCustom: string
   question: string
   history: { role: 'user' | 'assistant'; content: string }[]
@@ -301,6 +340,7 @@ export default function Home() {
   })
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const [aiProvider, setAiProvider] = useState<'openai' | 'fallback' | ''>('')
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [stepError, setStepError] = useState<{ business?: string; channel?: string; pain?: string }>({})
@@ -322,29 +362,46 @@ export default function Home() {
     setForm((prev) => ({ ...prev, [key]: value as any }))
   }
 
-  const isOther = (label: string) => ['Інше', 'Другое', 'Jiné'].includes(label)
+  const isOther = (value: string) => value === 'other'
+
+  const optionLabel = (options: { value: string; label: string }[], value: string) =>
+    options.find((o) => o.value === value)?.label || ''
 
   const validateStep = (): boolean => {
-    const businessResolved = (form.businessCustom || form.businessType || '').trim()
-    const channelResolved = (form.channelCustom || form.channels.join(', ') || '').trim()
-    const painResolved = (form.painCustom || form.pains.join(', ') || '').trim()
+    const businessResolved = (form.businessCustom || optionLabel(businessOptions[lang], form.businessType) || '').trim()
+    const channelResolved = (
+      form.channelCustom ||
+      form.channels
+        .map((v) => optionLabel(channelOptions[lang], v))
+        .filter(Boolean)
+        .join(', ') ||
+      ''
+    ).trim()
+    const painResolved = (
+      form.painCustom ||
+      form.pains
+        .map((v) => optionLabel(painOptions[lang], v))
+        .filter(Boolean)
+        .join(', ') ||
+      ''
+    ).trim()
     if (step === 'business') {
       if (!businessResolved) {
-        setStepError((prev) => ({ ...prev, business: 'Заповніть або впишіть свій бізнес' }))
+        setStepError((prev) => ({ ...prev, business: t.errFillBusiness }))
         return false
       }
       setStepError((prev) => ({ ...prev, business: undefined }))
     }
     if (step === 'channel') {
       if (!channelResolved) {
-        setStepError((prev) => ({ ...prev, channel: 'Заповніть або впишіть свій канал' }))
+        setStepError((prev) => ({ ...prev, channel: t.errFillChannel }))
         return false
       }
       setStepError((prev) => ({ ...prev, channel: undefined }))
     }
     if (step === 'pain') {
       if (!painResolved) {
-        setStepError((prev) => ({ ...prev, pain: 'Заповніть або опишіть, що дратує' }))
+        setStepError((prev) => ({ ...prev, pain: t.errFillPain }))
         return false
       }
       setStepError((prev) => ({ ...prev, pain: undefined }))
@@ -359,39 +416,48 @@ export default function Home() {
   const prev = () => setStep(steps[Math.max(currentIndex - 1, 0)].id)
 
   const handleAskAI = async () => {
-    const businessResolved = (form.businessCustom || form.businessType || '').trim()
-    const channelsResolved = form.channelCustom ? [form.channelCustom] : form.channels.filter(Boolean)
-    const painsResolved = form.painCustom ? [form.painCustom] : form.pains.filter(Boolean)
+    const businessResolved = (form.businessCustom || optionLabel(businessOptions[lang], form.businessType) || '').trim()
+    const channelsResolved = form.channelCustom
+      ? [form.channelCustom]
+      : form.channels
+          .map((v) => optionLabel(channelOptions[lang], v))
+          .filter(Boolean)
+    const painsResolved = form.painCustom
+      ? [form.painCustom]
+      : form.pains
+          .map((v) => optionLabel(painOptions[lang], v))
+          .filter(Boolean)
 
     if (!businessResolved) {
-      setAiError('Спочатку вкажіть тип бізнесу')
-      setStepError((prev) => ({ ...prev, business: 'Заповніть бізнес' }))
+      setAiError(t.errNeedBusiness)
+      setStepError((prev) => ({ ...prev, business: t.errFillBusiness }))
       return
     }
     if (!channelsResolved.length) {
-      setAiError('Спочатку вкажіть канали')
-      setStepError((prev) => ({ ...prev, channel: 'Заповніть канал' }))
+      setAiError(t.errNeedChannels)
+      setStepError((prev) => ({ ...prev, channel: t.errFillChannel }))
       return
     }
     if (!painsResolved.length) {
-      setAiError('Спочатку вкажіть біль')
-      setStepError((prev) => ({ ...prev, pain: 'Заповніть біль' }))
+      setAiError(t.errNeedPains)
+      setStepError((prev) => ({ ...prev, pain: t.errFillPain }))
       return
     }
     if (form.history.length >= 6) {
-      setAiError('Максимум 3 питання. Якщо готово — продовжуй до контакту.')
+      setAiError(t.errLimit3)
       return
     }
 
     setAiError('')
+    setAiProvider('')
     setAiLoading(true)
 
     try {
       const userMessage =
         form.question.trim() ||
         (form.history.length === 0
-          ? 'Покажи, як система вже працює саме в моєму бізнесі'
-          : 'Уточни по системі')
+          ? t.aiDefaultFirst
+          : t.aiDefaultNext)
 
       const newHistory = [...form.history, { role: 'user' as const, content: userMessage }]
       const nextMode: 'show' | 'post' = form.history.length === 0 ? 'show' : 'post'
@@ -412,6 +478,7 @@ export default function Home() {
 
       const data = await res.json()
       if (!res.ok) throw new Error('AI error')
+      setAiProvider(data.provider || '')
 
       const updatedHistory = [
         ...newHistory,
@@ -427,7 +494,7 @@ export default function Home() {
         aiMode: 'post',
       }))
     } catch (error) {
-      setAiError('Не вдалось отримати відповідь. Спробуй ще раз або продовжуй до контакту.')
+      setAiError(t.aiErrorGeneric)
     } finally {
       setAiLoading(false)
     }
@@ -441,12 +508,26 @@ export default function Home() {
   }
 
   const handleSubmit = async () => {
-    const businessResolved = (form.businessCustom || form.businessType || '').trim()
-    const channelResolved = (form.channelCustom || form.channels.join(', ') || '').trim()
-    const painResolved = (form.painCustom || form.pains.join(', ') || '').trim()
+    const businessResolved = (form.businessCustom || optionLabel(businessOptions[lang], form.businessType) || '').trim()
+    const channelResolved = (
+      form.channelCustom ||
+      form.channels
+        .map((v) => optionLabel(channelOptions[lang], v))
+        .filter(Boolean)
+        .join(', ') ||
+      ''
+    ).trim()
+    const painResolved = (
+      form.painCustom ||
+      form.pains
+        .map((v) => optionLabel(painOptions[lang], v))
+        .filter(Boolean)
+        .join(', ') ||
+      ''
+    ).trim()
 
     if (!validateContact()) {
-      setSubmitError('Додайте email або @telegram')
+      setSubmitError(t.contactErrNeed)
       return
     }
     setSubmitError('')
@@ -468,16 +549,30 @@ export default function Home() {
       if (!res.ok) throw new Error('Submit error')
       setStep('done')
     } catch (error) {
-      setSubmitError('Не вдалось надіслати. Перевірте контакт або спробуйте пізніше.')
+      setSubmitError(t.contactErrFailed)
     } finally {
       setSubmitLoading(false)
     }
   }
 
   const renderStepContent = () => {
-    const businessResolved = (form.businessCustom || form.businessType || '').trim()
-    const channelResolved = (form.channelCustom || form.channels.join(', ') || '').trim()
-    const painResolved = (form.painCustom || form.pains.join(', ') || '').trim()
+    const businessResolved = (form.businessCustom || optionLabel(businessOptions[lang], form.businessType) || '').trim()
+    const channelResolved = (
+      form.channelCustom ||
+      form.channels
+        .map((v) => optionLabel(channelOptions[lang], v))
+        .filter(Boolean)
+        .join(', ') ||
+      ''
+    ).trim()
+    const painResolved = (
+      form.painCustom ||
+      form.pains
+        .map((v) => optionLabel(painOptions[lang], v))
+        .filter(Boolean)
+        .join(', ') ||
+      ''
+    ).trim()
 
     switch (step) {
       case 'intro':
@@ -517,25 +612,25 @@ export default function Home() {
                 <button
                   key={opt.value}
                   onClick={() => {
-                    setField('businessType', opt.label)
-                    setField('businessCustom', '')
+                    setField('businessType', opt.value)
+                    setField('businessCustom', opt.value === 'other' ? form.businessCustom : '')
                     setStepError((prev) => ({ ...prev, business: undefined }))
-                    next()
+                    if (opt.value !== 'other') next()
                   }}
                   className={`w-full text-left px-5 py-4 rounded-2xl min-h-[64px] border transition-all ${
-                    form.businessType === opt.label
+                    form.businessType === opt.value
                       ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_4px_16px_rgba(99,102,241,0.2)]'
                       : 'border-white/10 bg-white/5 hover:border-indigo-300/50 hover:bg-indigo-500/5'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-white">{opt.label}</span>
-                    {form.businessType === opt.label ? '✅' : '→'}
+                    {form.businessType === opt.value ? '✅' : '→'}
                   </div>
                 </button>
               ))}
             </div>
-            {form.businessType === 'Інше' || form.businessType === 'Другое' || form.businessType === 'Jiné' ? (
+            {form.businessType === 'other' ? (
               <input
                 type="text"
                 value={form.businessCustom}
@@ -557,27 +652,27 @@ export default function Home() {
                   key={opt.value}
                   onClick={() => {
                     setForm((prev) => {
-                      const exists = prev.channels.includes(opt.label)
+                      const exists = prev.channels.includes(opt.value)
                       const nextList = exists
-                        ? prev.channels.filter((c) => c !== opt.label)
-                        : [...prev.channels, opt.label]
+                        ? prev.channels.filter((c) => c !== opt.value)
+                        : [...prev.channels, opt.value]
                       return {
                         ...prev,
                         channels: nextList,
-                        channelCustom: isOther(opt.label) ? prev.channelCustom : '',
+                        channelCustom: isOther(opt.value) ? prev.channelCustom : '',
                       }
                     })
                     setStepError((prev) => ({ ...prev, channel: undefined }))
                   }}
                   className={`w-full text-left px-5 py-4 rounded-2xl min-h-[64px] border transition-all ${
-                    form.channels.includes(opt.label)
+                    form.channels.includes(opt.value)
                       ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_4px_16px_rgba(99,102,241,0.2)]'
                       : 'border-white/10 bg-white/5 hover:border-indigo-300/50 hover:bg-indigo-500/5'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-white">{opt.label}</span>
-                    {form.channels.includes(opt.label) ? '✅' : '→'}
+                    {form.channels.includes(opt.value) ? '✅' : '→'}
                   </div>
                 </button>
               ))}
@@ -604,27 +699,27 @@ export default function Home() {
                   key={opt.value}
                   onClick={() => {
                     setForm((prev) => {
-                      const exists = prev.pains.includes(opt.label)
+                      const exists = prev.pains.includes(opt.value)
                       const nextList = exists
-                        ? prev.pains.filter((p) => p !== opt.label)
-                        : [...prev.pains, opt.label]
+                        ? prev.pains.filter((p) => p !== opt.value)
+                        : [...prev.pains, opt.value]
                       return {
                         ...prev,
                         pains: nextList,
-                        painCustom: isOther(opt.label) ? prev.painCustom : '',
+                        painCustom: isOther(opt.value) ? prev.painCustom : '',
                       }
                     })
                     setStepError((prev) => ({ ...prev, pain: undefined }))
                   }}
                   className={`w-full text-left px-5 py-4 rounded-2xl min-h-[64px] border transition-all ${
-                    form.pains.includes(opt.label)
+                    form.pains.includes(opt.value)
                       ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_4px_16px_rgba(99,102,241,0.2)]'
                       : 'border-white/10 bg-white/5 hover:border-indigo-300/50 hover:bg-indigo-500/5'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-white">{opt.label}</span>
-                    {form.pains.includes(opt.label) ? '✅' : '→'}
+                    {form.pains.includes(opt.value) ? '✅' : '→'}
                   </div>
                 </button>
               ))}
@@ -684,7 +779,7 @@ export default function Home() {
                       {msg.role === 'assistant' && (
                         <div className="text-xs uppercase text-indigo-200 font-semibold mb-1">{t.aiSystem}</div>
                       )}
-                      <p className="text-sm whitespace-pre-line leading-relaxed">{msg.content}</p>
+                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
                 ))
@@ -711,6 +806,9 @@ export default function Home() {
             ) : null}
 
             {aiError ? <div className="flex-shrink-0 text-red-300 text-sm py-2">{aiError}</div> : null}
+            {aiProvider === 'fallback' ? (
+              <div className="flex-shrink-0 text-[11px] text-amber-200/90 py-1">{t.debugFallback}</div>
+            ) : null}
 
             <div className="flex-shrink-0 pt-3 border-t border-white/10">
               <div className="flex gap-2 items-end">
