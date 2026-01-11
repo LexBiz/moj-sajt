@@ -27,16 +27,23 @@ function ensureDataDir() {
 }
 
 function formatTelegramMessage(lead: any) {
+  const safe = (v: any, max = 900) => {
+    const s = (typeof v === 'string' ? v : v == null ? '' : String(v)).trim()
+    if (!s) return '—'
+    return s.length > max ? `${s.slice(0, max - 1)}…` : s
+  }
+
+  // Telegram message hard limit is 4096 chars.
+  // Keep this well below the limit to avoid silent delivery failures.
   return [
     '📥 Нова заявка на систему',
-    `Бізнес: ${lead.businessType || '—'}`,
-    `Канали: ${lead.channel || '—'}`,
-    `Біль: ${lead.pain || '—'}`,
-    `Питання: ${lead.question || '—'}`,
-    `AI-відповідь: ${lead.aiRecommendation || '—'}`,
-    `AI-висновок: ${lead.aiSummary || '—'}`,
-    `Імʼя: ${lead.name || '—'}`,
-    `Контакт: ${lead.contact || lead.phone || '—'}`,
+    `Бізнес: ${safe(lead.businessType, 140)}`,
+    `Канали: ${safe(lead.channel, 180)}`,
+    `Біль: ${safe(lead.pain, 220)}`,
+    `Питання: ${safe(lead.question, 260)}`,
+    `AI: ${safe(lead.aiRecommendation, 1400)}`,
+    `Імʼя: ${safe(lead.name, 120)}`,
+    `Контакт: ${safe(lead.contact || lead.phone, 160)}`,
     `Час: ${lead.createdAt}`,
   ].join('\n')
 }
@@ -44,23 +51,32 @@ function formatTelegramMessage(lead: any) {
 async function sendTelegram(lead: any) {
   const token = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
-  if (!token || !chatId) return
+  if (!token || !chatId) {
+    console.warn('Telegram is not configured: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID')
+    return { attempted: false, ok: false }
+  }
 
   const text = formatTelegramMessage(lead)
 
   try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        parse_mode: 'HTML',
         disable_web_page_preview: true,
       }),
     })
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '')
+      console.error('Telegram send HTTP error', resp.status, body.slice(0, 500))
+      return { attempted: true, ok: false }
+    }
+    return { attempted: true, ok: true }
   } catch (error) {
     console.error('Telegram send error', error)
+    return { attempted: true, ok: false }
   }
 }
 
@@ -108,9 +124,9 @@ export async function POST(request: NextRequest) {
     leads.unshift(newLead)
     fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
 
-    sendTelegram(newLead).catch(() => null)
+    const telegram = await sendTelegram(newLead)
 
-    return NextResponse.json({ success: true, lead: newLead })
+    return NextResponse.json({ success: true, lead: newLead, telegram })
   } catch (error) {
     console.error('Error saving lead:', error)
     return NextResponse.json({ error: 'Failed to save lead' }, { status: 500 })
