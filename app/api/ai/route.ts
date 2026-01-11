@@ -57,7 +57,7 @@ function buildFallback({ businessType, channel, pain, question, lang, mode }: Ai
   return `Як система працює у твоєму бізнесі\n\nКлієнт: лишає заявку/повідомлення і питає (“${q}”).\nСистема:\n- фіксує заявку і джерело: ${channels}\n- уточнює деталі під ${business}\n- відповідає на типові питання і знімає сумніви по фактах\n- відправляє тобі контакт і короткий підсумок\n\nРезультат: менше ручної переписки й втрат, заявки не губляться. Це одна система (сторінка + логіка + автоматизація + AI).`
 }
 
-function buildPrompt({ businessType, channel, pain, question, lang, mode }: AiRequest) {
+function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
   const lng = getLang(lang)
   const parts = [
     lng === 'ru'
@@ -75,14 +75,15 @@ function buildPrompt({ businessType, channel, pain, question, lang, mode }: AiRe
       : lng === 'cz'
       ? `Bolest: ${pain || 'neuvedeno'}`
       : `Біль: ${pain || 'не вказано'}`,
-    lng === 'ru'
-      ? `Вопрос: ${question || 'без вопроса'}`
-      : lng === 'cz'
-      ? `Otázka: ${question || 'bez otázky'}`
-      : `Питання: ${question || 'без питання'}`,
   ]
 
   const langLine = lng === 'ru' ? 'Язык ответа: русский (только русский).' : lng === 'cz' ? 'Jazyk odpovědi: čeština (pouze česky).' : 'Мова відповіді: українська (тільки українською).'
+  const modeLine =
+    lng === 'ru'
+      ? `Режим: ${mode === 'post' ? 'POST_SOLUTION_DIALOG' : 'SHOW_SOLUTION'}`
+      : lng === 'cz'
+      ? `Režim: ${mode === 'post' ? 'POST_SOLUTION_DIALOG' : 'SHOW_SOLUTION'}`
+      : `Режим: ${mode === 'post' ? 'POST_SOLUTION_DIALOG' : 'SHOW_SOLUTION'}`
 
   return [
     lng === 'ru'
@@ -116,6 +117,11 @@ function buildPrompt({ businessType, channel, pain, question, lang, mode }: AiRe
       : lng === 'cz'
       ? 'Když řeší “je to drahé/má to smysl?” — nehádej se. Dej 2–3 fakta: méně ruční práce, méně ztrát, rychleji bez volání, jasný status.'
       : 'Якщо кажуть “дорого/не бачу сенсу” — дай 2–3 короткі факти, чому це вигідно: швидше без дзвінків, мінус ручна робота, прозорий статус, менше втрат. Без тиску, але впевнено.',
+    lng === 'ru'
+      ? 'Оффтоп (погода/политика/личное): 1 фраза “я не про это”, и сразу верни к тому, как система закрывает заявки. Без морали.'
+      : lng === 'cz'
+      ? 'Mimo téma (počasí/politika/osobní): 1 věta “tohle neřeším”, a hned vrať k tomu, jak systém řeší poptávky. Bez moralizování.'
+      : 'Оффтоп (погода/політика/особисте): 1 фраза “я не про це”, і одразу поверни до того, як система закриває заявки. Без моралізаторства.',
     lng === 'ru' ? 'Режим SHOW_SOLUTION: один раз дать структурное решение.' : lng === 'cz' ? 'Režim SHOW_SOLUTION: jednou dát strukturované řešení.' : 'MODE=SHOW_SOLUTION: дай структуровану відповідь один раз.',
     lng === 'ru'
       ? 'Режим POST_SOLUTION_DIALOG: отвечай только на новый вопрос. Не повторяй конфигурацию/каналы/маршруты.'
@@ -165,6 +171,7 @@ function buildPrompt({ businessType, channel, pain, question, lang, mode }: AiRe
             : 'Фінал: підкресли, що це одна цілісна система (сторінка + логіка + автоматизація + AI).',
         ].join('\n'),
     '',
+    modeLine,
     parts.join('\n'),
   ].join('\n')
 }
@@ -172,7 +179,7 @@ function buildPrompt({ businessType, channel, pain, question, lang, mode }: AiRe
 type OpenAiResult = { content: string | null; summary: string | null; error?: string }
 
 async function callOpenAI(
-  prompt: string,
+  context: string,
   history?: { role: 'user' | 'assistant'; content: string }[],
   lang?: AiRequest['lang']
 ): Promise<OpenAiResult | null> {
@@ -203,13 +210,14 @@ async function callOpenAI(
           content:
             `${langSystem} Ти — інтерфейс готової системи прийому заявок. Не консультуєш, не продаєш. Якщо режим SHOW_SOLUTION — даєш структуру один раз. Якщо режим POST_SOLUTION_DIALOG — 2–4 речення або 2–3 маркери, не повторюєш конфігурацію, лише нові деталі по питанню. Без слів типу "потрібно/варто/рекомендую", без порад робити самому. Емодзі можна трохи. Коротко, просто, спокійно. Уникай повторів маркерів і вступів. Мета — підтверджувати цінність і знімати сумніви фактами (SLA, мінус хаос, без дзвінків), але без тиску.`,
         },
+        { role: 'system', content: context },
         ...(history || []),
-        { role: 'user', content: prompt },
       ],
-      temperature: 0.6,
-      presence_penalty: 1.2,
-      frequency_penalty: 1.2,
-      max_tokens: 240,
+      // Slightly higher creativity + lower repetition penalties => less “template” feel
+      temperature: 0.85,
+      presence_penalty: 0.4,
+      frequency_penalty: 0.4,
+      max_tokens: 380,
     }),
   })
 
@@ -232,9 +240,9 @@ async function callOpenAI(
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AiRequest
-    const prompt = buildPrompt(body)
+    const context = buildContext(body)
 
-    const aiResult = await callOpenAI(prompt, body.history, body.lang)
+    const aiResult = await callOpenAI(context, body.history, body.lang)
     const answer = aiResult?.content || buildFallback(body)
     const summary = aiResult?.summary || null
 
