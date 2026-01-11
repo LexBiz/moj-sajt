@@ -21,6 +21,7 @@ const translations: Record<Lang, Record<string, string>> = {
     aiTitle: 'Система вже зібрала для тебе рішення.',
     aiDesc: 'Ось як це може працювати саме у твоєму бізнесі. Без менеджерів, без дзвінків.',
     aiShow: 'Показати рішення',
+    aiShowLoading: 'Думаю…',
     aiContinue: 'Продовжити оформлення',
     aiBlockTitle: 'Рішення для твого бізнесу',
     contactTitle: 'Хочеш реалізувати це рішення у себе — залиш контакт',
@@ -45,6 +46,14 @@ const translations: Record<Lang, Record<string, string>> = {
     aiInputPlaceholder: 'Введи питання або натисни "Показати рішення"',
     aiInputPlaceholderLimit: 'Максимум 3 питання. Продовжуй до контакту.',
     next: 'Далі →',
+    of: 'з',
+    headerSubtitle: 'Системи прийому заявок',
+    headerStatus: 'Відповідь особисто, без менеджера',
+    fieldBusiness: 'Бізнес',
+    fieldChannels: 'Канали',
+    fieldPain: 'Біль',
+    fieldAi: 'AI',
+    fieldContact: 'Контакт',
   },
   ru: {
     systemLabel: 'Система приёма клиентов',
@@ -61,6 +70,7 @@ const translations: Record<Lang, Record<string, string>> = {
     aiTitle: 'Система уже собрала для тебя решение.',
     aiDesc: 'Вот как это может работать именно в твоём бизнесе. Без менеджеров, без звонков.',
     aiShow: 'Показать решение',
+    aiShowLoading: 'Думаю…',
     aiContinue: 'Продолжить оформление',
     aiBlockTitle: 'Решение для твоего бизнеса',
     contactTitle: 'Хочешь внедрить это решение — оставь контакт',
@@ -85,6 +95,14 @@ const translations: Record<Lang, Record<string, string>> = {
     aiInputPlaceholder: 'Введи вопрос или нажми "Показать решение"',
     aiInputPlaceholderLimit: 'Максимум 3 вопроса. Переходи к контакту.',
     next: 'Дальше →',
+    of: 'из',
+    headerSubtitle: 'Системы приёма заявок',
+    headerStatus: 'Ответ лично, без менеджера',
+    fieldBusiness: 'Бизнес',
+    fieldChannels: 'Каналы',
+    fieldPain: 'Боль',
+    fieldAi: 'AI',
+    fieldContact: 'Контакт',
   },
   cz: {
     systemLabel: 'Systém pro příjem klientů',
@@ -101,6 +119,7 @@ const translations: Record<Lang, Record<string, string>> = {
     aiTitle: 'Systém už poskládal řešení pro tebe.',
     aiDesc: 'Takto to může fungovat přímo ve tvém byznysu. Bez manažerů, bez hovorů.',
     aiShow: 'Ukázat řešení',
+    aiShowLoading: 'Přemýšlím…',
     aiContinue: 'Pokračovat',
     aiBlockTitle: 'Řešení pro tvůj byznys',
     contactTitle: 'Chceš toto řešení u sebe — nech kontakt',
@@ -125,6 +144,14 @@ const translations: Record<Lang, Record<string, string>> = {
     aiInputPlaceholder: 'Napiš otázku nebo klikni “Ukázat řešení”',
     aiInputPlaceholderLimit: 'Max. 3 otázky. Pokračuj na kontakt.',
     next: 'Další →',
+    of: 'z',
+    headerSubtitle: 'Systémy pro příjem poptávek',
+    headerStatus: 'Odpověď osobně, bez manažera',
+    fieldBusiness: 'Byznys',
+    fieldChannels: 'Kanály',
+    fieldPain: 'Bolest',
+    fieldAi: 'AI',
+    fieldContact: 'Kontakt',
   },
 }
 
@@ -623,12 +650,12 @@ export default function Home() {
             </div>
 
             {form.history.length === 0 && (
-              <div className="flex-shrink-0 flex gap-2 flex-nowrap sm:flex-wrap py-3 overflow-x-auto sm:overflow-visible pr-2 -mr-2">
+              <div className="flex-shrink-0 w-full max-w-full flex gap-2 flex-nowrap sm:flex-wrap py-3 overflow-x-auto sm:overflow-visible pr-2">
                 {aiSuggestions[lang].map((s) => (
                   <button
                     key={s}
                     onClick={() => setField('question', s)}
-                    className="px-3 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-200 hover:border-indigo-300/60 hover:bg-indigo-500/10 transition-all whitespace-nowrap"
+                    className="px-3 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-200 hover:border-indigo-300/60 hover:bg-indigo-500/10 transition-all whitespace-nowrap flex-shrink-0"
                   >
                     {s}
                   </button>
@@ -721,7 +748,7 @@ export default function Home() {
                     disabled={aiLoading}
                     className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-base font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg disabled:opacity-60"
                   >
-                    {aiLoading ? 'Думаю…' : t.aiShow}
+                    {aiLoading ? t.aiShowLoading : t.aiShow}
                   </button>
                 )}
                 <button
@@ -737,22 +764,22 @@ export default function Home() {
       case 'contact':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-white">Хочеш реалізувати це рішення у себе — залиш контакт</h2>
+            <h2 className="text-2xl font-semibold text-white">{t.contactTitle}</h2>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2 text-sm text-slate-200">
               <div className="flex justify-between">
-                <span className="text-slate-400">Бізнес</span>
+                <span className="text-slate-400">{t.fieldBusiness}</span>
                 <span>{businessResolved || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Канали</span>
+                <span className="text-slate-400">{t.fieldChannels}</span>
                 <span>{channelResolved || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Біль</span>
+                <span className="text-slate-400">{t.fieldPain}</span>
                 <span>{painResolved || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">AI</span>
+                <span className="text-slate-400">{t.fieldAi}</span>
                 <span className="text-right">{form.aiRecommendation || form.aiAnswer || '—'}</span>
               </div>
             </div>
@@ -761,14 +788,14 @@ export default function Home() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setField('name', e.target.value)}
-                placeholder="Імʼя (необовʼязково)"
+                placeholder={t.namePlaceholder}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
               />
               <input
                 type="text"
                 value={form.contact}
                 onChange={(e) => setField('contact', e.target.value)}
-                placeholder="Telegram @handle або Email"
+                placeholder={t.contactPlaceholder}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
               />
             </div>
@@ -779,44 +806,40 @@ export default function Home() {
                 disabled={submitLoading}
                 className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 text-base font-semibold text-white hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg disabled:opacity-60"
               >
-                {submitLoading ? 'Відправляю…' : 'Надіслати заявку'}
+                {submitLoading ? t.sending : t.send}
               </button>
               <button onClick={prev} className="text-slate-300 hover:text-white text-sm">
-                ← Назад
+                {t.back}
               </button>
             </div>
-            <p className="text-xs text-slate-500">
-              Без дзвінків. Без менеджерів. Ти вже знаєш, що тобі потрібно.
-            </p>
+            <p className="text-xs text-slate-500">{t.contactNote}</p>
           </div>
         )
       case 'done':
         return (
           <div className="space-y-4 text-center">
             <div className="text-5xl">✅</div>
-            <h2 className="text-2xl font-semibold text-white">Заявка зафіксована.</h2>
-            <p className="text-slate-200">
-              Якщо рішення підходить — наступний крок — реалізація.
-            </p>
+            <h2 className="text-2xl font-semibold text-white">{t.doneTitle}</h2>
+            <p className="text-slate-200">{t.doneDesc}</p>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left space-y-2 text-sm text-slate-200">
               <div className="flex justify-between">
-                <span className="text-slate-400">Бізнес</span>
-                  <span>{businessResolved || '—'}</span>
+                <span className="text-slate-400">{t.fieldBusiness}</span>
+                <span>{businessResolved || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Канали</span>
-                  <span>{channelResolved || '—'}</span>
+                <span className="text-slate-400">{t.fieldChannels}</span>
+                <span>{channelResolved || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Біль</span>
-                  <span>{painResolved || '—'}</span>
+                <span className="text-slate-400">{t.fieldPain}</span>
+                <span>{painResolved || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">AI</span>
+                <span className="text-slate-400">{t.fieldAi}</span>
                 <span className="text-right">{form.aiRecommendation || form.aiAnswer || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Контакт</span>
+                <span className="text-slate-400">{t.fieldContact}</span>
                 <span>{form.contact || '—'}</span>
               </div>
             </div>
@@ -841,7 +864,7 @@ export default function Home() {
               }}
               className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white bg-white/10 border border-white/10 hover:bg-white/15 transition-all"
             >
-              Заповнити ще одну заявку
+              {t.another}
             </button>
           </div>
         )
@@ -851,7 +874,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-slate-950 to-purple-900/30"></div>
         <div className="absolute -top-10 -right-10 w-80 h-80 bg-purple-500/20 blur-3xl rounded-full"></div>
@@ -864,12 +887,12 @@ export default function Home() {
             <img src="/logo.png" alt="TemoWeb" className="h-8 w-8 rounded-lg border border-white/10" />
             <div>
               <p className="text-sm uppercase tracking-wide text-indigo-200 font-semibold">TemoWeb</p>
-              <p className="text-xs text-slate-400">Системи прийому заявок</p>
+              <p className="text-xs text-slate-400">{t.headerSubtitle}</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-sm text-slate-300">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            Відповідь особисто, без менеджера
+            {t.headerStatus}
           </div>
         </div>
       </header>
@@ -898,7 +921,9 @@ export default function Home() {
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <span className="text-sm text-slate-300">Крок {currentIndex + 1} з {steps.length}</span>
+          <span className="text-sm text-slate-300">
+            {t.step} {currentIndex + 1} {t.of} {steps.length}
+          </span>
         </div>
 
         <div className="flex gap-2 flex-wrap mb-6">
@@ -938,13 +963,13 @@ export default function Home() {
           <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-purple-500/10 blur-3xl"></div>
           <div className={`relative ${step === 'ai' ? 'p-4 sm:p-8' : 'p-6 sm:p-8'}`}>
             <div className={`mb-4 text-sm text-slate-300 ${step === 'ai' ? 'hidden sm:block' : ''}`}>
-              Крок {currentIndex + 1} з {steps.length}
+              {t.step} {currentIndex + 1} {t.of} {steps.length}
             </div>
             {renderStepContent()}
             {step !== 'intro' && step !== 'contact' && step !== 'done' ? (
               <div className="mt-8 flex justify-between items-center">
                 <button onClick={prev} className="text-slate-300 hover:text-white text-sm">
-                  ← Назад
+                  {t.back}
                 </button>
                 {step !== 'ai' && (
                   <button
