@@ -5,6 +5,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 type StepId = 'intro' | 'business' | 'channel' | 'pain' | 'ai' | 'contact' | 'done'
 type Lang = 'ua' | 'ru' | 'cz'
 
+const AI_MAX_QUESTIONS = 5
+const AI_MAX_HISTORY = AI_MAX_QUESTIONS * 2
+
 const translations: Record<Lang, Record<string, string>> = {
   ua: {
     systemLabel: 'Система прийому клієнтів',
@@ -39,12 +42,12 @@ const translations: Record<Lang, Record<string, string>> = {
     ctaSecondary: '👀 Подивитись, як це працює для мого бізнесу',
     askMore: 'Поставити ще питання',
     aiEmpty: 'Ще немає відповідей. Спробуй задати питання або натисни “Показати рішення”.',
-    aiLimit: 'Максимум 3 питання. Якщо готово — продовжуй до контакту.',
+    aiLimit: 'Максимум 5 питань. Якщо готово — продовжуй до контакту.',
     aiSystem: 'Система',
     aiThinking: 'Система аналізує…',
     aiQuestionsCount: 'Питань',
     aiInputPlaceholder: 'Введи питання або натисни "Показати рішення"',
-    aiInputPlaceholderLimit: 'Максимум 3 питання. Продовжуй до контакту.',
+    aiInputPlaceholderLimit: 'Максимум 5 питань. Продовжуй до контакту.',
     next: 'Далі →',
     of: 'з',
     headerSubtitle: 'Системи прийому заявок',
@@ -61,7 +64,7 @@ const translations: Record<Lang, Record<string, string>> = {
     errNeedBusiness: 'Спочатку вкажіть тип бізнесу',
     errNeedChannels: 'Спочатку вкажіть канали',
     errNeedPains: 'Спочатку вкажіть біль',
-    errLimit3: 'Максимум 3 питання. Якщо готово — продовжуй до контакту.',
+    errLimit3: 'Максимум 5 питань. Якщо готово — продовжуй до контакту.',
     aiDefaultFirst: 'Покажи, як система вже працює саме в моєму бізнесі',
     aiDefaultNext: 'Уточни по системі',
     aiErrorGeneric: 'Не вдалось отримати відповідь. Спробуй ще раз або продовжуй до контакту.',
@@ -101,12 +104,12 @@ const translations: Record<Lang, Record<string, string>> = {
     ctaSecondary: '👀 Посмотреть, как это работает в моём бизнесе',
     askMore: 'Задать ещё вопрос',
     aiEmpty: 'Ответов пока нет. Задай вопрос или нажми “Показать решение”.',
-    aiLimit: 'Максимум 3 вопроса. Готово — переходи к контакту.',
+    aiLimit: 'Максимум 5 вопросов. Готово — переходи к контакту.',
     aiSystem: 'Система',
     aiThinking: 'Система анализирует…',
     aiQuestionsCount: 'Вопросов',
     aiInputPlaceholder: 'Введи вопрос или нажми "Показать решение"',
-    aiInputPlaceholderLimit: 'Максимум 3 вопроса. Переходи к контакту.',
+    aiInputPlaceholderLimit: 'Максимум 5 вопросов. Переходи к контакту.',
     next: 'Дальше →',
     of: 'из',
     headerSubtitle: 'Системы приёма заявок',
@@ -123,7 +126,7 @@ const translations: Record<Lang, Record<string, string>> = {
     errNeedBusiness: 'Сначала укажи тип бизнеса',
     errNeedChannels: 'Сначала укажи каналы',
     errNeedPains: 'Сначала укажи боль',
-    errLimit3: 'Максимум 3 вопроса. Готово — переходи к контакту.',
+    errLimit3: 'Максимум 5 вопросов. Готово — переходи к контакту.',
     aiDefaultFirst: 'Покажи, как система уже работает именно в моём бизнесе',
     aiDefaultNext: 'Уточни по системе',
     aiErrorGeneric: 'Не удалось получить ответ. Попробуй ещё раз или переходи к контакту.',
@@ -163,12 +166,12 @@ const translations: Record<Lang, Record<string, string>> = {
     ctaSecondary: '👀 Podívat se, jak to funguje v mém byznysu',
     askMore: 'Položit další otázku',
     aiEmpty: 'Zatím žádné odpovědi. Zkus otázku nebo klikni “Ukázat řešení”.',
-    aiLimit: 'Maximálně 3 otázky. Hotovo — pokračuj na kontakt.',
+    aiLimit: 'Maximálně 5 otázek. Hotovo — pokračuj na kontakt.',
     aiSystem: 'Systém',
     aiThinking: 'Systém analyzuje…',
     aiQuestionsCount: 'Otázek',
     aiInputPlaceholder: 'Napiš otázku nebo klikni “Ukázat řešení”',
-    aiInputPlaceholderLimit: 'Max. 3 otázky. Pokračuj na kontakt.',
+    aiInputPlaceholderLimit: 'Max. 5 otázek. Pokračuj na kontakt.',
     next: 'Další →',
     of: 'z',
     headerSubtitle: 'Systémy pro příjem poptávek',
@@ -185,7 +188,7 @@ const translations: Record<Lang, Record<string, string>> = {
     errNeedBusiness: 'Nejdřív vyber typ byznysu',
     errNeedChannels: 'Nejdřív vyber kanály',
     errNeedPains: 'Nejdřív vyber problém',
-    errLimit3: 'Maximálně 3 otázky. Hotovo — pokračuj na kontakt.',
+    errLimit3: 'Maximálně 5 otázek. Hotovo — pokračuj na kontakt.',
     aiDefaultFirst: 'Ukaž, jak systém funguje přímo v mém byznysu',
     aiDefaultNext: 'Upřesni to ohledně systému',
     aiErrorGeneric: 'Nepodařilo se získat odpověď. Zkus to znovu nebo pokračuj na kontakt.',
@@ -443,7 +446,7 @@ export default function Home() {
       setStepError((prev) => ({ ...prev, pain: t.errFillPain }))
       return
     }
-    if (form.history.length >= 6) {
+    if (form.history.length >= AI_MAX_HISTORY) {
       setAiError(t.errLimit3)
       return
     }
@@ -483,7 +486,7 @@ export default function Home() {
       const updatedHistory = [
         ...newHistory,
         { role: 'assistant' as const, content: data.answer || 'Помилка отримання відповіді' },
-      ].slice(-6)
+      ].slice(-AI_MAX_HISTORY)
 
       setForm((prev) => ({
         ...prev,
@@ -801,7 +804,7 @@ export default function Home() {
 
             {form.history.length > 0 && form.history.length < 6 ? (
               <div className="flex-shrink-0 text-xs text-slate-400 py-2">
-                {t.aiQuestionsCount}: {Math.floor(form.history.length / 2)} / 3
+                {t.aiQuestionsCount}: {Math.floor(form.history.length / 2)} / {AI_MAX_QUESTIONS}
               </div>
             ) : null}
 
@@ -822,17 +825,17 @@ export default function Home() {
                     }
                   }}
                   placeholder={
-                    form.history.length >= 6
+                    form.history.length >= AI_MAX_HISTORY
                       ? t.aiInputPlaceholderLimit
                       : t.aiInputPlaceholder
                   }
-                  disabled={form.history.length >= 6 || aiLoading}
+                  disabled={form.history.length >= AI_MAX_HISTORY || aiLoading}
                   rows={2}
                   className="flex-1 resize-none rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white text-sm placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 />
                 <button
                   onClick={handleAskAI}
-                  disabled={aiLoading || form.history.length >= 6 || !form.question.trim()}
+                  disabled={aiLoading || form.history.length >= AI_MAX_HISTORY || !form.question.trim()}
                   className="px-4 sm:px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-sm hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
                 >
                   {aiLoading ? '...' : '→'}
@@ -972,8 +975,8 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
-      <div className="absolute inset-0 -z-10">
+    <main className="relative min-h-screen bg-slate-950 text-white overflow-x-hidden overscroll-x-none">
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-x-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-slate-950 to-purple-900/30"></div>
         <div className="absolute -top-10 -right-10 w-80 h-80 bg-purple-500/20 blur-3xl rounded-full"></div>
         <div className="absolute bottom-0 left-10 w-72 h-72 bg-indigo-500/20 blur-3xl rounded-full"></div>

@@ -178,6 +178,45 @@ function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
 
 type OpenAiResult = { content: string | null; summary: string | null; error?: string }
 
+function buildSystemPrompt(lng: ReturnType<typeof getLang>) {
+  if (lng === 'ru') {
+    return [
+      'Ты — живой, остроумный AI-интерфейс готовой системы приёма заявок (не “консультант”).',
+      'Твоя задача — продавать систему через пользу и ясность: уверенно, по делу, но дружелюбно.',
+      'Разрешено: лёгкий юмор, метафоры, короткие острые фразы, уместные эмодзи (не перебарщивать).',
+      'Запрещено: длинные лекции, вода, “как сделать самому”, уход в теорию, грубость.',
+      'Если вопрос оффтоп (погода и т.п.) — 1 смешная фраза и сразу связка к заявкам/хаосу/потерям.',
+      'Если “дорого/сомневаюсь” — отвечай в пользу продукта: 2–4 факта (потери, скорость, 24/7, статус, меньше ручной работы) + короткий вывод.',
+      'Всегда избегай шаблонов: не повторяй начало/формулировки. Каждый ответ добавляет новую деталь.',
+      'Формат:',
+      '- SHOW_SOLUTION: 1 заголовок + 3 блока (клиент / система / результат) + финальная строка.',
+      '- POST_SOLUTION_DIALOG: 3–6 предложений или 2–4 маркера, один микро-юмор, затем факты, финал — мини-CTA (“хочешь показать на твоих каналах?”).',
+    ].join(' ')
+  }
+  if (lng === 'cz') {
+    return [
+      'Jsi živé, vtipné AI rozhraní hotového systému pro příjem poptávek (ne “konzultant”).',
+      'Cíl: prodat systém přes užitek a jasnost – sebejistě, k věci, přátelsky.',
+      'Povoleno: lehký humor, metafory, chytré krátké věty, trochu emoji.',
+      'Zakázáno: dlouhé přednášky, teorie, návody “udělej si sám”, hrubost.',
+      'Mimo téma (počasí apod.): 1 vtipná věta + hned zpět k poptávkám/chaosu/ztrátám.',
+      '“Je to drahé/nejsem si jistý”: 2–4 fakta (ztráty, rychlost, 24/7, status, méně ruční práce) + krátký závěr.',
+      'Nevypadat šablonovitě: neopakuj začátky, vždy přidej novou detailní věc.',
+      'Formát: SHOW_SOLUTION = nadpis + 3 bloky. POST = 3–6 vět nebo 2–4 odrážky + mini-CTA.',
+    ].join(' ')
+  }
+  return [
+    'Ти — живий, дотепний AI-інтерфейс готової системи прийому заявок (не “консультант”).',
+    'Мета: продавати систему через користь і ясність — впевнено, по ділу, дружньо.',
+    'Можна: легкий гумор, метафори, короткі гострі фрази, доречні емодзі.',
+    'Не можна: довгі лекції, вода, “зроби сам”, теорія, грубість.',
+    'Оффтоп (погода тощо): 1 смішна фраза і одразу привʼязка до заявок/хаосу/втрат.',
+    '“Дорого/сумніваюсь”: 2–4 факти (втрати, швидкість, 24/7, статус, мінус ручна робота) + короткий висновок.',
+    'Уникай шаблонів: не повторюй вступи/формулювання, кожна відповідь додає нову деталь.',
+    'Формат: SHOW_SOLUTION = заголовок + 3 блоки. POST = 3–6 речень або 2–4 маркери + міні-CTA.',
+  ].join(' ')
+}
+
 async function callOpenAI(
   context: string,
   history?: { role: 'user' | 'assistant'; content: string }[],
@@ -195,6 +234,7 @@ async function callOpenAI(
       : lng === 'cz'
       ? 'Odpovídej pouze česky.'
       : 'Відповідай тільки українською.'
+  const systemPrompt = buildSystemPrompt(lng)
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -207,17 +247,16 @@ async function callOpenAI(
       messages: [
         {
           role: 'system',
-          content:
-            `${langSystem} Ти — інтерфейс готової системи прийому заявок. Не консультуєш, не продаєш. Якщо режим SHOW_SOLUTION — даєш структуру один раз. Якщо режим POST_SOLUTION_DIALOG — 2–4 речення або 2–3 маркери, не повторюєш конфігурацію, лише нові деталі по питанню. Без слів типу "потрібно/варто/рекомендую", без порад робити самому. Емодзі можна трохи. Коротко, просто, спокійно. Уникай повторів маркерів і вступів. Мета — підтверджувати цінність і знімати сумніви фактами (SLA, мінус хаос, без дзвінків), але без тиску.`,
+          content: `${langSystem} ${systemPrompt}`,
         },
         { role: 'system', content: context },
         ...(history || []),
       ],
       // Slightly higher creativity + lower repetition penalties => less “template” feel
-      temperature: 0.85,
-      presence_penalty: 0.4,
-      frequency_penalty: 0.4,
-      max_tokens: 380,
+      temperature: 0.95,
+      presence_penalty: 0.2,
+      frequency_penalty: 0.2,
+      max_tokens: 520,
     }),
   })
 
