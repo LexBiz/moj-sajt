@@ -741,120 +741,146 @@ export default function Home() {
         )
       case 'ai':
         return (
-          <div className="flex flex-col h-[78vh] sm:h-[600px] space-y-0">
-            <div className="flex-shrink-0 pb-3 sm:pb-4 border-b border-white/10">
-              <h2 className="text-xl sm:text-2xl font-semibold text-white">{t.aiTitle}</h2>
-              <p className="text-slate-300 text-xs sm:text-sm">{t.aiDesc}</p>
+          <div className="flex flex-col h-[85vh] sm:h-[600px] space-y-0">
+            <div className="flex-shrink-0 pb-4 border-b border-white/10">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">{t.aiTitle}</h2>
+              <p className="text-slate-300 text-xs sm:text-sm mt-1">{t.aiDesc}</p>
             </div>
 
             {form.history.length === 0 && (
-              <div className="flex-shrink-0 w-full max-w-full flex gap-2 flex-nowrap sm:flex-wrap py-3 overflow-x-auto sm:overflow-visible pr-2">
-                {aiSuggestions[lang].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setField('question', s)}
-                    className="px-3 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-200 hover:border-indigo-300/60 hover:bg-indigo-500/10 transition-all whitespace-nowrap flex-shrink-0"
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="flex-shrink-0 w-full py-4 overflow-x-auto sm:overflow-visible scrollbar-none">
+                <div className="flex gap-2 flex-nowrap sm:flex-wrap min-w-min sm:min-w-0">
+                  {aiSuggestions[lang].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setField('question', s)}
+                      className="px-4 py-2.5 rounded-full bg-gradient-to-r from-white/10 to-white/5 border border-white/20 text-sm font-semibold text-slate-200 hover:border-indigo-400/60 hover:bg-gradient-to-r hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-white hover:scale-105 active:scale-95 transition-all whitespace-nowrap flex-shrink-0 shadow-lg"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto space-y-4 py-3 sm:py-4 pr-1 sm:pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+              className="flex-1 overflow-y-auto space-y-3 py-2 px-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
             >
               {form.history.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-slate-400 text-sm">
-                  {t.aiEmpty}
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-slate-400 text-sm text-center px-4">{t.aiEmpty}</p>
                 </div>
               ) : (
                 form.history.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div key={idx} className={`flex animate-in fade-in slide-in-from-bottom-2 duration-500 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 ${
+                      className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 shadow-lg ${
                         msg.role === 'user'
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                          : 'bg-white/5 border border-white/10 text-slate-100'
+                          ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+                          : 'bg-gradient-to-br from-white/10 to-white/5 border border-white/10 text-slate-100 backdrop-blur-sm'
                       }`}
                     >
                       {msg.role === 'assistant' && (
-                        <div className="text-xs uppercase text-indigo-200 font-semibold mb-1">{t.aiSystem}</div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></div>
+                          <span className="text-xs uppercase text-indigo-200 font-bold tracking-wider">{t.aiSystem}</span>
+                        </div>
                       )}
-                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
+                      <p className="text-[15px] sm:text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
                 ))
               )}
 
               {aiLoading && (
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white/5 border border-white/10">
+                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="max-w-[80%] rounded-2xl px-5 py-4 bg-gradient-to-br from-white/10 to-white/5 border border-white/10 backdrop-blur-sm shadow-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
-                      <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                      <span className="text-slate-300 text-sm ml-2">{t.aiThinking}</span>
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      <span className="text-slate-300 text-sm font-medium ml-2">{t.aiThinking}</span>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {form.history.length > 0 && form.history.length < 6 ? (
-              <div className="flex-shrink-0 text-xs text-slate-400 py-2">
-                {t.aiQuestionsCount}: {Math.floor(form.history.length / 2)} / {AI_MAX_QUESTIONS}
+            {form.history.length > 0 && form.history.length < AI_MAX_HISTORY ? (
+              <div className="flex-shrink-0 flex items-center justify-center gap-2 py-2">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: AI_MAX_QUESTIONS }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        i < Math.floor(form.history.length / 2)
+                          ? 'bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]'
+                          : 'bg-white/10'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-slate-400 font-medium">
+                  {Math.floor(form.history.length / 2)}/{AI_MAX_QUESTIONS}
+                </span>
               </div>
             ) : null}
 
-            {aiError ? <div className="flex-shrink-0 text-red-300 text-sm py-2">{aiError}</div> : null}
+            {aiError ? (
+              <div className="flex-shrink-0 px-4 py-2 rounded-xl bg-red-500/10 border border-red-400/30 text-red-300 text-sm font-medium">
+                {aiError}
+              </div>
+            ) : null}
+            
             {aiProvider === 'fallback' ? (
               <div className="flex-shrink-0 text-[11px] text-amber-200/90 py-1">{t.debugFallback}</div>
             ) : null}
 
-            <div className="flex-shrink-0 pt-3 border-t border-white/10">
+            <div className="flex-shrink-0 pt-4 space-y-3">
               <div className="flex gap-2 items-end">
-                <textarea
-                  value={form.question}
-                  onChange={(e) => setField('question', e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleAskAI()
+                <div className="flex-1 relative">
+                  <textarea
+                    value={form.question}
+                    onChange={(e) => setField('question', e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleAskAI()
+                      }
+                    }}
+                    placeholder={
+                      form.history.length >= AI_MAX_HISTORY
+                        ? t.aiInputPlaceholderLimit
+                        : t.aiInputPlaceholder
                     }
-                  }}
-                  placeholder={
-                    form.history.length >= AI_MAX_HISTORY
-                      ? t.aiInputPlaceholderLimit
-                      : t.aiInputPlaceholder
-                  }
-                  disabled={form.history.length >= AI_MAX_HISTORY || aiLoading}
-                  rows={2}
-                  className="flex-1 resize-none rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white text-sm placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                />
+                    disabled={form.history.length >= AI_MAX_HISTORY || aiLoading}
+                    rows={1}
+                    className="w-full resize-none rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 pl-4 pr-12 py-4 text-white text-[15px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all backdrop-blur-sm shadow-inner"
+                  />
+                </div>
                 <button
                   onClick={handleAskAI}
                   disabled={aiLoading || form.history.length >= AI_MAX_HISTORY || !form.question.trim()}
-                  className="px-4 sm:px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-sm hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
+                  className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-xl flex items-center justify-center hover:from-indigo-600 hover:to-purple-700 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_8px_24px_rgba(99,102,241,0.4)] hover:shadow-[0_12px_32px_rgba(99,102,241,0.6)] transition-all"
                 >
                   {aiLoading ? '...' : '→'}
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-3 items-center mt-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {form.history.length === 0 && (
                   <button
                     onClick={handleAskAI}
                     disabled={aiLoading}
-                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-base font-semibold text-white hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg disabled:opacity-60"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-3.5 text-base font-bold text-white hover:from-indigo-600 hover:to-purple-700 hover:scale-105 active:scale-95 transition-all shadow-[0_8px_24px_rgba(99,102,241,0.4)] disabled:opacity-60 disabled:hover:scale-100"
                   >
                     {aiLoading ? t.aiShowLoading : t.aiShow}
                   </button>
                 )}
                 <button
                   onClick={() => setStep('contact')}
-                  className="inline-flex items-center justify-center rounded-full px-6 py-3 text-base font-semibold text-white bg-white/10 border border-white/10 hover:bg-white/15 transition-all"
+                  className="inline-flex items-center justify-center rounded-2xl px-6 py-3.5 text-base font-bold text-white bg-white/10 border border-white/20 hover:bg-white/15 hover:border-white/30 hover:scale-105 active:scale-95 transition-all backdrop-blur-sm"
                 >
                   {t.aiContinue}
                 </button>

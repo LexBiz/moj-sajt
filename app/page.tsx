@@ -11,16 +11,16 @@ type Dict = {
   heroSubtitle: string
   ctaPrimary: string
   ctaSecondary: string
-  note: string
+  ctaNote: string
   howTitle: string
-  howSteps: { title: string; text: string }[]
+  howSteps: { title: string; text: string; icon: string }[]
   howCta: string
   whoTitle: string
   whoList: string[]
   whoText: string
   whoCta: string
   resultTitle: string
-  resultBullets: string[]
+  resultBullets: { text: string; stat?: string }[]
   resultCta: string
   formTitle: string
   formSubtitle: string
@@ -31,6 +31,7 @@ type Dict = {
   formSuccess: string
   formError: string
   fieldRequired: string
+  trustBadge: string
   footerAbout: string
 }
 
@@ -41,14 +42,14 @@ const dict: Record<Lang, Dict> = {
     heroTitle: 'Клієнт або записався — або пішов до конкурента',
     heroSubtitle:
       'Я будую системи, які автоматично приймають заявки, відповідають клієнтам і фіксують їх без менеджерів і дзвінків',
-    ctaPrimary: 'Показати, як це працює (30 секунд)',
-    ctaSecondary: 'Демо: як це працює',
-    note: 'Це не консультація. Це жива система.',
+    ctaPrimary: 'Показати, як це працює',
+    ctaSecondary: 'Демо для мого бізнесу',
+    ctaNote: 'Просто подивись. Ніяких дзвінків. 30 секунд.',
     howTitle: 'Що відбувається насправді',
     howSteps: [
-      { title: 'Клієнт пише або натискає', text: 'Instagram, сайт, реклама — байдуже' },
-      { title: 'Система одразу реагує', text: 'Задає питання, фільтрує і формує заявку' },
-      { title: 'Ви отримуєте готового клієнта', text: 'Telegram / таблиця / CRM — без хаосу' },
+      { title: 'Клієнт пише або натискає', text: 'Instagram, сайт, реклама — байдуже', icon: '💬' },
+      { title: 'Система одразу реагує', text: 'Задає питання, фільтрує і формує заявку', icon: '⚡' },
+      { title: 'Ви отримуєте готового клієнта', text: 'Telegram / таблиця / CRM — без хаосу', icon: '✓' },
     ],
     howCta: 'Подивитись рішення для мого бізнесу',
     whoTitle: 'Кому це потрібно',
@@ -57,15 +58,15 @@ const dict: Record<Lang, Dict> = {
     whoCta: 'Перевірити під свій бізнес',
     resultTitle: 'Що змінюється після впровадження',
     resultBullets: [
-      'Клієнти не губляться',
-      'Немає дзвінків і ручної переписки',
-      'Ви бачите всі заявки',
-      'Система працює 24/7',
-      'Менше хаосу — більше продажів',
+      { text: 'Клієнти не губляться', stat: '+70% заявок без ручної відповіді' },
+      { text: 'Немає дзвінків і ручної переписки', stat: '24/7 прийом без людини' },
+      { text: 'Ви бачите всі заявки', stat: 'Прозорий статус кожної заявки' },
+      { text: 'Система працює 24/7', stat: 'Навіть вночі та у вихідні' },
+      { text: 'Менше хаосу — більше продажів', stat: 'Мінус ручна робота' },
     ],
     resultCta: 'Побачити це в дії',
-    formTitle: 'Не хочете розбиратись — напишіть',
-    formSubtitle: 'Я покажу, як це може працювати у вас',
+    formTitle: 'Хочеш рішення прямо зараз?',
+    formSubtitle: 'Я покажу, як це може працювати у вашому бізнесі',
     name: 'Імʼя',
     contact: 'Контакт (email або Telegram)',
     comment: 'Короткий коментар (необовʼязково)',
@@ -73,6 +74,7 @@ const dict: Record<Lang, Dict> = {
     formSuccess: 'Запит прийнято. Якщо система підходить — наступний крок реалізація.',
     formError: 'Перевірте контакт і спробуйте ще раз',
     fieldRequired: 'Заповніть поле',
+    trustBadge: 'Система працює 24/7, автоматично звʼязує заявки і веде їх у Telegram / CRM',
     footerAbout: 'Про мене',
   },
   ru: {
@@ -81,14 +83,14 @@ const dict: Record<Lang, Dict> = {
     heroTitle: 'Клиент либо записался — либо ушёл к конкуренту',
     heroSubtitle:
       'Я строю системы, которые автоматически принимают заявки, отвечают клиентам и фиксируют их без менеджеров и звонков',
-    ctaPrimary: 'Показать, как это работает (30 секунд)',
-    ctaSecondary: 'Демо: как это работает',
-    note: 'Это не консультация. Это живая система.',
+    ctaPrimary: 'Показать, как это работает',
+    ctaSecondary: 'Демо для моего бизнеса',
+    ctaNote: 'Просто посмотри. Без звонков. 30 секунд.',
     howTitle: 'Что происходит на самом деле',
     howSteps: [
-      { title: 'Клиент пишет или нажимает', text: 'Instagram, сайт, реклама — не важно' },
-      { title: 'Система сразу реагирует', text: 'Задает вопросы, фильтрует и формирует заявку' },
-      { title: 'Вы получаете готового клиента', text: 'Telegram / таблица / CRM — без хаоса' },
+      { title: 'Клиент пишет или нажимает', text: 'Instagram, сайт, реклама — не важно', icon: '💬' },
+      { title: 'Система сразу реагирует', text: 'Задает вопросы, фильтрует и формирует заявку', icon: '⚡' },
+      { title: 'Вы получаете готового клиента', text: 'Telegram / таблица / CRM — без хаоса', icon: '✓' },
     ],
     howCta: 'Посмотреть решение для моего бизнеса',
     whoTitle: 'Кому это нужно',
@@ -97,15 +99,15 @@ const dict: Record<Lang, Dict> = {
     whoCta: 'Проверить под свой бизнес',
     resultTitle: 'Что меняется после внедрения',
     resultBullets: [
-      'Клиенты не теряются',
-      'Нет звонков и ручной переписки',
-      'Вы видите все заявки',
-      'Система работает 24/7',
-      'Меньше хаоса — больше продаж',
+      { text: 'Клиенты не теряются', stat: '+70% заявок без ручной работы' },
+      { text: 'Нет звонков и ручной переписки', stat: '24/7 приём без человека' },
+      { text: 'Вы видите все заявки', stat: 'Прозрачный статус каждой заявки' },
+      { text: 'Система работает 24/7', stat: 'Даже ночью и в выходные' },
+      { text: 'Меньше хаоса — больше продаж', stat: 'Минус ручная работа' },
     ],
     resultCta: 'Увидеть это в действии',
-    formTitle: 'Не хотите разбираться — напишите',
-    formSubtitle: 'Я покажу, как это может работать у вас',
+    formTitle: 'Хочешь решение прямо сейчас?',
+    formSubtitle: 'Я покажу, как это может работать в вашем бизнесе',
     name: 'Имя',
     contact: 'Контакт (email или Telegram)',
     comment: 'Короткий комментарий (необязательно)',
@@ -113,6 +115,7 @@ const dict: Record<Lang, Dict> = {
     formSuccess: 'Запрос принят. Если система подходит — следующий шаг внедрение.',
     formError: 'Проверьте контакт и попробуйте снова',
     fieldRequired: 'Заполните поле',
+    trustBadge: 'Система работает 24/7, автоматически связывает заявки и ведёт их в Telegram / CRM',
     footerAbout: 'Обо мне',
   },
   cz: {
@@ -121,14 +124,14 @@ const dict: Record<Lang, Dict> = {
     heroTitle: 'Klient se buď objednal — nebo odešel ke konkurenci',
     heroSubtitle:
       'Stavím systémy, které automaticky přijímají poptávky, odpovídají klientům a ukládají je bez manažerů a hovorů',
-    ctaPrimary: 'Ukázat, jak to funguje (30 sekund)',
-    ctaSecondary: 'Demo: jak to funguje',
-    note: 'Toto není konzultace. Je to hotový systém.',
+    ctaPrimary: 'Ukázat, jak to funguje',
+    ctaSecondary: 'Demo pro můj byznys',
+    ctaNote: 'Jen se podívej. Bez hovorů. 30 sekund.',
     howTitle: 'Co se děje ve skutečnosti',
     howSteps: [
-      { title: 'Klient píše nebo kliká', text: 'Instagram, web, reklama — je to jedno' },
-      { title: 'Systém hned reaguje', text: 'Ptá se, filtruje a vytváří poptávku' },
-      { title: 'Dostanete připraveného klienta', text: 'Telegram / tabulka / CRM — bez chaosu' },
+      { title: 'Klient píše nebo kliká', text: 'Instagram, web, reklama — je to jedno', icon: '💬' },
+      { title: 'Systém hned reaguje', text: 'Ptá se, filtruje a vytváří poptávku', icon: '⚡' },
+      { title: 'Dostanete připraveného klienta', text: 'Telegram / tabulka / CRM — bez chaosu', icon: '✓' },
     ],
     howCta: 'Podívat se na řešení pro můj byznys',
     whoTitle: 'Komu se to hodí',
@@ -137,15 +140,15 @@ const dict: Record<Lang, Dict> = {
     whoCta: 'Prověřit pro můj byznys',
     resultTitle: 'Co se změní po nasazení',
     resultBullets: [
-      'Klienti se neztrácí',
-      'Bez hovorů a ruční komunikace',
-      'Vidíte všechny poptávky',
-      'Systém běží 24/7',
-      'Méně chaosu — více prodejů',
+      { text: 'Klienti se neztrácí', stat: '+70% poptávek bez ruční práce' },
+      { text: 'Bez hovorů a ruční komunikace', stat: '24/7 příjem bez člověka' },
+      { text: 'Vidíte všechny poptávky', stat: 'Transparentní status každé poptávky' },
+      { text: 'Systém běží 24/7', stat: 'I v noci a o víkendech' },
+      { text: 'Méně chaosu — více prodejů', stat: 'Minus ruční práce' },
     ],
     resultCta: 'Uvidět to v akci',
-    formTitle: 'Nechceš to řešit? Napiš',
-    formSubtitle: 'Ukážu, jak to může fungovat u tebe',
+    formTitle: 'Chceš řešení hned teď?',
+    formSubtitle: 'Ukážu, jak to může fungovat ve tvém byznysu',
     name: 'Jméno',
     contact: 'Kontakt (email nebo Telegram)',
     comment: 'Krátký komentář (nepovinné)',
@@ -153,6 +156,7 @@ const dict: Record<Lang, Dict> = {
     formSuccess: 'Poptávka přijata. Pokud systém sedí — další krok je implementace.',
     formError: 'Zkontroluj kontakt a zkus znovu',
     fieldRequired: 'Vyplň toto pole',
+    trustBadge: 'Systém běží 24/7, automaticky propojuje poptávky a vede je v Telegram / CRM',
     footerAbout: 'O mně',
   },
 }
@@ -229,37 +233,22 @@ export default function Home() {
       <style jsx>{`
         @keyframes gradient-shift {
           0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(10%, 10%) scale(1.1); }
-          50% { transform: translate(-5%, 15%) scale(0.95); }
-          75% { transform: translate(-10%, -10%) scale(1.05); }
+          33% { transform: translate(10%, 10%) scale(1.05); }
+          66% { transform: translate(-8%, 12%) scale(0.98); }
         }
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-25px); }
         }
-        @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(139, 92, 246, 0.2); }
-          50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), 0 0 60px rgba(139, 92, 246, 0.4); }
-        }
-        .animate-gradient { animation: gradient-shift 20s ease-in-out infinite; }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-shimmer {
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-          background-size: 200% 100%;
-          animation: shimmer 3s infinite;
-        }
-        .animate-glow { animation: glow-pulse 3s ease-in-out infinite; }
+        .animate-gradient { animation: gradient-shift 25s ease-in-out infinite; }
+        .animate-float { animation: float 8s ease-in-out infinite; }
       `}</style>
 
       <main className="relative min-h-screen bg-slate-950 text-white overflow-x-hidden">
-        <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950" />
           <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-gradient" />
-          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-10s' }} />
+          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
           <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-float" />
         </div>
 
@@ -299,36 +288,40 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[0] = el }}
             className={`relative transition-all duration-1000 ${visibleSections.has(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.5)] overflow-hidden group hover:border-white/20 transition-all duration-500">
-              <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
-              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl" />
+            <div className="relative bg-gradient-to-br from-slate-800/50 via-slate-800/40 to-slate-900/50 border border-white/10 rounded-[32px] p-10 sm:p-16 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden group hover:border-white/20 transition-all duration-500">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+              <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full blur-3xl" />
+              <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-pink-500/15 rounded-full blur-3xl" />
               
-              <div className="relative space-y-6">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 px-4 py-2 text-xs text-indigo-100 uppercase tracking-[0.2em] font-bold backdrop-blur-sm shadow-lg">
+              <div className="relative space-y-8 text-center">
+                <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 px-5 py-2.5 text-xs text-indigo-100 uppercase tracking-[0.2em] font-bold backdrop-blur-sm shadow-lg">
                   ⚡ {t.badge}
                 </span>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] bg-gradient-to-br from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] bg-gradient-to-br from-white via-slate-100 to-slate-300 bg-clip-text text-transparent max-w-4xl mx-auto">
                   {t.heroTitle}
                 </h1>
-                <p className="text-lg sm:text-xl text-slate-300 leading-relaxed max-w-3xl">
+                <p className="text-lg sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto">
                   {t.heroSubtitle}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 justify-center items-center">
                   <a
                     href={ctaHref}
-                    className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_40px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_15px_50px_rgba(99,102,241,0.6)] hover:scale-105 overflow-hidden"
+                    className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-110 overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                    <span className="relative">{t.ctaPrimary}</span>
+                    <span className="relative flex items-center gap-2">
+                      <span>{t.ctaPrimary}</span>
+                      <span className="text-2xl">→</span>
+                    </span>
                   </a>
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-bold text-white bg-white/10 border border-white/10 backdrop-blur-sm hover:bg-white/15 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
+                    className="inline-flex items-center justify-center rounded-2xl px-8 py-5 text-lg font-bold text-white bg-white/10 border-2 border-white/20 backdrop-blur-sm hover:bg-white/20 hover:border-white/30 transition-all duration-300 hover:scale-105 shadow-lg"
                   >
                     {t.ctaSecondary}
                   </a>
                 </div>
-                <p className="text-xs text-slate-400 italic pt-2">{t.note}</p>
+                <p className="text-sm text-indigo-200 font-semibold pt-2">{t.ctaNote}</p>
               </div>
             </div>
           </div>
@@ -339,35 +332,33 @@ export default function Home() {
             className={`transition-all duration-1000 delay-150 ${visibleSections.has(1) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
-              <div className="space-y-8">
-                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              <div className="space-y-10">
+                <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center">
                   {t.howTitle}
                 </h2>
-                <div className="grid gap-6 sm:grid-cols-3">
+                <div className="grid gap-8 sm:grid-cols-3">
                   {t.howSteps.map((step, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-sm transition-all duration-500 hover:border-indigo-400/40 hover:shadow-[0_10px_40px_rgba(99,102,241,0.2)] hover:-translate-y-1 overflow-hidden"
+                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-3xl p-8 backdrop-blur-sm transition-all duration-500 hover:border-indigo-400/50 hover:shadow-[0_20px_60px_rgba(99,102,241,0.3)] hover:-translate-y-2 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="relative space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm font-black shadow-lg">
-                            {idx + 1}
-                          </span>
-                        </div>
-                        <h3 className="text-lg font-bold text-white leading-snug">{step.title}</h3>
+                      <div className="relative space-y-4 text-center">
+                        <div className="text-6xl">{step.icon}</div>
+                        <h3 className="text-xl font-black text-white leading-snug">{step.title}</h3>
                         <p className="text-sm text-slate-300 leading-relaxed">{step.text}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <a
-                  href={ctaHref}
-                  className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white bg-white/10 border border-white/10 backdrop-blur-sm hover:bg-white/15 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
-                >
-                  {t.howCta}
-                </a>
+                <div className="text-center pt-4">
+                  <a
+                    href={ctaHref}
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.6)] hover:scale-110"
+                  >
+                    {t.howCta}
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -378,31 +369,33 @@ export default function Home() {
             className={`transition-all duration-1000 delay-300 ${visibleSections.has(2) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
-              <div className="space-y-8">
-                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              <div className="space-y-10">
+                <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center">
                   {t.whoTitle}
                 </h2>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-5">
                   {t.whoList.map((item, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-xl px-5 py-4 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/40 hover:bg-white/10 hover:text-white hover:shadow-[0_5px_20px_rgba(99,102,241,0.15)] hover:-translate-y-0.5 overflow-hidden"
+                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-base font-bold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/10 hover:text-white hover:shadow-[0_10px_40px_rgba(99,102,241,0.2)] hover:-translate-y-1 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <span className="relative flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 group-hover:animate-pulse" />
+                      <span className="relative flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-indigo-400 group-hover:animate-pulse" />
                         {item}
                       </span>
                     </div>
                   ))}
                 </div>
-                <p className="text-base text-slate-300 leading-relaxed italic">{t.whoText}</p>
-                <a
-                  href={ctaHref}
-                  className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_40px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_15px_50px_rgba(99,102,241,0.6)] hover:scale-105"
-                >
-                  {t.whoCta}
-                </a>
+                <p className="text-lg text-slate-300 leading-relaxed text-center italic">{t.whoText}</p>
+                <div className="text-center pt-4">
+                  <a
+                    href={ctaHref}
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.6)] hover:scale-110"
+                  >
+                    {t.whoCta}
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -413,31 +406,40 @@ export default function Home() {
             className={`transition-all duration-1000 delay-[450ms] ${visibleSections.has(3) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
-              <div className="space-y-8">
-                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              <div className="space-y-10">
+                <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center">
                   {t.resultTitle}
                 </h2>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-5">
                   {t.resultBullets.map((item, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-400/20 rounded-xl px-5 py-4 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:text-white hover:shadow-[0_5px_25px_rgba(16,185,129,0.2)] hover:-translate-y-0.5"
+                      className="group relative bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-400/30 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300 hover:border-emerald-400/60 hover:bg-emerald-500/15 hover:shadow-[0_10px_50px_rgba(16,185,129,0.3)] hover:-translate-y-1"
                     >
-                      <span className="flex items-center gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center text-white text-xs font-black shadow-lg">
-                          ✓
-                        </span>
-                        {item}
-                      </span>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center text-white text-base font-black shadow-lg">
+                            ✓
+                          </span>
+                          <div className="space-y-1">
+                            <p className="text-base font-bold text-white">{item.text}</p>
+                            {item.stat && (
+                              <p className="text-sm text-emerald-200 font-semibold">{item.stat}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <a
-                  href={ctaHref}
-                  className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white bg-white/10 border border-white/10 backdrop-blur-sm hover:bg-white/15 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
-                >
-                  {t.resultCta}
-                </a>
+                <div className="text-center pt-6">
+                  <a
+                    href={ctaHref}
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(99,102,241,0.6)] hover:scale-110"
+                  >
+                    {t.resultCta}
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -447,34 +449,35 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[4] = el }}
             className={`transition-all duration-1000 delay-[600ms] ${visibleSections.has(4) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-gradient-to-br from-slate-800/40 to-slate-900/40 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.5)] overflow-hidden hover:border-white/20 transition-all duration-500">
-              <div className="absolute -top-16 -right-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl" />
+            <div className="relative bg-gradient-to-br from-indigo-900/20 via-slate-800/40 to-purple-900/20 border-2 border-indigo-400/30 rounded-[32px] p-10 sm:p-14 backdrop-blur-xl shadow-[0_30px_100px_rgba(99,102,241,0.4)] overflow-hidden hover:border-indigo-400/50 transition-all duration-500">
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
+              <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-purple-500/20 rounded-full blur-3xl" />
               
-              <div className="relative space-y-8">
-                <div className="space-y-3">
-                  <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              <div className="relative space-y-10">
+                <div className="space-y-4 text-center">
+                  <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-white via-indigo-100 to-purple-100 bg-clip-text text-transparent">
                     {t.formTitle}
                   </h2>
-                  <p className="text-base text-slate-300 leading-relaxed">{t.formSubtitle}</p>
+                  <p className="text-lg text-slate-200 leading-relaxed max-w-2xl mx-auto">{t.formSubtitle}</p>
                 </div>
-                <form className="space-y-6" onSubmit={onSubmit}>
+                <form className="space-y-6 max-w-2xl mx-auto" onSubmit={onSubmit}>
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <label className="text-sm text-slate-300 font-semibold">{t.name}</label>
+                      <label className="text-sm text-slate-300 font-bold">{t.name}</label>
                       <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-xl bg-slate-900/60 border border-white/10 px-5 py-3.5 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-slate-900/80 transition-all backdrop-blur-sm shadow-inner"
+                        className="w-full rounded-xl bg-slate-900/70 border border-white/20 px-5 py-4 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/30 focus:bg-slate-900/90 transition-all backdrop-blur-sm shadow-inner text-base"
                         placeholder={t.name}
                         type="text"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm text-slate-300 font-semibold">{t.contact}</label>
+                      <label className="text-sm text-slate-300 font-bold">{t.contact}</label>
                       <input
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
-                        className="w-full rounded-xl bg-slate-900/60 border border-white/10 px-5 py-3.5 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-slate-900/80 transition-all backdrop-blur-sm shadow-inner"
+                        className="w-full rounded-xl bg-slate-900/70 border border-white/20 px-5 py-4 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/30 focus:bg-slate-900/90 transition-all backdrop-blur-sm shadow-inner text-base"
                         placeholder={t.contact}
                         type="text"
                         required
@@ -482,31 +485,35 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-slate-300 font-semibold">{t.comment}</label>
+                    <label className="text-sm text-slate-300 font-bold">{t.comment}</label>
                     <textarea
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl bg-slate-900/60 border border-white/10 px-5 py-3.5 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-slate-900/80 transition-all backdrop-blur-sm shadow-inner resize-none"
+                      className="w-full rounded-xl bg-slate-900/70 border border-white/20 px-5 py-4 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/30 focus:bg-slate-900/90 transition-all backdrop-blur-sm shadow-inner resize-none text-base"
                       placeholder={t.comment}
                     />
                   </div>
 
-                  {error && <p className="text-sm text-amber-300 font-semibold flex items-center gap-2">⚠️ {error}</p>}
-                  {success && <p className="text-sm text-emerald-300 font-semibold flex items-center gap-2">✓ {success}</p>}
+                  {error && <p className="text-sm text-amber-300 font-bold flex items-center justify-center gap-2">⚠️ {error}</p>}
+                  {success && <p className="text-sm text-emerald-300 font-bold flex items-center justify-center gap-2">✓ {success}</p>}
 
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center pt-2">
+                  <div className="text-center pt-4">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_40px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_15px_50px_rgba(99,102,241,0.6)] hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-12 py-6 text-xl font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
                     >
                       <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative">{loading ? '...' : t.formCta}</span>
                     </button>
-                    <span className="text-xs text-slate-400 italic">{t.note}</span>
                   </div>
                 </form>
+                
+                <div className="flex items-center justify-center gap-3 pt-6 text-center">
+                  <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_12px_rgba(74,222,128,0.6)]" />
+                  <p className="text-sm text-slate-300 italic max-w-2xl">{t.trustBadge}</p>
+                </div>
               </div>
             </div>
           </div>
