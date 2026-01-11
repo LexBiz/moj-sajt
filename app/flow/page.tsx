@@ -39,6 +39,12 @@ const translations: Record<Lang, Record<string, string>> = {
     askMore: 'Поставити ще питання',
     aiEmpty: 'Ще немає відповідей. Спробуй задати питання або натисни “Показати рішення”.',
     aiLimit: 'Максимум 3 питання. Якщо готово — продовжуй до контакту.',
+    aiSystem: 'Система',
+    aiThinking: 'Система аналізує…',
+    aiQuestionsCount: 'Питань',
+    aiInputPlaceholder: 'Введи питання або натисни "Показати рішення"',
+    aiInputPlaceholderLimit: 'Максимум 3 питання. Продовжуй до контакту.',
+    next: 'Далі →',
   },
   ru: {
     systemLabel: 'Система приёма клиентов',
@@ -73,6 +79,12 @@ const translations: Record<Lang, Record<string, string>> = {
     askMore: 'Задать ещё вопрос',
     aiEmpty: 'Ответов пока нет. Задай вопрос или нажми “Показать решение”.',
     aiLimit: 'Максимум 3 вопроса. Готово — переходи к контакту.',
+    aiSystem: 'Система',
+    aiThinking: 'Система анализирует…',
+    aiQuestionsCount: 'Вопросов',
+    aiInputPlaceholder: 'Введи вопрос или нажми "Показать решение"',
+    aiInputPlaceholderLimit: 'Максимум 3 вопроса. Переходи к контакту.',
+    next: 'Дальше →',
   },
   cz: {
     systemLabel: 'Systém pro příjem klientů',
@@ -107,6 +119,12 @@ const translations: Record<Lang, Record<string, string>> = {
     askMore: 'Položit další otázku',
     aiEmpty: 'Zatím žádné odpovědi. Zkus otázku nebo klikni “Ukázat řešení”.',
     aiLimit: 'Maximálně 3 otázky. Hotovo — pokračuj na kontakt.',
+    aiSystem: 'Systém',
+    aiThinking: 'Systém analyzuje…',
+    aiQuestionsCount: 'Otázek',
+    aiInputPlaceholder: 'Napiš otázku nebo klikni “Ukázat řešení”',
+    aiInputPlaceholderLimit: 'Max. 3 otázky. Pokračuj na kontakt.',
+    next: 'Další →',
   },
 }
 
@@ -598,19 +616,19 @@ export default function Home() {
         )
       case 'ai':
         return (
-          <div className="flex flex-col h-[600px] max-h-[80vh] space-y-0">
-            <div className="flex-shrink-0 pb-4 border-b border-white/10">
-              <h2 className="text-2xl font-semibold text-white">{t.aiTitle}</h2>
-              <p className="text-slate-300 text-sm">{t.aiDesc}</p>
+          <div className="flex flex-col h-[78vh] sm:h-[600px] space-y-0">
+            <div className="flex-shrink-0 pb-3 sm:pb-4 border-b border-white/10">
+              <h2 className="text-xl sm:text-2xl font-semibold text-white">{t.aiTitle}</h2>
+              <p className="text-slate-300 text-xs sm:text-sm">{t.aiDesc}</p>
             </div>
 
             {form.history.length === 0 && (
-              <div className="flex-shrink-0 flex gap-2 flex-wrap py-3">
+              <div className="flex-shrink-0 flex gap-2 flex-nowrap sm:flex-wrap py-3 overflow-x-auto sm:overflow-visible pr-2 -mr-2">
                 {aiSuggestions[lang].map((s) => (
                   <button
                     key={s}
                     onClick={() => setField('question', s)}
-                    className="px-3 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-200 hover:border-indigo-300/60 hover:bg-indigo-500/10 transition-all"
+                    className="px-3 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-200 hover:border-indigo-300/60 hover:bg-indigo-500/10 transition-all whitespace-nowrap"
                   >
                     {s}
                   </button>
@@ -620,7 +638,7 @@ export default function Home() {
 
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto space-y-4 py-4 pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+              className="flex-1 overflow-y-auto space-y-4 py-3 sm:py-4 pr-1 sm:pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
             >
               {form.history.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-slate-400 text-sm">
@@ -630,14 +648,14 @@ export default function Home() {
                 form.history.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                      className={`max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
                           ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
                           : 'bg-white/5 border border-white/10 text-slate-100'
                       }`}
                     >
                       {msg.role === 'assistant' && (
-                        <div className="text-xs uppercase text-indigo-200 font-semibold mb-1">Система</div>
+                        <div className="text-xs uppercase text-indigo-200 font-semibold mb-1">{t.aiSystem}</div>
                       )}
                       <p className="text-sm whitespace-pre-line leading-relaxed">{msg.content}</p>
                     </div>
@@ -652,7 +670,7 @@ export default function Home() {
                       <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
                       <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                       <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                      <span className="text-slate-300 text-sm ml-2">Система аналізує...</span>
+                      <span className="text-slate-300 text-sm ml-2">{t.aiThinking}</span>
                     </div>
                   </div>
                 </div>
@@ -661,7 +679,7 @@ export default function Home() {
 
             {form.history.length > 0 && form.history.length < 6 ? (
               <div className="flex-shrink-0 text-xs text-slate-400 py-2">
-                Питань: {Math.floor(form.history.length / 2)} / 3
+                {t.aiQuestionsCount}: {Math.floor(form.history.length / 2)} / 3
               </div>
             ) : null}
 
@@ -680,8 +698,8 @@ export default function Home() {
                   }}
                   placeholder={
                     form.history.length >= 6
-                      ? 'Максимум 3 питання. Продовжуй до контакту.'
-                      : 'Введи питання або натисни "Показати рішення"'
+                      ? t.aiInputPlaceholderLimit
+                      : t.aiInputPlaceholder
                   }
                   disabled={form.history.length >= 6 || aiLoading}
                   rows={2}
@@ -690,7 +708,7 @@ export default function Home() {
                 <button
                   onClick={handleAskAI}
                   disabled={aiLoading || form.history.length >= 6 || !form.question.trim()}
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-sm hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
+                  className="px-4 sm:px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-sm hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
                 >
                   {aiLoading ? '...' : '→'}
                 </button>
@@ -918,8 +936,8 @@ export default function Home() {
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-800/40 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
           <div className="absolute -top-12 -left-12 w-40 h-40 bg-indigo-500/10 blur-3xl"></div>
           <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-purple-500/10 blur-3xl"></div>
-          <div className="relative p-6 sm:p-8">
-            <div className="mb-4 text-sm text-slate-300">
+          <div className={`relative ${step === 'ai' ? 'p-4 sm:p-8' : 'p-6 sm:p-8'}`}>
+            <div className={`mb-4 text-sm text-slate-300 ${step === 'ai' ? 'hidden sm:block' : ''}`}>
               Крок {currentIndex + 1} з {steps.length}
             </div>
             {renderStepContent()}
@@ -933,7 +951,7 @@ export default function Home() {
                     onClick={next}
                     className="inline-flex items-center justify-center rounded-full bg-white/10 border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition-all"
                   >
-                    Далі →
+                    {t.next}
                   </button>
                 )}
               </div>
