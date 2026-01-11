@@ -33,19 +33,60 @@ function formatTelegramMessage(lead: any) {
     return s.length > max ? `${s.slice(0, max - 1)}…` : s
   }
 
-  // Telegram message hard limit is 4096 chars.
-  // Keep this well below the limit to avoid silent delivery failures.
-  return [
-    '📥 Нова заявка на систему',
-    `Бізнес: ${safe(lead.businessType, 140)}`,
-    `Канали: ${safe(lead.channel, 180)}`,
-    `Біль: ${safe(lead.pain, 220)}`,
-    `Питання: ${safe(lead.question, 260)}`,
-    `AI: ${safe(lead.aiRecommendation, 1400)}`,
-    `Імʼя: ${safe(lead.name, 120)}`,
-    `Контакт: ${safe(lead.contact || lead.phone, 160)}`,
-    `Час: ${lead.createdAt}`,
-  ].join('\n')
+  const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, Math.max(0, max - 1))}…` : text)
+
+  const business = safe(lead.businessType, 160)
+  const channels = safe(lead.channel, 220)
+  const pain = safe(lead.pain, 420)
+  const question = safe(lead.question, 420)
+  const name = safe(lead.name, 140)
+  const contact = safe(lead.contact || lead.phone, 220)
+  const ai = safe(lead.aiRecommendation, 1400)
+
+  const problemLine = pain !== '—' ? pain : 'Клієнти пишуть — відповідь “вручну” з’їдає час.'
+  const solutionLine =
+    'Автоприйом заявок + AI‑чат + фільтрація + статуси + Telegram‑сповіщення. Без дзвінків. Без хаосу.'
+  const resultLine = 'Заявки не губляться. Відповіді швидші. Ти бачиш все в одному місці.'
+
+  const parts = [
+    '📥 НОВА ЗАЯВКА НА СИСТЕМУ',
+    '',
+    `👤 Імʼя: ${name}`,
+    `📩 Контакт: ${contact}`,
+    '',
+    `🏷 Бізнес: ${business}`,
+    `📡 Канали: ${channels}`,
+    '',
+    `😤 ПРОБЛЕМА: ${problemLine}`,
+    `⚙️ РІШЕННЯ: ${solutionLine}`,
+    `✅ РЕЗУЛЬТАТ: ${resultLine}`,
+    '',
+    `❓ Питання клієнта: ${question}`,
+    '',
+    `🤖 AI (коротко): ${ai}`,
+    '',
+    `🕒 Час: ${lead.createdAt}`,
+  ]
+
+  // Telegram hard limit is 4096 chars; keep safe margin.
+  let out = parts.join('\n')
+  if (out.length > 3800) {
+    const trimmedAi = clip(ai, 700)
+    parts.splice(parts.indexOf(`🤖 AI (коротко): ${ai}`), 1, `🤖 AI (коротко): ${trimmedAi}`)
+    out = parts.join('\n')
+  }
+  if (out.length > 3800) {
+    // last resort: clip pain/question
+    const trimmedPain = clip(problemLine, 220)
+    const trimmedQ = clip(question, 220)
+    const pIdx = parts.findIndex((x) => x.startsWith('😤 ПРОБЛЕМА:'))
+    const qIdx = parts.findIndex((x) => x.startsWith('❓ Питання клієнта:'))
+    if (pIdx >= 0) parts[pIdx] = `😤 ПРОБЛЕМА: ${trimmedPain}`
+    if (qIdx >= 0) parts[qIdx] = `❓ Питання клієнта: ${trimmedQ}`
+    out = parts.join('\n')
+  }
+
+  return out.trim()
 }
 
 async function sendTelegram(lead: any) {
