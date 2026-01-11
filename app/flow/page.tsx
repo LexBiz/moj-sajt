@@ -615,10 +615,15 @@ export default function Home() {
                 <button
                   key={opt.value}
                   onClick={() => {
-                    setField('businessType', opt.value)
-                    setField('businessCustom', opt.value === 'other' ? form.businessCustom : '')
+                    // IMPORTANT: do not call next() immediately after setField(),
+                    // otherwise validateStep() can run on stale state and show an incorrect red error.
+                    setForm((prev) => ({
+                      ...prev,
+                      businessType: opt.value,
+                      businessCustom: opt.value === 'other' ? prev.businessCustom : '',
+                    }))
                     setStepError((prev) => ({ ...prev, business: undefined }))
-                    if (opt.value !== 'other') next()
+                    if (opt.value !== 'other') setStep('channel')
                   }}
                   className={`w-full text-left px-5 py-4 rounded-2xl min-h-[64px] border transition-all ${
                     form.businessType === opt.value
@@ -856,7 +861,8 @@ export default function Home() {
                     }
                     disabled={form.history.length >= AI_MAX_HISTORY || aiLoading}
                     rows={1}
-                    className="w-full resize-none rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 pl-4 pr-12 py-4 text-white text-[15px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all backdrop-blur-sm shadow-inner"
+                    // iOS Safari zoom fix: keep font-size >= 16px
+                    className="w-full resize-none rounded-2xl bg-slate-900/70 border border-white/20 pl-4 pr-12 py-4 text-white text-[16px] sm:text-sm placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all backdrop-blur-sm shadow-inner caret-indigo-200"
                   />
                 </div>
                 <button
