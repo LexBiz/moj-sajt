@@ -11,6 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://temoweb.eu'),
   title: 'Автоматичний прийом клієнтів без дзвінків | temoweb',
   description: 'Система, яка автоматично приймає заявки, відповідає клієнтам і фіксує їх без менеджерів.',
   keywords: ['автоматичний прийом клієнтів', 'автоматизація заявок', 'telegram бот', 'збір заявок', 'CRM', 'TemoWeb', 'temoweb'],
@@ -27,7 +28,13 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+      { url: '/logo.png', type: 'image/png', sizes: '32x32' },
+      { url: '/logo.png', type: 'image/png', sizes: '192x192' },
+    ],
+    shortcut: '/logo.png',
+    apple: [{ url: '/logo.png', sizes: '180x180', type: 'image/png' }],
   },
 }
 

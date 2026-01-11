@@ -78,11 +78,11 @@ const dict: Record<Lang, Dict> = {
       { name: 'Пакет 2', price: '1200–1500 €', desc: 'Більше автоматики: онлайн‑запис, сценарії, статуси.', cta: '⚡️ Замовити' },
       { name: 'Пакет 3', price: '2000–3000 €', desc: 'Максимум: інтеграції, CRM/таблиця, аналітика, кастом.', cta: '⚡️ Замовити' },
     ],
-    pilotTitle: '🏎 Пілотні проекти — перші 5 клієнтів отримують систему за спеціальною ціною!',
-    pilotDesc: 'Тестуєш систему, бачиш як вона працює, отримуєш повний пакет, але зі знижкою 400–500 €. Обмежено 5 місць!',
+    pilotTitle: '🏎 Пілотні проекти — перші 5 бізнесів отримують систему за $299!',
+    pilotDesc: 'Тестуєш систему, бачиш як вона працює. Отримуєш повний пакет — за $299. Місць лише 5.',
     pilotList: ['Сайт + AI чат для клієнтів', 'Автоматичне приймання заявок', 'Онлайн‑запис і Telegram повідомлення'],
     pilotCta: '⚡️ Стати пілотом зараз',
-    pilotNote: 'Після 5 клієнтів — повертаємося до стандартних пакетів.',
+    pilotNote: 'Після 5 бізнесів — повертаємося до стандартних пакетів.',
     formTitle: 'Хочеш рішення прямо зараз?',
     formSubtitle: 'Я покажу, як це може працювати у вашому бізнесі',
     name: 'Імʼя',
@@ -130,11 +130,11 @@ const dict: Record<Lang, Dict> = {
       { name: 'Пакет 2', price: '1200–1500 €', desc: 'Больше автоматики: онлайн‑запись, сценарии, статусы.', cta: '⚡️ Заказать' },
       { name: 'Пакет 3', price: '2000–3000 €', desc: 'Максимум: интеграции, CRM/таблица, аналитика, кастом.', cta: '⚡️ Заказать' },
     ],
-    pilotTitle: '🏎 Пилотные проекты — первые 5 клиентов получают систему по спеццене!',
-    pilotDesc: 'Тестируешь систему, видишь как она работает, получаешь полный пакет, но со скидкой 400–500 €. Мест всего 5!',
+    pilotTitle: '🏎 Пилотные проекты — первые 5 бизнесов получают систему за $299!',
+    pilotDesc: 'Тестируешь систему, видишь как она работает. Получаешь полный пакет — за $299. Мест всего 5.',
     pilotList: ['Сайт + AI чат для клиентов', 'Автоматический приём заявок', 'Онлайн‑запись и Telegram уведомления'],
     pilotCta: '⚡️ Стать пилотом сейчас',
-    pilotNote: 'После 5 клиентов — возвращаемся к стандартным пакетам.',
+    pilotNote: 'После 5 бизнесов — возвращаемся к стандартным пакетам.',
     formTitle: 'Хочешь решение прямо сейчас?',
     formSubtitle: 'Я покажу, как это может работать в вашем бизнесе',
     name: 'Имя',
@@ -182,11 +182,11 @@ const dict: Record<Lang, Dict> = {
       { name: 'Balíček 2', price: '1200–1500 €', desc: 'Více automatiky: online rezervace, scénáře, statusy.', cta: '⚡️ Objednat' },
       { name: 'Balíček 3', price: '2000–3000 €', desc: 'Maximum: integrace, CRM/tabulka, analytika, custom.', cta: '⚡️ Objednat' },
     ],
-    pilotTitle: '🏎 Pilotní projekty — prvních 5 klientů má speciální cenu!',
-    pilotDesc: 'Otestuješ systém, uvidíš jak běží, dostaneš plný balíček se slevou 400–500 €. Jen 5 míst!',
+    pilotTitle: '🏎 Pilotní projekty — prvních 5 firem má systém za $299!',
+    pilotDesc: 'Otestuješ systém, uvidíš jak běží. Dostaneš plný balíček — za $299. Jen 5 míst.',
     pilotList: ['Web + AI chat pro klienty', 'Automatický příjem poptávek', 'Online rezervace + Telegram notifikace'],
     pilotCta: '⚡️ Být pilot teď',
-    pilotNote: 'Po 5 klientech se vracíme ke стандартním balíčkům.',
+    pilotNote: 'Po 5 firmách se vracíme ke standardním balíčkům.',
     formTitle: 'Chceš řešení hned teď?',
     formSubtitle: 'Ukážu, jak to může fungovat ve tvém byznysu',
     name: 'Jméno',
@@ -481,62 +481,84 @@ export default function Home() {
                   </a>
                 </div>
 
-                {/* PACKAGES + PILOT (inside the same block to keep the page structure clean) */}
-                <div className="pt-10 border-t border-white/10 space-y-8">
-                  <h3 className="text-2xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center">
-                    {t.packagesTitle}
-                  </h3>
+                {/* PILOT + PACKAGES (inside the same block to keep the page structure clean) */}
+                <div className="pt-10 border-t border-white/10 space-y-10">
+                  {/* PILOT (main focus) */}
+                  <div className="relative overflow-hidden rounded-[36px] border-2 border-amber-400/50 bg-gradient-to-br from-amber-500/25 via-slate-900/40 to-purple-500/20 p-8 sm:p-12 backdrop-blur-xl shadow-[0_35px_120px_rgba(245,158,11,0.22)]">
+                    <div className="absolute inset-0 opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_30%,black,transparent)] bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.35),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(168,85,247,0.25),transparent_60%),radial-gradient(circle_at_50%_90%,rgba(59,130,246,0.18),transparent_60%)]" />
+                    <div className="absolute -top-20 -right-20 w-72 h-72 bg-amber-400/20 blur-3xl rounded-full" />
+                    <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-purple-500/20 blur-3xl rounded-full" />
 
-                  <div className="grid gap-5 lg:grid-cols-3">
-                    {t.packages.map((p) => (
-                      <div
-                        key={p.name}
-                        className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-3xl p-7 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/10 hover:shadow-[0_18px_60px_rgba(99,102,241,0.25)] hover:-translate-y-1"
-                      >
-                        <div className="space-y-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-bold text-indigo-200 uppercase tracking-[0.18em]">{p.name}</p>
-                              <p className="text-3xl font-black text-white leading-tight">{p.price}</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500/25 to-purple-500/25 border border-white/10 flex items-center justify-center text-white shadow-inner">
-                              ⚡
-                            </div>
-                          </div>
-                          <p className="text-sm text-slate-300 leading-relaxed">{p.desc}</p>
-                          <a
-                            href={ctaHref}
-                            className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4 text-base font-black text-white hover:from-indigo-600 hover:to-purple-700 hover:scale-[1.02] active:scale-[0.99] transition-all shadow-[0_10px_30px_rgba(99,102,241,0.35)]"
-                          >
-                            {p.cta}
-                          </a>
+                    <div className="relative space-y-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="space-y-2">
+                          <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                            {t.pilotTitle}
+                          </h3>
+                          <p className="text-slate-100/90 text-sm sm:text-base leading-relaxed max-w-3xl">
+                            {t.pilotDesc}
+                          </p>
+                        </div>
+                        <div className="inline-flex items-center justify-center rounded-3xl bg-black/20 border border-white/10 px-5 py-3 text-xs sm:text-sm font-black text-amber-200 backdrop-blur-sm">
+                          5 місць / 5 місць / 5 míst
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="relative overflow-hidden rounded-[32px] border-2 border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-slate-900/40 to-purple-500/15 p-8 sm:p-10 backdrop-blur-xl shadow-[0_25px_90px_rgba(245,158,11,0.18)]">
-                    <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-400/15 blur-3xl rounded-full" />
-                    <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-purple-500/15 blur-3xl rounded-full" />
-                    <div className="relative space-y-5">
-                      <h4 className="text-xl sm:text-2xl font-black text-white">{t.pilotTitle}</h4>
-                      <p className="text-slate-200/90 text-sm sm:text-base leading-relaxed">{t.pilotDesc}</p>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {t.pilotList.map((x) => (
-                          <div key={x} className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-slate-100">
+                          <div
+                            key={x}
+                            className="rounded-2xl bg-white/7 border border-white/15 px-4 py-3 text-sm text-white/95 shadow-inner"
+                          >
                             — {x}
                           </div>
                         ))}
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center pt-2">
+
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center pt-1">
                         <a
                           href={ctaHref}
-                          className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-8 py-4 text-base font-black text-slate-900 hover:from-amber-300 hover:to-orange-400 hover:scale-105 active:scale-95 transition-all shadow-[0_18px_60px_rgba(245,158,11,0.35)]"
+                          className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 px-10 py-5 text-base sm:text-lg font-black text-slate-950 hover:from-amber-200 hover:via-orange-300 hover:to-rose-300 hover:scale-105 active:scale-95 transition-all shadow-[0_22px_70px_rgba(251,191,36,0.40)]"
                         >
-                          {t.pilotCta}
+                          {t.pilotCta} →
                         </a>
-                        <p className="text-xs text-slate-300/90 italic">{t.pilotNote}</p>
+                        <p className="text-xs text-slate-200/90 italic">{t.pilotNote}</p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* PACKAGES (background / secondary) */}
+                  <div className="space-y-6">
+                    <h4 className="text-xl sm:text-3xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center opacity-90">
+                      {t.packagesTitle}
+                    </h4>
+
+                    <div className="grid gap-5 lg:grid-cols-3 opacity-85">
+                      {t.packages.map((p) => (
+                        <div
+                          key={p.name}
+                          className="group relative bg-white/[0.03] border border-white/10 rounded-3xl p-7 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/[0.05] hover:-translate-y-1"
+                        >
+                          <div className="space-y-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-bold text-slate-300 uppercase tracking-[0.18em]">{p.name}</p>
+                                <p className="text-3xl font-black text-white leading-tight">{p.price}</p>
+                              </div>
+                              <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80 shadow-inner">
+                                ⚡
+                              </div>
+                            </div>
+                            <p className="text-sm text-slate-300 leading-relaxed">{p.desc}</p>
+                            <a
+                              href={ctaHref}
+                              className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 border border-white/15 px-6 py-4 text-base font-black text-white hover:bg-white/15 hover:border-white/25 transition-all"
+                            >
+                              {p.cta}
+                            </a>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
