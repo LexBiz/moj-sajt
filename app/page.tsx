@@ -490,7 +490,7 @@ export default function Home() {
                   {t.resultBullets.map((item, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-100/50 hover:shadow-md hover:-translate-y-1"
+                      className="group relative bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-400/30 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/15 hover:shadow-md hover:-translate-y-1"
                     >
                       <div className="space-y-3">
                         <div className="flex items-start gap-3">
@@ -500,7 +500,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <p className="text-base font-bold text-white">{item.text}</p>
                             {item.stat && (
-                              <p className="text-sm text-emerald-700 font-semibold">{item.stat}</p>
+                              <p className="text-sm text-emerald-300 font-semibold">{item.stat}</p>
                             )}
                           </div>
                         </div>
@@ -520,7 +520,7 @@ export default function Home() {
                 {/* PILOT + PACKAGES (inside the same block to keep the page structure clean) */}
                 <div className="pt-10 border-t border-white/10 space-y-10">
                   {/* PILOT (main focus) */}
-                  <div className="relative overflow-hidden rounded-[36px] border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-8 sm:p-12 shadow-[0_35px_120px_rgba(245,158,11,0.18)]">
+                  <div className="relative overflow-hidden rounded-[36px] border-2 border-amber-400 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 p-8 sm:p-12 shadow-[0_35px_120px_rgba(245,158,11,0.18)]">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.4),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(251,146,60,0.3),transparent_60%)]" />
                     <div className="absolute -top-20 -right-20 w-72 h-72 bg-amber-200/30 blur-3xl rounded-full" />
                     <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-orange-200/30 blur-3xl rounded-full" />
@@ -535,7 +535,7 @@ export default function Home() {
                             {t.pilotDesc}
                           </p>
                         </div>
-                        <div className="inline-flex items-center justify-center rounded-3xl bg-white/10 backdrop-blur border border-amber-400/50 px-5 py-3 text-xs sm:text-sm font-black text-amber-700 shadow-sm">
+                        <div className="inline-flex items-center justify-center rounded-3xl bg-white/10 backdrop-blur border border-amber-400/50 px-5 py-3 text-xs sm:text-sm font-black text-amber-300 shadow-sm">
                           5 місць / 5 місць / 5 míst
                         </div>
                       </div>
@@ -573,12 +573,12 @@ export default function Home() {
                       {t.packages.map((p) => (
                         <div
                           key={p.name}
-                          className="group relative bg-white border border-white/10 rounded-3xl p-7 shadow-sm transition-all duration-300 hover:border-white/20 hover:shadow-md hover:-translate-y-1"
+                          className="group relative bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-7 shadow-sm transition-all duration-300 hover:border-white/20 hover:shadow-md hover:-translate-y-1"
                         >
                           <div className="space-y-4">
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <p className="text-xs font-bold text-white/70 uppercase tracking-[0.18em]">{p.name}</p>
+                                <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{p.name}</p>
                                 <p className="text-3xl font-black text-white leading-tight">{p.price}</p>
                               </div>
                               <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/70 shadow-inner">
@@ -608,8 +608,8 @@ export default function Home() {
             className={`transition-all duration-1000 delay-[600ms] ${visibleSections.has(4) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
             <div className="relative bg-white/5 backdrop-blur-xl border-2 border-white/10 rounded-[32px] p-10 sm:p-14 shadow-[0_30px_100px_rgba(99,102,241,0.12)] overflow-hidden hover:border-white/20 hover:shadow-[0_35px_120px_rgba(99,102,241,0.18)] transition-all duration-500">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-slate-200/30 rounded-full blur-3xl" />
-              <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-slate-200/30 rounded-full blur-3xl" />
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-blue-400/10 rounded-full blur-3xl" />
               
               <div className="relative space-y-10">
                 <div className="space-y-4 text-center">
@@ -653,8 +653,8 @@ export default function Home() {
                     />
                   </div>
 
-                  {error && <p className="text-sm text-red-700 font-bold flex items-center justify-center gap-2">⚠️ {error}</p>}
-                  {success && <p className="text-sm text-emerald-700 font-bold flex items-center justify-center gap-2">✓ {success}</p>}
+                  {error && <p className="text-sm text-red-300 font-bold flex items-center justify-center gap-2">⚠️ {error}</p>}
+                  {success && <p className="text-sm text-emerald-300 font-bold flex items-center justify-center gap-2">✓ {success}</p>}
 
                   <div className="text-center pt-4">
                     <button
