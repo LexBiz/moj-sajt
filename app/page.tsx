@@ -330,42 +330,50 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[0] = el }}
             className={`relative transition-all duration-1000 ${visibleSections.has(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-white border border-gray-200 rounded-[32px] p-10 sm:p-16 shadow-[0_20px_80px_rgba(0,0,0,0.08)] overflow-hidden group hover:shadow-[0_25px_100px_rgba(0,0,0,0.12)] transition-all duration-500">
-              {/* ИЗОБРАЖЕНИЕ №1 (16:9) — Sora hero background */}
-              <div className="absolute inset-0 opacity-30">
-                <img src="/hero-ai.jpg" alt="" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/90 to-white/95" />
-              
-              <div className="relative space-y-8 text-center">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-300 px-5 py-2.5 text-xs text-indigo-700 uppercase tracking-[0.2em] font-bold backdrop-blur-sm shadow-sm">
-                  ⚡ {t.badge}
-                </span>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent max-w-4xl mx-auto">
-                  {t.heroTitle}
-                </h1>
-                <p className="text-lg sm:text-xl text-slate-700 leading-relaxed max-w-3xl mx-auto">
-                  {t.heroSubtitle}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 pt-6 justify-center items-center">
-                  <a
-                    href={ctaHref}
-                    className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-110 overflow-hidden"
-                  >
-                    <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                    <span className="relative flex items-center gap-2">
-                      <span>{t.ctaPrimary}</span>
-                      <span className="text-2xl">→</span>
-                    </span>
-                  </a>
-                  <a
-                    href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl px-8 py-5 text-lg font-bold text-slate-700 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 hover:scale-105 shadow-md"
-                  >
-                    {t.ctaSecondary}
-                  </a>
+            <div className="relative bg-white border border-gray-200 rounded-[32px] p-8 sm:p-12 lg:p-16 shadow-[0_20px_80px_rgba(0,0,0,0.08)] overflow-hidden group hover:shadow-[0_25px_100px_rgba(0,0,0,0.12)] transition-all duration-500">
+              {/* TWO-COLUMN LAYOUT: text left, image right */}
+              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                {/* LEFT: TEXT CONTENT */}
+                <div className="space-y-6 lg:pr-8">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-300 px-4 py-2 text-xs text-indigo-700 uppercase tracking-[0.2em] font-bold shadow-sm">
+                    ⚡ {t.badge}
+                  </span>
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.1] bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent">
+                    {t.heroTitle}
+                  </h1>
+                  <p className="text-base sm:text-lg lg:text-xl text-slate-700 leading-relaxed">
+                    {t.heroSubtitle}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <a
+                      href={ctaHref}
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base sm:text-lg font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-105 overflow-hidden"
+                    >
+                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center gap-2">
+                        <span>{t.ctaPrimary}</span>
+                        <span className="text-xl">→</span>
+                      </span>
+                    </a>
+                    <a
+                      href={ctaHref}
+                      className="inline-flex items-center justify-center rounded-2xl px-6 py-4 text-base sm:text-lg font-bold text-slate-700 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 hover:scale-105 shadow-md"
+                    >
+                      {t.ctaSecondary}
+                    </a>
+                  </div>
+                  <p className="text-xs sm:text-sm text-indigo-600 font-semibold">{t.ctaNote}</p>
                 </div>
-                <p className="text-sm text-indigo-600 font-semibold pt-2">{t.ctaNote}</p>
+
+                {/* RIGHT: SORA IMAGE */}
+                <div className="relative aspect-[4/3] lg:aspect-square rounded-3xl overflow-hidden border-2 border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.12)] group-hover:shadow-[0_25px_80px_rgba(0,0,0,0.16)] transition-shadow order-first lg:order-last">
+                  <img 
+                    src="/hero-ai.jpg" 
+                    alt="AI automation system" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" />
+                </div>
               </div>
             </div>
           </div>
