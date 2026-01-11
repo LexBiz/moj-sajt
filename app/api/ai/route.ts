@@ -178,15 +178,35 @@ function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
 
 type OpenAiResult = { content: string | null; summary: string | null; error?: string }
 
+function normalizeAnswer(text: string) {
+  // Remove markdown-ish formatting that often appears as '*' or '**'
+  // and convert star-bullets to clean dash bullets.
+  let out = text
+
+  // Bold/italic markers
+  out = out.replace(/\*\*/g, '')
+  out = out.replace(/\*(?=\S)/g, '') // stray asterisks before non-space
+
+  // Star bullets at start of a line -> em dash bullet
+  out = out.replace(/(^|\n)\s*\*\s+/g, '$1— ')
+
+  // Avoid double blank lines explosion
+  out = out.replace(/\n{3,}/g, '\n\n')
+
+  return out.trim()
+}
+
 function buildSystemPrompt(lng: ReturnType<typeof getLang>) {
   if (lng === 'ru') {
     return [
       'Ты — живой, остроумный AI-интерфейс готовой системы приёма заявок (не “консультант”).',
       'Твоя задача — продавать систему через пользу и ясность: уверенно, по делу, но дружелюбно.',
+      'Формат строго ПЛОСКИЙ: никаких markdown-символов и звездочек (*, **), никаких заголовков с #. Используй обычный текст, разделители (—, :, •), короткие абзацы.',
       'Разрешено: лёгкий юмор, метафоры, короткие острые фразы, уместные эмодзи (не перебарщивать).',
       'Запрещено: длинные лекции, вода, “как сделать самому”, уход в теорию, грубость.',
+      'Если клиент грубит/провоцирует — ответь 1 остроумной фразой в его стиле, но БЕЗ мата и оскорблений, затем сразу верни к теме: как система убирает ручной хаос.',
       'Если вопрос оффтоп (погода и т.п.) — 1 смешная фраза и сразу связка к заявкам/хаосу/потерям.',
-      'Если “дорого/сомневаюсь” — отвечай в пользу продукта: 2–4 факта (потери, скорость, 24/7, статус, меньше ручной работы) + короткий вывод.',
+      'Если “дорого/сомневаюсь/не знаю” — отвечай в пользу продукта: покажи контраст “как сейчас” vs “как с системой” + 2–4 факта (потери, скорость, 24/7, статус, меньше ручной работы) + микро-пример из контекста (каналы/боль) + короткий вывод/мини‑CTA.',
       'Всегда избегай шаблонов: не повторяй начало/формулировки. Каждый ответ добавляет новую деталь.',
       'Формат:',
       '- SHOW_SOLUTION: 1 заголовок + 3 блока (клиент / система / результат) + финальная строка.',
@@ -197,10 +217,12 @@ function buildSystemPrompt(lng: ReturnType<typeof getLang>) {
     return [
       'Jsi živé, vtipné AI rozhraní hotového systému pro příjem poptávek (ne “konzultant”).',
       'Cíl: prodat systém přes užitek a jasnost – sebejistě, k věci, přátelsky.',
+      'Formát bez markdownu: žádné hvězdičky (*, **) ani #. Používej běžný text, oddělovače (—, :, •) a krátké odstavce.',
       'Povoleno: lehký humor, metafory, chytré krátké věty, trochu emoji.',
       'Zakázáno: dlouhé přednášky, teorie, návody “udělej si sám”, hrubost.',
+      'Když je klient drzý/provokuje: 1 vtipná věta v jeho stylu, ale bez nadávek, pak hned zpět k tomu, jak systém řeší chaos v poptávkách.',
       'Mimo téma (počasí apod.): 1 vtipná věta + hned zpět k poptávkám/chaosu/ztrátám.',
-      '“Je to drahé/nejsem si jistý”: 2–4 fakta (ztráty, rychlost, 24/7, status, méně ruční práce) + krátký závěr.',
+      '“Je to drahé/nejsem si jistý”: kontrast “teď” vs “se systémem” + 2–4 fakta (ztráty, rychlost, 24/7, status, méně ruční práce) + mikro‑příklad z kontextu + krátký závěr/mini‑CTA.',
       'Nevypadat šablonovitě: neopakuj začátky, vždy přidej novou detailní věc.',
       'Formát: SHOW_SOLUTION = nadpis + 3 bloky. POST = 3–6 vět nebo 2–4 odrážky + mini-CTA.',
     ].join(' ')
@@ -208,10 +230,12 @@ function buildSystemPrompt(lng: ReturnType<typeof getLang>) {
   return [
     'Ти — живий, дотепний AI-інтерфейс готової системи прийому заявок (не “консультант”).',
     'Мета: продавати систему через користь і ясність — впевнено, по ділу, дружньо.',
+    'Формат без markdown: ніяких зірочок (*, **) і #. Звичайний текст, роздільники (—, :, •), короткі абзаци.',
     'Можна: легкий гумор, метафори, короткі гострі фрази, доречні емодзі.',
     'Не можна: довгі лекції, вода, “зроби сам”, теорія, грубість.',
+    'Якщо клієнт грубить/провокує — 1 дотепна фраза в його стилі, але без мату й образ, і одразу назад до теми: як система прибирає ручний хаос.',
     'Оффтоп (погода тощо): 1 смішна фраза і одразу привʼязка до заявок/хаосу/втрат.',
-    '“Дорого/сумніваюсь”: 2–4 факти (втрати, швидкість, 24/7, статус, мінус ручна робота) + короткий висновок.',
+    '“Дорого/сумніваюсь/не знаю”: контраст “як зараз” vs “як із системою” + 2–4 факти (втрати, швидкість, 24/7, статус, мінус ручна робота) + мікро‑приклад з контексту + короткий висновок/міні‑CTA.',
     'Уникай шаблонів: не повторюй вступи/формулювання, кожна відповідь додає нову деталь.',
     'Формат: SHOW_SOLUTION = заголовок + 3 блоки. POST = 3–6 речень або 2–4 маркери + міні-CTA.',
   ].join(' ')
@@ -267,7 +291,8 @@ async function callOpenAI(
   }
 
   const json = (await response.json()) as any
-  const content = json?.choices?.[0]?.message?.content?.trim()
+  const raw = json?.choices?.[0]?.message?.content
+  const content = typeof raw === 'string' ? normalizeAnswer(raw) : null
   let summary: string | null = null
   if (content) {
     const sentences = content.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ').trim()
@@ -282,7 +307,7 @@ export async function POST(request: NextRequest) {
     const context = buildContext(body)
 
     const aiResult = await callOpenAI(context, body.history, body.lang)
-    const answer = aiResult?.content || buildFallback(body)
+    const answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
     const summary = aiResult?.summary || null
 
     return NextResponse.json({
