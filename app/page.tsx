@@ -22,6 +22,13 @@ type Dict = {
   resultTitle: string
   resultBullets: { text: string; stat?: string }[]
   resultCta: string
+  packagesTitle: string
+  packages: { name: string; price: string; desc: string; cta: string }[]
+  pilotTitle: string
+  pilotDesc: string
+  pilotList: string[]
+  pilotCta: string
+  pilotNote: string
   formTitle: string
   formSubtitle: string
   name: string
@@ -65,6 +72,17 @@ const dict: Record<Lang, Dict> = {
       { text: 'Менше хаосу — більше продажів', stat: 'Мінус ручна робота' },
     ],
     resultCta: 'Побачити це в дії',
+    packagesTitle: 'Пакети',
+    packages: [
+      { name: 'Пакет 1', price: '600–900 €', desc: 'База: сайт + AI чат + заявки + Telegram.', cta: '⚡️ Замовити' },
+      { name: 'Пакет 2', price: '1200–1500 €', desc: 'Більше автоматики: онлайн‑запис, сценарії, статуси.', cta: '⚡️ Замовити' },
+      { name: 'Пакет 3', price: '2000–3000 €', desc: 'Максимум: інтеграції, CRM/таблиця, аналітика, кастом.', cta: '⚡️ Замовити' },
+    ],
+    pilotTitle: '🏎 Пілотні проекти — перші 5 клієнтів отримують систему за спеціальною ціною!',
+    pilotDesc: 'Тестуєш систему, бачиш як вона працює, отримуєш повний пакет, але зі знижкою 400–500 €. Обмежено 5 місць!',
+    pilotList: ['Сайт + AI чат для клієнтів', 'Автоматичне приймання заявок', 'Онлайн‑запис і Telegram повідомлення'],
+    pilotCta: '⚡️ Стати пілотом зараз',
+    pilotNote: 'Після 5 клієнтів — повертаємося до стандартних пакетів.',
     formTitle: 'Хочеш рішення прямо зараз?',
     formSubtitle: 'Я покажу, як це може працювати у вашому бізнесі',
     name: 'Імʼя',
@@ -106,6 +124,17 @@ const dict: Record<Lang, Dict> = {
       { text: 'Меньше хаоса — больше продаж', stat: 'Минус ручная работа' },
     ],
     resultCta: 'Увидеть это в действии',
+    packagesTitle: 'Пакеты',
+    packages: [
+      { name: 'Пакет 1', price: '600–900 €', desc: 'База: сайт + AI чат + заявки + Telegram.', cta: '⚡️ Заказать' },
+      { name: 'Пакет 2', price: '1200–1500 €', desc: 'Больше автоматики: онлайн‑запись, сценарии, статусы.', cta: '⚡️ Заказать' },
+      { name: 'Пакет 3', price: '2000–3000 €', desc: 'Максимум: интеграции, CRM/таблица, аналитика, кастом.', cta: '⚡️ Заказать' },
+    ],
+    pilotTitle: '🏎 Пилотные проекты — первые 5 клиентов получают систему по спеццене!',
+    pilotDesc: 'Тестируешь систему, видишь как она работает, получаешь полный пакет, но со скидкой 400–500 €. Мест всего 5!',
+    pilotList: ['Сайт + AI чат для клиентов', 'Автоматический приём заявок', 'Онлайн‑запись и Telegram уведомления'],
+    pilotCta: '⚡️ Стать пилотом сейчас',
+    pilotNote: 'После 5 клиентов — возвращаемся к стандартным пакетам.',
     formTitle: 'Хочешь решение прямо сейчас?',
     formSubtitle: 'Я покажу, как это может работать в вашем бизнесе',
     name: 'Имя',
@@ -147,6 +176,17 @@ const dict: Record<Lang, Dict> = {
       { text: 'Méně chaosu — více prodejů', stat: 'Minus ruční práce' },
     ],
     resultCta: 'Uvidět to v akci',
+    packagesTitle: 'Balíčky',
+    packages: [
+      { name: 'Balíček 1', price: '600–900 €', desc: 'Základ: web + AI chat + poptávky + Telegram.', cta: '⚡️ Objednat' },
+      { name: 'Balíček 2', price: '1200–1500 €', desc: 'Více automatiky: online rezervace, scénáře, statusy.', cta: '⚡️ Objednat' },
+      { name: 'Balíček 3', price: '2000–3000 €', desc: 'Maximum: integrace, CRM/tabulka, analytika, custom.', cta: '⚡️ Objednat' },
+    ],
+    pilotTitle: '🏎 Pilotní projekty — prvních 5 klientů má speciální cenu!',
+    pilotDesc: 'Otestuješ systém, uvidíš jak běží, dostaneš plný balíček se slevou 400–500 €. Jen 5 míst!',
+    pilotList: ['Web + AI chat pro klienty', 'Automatický příjem poptávek', 'Online rezervace + Telegram notifikace'],
+    pilotCta: '⚡️ Být pilot teď',
+    pilotNote: 'Po 5 klientech se vracíme ke стандартním balíčkům.',
     formTitle: 'Chceš řešení hned teď?',
     formSubtitle: 'Ukážu, jak to může fungovat ve tvém byznysu',
     name: 'Jméno',
@@ -439,6 +479,66 @@ export default function Home() {
                   >
                     {t.resultCta}
                   </a>
+                </div>
+
+                {/* PACKAGES + PILOT (inside the same block to keep the page structure clean) */}
+                <div className="pt-10 border-t border-white/10 space-y-8">
+                  <h3 className="text-2xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-center">
+                    {t.packagesTitle}
+                  </h3>
+
+                  <div className="grid gap-5 lg:grid-cols-3">
+                    {t.packages.map((p) => (
+                      <div
+                        key={p.name}
+                        className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-3xl p-7 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/10 hover:shadow-[0_18px_60px_rgba(99,102,241,0.25)] hover:-translate-y-1"
+                      >
+                        <div className="space-y-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-indigo-200 uppercase tracking-[0.18em]">{p.name}</p>
+                              <p className="text-3xl font-black text-white leading-tight">{p.price}</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500/25 to-purple-500/25 border border-white/10 flex items-center justify-center text-white shadow-inner">
+                              ⚡
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-300 leading-relaxed">{p.desc}</p>
+                          <a
+                            href={ctaHref}
+                            className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4 text-base font-black text-white hover:from-indigo-600 hover:to-purple-700 hover:scale-[1.02] active:scale-[0.99] transition-all shadow-[0_10px_30px_rgba(99,102,241,0.35)]"
+                          >
+                            {p.cta}
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-[32px] border-2 border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-slate-900/40 to-purple-500/15 p-8 sm:p-10 backdrop-blur-xl shadow-[0_25px_90px_rgba(245,158,11,0.18)]">
+                    <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-400/15 blur-3xl rounded-full" />
+                    <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-purple-500/15 blur-3xl rounded-full" />
+                    <div className="relative space-y-5">
+                      <h4 className="text-xl sm:text-2xl font-black text-white">{t.pilotTitle}</h4>
+                      <p className="text-slate-200/90 text-sm sm:text-base leading-relaxed">{t.pilotDesc}</p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {t.pilotList.map((x) => (
+                          <div key={x} className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-slate-100">
+                            — {x}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center pt-2">
+                        <a
+                          href={ctaHref}
+                          className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-8 py-4 text-base font-black text-slate-900 hover:from-amber-300 hover:to-orange-400 hover:scale-105 active:scale-95 transition-all shadow-[0_18px_60px_rgba(245,158,11,0.35)]"
+                        >
+                          {t.pilotCta}
+                        </a>
+                        <p className="text-xs text-slate-300/90 italic">{t.pilotNote}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
