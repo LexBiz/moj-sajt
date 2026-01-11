@@ -285,21 +285,21 @@ export default function Home() {
         .animate-float { animation: float 8s ease-in-out infinite; }
       `}</style>
 
-      <main className="relative min-h-screen bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 text-slate-900 overflow-x-hidden">
+      <main className="relative min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-x-hidden">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          {/* Subtle dot pattern for premium tech feel */}
-          <div className="absolute inset-0 opacity-[0.15]" style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(100 116 139) 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
+          {/* Tech grid pattern */}
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(255 255 255) 1px, transparent 0)`,
+            backgroundSize: '50px 50px'
           }} />
-          {/* Soft mesh gradient overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-200/30 via-transparent to-transparent" />
-          {/* Minimal glow accents */}
-          <div className="absolute top-0 -left-20 w-96 h-96 bg-slate-300/15 rounded-full blur-3xl animate-gradient" />
-          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-slate-300/15 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-transparent to-transparent" />
+          {/* Glow accents */}
+          <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-gradient" />
+          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-12s' }} />
         </div>
 
-        <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200 shadow-sm">
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-white/10 shadow-sm">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 group">
               <div className="relative">
@@ -318,7 +318,7 @@ export default function Home() {
                   onClick={() => setLang(lng)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
                     lang === lng
-                      ? 'bg-gradient-to-r from-slate-800 to-slate-700 border-transparent text-white shadow-lg scale-105'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 border-transparent text-white shadow-lg scale-105'
                       : 'bg-white border-gray-200 text-slate-700 hover:bg-gray-50 hover:border-gray-300 hover:scale-105 shadow-sm'
                   }`}
                 >
@@ -352,9 +352,9 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <a
                       href={ctaHref}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-8 py-4 text-base sm:text-lg font-black text-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(0,0,0,0.25)] hover:scale-105 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base sm:text-lg font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-105 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative flex items-center gap-2">
                         <span>{t.ctaPrimary}</span>
                         <span className="text-xl">→</span>
@@ -424,7 +424,7 @@ export default function Home() {
                 <div className="text-center pt-4">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
                   >
                     {t.howCta}
                   </a>
@@ -467,7 +467,7 @@ export default function Home() {
                 <div className="text-center pt-4">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
                   >
                     {t.whoCta}
                   </a>
@@ -511,7 +511,7 @@ export default function Home() {
                 <div className="text-center pt-6">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
                   >
                     {t.resultCta}
                   </a>
@@ -660,9 +660,9 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-12 py-6 text-xl font-black text-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(0,0,0,0.25)] hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-12 py-6 text-xl font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative">{loading ? '...' : t.formCta}</span>
                     </button>
                   </div>
