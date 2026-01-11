@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 type Lang = 'ua' | 'ru' | 'cz'
 
@@ -157,11 +157,6 @@ const dict: Record<Lang, Dict> = {
   },
 }
 
-type BlockProps = { children: React.ReactNode }
-const Block = ({ children }: BlockProps) => (
-  <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">{children}</div>
-)
-
 export default function Home() {
   const [lang, setLang] = useState<Lang>('ua')
   const [name, setName] = useState('')
@@ -170,10 +165,32 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set())
+  const sectionsRef = useRef<(HTMLDivElement | null)[]>([])
 
   const t = dict[lang]
   const ctaHref = '/flow?src=site'
   const aboutHref = 'https://t.me/temoxa_1'
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const idx = sectionsRef.current.indexOf(entry.target as HTMLDivElement)
+          if (entry.isIntersecting && idx >= 0) {
+            setVisibleSections((prev) => new Set(prev).add(idx))
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+
+    sectionsRef.current.forEach((el) => {
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -208,194 +225,305 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950" />
-        <div className="absolute -top-10 -left-10 w-64 h-64 bg-indigo-500/20 blur-3xl rounded-full" />
-        <div className="absolute -bottom-16 -right-16 w-72 h-72 bg-purple-500/20 blur-3xl rounded-full" />
-          </div>
+    <>
+      <style jsx>{`
+        @keyframes gradient-shift {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(10%, 10%) scale(1.1); }
+          50% { transform: translate(-5%, 15%) scale(0.95); }
+          75% { transform: translate(-10%, -10%) scale(1.05); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes glow-pulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(139, 92, 246, 0.2); }
+          50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), 0 0 60px rgba(139, 92, 246, 0.4); }
+        }
+        .animate-gradient { animation: gradient-shift 20s ease-in-out infinite; }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-shimmer {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+          background-size: 200% 100%;
+          animation: shimmer 3s infinite;
+        }
+        .animate-glow { animation: glow-pulse 3s ease-in-out infinite; }
+      `}</style>
 
-      <header className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="TemoWeb" className="h-9 w-9 rounded-md border border-white/10" />
-            <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-indigo-200 font-semibold">TemoWeb</p>
-            <p className="text-sm text-slate-400">{t.headerSubtitle}</p>
-            </div>
-            </div>
-        <div className="flex items-center gap-2">
-          {(['ua', 'ru', 'cz'] as Lang[]).map((lng) => (
-            <button
-              key={lng}
-              onClick={() => setLang(lng)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                lang === lng
-                  ? 'bg-white/10 border-white/20 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]'
-                  : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'
-              }`}
-            >
-              {lng.toUpperCase()}
-            </button>
-          ))}
+      <main className="relative min-h-screen bg-slate-950 text-white overflow-x-hidden">
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950" />
+          <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-gradient" />
+          <div className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-3xl animate-gradient" style={{ animationDelay: '-10s' }} />
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-float" />
         </div>
-      </header>
 
-      <div className="max-w-4xl mx-auto px-4 pb-16 space-y-10">
-        {/* HERO */}
-        <Block>
-          <div className="space-y-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 border border-indigo-400/30 px-3 py-1 text-xs text-indigo-100 uppercase tracking-[0.18em]">
-              {t.badge}
-                </span>
-            <h1 className="text-3xl sm:text-4xl font-black leading-tight text-white">{t.heroTitle}</h1>
-            <p className="text-base sm:text-lg text-slate-200 leading-relaxed">{t.heroSubtitle}</p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <a
-                href={ctaHref}
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-sm sm:text-base font-semibold text-white shadow-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
-              >
-                {t.ctaPrimary}
-                </a>
-                <a
-                href={ctaHref}
-                className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm sm:text-base font-semibold text-white bg-white/10 border border-white/10 hover:bg-white/15 transition-all"
-                >
-                {t.ctaSecondary}
-                </a>
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/70 border-b border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 group">
+              <div className="relative">
+                <img src="/logo.png" alt="TemoWeb" className="h-10 w-10 rounded-xl border border-white/10 shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3" />
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-            <p className="text-xs text-slate-400">{t.note}</p>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-indigo-200 font-bold">TemoWeb</p>
+                <p className="text-[11px] text-slate-400">{t.headerSubtitle}</p>
+              </div>
             </div>
-        </Block>
-
-        {/* HOW */}
-        <Block>
-          <div className="space-y-4">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">{t.howTitle}</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {t.howSteps.map((step, idx) => (
-                <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                  <p className="text-sm text-indigo-200 uppercase tracking-[0.15em]">0{idx + 1}</p>
-                  <h3 className="text-lg font-semibold text-white">{step.title}</h3>
-                  <p className="text-sm text-slate-200">{step.text}</p>
-                    </div>
-              ))}
-                      </div>
-            <a
-              href={ctaHref}
-              className="inline-flex items-center justify-center rounded-xl bg-white/10 border border-white/10 px-5 py-3 text-sm font-semibold text-white hover:bg-white/15 transition-all"
-            >
-              {t.howCta}
-            </a>
-              </div>
-        </Block>
-
-        {/* WHO */}
-        <Block>
-          <div className="space-y-4">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">{t.whoTitle}</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {t.whoList.map((item, idx) => (
-                <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-3 text-sm text-slate-200">
-                  {item}
-              </div>
-              ))}
-              </div>
-            <p className="text-sm text-slate-300">{t.whoText}</p>
-            <a
-              href={ctaHref}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
-            >
-              {t.whoCta}
-            </a>
-            </div>
-        </Block>
-
-        {/* RESULT */}
-        <Block>
-          <div className="space-y-4">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">{t.resultTitle}</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {t.resultBullets.map((item, idx) => (
-                <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-3 text-sm text-slate-200">
-                  {item}
-              </div>
-              ))}
-              </div>
-            <a
-              href={ctaHref}
-              className="inline-flex items-center justify-center rounded-xl bg-white/10 border border-white/10 px-5 py-3 text-sm font-semibold text-white hover:bg-white/15 transition-all"
-            >
-              {t.resultCta}
-                </a>
-          </div>
-        </Block>
-
-        {/* FORM */}
-        <Block>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">{t.formTitle}</h2>
-              <p className="text-sm sm:text-base text-slate-200">{t.formSubtitle}</p>
-        </div>
-            <form className="space-y-4" onSubmit={onSubmit}>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-300">{t.name}</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-xl bg-slate-900 border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
-                    placeholder={t.name}
-                    type="text"
-                  />
-            </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-300">{t.contact}</label>
-                  <input
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    className="w-full rounded-xl bg-slate-900 border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
-                    placeholder={t.contact}
-                    type="text"
-                    required
-                  />
-                        </div>
-                      </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">{t.comment}</label>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-xl bg-slate-900 border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 resize-none"
-                  placeholder={t.comment}
-                />
-          </div>
-
-              {error && <p className="text-sm text-amber-300">{error}</p>}
-              {success && <p className="text-sm text-emerald-300">{success}</p>}
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex items-center gap-2">
+              {(['ua', 'ru', 'cz'] as Lang[]).map((lng) => (
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:from-indigo-600 hover:to-purple-600 transition-all disabled:opacity-60"
+                  key={lng}
+                  onClick={() => setLang(lng)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
+                    lang === lng
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 border-transparent text-white shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-105'
+                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 hover:scale-105'
+                  }`}
                 >
-                  {loading ? '...' : t.formCta}
+                  {lng.toUpperCase()}
                 </button>
-                <span className="text-xs text-slate-400">{t.note}</span>
+              ))}
             </div>
-            </form>
-              </div>
-        </Block>
+          </div>
+        </header>
 
-        <footer className="py-8 text-center text-sm text-slate-500">
-          <a href={aboutHref} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-            {t.footerAbout}
-          </a>
-        </footer>
-      </div>
-    </main>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-16 sm:space-y-24">
+          {/* HERO */}
+          <div
+            ref={(el) => { sectionsRef.current[0] = el }}
+            className={`relative transition-all duration-1000 ${visibleSections.has(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          >
+            <div className="relative bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.5)] overflow-hidden group hover:border-white/20 transition-all duration-500">
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl" />
+              
+              <div className="relative space-y-6">
+                <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 px-4 py-2 text-xs text-indigo-100 uppercase tracking-[0.2em] font-bold backdrop-blur-sm shadow-lg">
+                  ⚡ {t.badge}
+                </span>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] bg-gradient-to-br from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                  {t.heroTitle}
+                </h1>
+                <p className="text-lg sm:text-xl text-slate-300 leading-relaxed max-w-3xl">
+                  {t.heroSubtitle}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <a
+                    href={ctaHref}
+                    className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_40px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_15px_50px_rgba(99,102,241,0.6)] hover:scale-105 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                    <span className="relative">{t.ctaPrimary}</span>
+                  </a>
+                  <a
+                    href={ctaHref}
+                    className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-bold text-white bg-white/10 border border-white/10 backdrop-blur-sm hover:bg-white/15 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
+                  >
+                    {t.ctaSecondary}
+                  </a>
+                </div>
+                <p className="text-xs text-slate-400 italic pt-2">{t.note}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* HOW */}
+          <div
+            ref={(el) => { sectionsRef.current[1] = el }}
+            className={`transition-all duration-1000 delay-150 ${visibleSections.has(1) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          >
+            <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
+              <div className="space-y-8">
+                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                  {t.howTitle}
+                </h2>
+                <div className="grid gap-6 sm:grid-cols-3">
+                  {t.howSteps.map((step, idx) => (
+                    <div
+                      key={idx}
+                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-sm transition-all duration-500 hover:border-indigo-400/40 hover:shadow-[0_10px_40px_rgba(99,102,241,0.2)] hover:-translate-y-1 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="relative space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm font-black shadow-lg">
+                            {idx + 1}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-white leading-snug">{step.title}</h3>
+                        <p className="text-sm text-slate-300 leading-relaxed">{step.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <a
+                  href={ctaHref}
+                  className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white bg-white/10 border border-white/10 backdrop-blur-sm hover:bg-white/15 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
+                >
+                  {t.howCta}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* WHO */}
+          <div
+            ref={(el) => { sectionsRef.current[2] = el }}
+            className={`transition-all duration-1000 delay-300 ${visibleSections.has(2) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          >
+            <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
+              <div className="space-y-8">
+                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                  {t.whoTitle}
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {t.whoList.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-xl px-5 py-4 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400/40 hover:bg-white/10 hover:text-white hover:shadow-[0_5px_20px_rgba(99,102,241,0.15)] hover:-translate-y-0.5 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 group-hover:animate-pulse" />
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-base text-slate-300 leading-relaxed italic">{t.whoText}</p>
+                <a
+                  href={ctaHref}
+                  className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_40px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_15px_50px_rgba(99,102,241,0.6)] hover:scale-105"
+                >
+                  {t.whoCta}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* RESULT */}
+          <div
+            ref={(el) => { sectionsRef.current[3] = el }}
+            className={`transition-all duration-1000 delay-[450ms] ${visibleSections.has(3) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          >
+            <div className="relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden hover:border-white/20 transition-all duration-500">
+              <div className="space-y-8">
+                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                  {t.resultTitle}
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {t.resultBullets.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="group relative bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-400/20 rounded-xl px-5 py-4 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:text-white hover:shadow-[0_5px_25px_rgba(16,185,129,0.2)] hover:-translate-y-0.5"
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center text-white text-xs font-black shadow-lg">
+                          ✓
+                        </span>
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <a
+                  href={ctaHref}
+                  className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white bg-white/10 border border-white/10 backdrop-blur-sm hover:bg-white/15 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
+                >
+                  {t.resultCta}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* FORM */}
+          <div
+            ref={(el) => { sectionsRef.current[4] = el }}
+            className={`transition-all duration-1000 delay-[600ms] ${visibleSections.has(4) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          >
+            <div className="relative bg-gradient-to-br from-slate-800/40 to-slate-900/40 border border-white/10 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.5)] overflow-hidden hover:border-white/20 transition-all duration-500">
+              <div className="absolute -top-16 -right-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl" />
+              
+              <div className="relative space-y-8">
+                <div className="space-y-3">
+                  <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                    {t.formTitle}
+                  </h2>
+                  <p className="text-base text-slate-300 leading-relaxed">{t.formSubtitle}</p>
+                </div>
+                <form className="space-y-6" onSubmit={onSubmit}>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-sm text-slate-300 font-semibold">{t.name}</label>
+                      <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full rounded-xl bg-slate-900/60 border border-white/10 px-5 py-3.5 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-slate-900/80 transition-all backdrop-blur-sm shadow-inner"
+                        placeholder={t.name}
+                        type="text"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-slate-300 font-semibold">{t.contact}</label>
+                      <input
+                        value={contact}
+                        onChange={(e) => setContact(e.target.value)}
+                        className="w-full rounded-xl bg-slate-900/60 border border-white/10 px-5 py-3.5 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-slate-900/80 transition-all backdrop-blur-sm shadow-inner"
+                        placeholder={t.contact}
+                        type="text"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-slate-300 font-semibold">{t.comment}</label>
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-xl bg-slate-900/60 border border-white/10 px-5 py-3.5 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 focus:bg-slate-900/80 transition-all backdrop-blur-sm shadow-inner resize-none"
+                      placeholder={t.comment}
+                    />
+                  </div>
+
+                  {error && <p className="text-sm text-amber-300 font-semibold flex items-center gap-2">⚠️ {error}</p>}
+                  {success && <p className="text-sm text-emerald-300 font-semibold flex items-center gap-2">✓ {success}</p>}
+
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-8 py-4 text-base font-bold text-white shadow-[0_10px_40px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_15px_50px_rgba(99,102,241,0.6)] hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+                    >
+                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="relative">{loading ? '...' : t.formCta}</span>
+                    </button>
+                    <span className="text-xs text-slate-400 italic">{t.note}</span>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <footer className="py-12 text-center">
+            <a
+              href={aboutHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-all duration-300 group"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 group-hover:animate-pulse" />
+              {t.footerAbout}
+            </a>
+          </footer>
+        </div>
+      </main>
+    </>
   )
 }
-
