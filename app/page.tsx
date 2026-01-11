@@ -258,7 +258,7 @@ export default function Home() {
         }),
       })
       if (!res.ok) throw new Error('submit')
-      setName('')
+        setName('')
       setContact('')
       setComment('')
       setSuccess(t.formSuccess)
@@ -295,7 +295,7 @@ export default function Home() {
           {/* Subtle glow */}
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-3xl" />
-        </div>
+          </div>
 
         <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0f172a]/80 border-b border-white/5 shadow-lg shadow-black/20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
@@ -303,15 +303,15 @@ export default function Home() {
               <div className="relative">
                 <img src="/logo.png" alt="TemoWeb" className="h-10 w-10 rounded-xl border border-white/10 shadow-lg transition-transform group-hover:scale-110" />
                 <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div>
+            </div>
+            <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-white font-bold">TemoWeb</p>
                 <p className="text-[11px] text-white/60">{t.headerSubtitle}</p>
-              </div>
+            </div>
             </div>
             <div className="flex items-center gap-2">
               {(['ua', 'ru', 'cz'] as Lang[]).map((lng) => (
-                <button
+            <button
                   key={lng}
                   onClick={() => setLang(lng)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
@@ -321,11 +321,11 @@ export default function Home() {
                   }`}
                 >
                   {lng.toUpperCase()}
-                </button>
+            </button>
               ))}
-            </div>
           </div>
-        </header>
+        </div>
+      </header>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-16 sm:space-y-24">
           {/* HERO */}
@@ -340,10 +340,10 @@ export default function Home() {
                 <div className="space-y-6 lg:pr-8">
                   <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/30 px-4 py-2 text-xs text-blue-400 uppercase tracking-[0.2em] font-bold">
                     ⚡ {t.badge}
-                  </span>
+                </span>
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.05] text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
-                    {t.heroTitle}
-                  </h1>
+                {t.heroTitle}
+              </h1>
                   <p className="text-base sm:text-lg lg:text-xl text-white/70 leading-relaxed">
                     {t.heroSubtitle}
                   </p>
@@ -357,17 +357,17 @@ export default function Home() {
                         <span>{t.ctaPrimary}</span>
                         <span className="text-xl">→</span>
                       </span>
-                    </a>
-                    <a
+                </a>
+                <a
                       href={ctaHref}
                       className="inline-flex items-center justify-center rounded-2xl px-6 py-4 text-base sm:text-lg font-bold text-white bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105"
-                    >
+                >
                       {t.ctaSecondary}
-                    </a>
-                  </div>
+                </a>
+              </div>
                   <p className="text-xs sm:text-sm text-white/50 font-medium">{t.ctaNote}</p>
-                </div>
-
+            </div>
+            
                 {/* RIGHT: SORA IMAGE */}
                 <div className="relative aspect-[4/3] lg:aspect-square rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.4)] group-hover:shadow-[0_30px_80px_rgba(59,130,246,0.3)] transition-all order-first lg:order-last">
                   <img 
@@ -378,11 +378,11 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/60 to-transparent" />
                   {/* Glow behind image */}
                   <div className="absolute -inset-4 bg-blue-500/20 blur-2xl opacity-50 -z-10" />
-                </div>
-              </div>
-            </div>
-          </div>
-
+                    </div>
+                      </div>
+                    </div>
+                  </div>
+                  
           {/* HOW */}
           <div
             ref={(el) => { sectionsRef.current[1] = el }}
@@ -392,13 +392,13 @@ export default function Home() {
               {/* ИЗОБРАЖЕНИЕ №2 (21:9) — Sora flow background */}
               <div className="absolute inset-0 opacity-20">
                 <img src="/flow-bg.jpg" alt="" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/90 to-white/95" />
+                        </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/60 via-[#1e293b]/80 to-[#0f172a]/90" />
               
               <div className="relative space-y-10">
-                <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent text-center">
+                <h2 className="text-3xl sm:text-5xl font-black text-white text-center">
                   {t.howTitle}
-                </h2>
+            </h2>
                 <div className="grid gap-8 sm:grid-cols-3">
                   {t.howSteps.map((step, idx) => {
                     const icons = [MessageSquare, Zap, CheckCircle2]
@@ -412,15 +412,15 @@ export default function Home() {
                         <div className="relative space-y-4 text-center">
                           <div className="mx-auto w-16 h-16 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Icon className="w-8 h-8 text-white/80" strokeWidth={1.5} />
-                          </div>
-                          <div className="w-12 mx-auto h-0.5 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          </div>
+                          <div className="w-12 mx-auto h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                           <h3 className="text-xl font-black text-white leading-snug">{step.title}</h3>
                           <p className="text-sm text-white/70 leading-relaxed">{step.text}</p>
-                        </div>
-                      </div>
+                </div>
+              </div>
                     )
                   })}
-                </div>
+            </div>
                 <div className="text-center pt-4">
                   <a
                     href={ctaHref}
@@ -431,18 +431,18 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
+                </div>
 
           {/* WHO */}
           <div
             ref={(el) => { sectionsRef.current[2] = el }}
             className={`transition-all duration-1000 delay-300 ${visibleSections.has(2) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-gradient-to-br from-gray-50 to-white border border-white/10 rounded-[32px] p-8 sm:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.06)] overflow-hidden hover:shadow-[0_25px_100px_rgba(0,0,0,0.10)] transition-all duration-500">
+            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 sm:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.3)] overflow-hidden hover:border-white/20 hover:shadow-[0_25px_100px_rgba(0,0,0,0.4)] transition-all duration-500">
               <div className="space-y-10">
-                <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent text-center">
+                <h2 className="text-3xl sm:text-5xl font-black text-white text-center">
                   {t.whoTitle}
-                </h2>
+            </h2>
                 <div className="grid sm:grid-cols-2 gap-5">
                   {t.whoList.map((item, idx) => {
                     const whoIcons = [Scissors, Car, GraduationCap, Wrench, Briefcase]
@@ -459,10 +459,10 @@ export default function Home() {
                           </span>
                           <span className="text-base font-bold text-white/80 group-hover:text-white transition-colors">{item}</span>
                         </span>
-                      </div>
+              </div>
                     )
                   })}
-                </div>
+              </div>
                 <p className="text-lg text-white/70 leading-relaxed text-center italic">{t.whoText}</p>
                 <div className="text-center pt-4">
                   <a
@@ -471,10 +471,10 @@ export default function Home() {
                   >
                     {t.whoCta}
                   </a>
-                </div>
               </div>
             </div>
-          </div>
+              </div>
+              </div>
 
           {/* RESULT */}
           <div
@@ -485,7 +485,7 @@ export default function Home() {
               <div className="space-y-10">
                 <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent text-center">
                   {t.resultTitle}
-                </h2>
+            </h2>
                 <div className="grid sm:grid-cols-2 gap-5">
                   {t.resultBullets.map((item, idx) => (
                     <div
@@ -502,12 +502,12 @@ export default function Home() {
                             {item.stat && (
                               <p className="text-sm text-emerald-300 font-semibold">{item.stat}</p>
                             )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+          </div>
+              </div>
+              </div>
+              </div>
                   ))}
-                </div>
+              </div>
                 <div className="text-center pt-6">
                   <a
                     href={ctaHref}
@@ -515,7 +515,7 @@ export default function Home() {
                   >
                     {t.resultCta}
                   </a>
-                </div>
+              </div>
 
                 {/* PILOT + PACKAGES (inside the same block to keep the page structure clean) */}
                 <div className="pt-10 border-t border-white/10 space-y-10">
@@ -530,15 +530,15 @@ export default function Home() {
                         <div className="space-y-2">
                           <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
                             {t.pilotTitle}
-                          </h3>
+              </h3>
                           <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-3xl">
                             {t.pilotDesc}
-                          </p>
-                        </div>
+              </p>
+                </div>
                         <div className="inline-flex items-center justify-center rounded-3xl bg-white/10 backdrop-blur border border-amber-400/50 px-5 py-3 text-xs sm:text-sm font-black text-amber-300 shadow-sm">
                           5 місць / 5 місць / 5 míst
-                        </div>
-                      </div>
+                </div>
+                </div>
 
                       <div className="grid gap-3 sm:grid-cols-3">
                         {t.pilotList.map((x) => (
@@ -547,9 +547,9 @@ export default function Home() {
                             className="rounded-2xl bg-white/10 backdrop-blur border border-amber-400/30 px-4 py-3 text-sm text-white/80 shadow-sm"
                           >
                             — {x}
-                          </div>
+              </div>
                         ))}
-                      </div>
+                </div>
 
                       <div className="flex flex-col sm:flex-row gap-3 sm:items-center pt-1">
                         <a
@@ -559,10 +559,10 @@ export default function Home() {
                           {t.pilotCta} →
                         </a>
                         <p className="text-xs text-white/70 italic">{t.pilotNote}</p>
-                      </div>
-                    </div>
-                  </div>
-
+          </div>
+        </div>
+        </div>
+        
                   {/* PACKAGES (background / secondary) */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent text-center">
@@ -577,30 +577,30 @@ export default function Home() {
                         >
                           <div className="space-y-4">
                             <div className="flex items-start justify-between gap-3">
-                              <div>
+                <div>
                                 <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{p.name}</p>
                                 <p className="text-3xl font-black text-white leading-tight">{p.price}</p>
-                              </div>
+                </div>
                               <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/70 shadow-inner">
                                 ⚡
-                              </div>
-                            </div>
+                  </div>
+                </div>
                             <p className="text-sm text-white/70 leading-relaxed">{p.desc}</p>
                             <a
                               href={ctaHref}
                               className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 border border-white/10 px-6 py-4 text-base font-black text-white/80 hover:bg-white/15 hover:border-white/20 transition-all"
                             >
                               {p.cta}
-                            </a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                </a>
               </div>
             </div>
+            ))}
           </div>
+        </div>
+          </div>
+              </div>
+              </div>
+            </div>
 
           {/* FORM */}
           <div
@@ -615,9 +615,9 @@ export default function Home() {
                 <div className="space-y-4 text-center">
                   <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent">
                     {t.formTitle}
-                  </h2>
+            </h2>
                   <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">{t.formSubtitle}</p>
-                </div>
+          </div>
                 <form className="space-y-6 max-w-2xl mx-auto" onSubmit={onSubmit}>
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
@@ -629,7 +629,7 @@ export default function Home() {
                         placeholder={t.name}
                         type="text"
                       />
-                    </div>
+            </div>
                     <div className="space-y-2">
                       <label className="text-sm text-white/80 font-bold">{t.contact}</label>
                       <input
@@ -640,8 +640,8 @@ export default function Home() {
                         type="text"
                         required
                       />
-                    </div>
-                  </div>
+            </div>
+            </div>
                   <div className="space-y-2">
                     <label className="text-sm text-white/80 font-bold">{t.comment}</label>
                     <textarea
@@ -651,7 +651,7 @@ export default function Home() {
                       className="w-full rounded-xl bg-white/5 backdrop-blur border border-white/20 px-5 py-4 text-white placeholder:text-white/40 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-sm resize-none text-base"
                       placeholder={t.comment}
                     />
-                  </div>
+            </div>
 
                   {error && <p className="text-sm text-red-300 font-bold flex items-center justify-center gap-2">⚠️ {error}</p>}
                   {success && <p className="text-sm text-emerald-300 font-bold flex items-center justify-center gap-2">✓ {success}</p>}
@@ -665,16 +665,16 @@ export default function Home() {
                       <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-400 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative">{loading ? '...' : t.formCta}</span>
                     </button>
-                  </div>
+                      </div>
                 </form>
                 
                 <div className="flex items-center justify-center gap-3 pt-6 text-center">
                   <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.6)]" />
                   <p className="text-sm text-white/70 italic max-w-2xl">{t.trustBadge}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </div>
+                      </div>
+                    </div>
+                  </div>
 
           {/* ОПЦИОНАЛЬНО: ИЗОБРАЖЕНИЕ №3 (1:1) — брендовый акцент */}
           {/* 
@@ -682,23 +682,23 @@ export default function Home() {
             <div className="relative w-48 h-48 rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
               <img src="/brand-square.jpg" alt="" className="w-full h-full object-cover opacity-80" />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
-            </div>
-          </div>
+                      </div>
+                    </div>
           */}
 
           <footer className="py-12 text-center">
             <a
               href={aboutHref}
-              target="_blank"
-              rel="noopener noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-all duration-300 group"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:animate-pulse" />
               {t.footerAbout}
             </a>
           </footer>
-        </div>
-      </main>
+      </div>
+    </main>
     </>
   )
 }
