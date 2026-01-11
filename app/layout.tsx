@@ -11,15 +11,15 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'TemoWeb: Автоматизация заявок для сервисного бизнеса | Чат-боты за 3 дня',
-  description: 'Перестаньте терять клиентов. Автоматизируем сбор заявок для детейлинга, клиник, салонов услуг. Чат-бот за 3 дня. Бесплатный аудит. Работаем по Европе и Украине.',
-  keywords: ['автоматизация заявок', 'чат-бот для бизнеса', 'telegram бот', 'сбор заявок', 'CRM автоматизация', 'детейлинг', 'автосервис', 'TemoWeb', 'автоматизация салонов'],
+  title: 'Автоматичний прийом клієнтів без дзвінків | temoweb',
+  description: 'Система, яка автоматично приймає заявки, відповідає клієнтам і фіксує їх без менеджерів.',
+  keywords: ['автоматичний прийом клієнтів', 'автоматизація заявок', 'telegram бот', 'збір заявок', 'CRM', 'TemoWeb', 'temoweb'],
   authors: [{ name: 'TemoWeb' }],
   openGraph: {
     type: 'website',
-    locale: 'ru_RU',
-    title: 'TemoWeb: Автоматизация заявок для сервисного бизнеса | Чат-боты за 3 дня',
-    description: 'Перестаньте терять клиентов. Автоматизируем сбор заявок для детейлинга, клиник, салонов услуг. Чат-бот за 3 дня. Бесплатный аудит.',
+    locale: 'uk_UA',
+    title: 'Автоматичний прийом клієнтів без дзвінків | temoweb',
+    description: 'Система, яка автоматично приймає заявки, відповідає клієнтам і фіксує їх без менеджерів.',
     images: ['/logo.png'],
   },
   robots: {
@@ -42,7 +42,7 @@ export default function RootLayout({
   const cfToken = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN
 
   return (
-    <html lang="ru" className={inter.variable}>
+    <html lang="uk" className={inter.variable}>
       <head>
         {/* Preconnect для ускорения загрузки */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
