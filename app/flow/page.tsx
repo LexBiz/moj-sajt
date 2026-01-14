@@ -65,8 +65,8 @@ const translations: Record<Lang, Record<string, string>> = {
     errNeedChannels: 'Спочатку вкажіть канали',
     errNeedPains: 'Спочатку вкажіть біль',
     errLimit3: 'Максимум 5 питань. Якщо готово — продовжуй до контакту.',
-    aiDefaultFirst: 'Покажи, як система вже працює саме в моєму бізнесі',
-    aiDefaultNext: 'Уточни по системі',
+    aiDefaultFirst: 'Продай мені цю систему по фактах: що зміниться в моєму бізнесі вже з першого дня',
+    aiDefaultNext: 'Дай точну відповідь по системі (без води)',
     aiErrorGeneric: 'Не вдалось отримати відповідь. Спробуй ще раз або продовжуй до контакту.',
     contactErrNeed: 'Додайте email або @telegram',
     contactErrFailed: 'Не вдалось надіслати. Перевірте контакт або спробуйте пізніше.',
@@ -127,8 +127,8 @@ const translations: Record<Lang, Record<string, string>> = {
     errNeedChannels: 'Сначала укажи каналы',
     errNeedPains: 'Сначала укажи боль',
     errLimit3: 'Максимум 5 вопросов. Готово — переходи к контакту.',
-    aiDefaultFirst: 'Покажи, как система уже работает именно в моём бизнесе',
-    aiDefaultNext: 'Уточни по системе',
+    aiDefaultFirst: 'Продай мне эту систему по фактам: что изменится в моём бизнесе уже с первого дня',
+    aiDefaultNext: 'Дай точный ответ по системе (без воды)',
     aiErrorGeneric: 'Не удалось получить ответ. Попробуй ещё раз или переходи к контакту.',
     contactErrNeed: 'Добавь email или @telegram',
     contactErrFailed: 'Не удалось отправить. Проверь контакт или попробуй позже.',
@@ -189,8 +189,8 @@ const translations: Record<Lang, Record<string, string>> = {
     errNeedChannels: 'Nejdřív vyber kanály',
     errNeedPains: 'Nejdřív vyber problém',
     errLimit3: 'Maximálně 5 otázek. Hotovo — pokračuj na kontakt.',
-    aiDefaultFirst: 'Ukaž, jak systém funguje přímo v mém byznysu',
-    aiDefaultNext: 'Upřesni to ohledně systému',
+    aiDefaultFirst: 'Prodej mi tenhle systém fakty: co se v mém byznysu změní už od prvního dne',
+    aiDefaultNext: 'Dej přesnou odpověď k systému (bez omáčky)',
     aiErrorGeneric: 'Nepodařilo se získat odpověď. Zkus to znovu nebo pokračuj na kontakt.',
     contactErrNeed: 'Přidej email nebo @telegram',
     contactErrFailed: 'Nepodařilo se odeslat. Zkontroluj kontakt nebo zkus později.',
@@ -533,6 +533,11 @@ export default function Home() {
       setSubmitError(t.contactErrNeed)
       return
     }
+    const extraQuestion = form.question.trim()
+    const clientMessages = [
+      ...form.history.filter((m) => m.role === 'user').map((m) => m.content),
+      ...(extraQuestion ? [extraQuestion] : []),
+    ].filter(Boolean)
     setSubmitError('')
     setSubmitLoading(true)
     try {
@@ -545,7 +550,8 @@ export default function Home() {
           businessType: businessResolved,
           channel: channelResolved,
           pain: painResolved,
-          question: form.question,
+          question: extraQuestion,
+          clientMessages,
           aiRecommendation: form.aiRecommendation || form.aiAnswer,
         }),
       })

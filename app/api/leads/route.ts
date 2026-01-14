@@ -11,6 +11,7 @@ type LeadPayload = {
   channel?: string
   pain?: string
   question?: string
+  clientMessages?: string[] // only client messages/questions; no AI answers
   aiRecommendation?: string
   aiSummary?: string
   phone?: string // for backward compatibility
@@ -41,12 +42,14 @@ function formatTelegramMessage(lead: any) {
   const question = safe(lead.question, 420)
   const name = safe(lead.name, 140)
   const contact = safe(lead.contact || lead.phone, 220)
-  const ai = safe(lead.aiRecommendation, 1400)
+  const rawClientMessages: unknown = lead.clientMessages
+  const clientMessages = (Array.isArray(rawClientMessages) ? rawClientMessages : [])
+    .map((x) => (typeof x === 'string' ? x.trim() : String(x ?? '').trim()))
+    .filter(Boolean)
+    .slice(0, 8)
+    .map((m) => clip(m, 240))
 
   const problemLine = pain !== '—' ? pain : 'Клієнти пишуть — відповідь “вручну” з’їдає час.'
-  const solutionLine =
-    'Автоприйом заявок + AI‑чат + фільтрація + статуси + Telegram‑сповіщення. Без дзвінків. Без хаосу.'
-  const resultLine = 'Заявки не губляться. Відповіді швидші. Ти бачиш все в одному місці.'
 
   const parts = [
     '📥 НОВА ЗАЯВКА НА СИСТЕМУ',
@@ -57,13 +60,11 @@ function formatTelegramMessage(lead: any) {
     `🏷 Бізнес: ${business}`,
     `📡 Канали: ${channels}`,
     '',
-    `😤 ПРОБЛЕМА: ${problemLine}`,
-    `⚙️ РІШЕННЯ: ${solutionLine}`,
-    `✅ РЕЗУЛЬТАТ: ${resultLine}`,
+    `😤 ПРОБЛЕМА/БІЛЬ: ${problemLine}`,
     '',
-    `❓ Питання клієнта: ${question}`,
-    '',
-    `🤖 AI (коротко): ${ai}`,
+    clientMessages.length
+      ? ['🗣 ПОВІДОМЛЕННЯ КЛІЄНТА:', ...clientMessages.map((m) => `— ${m}`)].join('\n')
+      : `🗣 ПОВІДОМЛЕННЯ КЛІЄНТА: ${question}`,
     '',
     `🕒 Час: ${lead.createdAt}`,
   ]
@@ -71,18 +72,20 @@ function formatTelegramMessage(lead: any) {
   // Telegram hard limit is 4096 chars; keep safe margin.
   let out = parts.join('\n')
   if (out.length > 3800) {
-    const trimmedAi = clip(ai, 700)
-    parts.splice(parts.indexOf(`🤖 AI (коротко): ${ai}`), 1, `🤖 AI (коротко): ${trimmedAi}`)
+    // First: shorten client message block
+    const shortMsgs = clientMessages.slice(0, 5).map((m) => clip(m, 160))
+    const msgBlock = shortMsgs.length
+      ? ['🗣 ПОВІДОМЛЕННЯ КЛІЄНТА:', ...shortMsgs.map((m) => `— ${m}`)].join('\n')
+      : `🗣 ПОВІДОМЛЕННЯ КЛІЄНТА: ${clip(question, 220)}`
+    const mIdx = parts.findIndex((x) => x.startsWith('🗣'))
+    if (mIdx >= 0) parts[mIdx] = msgBlock
     out = parts.join('\n')
   }
   if (out.length > 3800) {
-    // last resort: clip pain/question
+    // last resort: clip pain
     const trimmedPain = clip(problemLine, 220)
-    const trimmedQ = clip(question, 220)
-    const pIdx = parts.findIndex((x) => x.startsWith('😤 ПРОБЛЕМА:'))
-    const qIdx = parts.findIndex((x) => x.startsWith('❓ Питання клієнта:'))
-    if (pIdx >= 0) parts[pIdx] = `😤 ПРОБЛЕМА: ${trimmedPain}`
-    if (qIdx >= 0) parts[qIdx] = `❓ Питання клієнта: ${trimmedQ}`
+    const pIdx = parts.findIndex((x) => x.startsWith('😤'))
+    if (pIdx >= 0) parts[pIdx] = `😤 ПРОБЛЕМА/БІЛЬ: ${trimmedPain}`
     out = parts.join('\n')
   }
 
@@ -138,7 +141,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as LeadPayload
-    const { name, contact, businessType, channel, pain, question, aiRecommendation, aiSummary, phone } = body
+    const { name, contact, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, phone } = body
 
     const resolvedContact = contact || phone
     if (!resolvedContact) {
@@ -156,6 +159,7 @@ export async function POST(request: NextRequest) {
       channel: channel || null,
       pain: pain || null,
       question: question || null,
+      clientMessages: Array.isArray(clientMessages) ? clientMessages : null,
       aiRecommendation: aiRecommendation || null,
       aiSummary: aiSummary || null,
       createdAt: new Date().toISOString(),
