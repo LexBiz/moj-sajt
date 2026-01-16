@@ -135,6 +135,8 @@ async function sendInstagramMessage(recipientId: string, text: string) {
   if (!resp.ok) {
     const respText = await resp.text().catch(() => '')
     console.error('Instagram send error', resp.status, respText.slice(0, 400))
+  } else {
+    console.log('Instagram send ok', { recipientId })
   }
 }
 
@@ -227,6 +229,8 @@ export async function POST(request: NextRequest) {
       const senderId = msg.sender?.id
       const text = msg.message?.text?.trim()
       if (!senderId || !text) continue
+
+      console.log('IG webhook: incoming message', { senderId, text: clip(text, 200) })
 
       const contactHint = extractContact(text)
       if (contactHint || detectLeadIntent(text)) {
