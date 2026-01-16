@@ -24,6 +24,8 @@ const IG_USER_ID = process.env.INSTAGRAM_IG_USER_ID || ''
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 const BOOKING_URL = process.env.BOOKING_URL || ''
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
 function verifySignature(rawBody: string, signatureHeader: string | null) {
   if (!IG_APP_SECRET) {
@@ -42,6 +44,20 @@ function clip(text: string, max = 1000) {
 
 function detectBookingIntent(text: string) {
   return /(запис|запиш|брон|бронь|встреч|созвон|консультац|демо|demo|call|appointment)/i.test(text)
+}
+
+function detectLeadIntent(text: string) {
+  return /(купит|цена|стоим|пакет|сколько|интерес|нужно|хочу|подключ|заказ|демо|созвон|запис)/i.test(text)
+}
+
+function extractContact(text: string) {
+  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]
+  if (email) return email
+  const phone = text.match(/\+?\d[\d\s().-]{7,}/)?.[0]
+  if (phone) return phone.replace(/\s+/g, ' ').trim()
+  const tg = text.match(/@[\w\d_]{3,}/)?.[0]
+  if (tg) return tg
+  return null
 }
 
 function buildSystemPrompt() {
@@ -122,6 +138,48 @@ async function sendInstagramMessage(recipientId: string, text: string) {
   }
 }
 
+async function sendTelegramLead({
+  senderId,
+  messageText,
+  contactHint,
+}: {
+  senderId: string
+  messageText: string
+  contactHint: string | null
+}) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.warn('Telegram is not configured for IG leads')
+    return
+  }
+
+  const parts = [
+    '📥 НОВА ЗАЯВКА З INSTAGRAM',
+    '',
+    `🧾 Контакт (IG): ${senderId}`,
+    contactHint ? `☎️ Контакт клієнта: ${contactHint}` : '☎️ Контакт клієнта: —',
+    '',
+    '🗣 Повідомлення клієнта:',
+    `— ${clip(messageText, 800)}`,
+    '',
+    `🕒 Час: ${new Date().toISOString()}`,
+  ]
+
+  const text = parts.join('\n')
+  const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      disable_web_page_preview: true,
+    }),
+  })
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '')
+    console.error('Telegram send error (IG lead)', resp.status, body.slice(0, 400))
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('hub.mode')
@@ -158,6 +216,11 @@ export async function POST(request: NextRequest) {
       const senderId = msg.sender?.id
       const text = msg.message?.text?.trim()
       if (!senderId || !text) continue
+
+      const contactHint = extractContact(text)
+      if (contactHint || detectLeadIntent(text)) {
+        await sendTelegramLead({ senderId, messageText: text, contactHint })
+      }
 
       let reply = ''
       if (BOOKING_URL && detectBookingIntent(text)) {
