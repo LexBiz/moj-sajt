@@ -196,7 +196,13 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text()
   const signature = request.headers.get('x-hub-signature-256')
 
+  console.log('IG webhook: received', {
+    hasSignature: Boolean(signature),
+    length: rawBody.length,
+  })
+
   if (!verifySignature(rawBody, signature)) {
+    console.warn('IG webhook: invalid signature')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
   }
 
@@ -207,6 +213,11 @@ export async function POST(request: NextRequest) {
     console.error('Invalid JSON payload', error)
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
+
+  console.log('IG webhook: parsed payload', {
+    hasEntry: Boolean(payload?.entry?.length),
+    object: payload?.object || null,
+  })
 
   const entries = payload?.entry || []
   for (const entry of entries) {
