@@ -27,13 +27,13 @@ const BOOKING_URL = process.env.BOOKING_URL || ''
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
-function verifySignature(rawBody: string, signatureHeader: string | null) {
+function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   if (!IG_APP_SECRET) {
     console.warn('INSTAGRAM_APP_SECRET is missing; signature verification skipped')
     return true
   }
   if (!signatureHeader) return false
-  const expected = `sha256=${crypto.createHmac('sha256', IG_APP_SECRET).update(rawBody, 'utf8').digest('hex')}`
+  const expected = `sha256=${crypto.createHmac('sha256', IG_APP_SECRET).update(rawBody).digest('hex')}`
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader))
 }
 
@@ -195,22 +195,22 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rawBody = await request.text()
+  const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
 
   console.log('IG webhook: received', {
     hasSignature: Boolean(signature),
-    length: rawBody.length,
+    length: rawBuffer.length,
   })
 
-  if (!verifySignature(rawBody, signature)) {
+  if (!verifySignature(rawBuffer, signature)) {
     console.warn('IG webhook: invalid signature')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
   }
 
   let payload: IgWebhookPayload | null = null
   try {
-    payload = JSON.parse(rawBody)
+    payload = JSON.parse(rawBuffer.toString('utf8'))
   } catch (error) {
     console.error('Invalid JSON payload', error)
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
