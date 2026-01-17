@@ -18,6 +18,7 @@ type IgWebhookPayload = {
 
 const IG_VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || '').trim()
 const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
+const IG_SIGNATURE_BYPASS = (process.env.INSTAGRAM_SIGNATURE_BYPASS || '').trim() === 'true'
 const IG_ACCESS_TOKEN = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim()
 const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
 
@@ -28,6 +29,10 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
 function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
+  if (IG_SIGNATURE_BYPASS) {
+    console.warn('INSTAGRAM_SIGNATURE_BYPASS=true; signature verification skipped')
+    return true
+  }
   if (!IG_APP_SECRET) {
     console.warn('INSTAGRAM_APP_SECRET is missing; signature verification skipped')
     return true
