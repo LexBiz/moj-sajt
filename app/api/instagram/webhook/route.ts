@@ -16,10 +16,10 @@ type IgWebhookPayload = {
   }>
 }
 
-const IG_VERIFY_TOKEN = process.env.INSTAGRAM_VERIFY_TOKEN || ''
-const IG_APP_SECRET = process.env.INSTAGRAM_APP_SECRET || ''
-const IG_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN || ''
-const IG_USER_ID = process.env.INSTAGRAM_IG_USER_ID || ''
+const IG_VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || '').trim()
+const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
+const IG_ACCESS_TOKEN = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim()
+const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
