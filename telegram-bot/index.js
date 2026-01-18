@@ -4,10 +4,10 @@ require('dotenv').config({ path: path.join(__dirname, '.env') })
 const express = require('express')
 const { Telegraf, Markup } = require('telegraf')
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
-const PUBLIC_URL = process.env.TELEGRAM_PUBLIC_URL || ''
-const WEBHOOK_PATH = process.env.TELEGRAM_WEBHOOK_PATH || '/telegram/webhook'
-const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || ''
+const BOT_TOKEN = String(process.env.TELEGRAM_BOT_TOKEN || '').trim()
+const PUBLIC_URL = String(process.env.TELEGRAM_PUBLIC_URL || '').trim()
+const WEBHOOK_PATH = String(process.env.TELEGRAM_WEBHOOK_PATH || '/telegram/webhook').trim() || '/telegram/webhook'
+const WEBHOOK_SECRET = String(process.env.TELEGRAM_WEBHOOK_SECRET || '').trim()
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
@@ -18,6 +18,10 @@ const MAX_HISTORY = 10
 if (!BOT_TOKEN) {
   console.error('TELEGRAM_BOT_TOKEN is missing')
   process.exit(1)
+}
+
+if (!/^\d+:[A-Za-z0-9_-]{20,}$/.test(BOT_TOKEN)) {
+  console.error('TELEGRAM_BOT_TOKEN looks invalid (check you pasted exactly the BotFather token, without quotes/spaces).')
 }
 
 if (!fs.existsSync(DATA_DIR)) {
@@ -197,9 +201,38 @@ bot.on('text', async (ctx) => {
 const app = express()
 app.use(express.json())
 
-if (PUBLIC_URL) {
-  bot.telegram.setWebhook(`${PUBLIC_URL}${WEBHOOK_PATH}`, WEBHOOK_SECRET ? { secret_token: WEBHOOK_SECRET } : undefined)
+async function verifyToken() {
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`, { method: 'GET' })
+    const json = await resp.json().catch(() => null)
+    if (!resp.ok || !json?.ok) {
+      console.error('Telegram getMe failed:', resp.status, json)
+      return false
+    }
+    console.log('Telegram getMe ok:', { id: json.result?.id, username: json.result?.username })
+    return true
+  } catch (e) {
+    console.error('Telegram getMe error:', e?.message || e)
+    return false
+  }
 }
+
+async function ensureWebhook() {
+  const ok = await verifyToken()
+  if (!ok) return
+  if (!PUBLIC_URL) return
+  try {
+    await bot.telegram.setWebhook(
+      `${PUBLIC_URL}${WEBHOOK_PATH}`,
+      WEBHOOK_SECRET ? { secret_token: WEBHOOK_SECRET } : undefined,
+    )
+    console.log('Telegram webhook set:', `${PUBLIC_URL}${WEBHOOK_PATH}`)
+  } catch (e) {
+    console.error('Telegram setWebhook error:', e?.message || e)
+  }
+}
+
+void ensureWebhook()
 
 app.get('/', (_req, res) => {
   res.json({ ok: true })
