@@ -79,10 +79,87 @@ function normalizeAnswer(text) {
     .trim()
 }
 
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(String(text || '').trim())
+  } catch {
+    return null
+  }
+}
+
 function isOfftopic(text) {
   const s = String(text || '').trim()
   if (!s) return false
   return OFFTOPIC_PATTERNS.some((re) => re.test(s))
+}
+
+function looksLikeQuestion(text) {
+  const s = String(text || '').trim().toLowerCase()
+  if (!s) return false
+  if (s.includes('?')) return true
+  return /\b(что|как|почему|зачем|сколько|цена|сто(ит|ит\?)|время|срок|можно|нужно)\b/i.test(s)
+}
+
+function buildMissingPrompt(session) {
+  const missing = []
+  if (!session.business) missing.push('бизнес (ниша)')
+  if (!session.channels) missing.push('каналы (Instagram/сайт/WhatsApp/звонки)')
+  if (!session.pain) missing.push('боль (что бесит/где теряются заявки)')
+  return missing
+}
+
+function buildIntakeContext(session) {
+  const missing = buildMissingPrompt(session)
+  return [
+    'Ты в режиме сбора контекста перед подбором решения.',
+    'Правило: если клиент пишет свободный текст или задаёт вопрос — сначала ответь по сути, потом мягко дособери ТОЛЬКО 1 недостающий пункт.',
+    `Уже известно: бизнес=${session.business || '—'}, каналы=${session.channels || '—'}, боль=${session.pain || '—'}.`,
+    `Не хватает: ${missing.length ? missing.join(', ') : 'ничего'}.`,
+  ].join('\n')
+}
+
+async function extractIntakeViaAI(text, lang) {
+  // optional helper: extract business/channels/pain from free-form text (only when needed)
+  if (!OPENAI_API_KEY) return null
+  const payload = {
+    text: String(text || '').slice(0, 800),
+    lang: lang || 'ru',
+  }
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0,
+        max_tokens: 120,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Extract fields from the user message. Return ONLY minified JSON with keys: business, channels, pain. ' +
+              'Each value is a short string or null. Do not add any other keys. Do not invent.',
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const json = await resp.json()
+    const content = json?.choices?.[0]?.message?.content
+    const parsed = safeJsonParse(content)
+    if (!parsed || typeof parsed !== 'object') return null
+    return {
+      business: typeof parsed.business === 'string' && parsed.business.trim() ? parsed.business.trim() : null,
+      channels: typeof parsed.channels === 'string' && parsed.channels.trim() ? parsed.channels.trim() : null,
+      pain: typeof parsed.pain === 'string' && parsed.pain.trim() ? parsed.pain.trim() : null,
+    }
+  } catch {
+    return null
+  }
 }
 
 function buildOfftopicRedirect(lang) {
@@ -511,12 +588,22 @@ bot.on('text', async (ctx) => {
   const stage = session.stage || 'business'
 
   // Setup stages: business -> channels -> pain -> chat
-  if (stage !== 'chat' && !maybe && isOfftopic(userText)) {
+  if (!maybe && isOfftopic(userText)) {
     await ctx.reply(buildOfftopicRedirect(lang))
     return
   }
 
   if (stage === 'business') {
+    // If user asks something instead of providing a niche, answer and then ask for niche.
+    if (looksLikeQuestion(userText) || userText.length > 60) {
+      const extra = buildIntakeContext(session)
+      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+      await ctx.reply(reply)
+      await ctx.reply(
+        ['Чтобы подобрать решение и цену 🎯', '', 'Напиши 1 фразой: какой у тебя бизнес? (пример: “кофейня”)'].join('\n')
+      )
+      return
+    }
     const business = userText
     setSession(chatId, { ...session, lang, business, stage: 'channels', contact: nextContact || null, updatedAt: nowIso() })
     await ctx.reply(
@@ -533,6 +620,13 @@ bot.on('text', async (ctx) => {
   }
 
   if (stage === 'channels') {
+    if (looksLikeQuestion(userText) || userText.length > 80) {
+      const extra = buildIntakeContext(session)
+      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+      await ctx.reply(reply)
+      await ctx.reply(['Чтобы двинуться дальше ⚡️', '', 'Напиши: откуда приходят клиенты? (Instagram/сайт/WhatsApp/звонки)'].join('\n'))
+      return
+    }
     const channels = userText
     setSession(chatId, { ...session, lang, channels, stage: 'pain', contact: nextContact || null, updatedAt: nowIso() })
     await ctx.reply(
@@ -552,6 +646,13 @@ bot.on('text', async (ctx) => {
   }
 
   if (stage === 'pain') {
+    if (looksLikeQuestion(userText) || userText.length > 120) {
+      const extra = buildIntakeContext(session)
+      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+      await ctx.reply(reply)
+      await ctx.reply(['Чтобы я собрал точное решение ✅', '', 'Напиши: что бесит сильнее всего? (в 1 фразе)'].join('\n'))
+      return
+    }
     const pain = userText
     setSession(chatId, { ...session, lang, pain, stage: 'chat', contact: nextContact || null, updatedAt: nowIso() })
     await ctx.reply(
@@ -570,6 +671,20 @@ bot.on('text', async (ctx) => {
   if (!maybe && isOfftopic(userText)) {
     await ctx.reply(buildOfftopicRedirect(lang))
     return
+  }
+
+  // If user writes free-form message, try to extract missing intake fields (without forcing them)
+  if (stage !== 'chat' && OPENAI_API_KEY) {
+    const extracted = await extractIntakeViaAI(userText, lang)
+    if (extracted) {
+      const next = { ...session }
+      if (extracted.business && !next.business) next.business = extracted.business
+      if (extracted.channels && !next.channels) next.channels = extracted.channels
+      if (extracted.pain && !next.pain) next.pain = extracted.pain
+      // progress stage if possible
+      if (next.business && next.channels && next.pain) next.stage = 'chat'
+      setSession(chatId, { ...next, lang, contact: nextContact || null, updatedAt: nowIso() })
+    }
   }
 
   const nextHistory = [...history, { role: 'user', content: userText }].slice(-MAX_MODEL_MESSAGES)
@@ -614,6 +729,8 @@ bot.on('text', async (ctx) => {
     `Бизнес: ${session.business || 'не уточнили'}`,
     `Каналы: ${session.channels || 'не уточнили'}`,
     `Боль: ${session.pain || 'не уточнили'}`,
+    '',
+    'Правило: если клиент пишет “не по шаблону” — ответь по сути и мягко верни к оформлению (контакт + цель + пакет/пилот).',
   ].join('\n')
 
   const reply = await callOpenAI(nextHistory, lang, contextText)
