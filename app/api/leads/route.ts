@@ -14,6 +14,8 @@ type LeadPayload = {
   clientMessages?: string[] // only client messages/questions; no AI answers
   aiRecommendation?: string
   aiSummary?: string
+  source?: string
+  lang?: string
   phone?: string // for backward compatibility
 }
 
@@ -42,6 +44,9 @@ function formatTelegramMessage(lead: any) {
   const question = safe(lead.question, 420)
   const name = safe(lead.name, 140)
   const contact = safe(lead.contact || lead.phone, 220)
+  const source = safe(lead.source, 80)
+  const lang = safe(lead.lang, 20)
+  const summary = safe(lead.aiSummary, 900)
   const rawClientMessages: unknown = lead.clientMessages
   const clientMessages = (Array.isArray(rawClientMessages) ? rawClientMessages : [])
     .map((x) => (typeof x === 'string' ? x.trim() : String(x ?? '').trim()))
@@ -56,12 +61,15 @@ function formatTelegramMessage(lead: any) {
     '',
     `👤 Імʼя: ${name}`,
     `📩 Контакт: ${contact}`,
+    `🧭 Джерело: ${source}${lang !== '—' ? ` (${lang})` : ''}`,
     '',
     `🏷 Бізнес: ${business}`,
     `📡 Канали: ${channels}`,
     '',
     `😤 ПРОБЛЕМА/БІЛЬ: ${problemLine}`,
     '',
+    summary !== '—' ? `🧠 ПІДСУМОК:\n${summary}` : '',
+    summary !== '—' ? '' : '',
     clientMessages.length
       ? ['🗣 ПОВІДОМЛЕННЯ КЛІЄНТА:', ...clientMessages.map((m) => `— ${m}`)].join('\n')
       : `🗣 ПОВІДОМЛЕННЯ КЛІЄНТА: ${question}`,
@@ -127,21 +135,21 @@ async function sendTelegram(lead: any) {
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const password = process.env.ADMIN_PASSWORD || 'admin123'
-
+  
   if (authHeader !== `Bearer ${password}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   ensureDataDir()
   const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
-
+  
   return NextResponse.json(leads)
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as LeadPayload
-    const { name, contact, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, phone } = body
+    const { name, contact, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, phone } = body
 
     const resolvedContact = contact || phone
     if (!resolvedContact) {
@@ -150,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     ensureDataDir()
     const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
-
+    
     const newLead = {
       id: Date.now(),
       name: name || null,
@@ -162,6 +170,8 @@ export async function POST(request: NextRequest) {
       clientMessages: Array.isArray(clientMessages) ? clientMessages : null,
       aiRecommendation: aiRecommendation || null,
       aiSummary: aiSummary || null,
+      source: source || 'flow',
+      lang: lang || null,
       createdAt: new Date().toISOString(),
       status: 'new',
     }

@@ -317,6 +317,7 @@ type FormState = {
   aiMode: 'show' | 'post'
   aiRecommendation: string
   aiAnswer: string
+  aiSummary: string
   name: string
   contact: string
 }
@@ -338,6 +339,7 @@ export default function Home() {
     aiMode: 'show',
     aiRecommendation: '',
     aiAnswer: '',
+    aiSummary: '',
     name: '',
     contact: '',
   })
@@ -493,6 +495,7 @@ export default function Home() {
         history: updatedHistory,
         aiAnswer: data.answer || '',
         aiRecommendation: data.recommendation || data.answer || '',
+        aiSummary: data.summary || prev.aiSummary || '',
         question: '',
         aiMode: 'post',
       }))
@@ -553,6 +556,9 @@ export default function Home() {
           question: extraQuestion,
           clientMessages,
           aiRecommendation: form.aiRecommendation || form.aiAnswer,
+          aiSummary: form.aiSummary || null,
+          source: 'flow',
+          lang,
         }),
       })
       if (!res.ok) throw new Error('Submit error')
@@ -996,6 +1002,7 @@ export default function Home() {
                   aiMode: 'show',
                   aiRecommendation: '',
                   aiAnswer: '',
+                  aiSummary: '',
                   name: '',
                   contact: '',
                 })

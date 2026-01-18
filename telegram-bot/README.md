@@ -16,9 +16,16 @@ TELEGRAM_BOT_TOKEN=...
 TELEGRAM_PUBLIC_URL=https://temoweb.eu
 TELEGRAM_WEBHOOK_PATH=/telegram/webhook
 TELEGRAM_WEBHOOK_SECRET=optional-secret
+TELEGRAM_OWNER_CHAT_ID=123456789
 
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-4o-mini
+
+# optional branding
+TELEGRAM_BRAND_NAME=TemoWeb
+TELEGRAM_BRAND_SITE_URL=https://temoweb.eu
+TELEGRAM_BRAND_LOGO_URL=https://temoweb.eu/logo.png
+TELEGRAM_BRAND_TAGLINE_RU=AI‑ассистенты, которые продают и записывают клиентов 24/7
 ```
 
 3) Start:
@@ -39,4 +46,6 @@ If you use a separate domain or path, update `TELEGRAM_PUBLIC_URL` and `TELEGRAM
 
 - Bot avatar and description are configured in BotFather.
 - The bot stores minimal session state in `telegram-bot/data/sessions.json`.
+- Telegram webhook secret must contain only letters/numbers/`_`/`-` (no dots/spaces).
+- Memory limit: up to **25 user messages** (warns at 20/25). Website flow stays at 5.
 

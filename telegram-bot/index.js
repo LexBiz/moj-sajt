@@ -8,12 +8,19 @@ const BOT_TOKEN = String(process.env.TELEGRAM_BOT_TOKEN || '').trim()
 const PUBLIC_URL = String(process.env.TELEGRAM_PUBLIC_URL || '').trim()
 const WEBHOOK_PATH = String(process.env.TELEGRAM_WEBHOOK_PATH || '/telegram/webhook').trim() || '/telegram/webhook'
 const WEBHOOK_SECRET = String(process.env.TELEGRAM_WEBHOOK_SECRET || '').trim()
+const OWNER_CHAT_ID = String(process.env.TELEGRAM_OWNER_CHAT_ID || '').trim()
+const BRAND_NAME = String(process.env.TELEGRAM_BRAND_NAME || 'TemoWeb').trim() || 'TemoWeb'
+const BRAND_SITE_URL = String(process.env.TELEGRAM_BRAND_SITE_URL || 'https://temoweb.eu').trim() || 'https://temoweb.eu'
+const BRAND_LOGO_URL = String(process.env.TELEGRAM_BRAND_LOGO_URL || 'https://temoweb.eu/logo.png').trim()
+const BRAND_TAGLINE_RU = String(process.env.TELEGRAM_BRAND_TAGLINE_RU || 'AI‑ассистенты, которые продают и записывают клиентов 24/7').trim()
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
 const DATA_DIR = path.join(__dirname, 'data')
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json')
-const MAX_HISTORY = 10
+const MAX_USER_MESSAGES = 25
+const WARN_USER_MESSAGES_AT = MAX_USER_MESSAGES - 5 // 20
+const MAX_MODEL_MESSAGES = MAX_USER_MESSAGES * 2 // user+assistant
 
 if (!BOT_TOKEN) {
   console.error('TELEGRAM_BOT_TOKEN is missing')
@@ -63,19 +70,65 @@ function normalizeAnswer(text) {
     .trim()
 }
 
+function nowIso() {
+  return new Date().toISOString()
+}
+
+function detectContact(text) {
+  const s = String(text || '').trim()
+  if (!s) return null
+  const handle = s.match(/(^|\s)@([a-zA-Z0-9_]{4,32})/i)
+  if (handle) return `@${handle[2]}`
+  const email = s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)
+  if (email) return email[0]
+  const phone = s.match(/(\+?\d[\d\s().-]{7,}\d)/)
+  if (phone) return phone[1].replace(/\s+/g, ' ').trim()
+  return null
+}
+
+function userMessageCount(history) {
+  return (Array.isArray(history) ? history : []).filter((m) => m && m.role === 'user' && String(m.content || '').trim()).length
+}
+
+function detectPurchaseIntent(text) {
+  const t = String(text || '').toLowerCase()
+  return (
+    t.includes('беру') ||
+    t.includes('покуп') ||
+    t.includes('оплат') ||
+    t.includes('счет') ||
+    t.includes('рахунок') ||
+    t.includes('давай') ||
+    t.includes('запускай') ||
+    t.includes('запускаємо') ||
+    t.includes('хочу пилот') ||
+    t.includes('хочу пілот') ||
+    t.includes('пилот') ||
+    t.includes('пілот') ||
+    t.includes('готов') ||
+    t.includes('ок,') ||
+    t.includes('ок.') ||
+    t.includes('окей')
+  )
+}
+
 function buildSystemPrompt(lang) {
   const common = [
-    'Ты — AI-ассистент по продажам AI-ассистентов для бизнеса.',
-    'Стиль: уверенно, дерзко, остроумно, но без оскорблений личности.',
-    'Цель: агрессивная продажа через факты и контраст “как сейчас” vs “как после системы”.',
-    'Запрещено: вода, лекции, советы “сделай сам”.',
-    'Никогда не задавай вопрос “хочешь/хотите/нужно ли”. Финал — утверждение и действие.',
-    'Если оффтоп — 1 короткая колкая связка и сразу к теме заявок/скорости/денег.',
-    'Формат: короткие абзацы, можно маркеры, без markdown-звёздочек.',
-    'Знания:',
+    `Ты — живой sales + delivery менеджер компании ${BRAND_NAME}.`,
+    'Ты отвечаешь как человек: тепло, уверенно, по делу, без сухаря. Эмодзи — можно, уместно, 1–3 на сообщение.',
+    'Цель: быстро довести до покупки AI‑ассистента/системы. Продавай через факты, выгоду и контраст “как сейчас” vs “как после системы”.',
+    'Важно: объясняй простыми словами и на простых примерах (как для человека, который никогда этого не делал).',
+    'Запрещено: длинные лекции, вода, “сделай сам”, токсичность/оскорбления личности.',
+    'Можно: юмор, метафоры, короткие “ударные” фразы, но без мата и без грубости.',
+    'Всегда помни контекст диалога и не теряй нить.',
+    'Не делай разговор допросом. Обычно 1 уточняющий вопрос за раз (или вообще без вопросов, если контекста хватает).',
+    'Финал каждого ответа — уверенное действие/следующий шаг (без “хочешь/хотите”).',
+    'Знания о продукте (говори уверенно):',
     '- Запуск: обычно 3–7 дней (пилот), сложные интеграции 10–14 дней.',
     '- Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €.',
     '- Пилот: полный пакет за $299 (5 мест).',
+    `- Сайт: ${BRAND_SITE_URL}`,
+    'Формат: короткие абзацы, иногда маркеры. Без markdown-звёздочек.',
   ]
 
   if (lang === 'ru') return common.join(' ')
@@ -88,12 +141,28 @@ function buildSystemPrompt(lang) {
   return common.join(' ')
 }
 
-function buildWelcome() {
+function buildWelcome(lang) {
+  const base = lang === 'ru'
+    ? [
+        `Привет! Я — AI‑менеджер ${BRAND_NAME} 👋`,
+        BRAND_TAGLINE_RU,
+        '',
+        'Здесь ты за пару минут поймёшь, какой AI‑ассистент тебе нужен и сколько это стоит.',
+        '',
+        'Выбери язык общения:',
+      ]
+    : [
+        `Привіт! Я — AI‑менеджер ${BRAND_NAME} 👋`,
+        BRAND_TAGLINE_RU,
+        '',
+        'Тут за пару хвилин стане ясно, який AI‑асистент потрібен і скільки це коштує.',
+        '',
+        'Обери мову спілкування:',
+      ]
   return [
-    'Я AI-ассистент по заказу AI‑ботов для бизнеса.',
-    'Расскажу, как это принесёт деньги и срежет ручную работу.',
+    ...base,
     '',
-    'Выбери язык общения:',
+    `🌐 ${BRAND_SITE_URL}`,
   ].join('\n')
 }
 
@@ -102,6 +171,13 @@ function buildLanguageKeyboard() {
     Markup.button.callback('Українська', 'lang:ua'),
     Markup.button.callback('Русский', 'lang:ru'),
     Markup.button.callback('English', 'lang:en'),
+  ])
+}
+
+function buildLeadKeyboard() {
+  return Markup.inlineKeyboard([
+    Markup.button.callback('📩 Оформить заявку', 'lead:send'),
+    Markup.button.callback('↩️ Продолжить диалог', 'lead:skip'),
   ])
 }
 
@@ -142,20 +218,165 @@ async function callOpenAI(history, lang) {
   return normalizeAnswer(content)
 }
 
+async function callOpenAISummary(payload) {
+  if (!OPENAI_API_KEY) return null
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              `Ты — менеджер ${BRAND_NAME}.`,
+              'Сделай НЕшаблонное, умное, короткое резюме диалога для владельца.',
+              'Стиль: по делу, человечески, без воды, без “как ИИ”.',
+              'Формат (строго):',
+              '1) Кто/контакт (если есть)',
+              '2) Бизнес/ниша',
+              '3) Боль/почему пишет',
+              '4) Что предложили (пакет/пилот/сроки) — конкретно',
+              '5) На чем сошлись / следующий шаг',
+              '6) Важные детали/ограничения (если были)',
+              'Не добавляй выдумок. Если чего-то нет — напиши “не уточнили”.',
+            ].join(' '),
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+        temperature: 0.35,
+        max_tokens: 350,
+      }),
+    })
+    if (!resp.ok) return null
+    const json = await resp.json()
+    const content = json?.choices?.[0]?.message?.content
+    return normalizeAnswer(content)
+  } catch {
+    return null
+  }
+}
+
+async function sendLeadToOwner(leadText) {
+  if (!OWNER_CHAT_ID) {
+    console.warn('TELEGRAM_OWNER_CHAT_ID is missing; cannot send lead to owner.')
+    return { attempted: false, ok: false }
+  }
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: OWNER_CHAT_ID,
+        text: leadText,
+        disable_web_page_preview: true,
+      }),
+    })
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '')
+      console.error('Owner sendMessage failed', resp.status, body.slice(0, 400))
+      return { attempted: true, ok: false }
+    }
+    return { attempted: true, ok: true }
+  } catch (e) {
+    console.error('Owner sendMessage error', e?.message || e)
+    return { attempted: true, ok: false }
+  }
+}
+
 const bot = new Telegraf(BOT_TOKEN)
 
 bot.start(async (ctx) => {
-  await ctx.reply(buildWelcome(), buildLanguageKeyboard())
+  try {
+    if (BRAND_LOGO_URL) {
+      await ctx.replyWithPhoto(BRAND_LOGO_URL).catch(() => null)
+    }
+  } catch {}
+  await ctx.reply(buildWelcome('ru'), buildLanguageKeyboard())
 })
 
 bot.command('reset', async (ctx) => {
   const chatId = String(ctx.chat.id)
-  setSession(chatId, { lang: null, history: [], updatedAt: new Date().toISOString() })
+  setSession(chatId, { lang: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
   await ctx.reply('Сессия сброшена. Выбери язык общения:', buildLanguageKeyboard())
+})
+
+bot.command('lead', async (ctx) => {
+  const chatId = String(ctx.chat.id)
+  const { session } = getSession(chatId)
+  const history = Array.isArray(session.history) ? session.history : []
+  const contact = session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
+  const payload = {
+    source: 'telegram',
+    bot: BRAND_NAME,
+    chatId,
+    username: ctx.from?.username || null,
+    name: ctx.from?.first_name || null,
+    contact: contact || null,
+    lang: session.lang || null,
+    user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
+  }
+  const summary = await callOpenAISummary(payload)
+  const leadText = [
+    '📥 НОВА ЗАЯВКА (Telegram)',
+    '',
+    `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
+    `📩 Контакт: ${payload.contact || '—'}`,
+    '',
+    summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
+    '',
+    `🕒 ${nowIso()}`,
+  ].join('\n')
+  await sendLeadToOwner(leadText)
+  setSession(chatId, { ...session, leadSentAt: nowIso(), updatedAt: nowIso() })
+  await ctx.reply('Готово ✅ Я отправил резюме владельцу. Если хочешь — кинь контакт (email/@username/телефон), чтобы мы сразу стартанули.')
 })
 
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data || ''
+  if (data === 'lead:skip') {
+    await ctx.answerCbQuery('Ок, продолжаем.')
+    await ctx.reply('Пиши дальше — я держу контекст и веду к решению 🙂')
+    return
+  }
+  if (data === 'lead:send') {
+    await ctx.answerCbQuery('Оформляю…')
+    await ctx.reply('Собираю резюме и отправляю владельцу. Если у тебя есть контакт — кинь его в ответ (email/@username/телефон).')
+    // run lead generation inline
+    const chatId = String(ctx.chat.id)
+    const { session } = getSession(chatId)
+    const history = Array.isArray(session.history) ? session.history : []
+    const contact = session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
+    const payload = {
+      source: 'telegram',
+      bot: BRAND_NAME,
+      chatId,
+      username: ctx.from?.username || null,
+      name: ctx.from?.first_name || null,
+      contact: contact || null,
+      lang: session.lang || null,
+      user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
+    }
+    const summary = await callOpenAISummary(payload)
+    const leadText = [
+      '📥 НОВА ЗАЯВКА (Telegram)',
+      '',
+      `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
+      `📩 Контакт: ${payload.contact || '—'}`,
+      '',
+      summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
+      '',
+      `🕒 ${nowIso()}`,
+    ].join('\n')
+    await sendLeadToOwner(leadText)
+    setSession(chatId, { ...session, leadSentAt: nowIso(), updatedAt: nowIso() })
+    await ctx.reply('Готово ✅ Резюме отправлено владельцу. Добавь контакт (email/@username/телефон) — чтобы мы сразу стартанули.')
+    return
+  }
   if (!data.startsWith('lang:')) return
   const lang = data.split(':')[1]
   const chatId = String(ctx.chat.id)
@@ -164,11 +385,13 @@ bot.on('callback_query', async (ctx) => {
     ...session,
     lang,
     history: session.history || [],
-    updatedAt: new Date().toISOString(),
+    leadSentAt: session.leadSentAt || null,
+    contact: session.contact || null,
+    updatedAt: nowIso(),
   }
   setSession(chatId, next)
   await ctx.answerCbQuery(`Язык: ${lang.toUpperCase()}`)
-  await ctx.reply('Готов. Пиши свой вопрос — отвечаю по делу.')
+  await ctx.reply('Супер. Пиши, что у тебя за бизнес и где сейчас приходят клиенты — я соберу решение и цену 👇')
 })
 
 bot.on('text', async (ctx) => {
@@ -183,16 +406,69 @@ bot.on('text', async (ctx) => {
 
   const userText = ctx.message.text.trim()
   const history = Array.isArray(session.history) ? session.history : []
-  const nextHistory = [...history, { role: 'user', content: userText }].slice(-MAX_HISTORY)
+  const maybe = detectContact(userText)
+  const nextContact = maybe || session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
+
+  const nextHistory = [...history, { role: 'user', content: userText }].slice(-MAX_MODEL_MESSAGES)
+  const count = userMessageCount(nextHistory)
+
+  if (count === WARN_USER_MESSAGES_AT) {
+    await ctx.reply(
+      `Мы уже на ${count}/${MAX_USER_MESSAGES} сообщений. Я держу контекст 👍\n` +
+        'Если хочешь быстро финализировать и запустить — я оформлю заявку и пришлю владельцу резюме диалога.',
+      buildLeadKeyboard()
+    )
+  }
+
+  const shouldAutoLead = detectPurchaseIntent(userText) || count >= MAX_USER_MESSAGES
+  if (shouldAutoLead && !session.leadSentAt) {
+    const payload = {
+      source: 'telegram',
+      bot: BRAND_NAME,
+      chatId,
+      username: ctx.from?.username || null,
+      name: ctx.from?.first_name || null,
+      contact: nextContact || null,
+      lang,
+      user_messages: nextHistory.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
+    }
+    const summary = await callOpenAISummary(payload)
+    const leadText = [
+      '📥 НОВА ЗАЯВКА (Telegram)',
+      '',
+      `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
+      `📩 Контакт: ${payload.contact || '—'}`,
+      '',
+      summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
+      '',
+      `🕒 ${nowIso()}`,
+    ].join('\n')
+    await sendLeadToOwner(leadText)
+    setSession(chatId, { ...session, lang, contact: nextContact, leadSentAt: nowIso(), history: nextHistory, updatedAt: nowIso() })
+    await ctx.reply('Принято ✅ Я отправил владельцу резюме и детали. Для старта скинь контакт (email/@username/телефон) — и я зафиксирую его.')
+    return
+  }
+
+  // If user already hit the hard limit, don't keep chatting forever — push to lead.
+  if (count >= MAX_USER_MESSAGES) {
+    setSession(chatId, { ...session, lang, contact: nextContact, history: nextHistory, updatedAt: nowIso() })
+    await ctx.reply(
+      `Мы дошли до лимита ${MAX_USER_MESSAGES} сообщений 🙂\n` +
+        'Чтобы не терять контекст и быстро запустить — оформи заявку (и кинь контакт).',
+      buildLeadKeyboard()
+    )
+    return
+  }
 
   const reply = await callOpenAI(nextHistory, lang)
-  const updated = [...nextHistory, { role: 'assistant', content: reply }].slice(-MAX_HISTORY)
+  const updated = [...nextHistory, { role: 'assistant', content: reply }].slice(-MAX_MODEL_MESSAGES)
 
   setSession(chatId, {
     ...session,
     lang,
+    contact: nextContact || null,
     history: updated,
-    updatedAt: new Date().toISOString(),
+    updatedAt: nowIso(),
   })
 
   await ctx.reply(reply)
