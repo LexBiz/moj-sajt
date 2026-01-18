@@ -45,6 +45,8 @@ If you use a separate domain or path, update `TELEGRAM_PUBLIC_URL` and `TELEGRAM
 ## Notes
 
 - Bot avatar and description are configured in BotFather.
+- Telegram does NOT allow sending messages before user presses /start.  
+  So the “before start” screen is only: bot name + avatar + description from BotFather.
 - The bot stores minimal session state in `telegram-bot/data/sessions.json`.
 - Telegram webhook secret must contain only letters/numbers/`_`/`-` (no dots/spaces).
 - Memory limit: up to **25 user messages** (warns at 20/25). Website flow stays at 5.

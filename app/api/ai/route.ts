@@ -142,6 +142,11 @@ function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
       ? 'Vysvětluj “polopatě” a na jednoduchých příkladech (salon/řemeslník/online služby). 1 příklad = 2–3 řádky.'
       : 'Пояснюй “на пальцях” і на простих прикладах (салон/майстер/онлайн‑послуги). 1 приклад = 2–3 рядки.',
     lng === 'ru'
+      ? 'Отвечай на вопрос клиента сразу в первой строке. Если не понял — кратко переспроси 1 раз.'
+      : lng === 'cz'
+      ? 'Odpověz hned v první větě. Když nerozumíš, zeptej se jednou krátce.'
+      : 'Відповідай одразу в першому рядку. Якщо не зрозуміло — задай 1 коротке уточнення.',
+    lng === 'ru'
       ? 'Цель — агрессивная продажа без попрошайничества: факты, выгода, ROI, скорость. Не задавай “хочешь/хотите/нужно ли”.'
       : lng === 'cz'
       ? 'Cíl — prodej bez žebrání: fakta, užitek, ROI, rychlost. Neptej se “chceš/chcete”.'
