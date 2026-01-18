@@ -15,6 +15,8 @@ const BRAND_LOGO_URL = String(process.env.TELEGRAM_BRAND_LOGO_URL || 'https://te
 const BRAND_TAGLINE_RU = String(process.env.TELEGRAM_BRAND_TAGLINE_RU || 'AI‑ассистенты, которые продают и записывают клиентов 24/7').trim()
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const TEMOWEB_LEADS_INGEST_URL = String(process.env.TEMOWEB_LEADS_INGEST_URL || '').trim()
+const TEMOWEB_LEADS_INGEST_SECRET = String(process.env.TEMOWEB_LEADS_INGEST_SECRET || '').trim()
 
 const DATA_DIR = path.join(__dirname, 'data')
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json')
@@ -569,6 +571,29 @@ async function sendLeadToOwner(leadText) {
   }
 }
 
+async function ingestLeadToCrm(payload) {
+  if (!TEMOWEB_LEADS_INGEST_URL || !TEMOWEB_LEADS_INGEST_SECRET) return { attempted: false, ok: false }
+  try {
+    const resp = await fetch(TEMOWEB_LEADS_INGEST_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-leads-secret': TEMOWEB_LEADS_INGEST_SECRET,
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      console.error('CRM ingest failed', resp.status, text.slice(0, 300))
+      return { attempted: true, ok: false }
+    }
+    return { attempted: true, ok: true }
+  } catch (e) {
+    console.error('CRM ingest error', e?.message || e)
+    return { attempted: true, ok: false }
+  }
+}
+
 async function createAndSendLead({ ctx, session, history, contact, reason }) {
   const chatId = String(ctx.chat.id)
   const payload = {
@@ -600,7 +625,23 @@ async function createAndSendLead({ ctx, session, history, contact, reason }) {
     '',
     `🕒 ${nowIso()}`,
   ].join('\n')
-  return await sendLeadToOwner(leadText)
+  // 1) notify owner in Telegram
+  const notify = await sendLeadToOwner(leadText)
+  // 2) store in CRM (optional)
+  await ingestLeadToCrm({
+    contact: payload.contact,
+    name: payload.name,
+    businessType: payload.business,
+    channel: payload.channels,
+    pain: payload.pain,
+    question: null,
+    clientMessages: payload.user_messages,
+    aiSummary: summary,
+    lang: payload.lang,
+    telegramChatId: payload.chatId,
+    telegramUsername: payload.username ? `@${payload.username}` : null,
+  })
+  return notify
 }
 
 const bot = new Telegraf(BOT_TOKEN)

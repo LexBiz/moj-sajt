@@ -16,6 +16,7 @@ type LeadPayload = {
   aiSummary?: string
   source?: string
   lang?: string
+  notes?: string
   phone?: string // for backward compatibility
 }
 
@@ -108,6 +109,11 @@ async function sendTelegram(lead: any) {
     return { attempted: false, ok: false }
   }
 
+  // Avoid loops/duplication: Telegram-originated leads are already notified by the Telegram bot.
+  if (String(lead?.source || '').toLowerCase() === 'telegram') {
+    return { attempted: false, ok: true }
+  }
+
   const text = formatTelegramMessage(lead)
 
   try {
@@ -149,7 +155,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as LeadPayload
-    const { name, contact, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, phone } = body
+    const { name, contact, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, notes, phone } = body
 
     const resolvedContact = contact || phone
     if (!resolvedContact) {
@@ -172,6 +178,7 @@ export async function POST(request: NextRequest) {
       aiSummary: aiSummary || null,
       source: source || 'flow',
       lang: lang || null,
+      notes: notes || null,
       createdAt: new Date().toISOString(),
       status: 'new',
     }
