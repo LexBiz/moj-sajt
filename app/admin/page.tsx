@@ -65,6 +65,31 @@ function fmtDate(iso: string) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+function dateKeyLocal(iso: string) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function fmtTimeOnly(iso: string) {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
+
+type ViewMode = 'inbox' | 'work' | 'done' | 'all'
+
+function inView(view: ViewMode, status: string) {
+  const s = String(status || 'new')
+  if (view === 'all') return true
+  if (view === 'inbox') return s === 'new'
+  if (view === 'work') return s === 'contacted' || s === 'qualified'
+  if (view === 'done') return s === 'won' || s === 'lost' || s === 'junk'
+  return true
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -74,6 +99,10 @@ export default function AdminPage() {
   const [q, setQ] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sourceFilter, setSourceFilter] = useState<string>('all')
+  const [view, setView] = useState<ViewMode>('inbox')
+  const [dayFilter, setDayFilter] = useState<string>('') // YYYY-MM-DD
+  const [dateFrom, setDateFrom] = useState<string>('') // YYYY-MM-DD
+  const [dateTo, setDateTo] = useState<string>('') // YYYY-MM-DD
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [editStatus, setEditStatus] = useState<string>('new')
   const [editNotes, setEditNotes] = useState<string>('')
@@ -152,12 +181,16 @@ export default function AdminPage() {
   // Persist filters/search “like home”
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('crm_filters_v1')
+      const saved = localStorage.getItem('crm_filters_v2')
       if (!saved) return
       const parsed = JSON.parse(saved)
       if (typeof parsed.q === 'string') setQ(parsed.q)
       if (typeof parsed.statusFilter === 'string') setStatusFilter(parsed.statusFilter)
       if (typeof parsed.sourceFilter === 'string') setSourceFilter(parsed.sourceFilter)
+      if (typeof parsed.view === 'string') setView(parsed.view as ViewMode)
+      if (typeof parsed.dayFilter === 'string') setDayFilter(parsed.dayFilter)
+      if (typeof parsed.dateFrom === 'string') setDateFrom(parsed.dateFrom)
+      if (typeof parsed.dateTo === 'string') setDateTo(parsed.dateTo)
     } catch {
       // ignore
     }
@@ -166,11 +199,11 @@ export default function AdminPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('crm_filters_v1', JSON.stringify({ q, statusFilter, sourceFilter }))
+      localStorage.setItem('crm_filters_v2', JSON.stringify({ q, statusFilter, sourceFilter, view, dayFilter, dateFrom, dateTo }))
     } catch {
       // ignore
     }
-  }, [q, statusFilter, sourceFilter])
+  }, [q, statusFilter, sourceFilter, view, dayFilter, dateFrom, dateTo])
 
   // Auto-refresh every 20s when authenticated
   useEffect(() => {
@@ -192,8 +225,15 @@ export default function AdminPage() {
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
     return leads.filter((l) => {
+      if (!inView(view, String(l.status))) return false
       if (statusFilter !== 'all' && String(l.status) !== statusFilter) return false
       if (sourceFilter !== 'all' && String(l.source || '') !== sourceFilter) return false
+
+      const dk = dateKeyLocal(l.createdAt)
+      if (dayFilter && dk !== dayFilter) return false
+      if (dateFrom && dk && dk < dateFrom) return false
+      if (dateTo && dk && dk > dateTo) return false
+
       if (!query) return true
       const hay = [
         l.contact,
@@ -209,7 +249,31 @@ export default function AdminPage() {
         .toLowerCase()
       return hay.includes(query)
     })
-  }, [leads, q, statusFilter, sourceFilter])
+  }, [leads, q, statusFilter, sourceFilter, view, dayFilter, dateFrom, dateTo])
+
+  const dayOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const l of leads) {
+      const dk = dateKeyLocal(l.createdAt)
+      if (dk) set.add(dk)
+    }
+    return Array.from(set).sort((a, b) => (a < b ? 1 : -1))
+  }, [leads])
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, Lead[]>()
+    for (const l of filtered) {
+      const dk = dateKeyLocal(l.createdAt) || 'unknown'
+      const arr = map.get(dk) || []
+      arr.push(l)
+      map.set(dk, arr)
+    }
+    const keys = Array.from(map.keys()).sort((a, b) => (a < b ? 1 : -1))
+    for (const k of keys) {
+      map.get(k)!.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    }
+    return { keys, map }
+  }, [filtered])
 
   const stats = useMemo(() => {
     const total = leads.length
@@ -246,6 +310,14 @@ export default function AdminPage() {
 
   const selected = useMemo(() => leads.find((l) => l.id === selectedId) || null, [leads, selectedId])
 
+  // Auto-select newest lead when none selected
+  useEffect(() => {
+    if (selectedId != null) return
+    if (!filtered.length) return
+    setSelectedId(filtered[0].id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered.length])
+
   useEffect(() => {
     if (!selected) return
     setEditStatus(String(selected.status || 'new'))
@@ -275,6 +347,11 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const quickSetStatus = async (next: LeadStatus) => {
+    setEditStatus(next)
+    await saveSelected()
   }
 
   if (!isAuthenticated) {
@@ -350,6 +427,62 @@ export default function AdminPage() {
 
           {/* Filters */}
           <div className="p-4 sm:p-6 border-b border-slate-700">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {([
+                { id: 'inbox', label: `Inbox (${stats.byStatus.new})` },
+                { id: 'work', label: 'В работе' },
+                { id: 'done', label: 'Закрыто' },
+                { id: 'all', label: 'Все' },
+              ] as { id: ViewMode; label: string }[]).map((x) => (
+                <button
+                  key={x.id}
+                  onClick={() => setView(x.id)}
+                  className={`px-3 py-2 rounded-full text-sm font-semibold border transition-all ${
+                    view === x.id
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400/40'
+                      : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  {x.label}
+                </button>
+              ))}
+              <div className="flex-1" />
+              <button
+                onClick={() => {
+                  const today = dateKeyLocal(new Date().toISOString())
+                  setDayFilter(today)
+                  setDateFrom('')
+                  setDateTo('')
+                }}
+                className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+              >
+                Сегодня
+              </button>
+              <button
+                onClick={() => {
+                  const d = new Date()
+                  const y = new Date(d.getTime() - 7 * 24 * 60 * 60 * 1000)
+                  setDayFilter('')
+                  setDateFrom(dateKeyLocal(y.toISOString()))
+                  setDateTo(dateKeyLocal(d.toISOString()))
+                }}
+                className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+              >
+                7 дней
+              </button>
+              <button
+                onClick={() => {
+                  const d = new Date()
+                  const y = new Date(d.getTime() - 30 * 24 * 60 * 60 * 1000)
+                  setDayFilter('')
+                  setDateFrom(dateKeyLocal(y.toISOString()))
+                  setDateTo(dateKeyLocal(d.toISOString()))
+                }}
+                className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+              >
+                30 дней
+              </button>
+            </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <input
                 value={q}
@@ -379,6 +512,44 @@ export default function AdminPage() {
                 <option value="lost">Потеря</option>
                 <option value="junk">Спам</option>
               </select>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <select
+                value={dayFilter}
+                onChange={(e) => {
+                  setDayFilter(e.target.value)
+                  if (e.target.value) {
+                    setDateFrom('')
+                    setDateTo('')
+                  }
+                }}
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">Все дни</option>
+                {dayOptions.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value)
+                  if (e.target.value) setDayFilter('')
+                }}
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value)
+                  if (e.target.value) setDayFilter('')
+                }}
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              />
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -420,7 +591,7 @@ export default function AdminPage() {
                 <table className="w-full">
                   <thead className="bg-slate-900">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Дата</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Время</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Источник</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Статус</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Контакт</th>
@@ -435,32 +606,44 @@ export default function AdminPage() {
                         </td>
                       </tr>
                     ) : (
-                      filtered.map((lead) => {
-                        const src = sourceBadge(lead.source)
-                        return (
-                          <tr
-                            key={lead.id}
-                            onClick={() => setSelectedId(lead.id)}
-                            className={`cursor-pointer hover:bg-slate-700/40 transition-colors ${selectedId === lead.id ? 'bg-slate-700/30' : ''}`}
-                          >
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-300">{fmtDate(lead.createdAt)}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${src.cls}`}>
-                                {src.label}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeClass(String(lead.status))}`}>
-                                {STATUS_LABEL[String(lead.status) as LeadStatus] || String(lead.status)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-white">{lead.contact}</td>
-                            <td className="px-4 py-3 text-sm text-slate-200">
-                              <div className="font-semibold">{lead.businessType || '—'}</div>
-                              <div className="text-xs text-slate-400 line-clamp-2">{lead.aiSummary || lead.pain || lead.question || '—'}</div>
+                      grouped.keys.flatMap((dk) => {
+                        const dayLeads = grouped.map.get(dk) || []
+                        const header = (
+                          <tr key={`h-${dk}`} className="bg-slate-900/60">
+                            <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-slate-300">
+                              {dk === 'unknown' ? 'Без даты' : dk}
+                              <span className="text-slate-500 font-normal"> • {dayLeads.length}</span>
                             </td>
                           </tr>
                         )
+                        const rows = dayLeads.map((lead) => {
+                          const src = sourceBadge(lead.source)
+                          return (
+                            <tr
+                              key={lead.id}
+                              onClick={() => setSelectedId(lead.id)}
+                              className={`cursor-pointer hover:bg-slate-700/40 transition-colors ${selectedId === lead.id ? 'bg-slate-700/30' : ''}`}
+                            >
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-300">{fmtTimeOnly(lead.createdAt)}</td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${src.cls}`}>
+                                  {src.label}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeClass(String(lead.status))}`}>
+                                  {STATUS_LABEL[String(lead.status) as LeadStatus] || String(lead.status)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-white">{lead.contact}</td>
+                              <td className="px-4 py-3 text-sm text-slate-200">
+                                <div className="font-semibold">{lead.businessType || '—'}</div>
+                                <div className="text-xs text-slate-400 line-clamp-2">{lead.aiSummary || lead.pain || lead.question || '—'}</div>
+                              </td>
+                            </tr>
+                          )
+                        })
+                        return [header, ...rows]
                       })
                     )}
                   </tbody>
@@ -558,6 +741,36 @@ export default function AdminPage() {
                   ) : null}
 
                   <div className="grid gap-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => quickSetStatus('contacted')}
+                        className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                        disabled={loading}
+                      >
+                        → Связались
+                      </button>
+                      <button
+                        onClick={() => quickSetStatus('qualified')}
+                        className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                        disabled={loading}
+                      >
+                        → Квалиф.
+                      </button>
+                      <button
+                        onClick={() => quickSetStatus('won')}
+                        className="px-3 py-2 rounded-lg bg-emerald-600/70 hover:bg-emerald-600 text-white text-sm"
+                        disabled={loading}
+                      >
+                        ✅ Сделка
+                      </button>
+                      <button
+                        onClick={() => quickSetStatus('lost')}
+                        className="px-3 py-2 rounded-lg bg-rose-600/70 hover:bg-rose-600 text-white text-sm"
+                        disabled={loading}
+                      >
+                        ❌ Потеря
+                      </button>
+                    </div>
                     <div>
                       <p className="text-xs text-slate-400 mb-1">Статус</p>
                       <select
