@@ -21,6 +21,14 @@ const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json')
 const MAX_USER_MESSAGES = 25
 const WARN_USER_MESSAGES_AT = MAX_USER_MESSAGES - 5 // 20
 const MAX_MODEL_MESSAGES = MAX_USER_MESSAGES * 2 // user+assistant
+const OFFTOPIC_PATTERNS = [
+  // food / places
+  /\b(где\s+(поесть|покушать)|рестора(н|ны)|кафе\b|кофе\b|бар\b|паб\b|пицц|бургер|суши|пра(г|ж)е?|адрес)\b/i,
+  // dating / personal
+  /\b(склеить|телк(а|у)|девушк(а|у)|парня|отношени(я|е)|свидани(е|я)|знакомств)\b/i,
+  // random
+  /\b(погода|политик|спорт|фильм|сериал|игр(а|ы)|анекдот)\b/i,
+]
 
 if (!BOT_TOKEN) {
   console.error('TELEGRAM_BOT_TOKEN is missing')
@@ -68,6 +76,44 @@ function normalizeAnswer(text) {
     .replace(/\*(?=\S)/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+function isOfftopic(text) {
+  const s = String(text || '').trim()
+  if (!s) return false
+  return OFFTOPIC_PATTERNS.some((re) => re.test(s))
+}
+
+function buildOfftopicRedirect(lang) {
+  if (lang === 'ru') {
+    return [
+      'Могу, конечно, по Праге и кофе… но этот бот заточен под бизнес 😄',
+      '',
+      'Здесь говорим только про AI‑ассистентов и автоматизацию продаж/заявок ⚡️',
+      '',
+      'Напиши по делу:',
+      '• какой у тебя бизнес',
+      '• где приходят клиенты (Instagram / сайт / WhatsApp / звонки)',
+    ].join('\n')
+  }
+  if (lang === 'ua') {
+    return [
+      'Можу, звісно, про Прагу і каву… але цей бот заточений під бізнес 😄',
+      '',
+      'Тут говоримо тільки про AI‑асистентів і автоматизацію заявок/продажів ⚡️',
+      '',
+      'Напиши по ділу:',
+      '• який у тебе бізнес',
+      '• звідки приходять клієнти (Instagram / сайт / WhatsApp / дзвінки)',
+    ].join('\n')
+  }
+  return [
+    'I could answer that, but this bot is strictly for business AI assistants 😄',
+    '',
+    'Tell me:',
+    '• your business',
+    '• where clients come from (Instagram / website / WhatsApp / calls)',
+  ].join('\n')
 }
 
 function nowIso() {
@@ -131,6 +177,7 @@ function buildSystemPrompt(lang) {
     'Если речь о цене/пилоте — обязательно скажи, что пилот ограничен (5 мест) и скоро закончится. Не пихай пилот в каждый ответ.',
     'Жёсткая тема: этот чат ТОЛЬКО про AI‑ассистентов и автоматизацию продаж/заявок для бизнеса.',
     'Если вопрос не по теме (еда, знакомства, личное, развлечения) — 1 остроумная фраза и сразу перевод в тему бизнеса. Не давай советы не по теме.',
+    'Нельзя: отправлять “оформи на сайте/заполни на сайте/перейди на сайт, чтобы заказать”. Заказ/заявку оформляем прямо в этом чате (берём контакт и фиксируем потребность).',
     'Знания о продукте (говори уверенно):',
     '- Запуск: обычно 3–7 дней (пилот), сложные интеграции 10–14 дней.',
     '- Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €.',
@@ -189,11 +236,7 @@ function buildWelcome(lang) {
         '',
         'Обери мову спілкування:',
       ]
-  return [
-    ...base,
-    '',
-    `🌐 ${BRAND_SITE_URL}`,
-  ].join('\n')
+  return [...base].join('\n')
 }
 
 function buildLanguageKeyboard() {
@@ -201,6 +244,7 @@ function buildLanguageKeyboard() {
     Markup.button.callback('Українська', 'lang:ua'),
     Markup.button.callback('Русский', 'lang:ru'),
     Markup.button.callback('English', 'lang:en'),
+    Markup.button.url('🌐 Сайт', BRAND_SITE_URL),
   ])
 }
 
@@ -211,13 +255,14 @@ function buildLeadKeyboard() {
   ])
 }
 
-async function callOpenAI(history, lang) {
+async function callOpenAI(history, lang, extraContextText) {
   if (!OPENAI_API_KEY) {
     return 'Система готова. Пиши суть бизнеса — покажу, как быстро автоматизация продаёт и экономит.'
   }
 
   const messages = [
     { role: 'system', content: buildSystemPrompt(lang) },
+    ...(extraContextText ? [{ role: 'system', content: extraContextText }] : []),
     ...history,
   ]
 
@@ -354,12 +399,13 @@ bot.start(async (ctx) => {
       await ctx.replyWithPhoto(BRAND_LOGO_URL).catch(() => null)
     }
   } catch {}
-  await ctx.reply(buildWelcome('ru'), buildLanguageKeyboard())
+  // If user already configured BotFather "before start" welcome, keep /start message short.
+  await ctx.reply(buildWelcome('ru'), { ...buildLanguageKeyboard(), disable_web_page_preview: true })
 })
 
 bot.command('reset', async (ctx) => {
   const chatId = String(ctx.chat.id)
-  setSession(chatId, { lang: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
+  setSession(chatId, { lang: null, stage: 'business', business: null, channels: null, pain: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
   await ctx.reply('Сессия сброшена. Выбери язык общения:', buildLanguageKeyboard())
 })
 
@@ -421,6 +467,10 @@ bot.on('callback_query', async (ctx) => {
   const next = {
     ...session,
     lang,
+    stage: 'business',
+    business: session.business || null,
+    channels: session.channels || null,
+    pain: session.pain || null,
     history: session.history || [],
     leadSentAt: session.leadSentAt || null,
     contact: session.contact || null,
@@ -428,7 +478,16 @@ bot.on('callback_query', async (ctx) => {
   }
   setSession(chatId, next)
   await ctx.answerCbQuery(`Язык: ${lang.toUpperCase()}`)
-  await ctx.reply('Супер. Пиши, что у тебя за бизнес и где сейчас приходят клиенты — я соберу решение и цену 👇')
+  await ctx.reply(
+    [
+      'Супер ✅',
+      '',
+      'Начнём быстро:',
+      '• какой у тебя бизнес?',
+      '',
+      'Пример: “кофейня”, “салон”, “ремонт телефонов”, “онлайн‑школа”.',
+    ].join('\n')
+  )
 })
 
 bot.on('text', async (ctx) => {
@@ -445,6 +504,70 @@ bot.on('text', async (ctx) => {
   const history = Array.isArray(session.history) ? session.history : []
   const maybe = detectContact(userText)
   const nextContact = maybe || session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
+
+  const stage = session.stage || 'business'
+
+  // Setup stages: business -> channels -> pain -> chat
+  if (stage !== 'chat' && !maybe && isOfftopic(userText)) {
+    await ctx.reply(buildOfftopicRedirect(lang))
+    return
+  }
+
+  if (stage === 'business') {
+    const business = userText
+    setSession(chatId, { ...session, lang, business, stage: 'channels', contact: nextContact || null, updatedAt: nowIso() })
+    await ctx.reply(
+      [
+        `Ок, ${business} ✅`,
+        '',
+        'Шаг 2:',
+        '• откуда приходят клиенты сейчас?',
+        '',
+        'Примеры: Instagram, сайт, WhatsApp, звонки, Google Maps.',
+      ].join('\n')
+    )
+    return
+  }
+
+  if (stage === 'channels') {
+    const channels = userText
+    setSession(chatId, { ...session, lang, channels, stage: 'pain', contact: nextContact || null, updatedAt: nowIso() })
+    await ctx.reply(
+      [
+        `Принял: ${channels} ✅`,
+        '',
+        'Шаг 3 — где болит сильнее всего? 😤',
+        '• отвечаешь сам и времени нет',
+        '• клиенты пишут и пропадают',
+        '• спрашивают одно и то же',
+        '• хаос и заявки теряются',
+        '',
+        'Напиши одной фразой.',
+      ].join('\n')
+    )
+    return
+  }
+
+  if (stage === 'pain') {
+    const pain = userText
+    setSession(chatId, { ...session, lang, pain, stage: 'chat', contact: nextContact || null, updatedAt: nowIso() })
+    await ctx.reply(
+      [
+        'Отлично. Контекст собран ✅',
+        '',
+        'Теперь отвечаю только по теме: AI‑ассистент и автоматизация именно под твой бизнес ⚡️',
+        '',
+        'Задай вопрос: цена / сроки / как записывает / как работает в Instagram и WhatsApp.',
+      ].join('\n')
+    )
+    return
+  }
+
+  // chat stage: hard off-topic guardrail
+  if (!maybe && isOfftopic(userText)) {
+    await ctx.reply(buildOfftopicRedirect(lang))
+    return
+  }
 
   const nextHistory = [...history, { role: 'user', content: userText }].slice(-MAX_MODEL_MESSAGES)
   const count = userMessageCount(nextHistory)
@@ -483,8 +606,25 @@ bot.on('text', async (ctx) => {
     return
   }
 
-  const reply = await callOpenAI(nextHistory, lang)
-  const updated = [...nextHistory, { role: 'assistant', content: reply }].slice(-MAX_MODEL_MESSAGES)
+  const contextText = [
+    'Контекст клиента (держи это в голове):',
+    `Бизнес: ${session.business || 'не уточнили'}`,
+    `Каналы: ${session.channels || 'не уточнили'}`,
+    `Боль: ${session.pain || 'не уточнили'}`,
+  ].join('\n')
+
+  const reply = await callOpenAI(nextHistory, lang, contextText)
+  const bad = /перейд(и|ите)\s+на\s+сайт|заполн(и|ите)\s+на\s+сайте|оформ(и|ите)\s+на\s+сайте/i.test(reply)
+  const finalReply = bad
+    ? [
+        normalizeAnswer(reply),
+        '',
+        '⚡️ Контакт можно оставить прямо здесь — @username / телефон / email.',
+        'Я зафиксирую заявку и отправлю владельцу резюме диалога ✅',
+      ].join('\n')
+    : reply
+
+  const updated = [...nextHistory, { role: 'assistant', content: finalReply }].slice(-MAX_MODEL_MESSAGES)
 
   setSession(chatId, {
     ...session,
@@ -494,7 +634,7 @@ bot.on('text', async (ctx) => {
     updatedAt: nowIso(),
   })
 
-  await ctx.reply(reply)
+  await ctx.reply(finalReply)
 })
 
 const app = express()
