@@ -108,6 +108,64 @@ function buildMissingPrompt(session) {
   return missing
 }
 
+function isGreeting(text) {
+  const s = String(text || '').trim().toLowerCase()
+  if (!s) return false
+  return /^(привет|здравствуй|здравствуйте|хай|hi|hello|hey|yo|добрый\s*(день|вечер|утро))[\s!.]*$/.test(s)
+}
+
+function validateBusinessAnswer(text) {
+  const s = String(text || '').trim()
+  if (!s) return false
+  if (isGreeting(s)) return false
+  if (looksLikeQuestion(s)) return false
+  if (s.length < 3) return false
+  return true
+}
+
+function validateChannelsAnswer(text) {
+  const s = String(text || '').toLowerCase()
+  if (!s.trim()) return false
+  if (looksLikeQuestion(s)) return false
+  // accept if contains common channel words OR looks like a short list
+  const has = /(instagram|инст|facebook|фейс|whatsapp|вотс|telegram|телеграм|сайт|site|web|звон|call|google|maps|реклама|ads|тикток|tiktok|директ|direct)/i.test(s)
+  const listy = s.split(/[,/+\n]/).map((x) => x.trim()).filter(Boolean).length >= 2
+  return has || listy
+}
+
+function validatePainAnswer(text) {
+  const s = String(text || '').trim().toLowerCase()
+  if (!s) return false
+  if (looksLikeQuestion(s)) return false
+  return /(бесит|достал|теря|пропада|хаос|рутин|не\s+успева|нет\s+врем|не\s+отвеча|пишут\s+и\s+пропад|одно\s+и\s+то\s+же|вручн)/i.test(s) || s.length >= 12
+}
+
+function pickNextMissingField(session) {
+  if (!session.business) return 'business'
+  if (!session.channels) return 'channels'
+  if (!session.pain) return 'pain'
+  return null
+}
+
+function askForField(field, lang) {
+  if (field === 'business') {
+    return lang === 'ru'
+      ? ['Чтобы дать точное решение и цену 🎯', '', 'Напиши 1 фразой: какой у тебя бизнес? (пример: “кофейня”)'].join('\n')
+      : ['Щоб дати точне рішення і ціну 🎯', '', 'Напиши 1 фразою: який у тебе бізнес? (приклад: “кавʼярня”)'].join('\n')
+  }
+  if (field === 'channels') {
+    return lang === 'ru'
+      ? ['Ок. И ещё 1 вещь ⚡️', '', 'Откуда приходят клиенты сейчас? (Instagram/сайт/WhatsApp/звонки)'].join('\n')
+      : ['Ок. І ще 1 річ ⚡️', '', 'Звідки приходять клієнти зараз? (Instagram/сайт/WhatsApp/дзвінки)'].join('\n')
+  }
+  if (field === 'pain') {
+    return lang === 'ru'
+      ? ['Последнее уточнение 😤', '', 'Где болит сильнее всего? (в 1 фразе)'].join('\n')
+      : ['Останнє уточнення 😤', '', 'Де болить найбільше? (1 фразою)'].join('\n')
+  }
+  return null
+}
+
 function buildIntakeContext(session) {
   const missing = buildMissingPrompt(session)
   return [
@@ -485,7 +543,7 @@ bot.start(async (ctx) => {
 
 bot.command('reset', async (ctx) => {
   const chatId = String(ctx.chat.id)
-  setSession(chatId, { lang: null, stage: 'business', business: null, channels: null, pain: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
+  setSession(chatId, { lang: null, stage: 'business', intakeMisses: 0, business: null, channels: null, pain: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
   await ctx.reply('Сессия сброшена. Выбери язык общения:', buildLanguageKeyboard())
 })
 
@@ -548,6 +606,7 @@ bot.on('callback_query', async (ctx) => {
     ...session,
     lang,
     stage: 'business',
+    intakeMisses: session.intakeMisses || 0,
     business: session.business || null,
     channels: session.channels || null,
     pain: session.pain || null,
@@ -586,6 +645,7 @@ bot.on('text', async (ctx) => {
   const nextContact = maybe || session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
 
   const stage = session.stage || 'business'
+  const intakeMisses = Number(session.intakeMisses || 0)
 
   // Setup stages: business -> channels -> pain -> chat
   if (!maybe && isOfftopic(userText)) {
@@ -594,76 +654,68 @@ bot.on('text', async (ctx) => {
   }
 
   if (stage === 'business') {
-    // If user asks something instead of providing a niche, answer and then ask for niche.
-    if (looksLikeQuestion(userText) || userText.length > 60) {
-      const extra = buildIntakeContext(session)
-      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
-      await ctx.reply(reply)
-      await ctx.reply(
-        ['Чтобы подобрать решение и цену 🎯', '', 'Напиши 1 фразой: какой у тебя бизнес? (пример: “кофейня”)'].join('\n')
-      )
+    if (isGreeting(userText)) {
+      await ctx.reply('Привет 👋 Я в теме AI‑ассистентов для бизнеса. Давай быстро соберу решение и цену ⚡️')
+      await ctx.reply(askForField('business', lang))
       return
     }
-    const business = userText
-    setSession(chatId, { ...session, lang, business, stage: 'channels', contact: nextContact || null, updatedAt: nowIso() })
-    await ctx.reply(
-      [
-        `Ок, ${business} ✅`,
-        '',
-        'Шаг 2:',
-        '• откуда приходят клиенты сейчас?',
-        '',
-        'Примеры: Instagram, сайт, WhatsApp, звонки, Google Maps.',
-      ].join('\n')
-    )
+    if (validateBusinessAnswer(userText)) {
+      const business = userText
+      setSession(chatId, { ...session, lang, business, stage: 'channels', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
+      await ctx.reply('Принял ✅')
+      await ctx.reply(askForField('channels', lang))
+      return
+    }
+
+    // Not a business answer -> answer like human, then softly ask missing
+    const extra = buildIntakeContext(session)
+    const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+    const nextMisses = intakeMisses + 1
+    const nextStage = nextMisses >= 2 ? 'chat' : 'business'
+    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, history, updatedAt: nowIso() })
+    await ctx.reply(reply)
+    const q = askForField(pickNextMissingField(session) || 'business', lang)
+    if (q) await ctx.reply(q)
     return
   }
 
   if (stage === 'channels') {
-    if (looksLikeQuestion(userText) || userText.length > 80) {
-      const extra = buildIntakeContext(session)
-      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
-      await ctx.reply(reply)
-      await ctx.reply(['Чтобы двинуться дальше ⚡️', '', 'Напиши: откуда приходят клиенты? (Instagram/сайт/WhatsApp/звонки)'].join('\n'))
+    if (validateChannelsAnswer(userText)) {
+      const channels = userText
+      setSession(chatId, { ...session, lang, channels, stage: 'pain', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
+      await ctx.reply('Ок ✅')
+      await ctx.reply(askForField('pain', lang))
       return
     }
-    const channels = userText
-    setSession(chatId, { ...session, lang, channels, stage: 'pain', contact: nextContact || null, updatedAt: nowIso() })
-    await ctx.reply(
-      [
-        `Принял: ${channels} ✅`,
-        '',
-        'Шаг 3 — где болит сильнее всего? 😤',
-        '• отвечаешь сам и времени нет',
-        '• клиенты пишут и пропадают',
-        '• спрашивают одно и то же',
-        '• хаос и заявки теряются',
-        '',
-        'Напиши одной фразой.',
-      ].join('\n')
-    )
+
+    const extra = buildIntakeContext(session)
+    const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+    const nextMisses = intakeMisses + 1
+    const nextStage = nextMisses >= 2 ? 'chat' : 'channels'
+    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, history, updatedAt: nowIso() })
+    await ctx.reply(reply)
+    const q = askForField(pickNextMissingField(session) || 'channels', lang)
+    if (q) await ctx.reply(q)
     return
   }
 
   if (stage === 'pain') {
-    if (looksLikeQuestion(userText) || userText.length > 120) {
-      const extra = buildIntakeContext(session)
-      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
-      await ctx.reply(reply)
-      await ctx.reply(['Чтобы я собрал точное решение ✅', '', 'Напиши: что бесит сильнее всего? (в 1 фразе)'].join('\n'))
+    if (validatePainAnswer(userText)) {
+      const pain = userText
+      setSession(chatId, { ...session, lang, pain, stage: 'chat', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
+      await ctx.reply('Принял 😤✅')
+      await ctx.reply('Теперь можно нормально поговорить по делу: цена / сроки / как записывает / Instagram + WhatsApp ⚡️')
       return
     }
-    const pain = userText
-    setSession(chatId, { ...session, lang, pain, stage: 'chat', contact: nextContact || null, updatedAt: nowIso() })
-    await ctx.reply(
-      [
-        'Отлично. Контекст собран ✅',
-        '',
-        'Теперь отвечаю только по теме: AI‑ассистент и автоматизация именно под твой бизнес ⚡️',
-        '',
-        'Задай вопрос: цена / сроки / как записывает / как работает в Instagram и WhatsApp.',
-      ].join('\n')
-    )
+
+    const extra = buildIntakeContext(session)
+    const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+    const nextMisses = intakeMisses + 1
+    const nextStage = nextMisses >= 2 ? 'chat' : 'pain'
+    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, history, updatedAt: nowIso() })
+    await ctx.reply(reply)
+    const q = askForField(pickNextMissingField(session) || 'pain', lang)
+    if (q) await ctx.reply(q)
     return
   }
 
@@ -673,16 +725,14 @@ bot.on('text', async (ctx) => {
     return
   }
 
-  // If user writes free-form message, try to extract missing intake fields (without forcing them)
-  if (stage !== 'chat' && OPENAI_API_KEY) {
+  // In chat: opportunistically extract missing intake fields from any message (no questionnaire feel)
+  if (OPENAI_API_KEY && (!session.business || !session.channels || !session.pain)) {
     const extracted = await extractIntakeViaAI(userText, lang)
     if (extracted) {
       const next = { ...session }
       if (extracted.business && !next.business) next.business = extracted.business
       if (extracted.channels && !next.channels) next.channels = extracted.channels
       if (extracted.pain && !next.pain) next.pain = extracted.pain
-      // progress stage if possible
-      if (next.business && next.channels && next.pain) next.stage = 'chat'
       setSession(chatId, { ...next, lang, contact: nextContact || null, updatedAt: nowIso() })
     }
   }
