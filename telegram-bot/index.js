@@ -23,12 +23,12 @@ const WARN_AI_REPLIES_AT = MAX_AI_REPLIES - 5 // 20
 const MAX_MODEL_MESSAGES = MAX_AI_REPLIES * 2 // user+assistant (history window)
 const OFFTOPIC_PATTERNS = [
   // food / places (avoid matching business types like "кофейня")
-  /\b(где|куда)\b[\s\S]{0,40}\b(поесть|покушать|выпить|выпить\s+кофе|ресторан|кафе|бар|паб|еда|кофе)\b/i,
-  /\b(prague|praha)\b[\s\S]{0,40}\b(eat|food|restaurant|cafe|coffee|bar)\b/i,
+  /(?:^|[\s?!.,:;()])(?:где|куда)(?:[\s?!.,:;()]|$)[\s\S]{0,40}(?:поесть|покушать|выпить|выпить\s+кофе|ресторан|кафе|бар|паб|еда|кофе)(?:[\s?!.,:;()]|$)/i,
+  /(?:^|[\s?!.,:;()])(?:prague|praha)(?:[\s?!.,:;()]|$)[\s\S]{0,40}(?:eat|food|restaurant|cafe|coffee|bar)(?:[\s?!.,:;()]|$)/i,
   // dating / personal
-  /\b(склеить|телк(а|у)|девушк(а|у)|парня|отношени(я|е)|свидани(е|я)|знакомств)\b/i,
+  /(?:^|[\s?!.,:;()])(?:склеить|телк(?:а|у)|девушк(?:а|у)|парня|отношени(?:я|е)|свидани(?:е|я)|знакомств)(?:[\s?!.,:;()]|$)/i,
   // random
-  /\b(погода|политик|спорт|фильм|сериал|игр(а|ы)|анекдот)\b/i,
+  /(?:^|[\s?!.,:;()])(?:погода|политик|спорт|фильм|сериал|игр(?:а|ы)|анекдот)(?:[\s?!.,:;()]|$)/i,
 ]
 
 if (!BOT_TOKEN) {
@@ -97,7 +97,9 @@ function looksLikeQuestion(text) {
   const s = String(text || '').trim().toLowerCase()
   if (!s) return false
   if (s.includes('?')) return true
-  return /\b(что|как|почему|зачем|сколько|цена|сто(ит|ит\?)|время|срок|можно|нужно)\b/i.test(s)
+  // IMPORTANT: JS \b is ASCII-word-boundary and doesn't work well with Cyrillic.
+  // Use whitespace/punctuation boundaries instead.
+  return /(?:^|[\s?!.,:;()])(?:что|как|почему|зачем|сколько|цена|сто(?:ит)?|время|срок|можно|нужно)(?:[\s?!.,:;()]|$)/i.test(s)
 }
 
 function buildMissingPrompt(session) {
@@ -111,7 +113,9 @@ function buildMissingPrompt(session) {
 function isGreeting(text) {
   const s = String(text || '').trim().toLowerCase()
   if (!s) return false
-  return /^(привет|здравствуй|здравствуйте|хай|hi|hello|hey|yo|добрый\s*(день|вечер|утро))[\s!.]*$/.test(s)
+  return /^(привет|здравствуй|здравствуйте|хай|hi|hello|hey|yo|добрый\s*(день|вечер|утро)|как\s*дела|как\s*ты|как\s*жизнь|что\s*нового|че\s*как|як\s*справи|як\s*ти|how\s*are\s*you)\b[\s!.]*$/i.test(
+    s
+  )
 }
 
 function validateBusinessAnswer(text) {
