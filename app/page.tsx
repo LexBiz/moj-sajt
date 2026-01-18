@@ -247,18 +247,10 @@ export default function Home() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          contact: contact.trim(),
-          question: comment.trim(),
-          aiRecommendation: 'site-form',
-        }),
-      })
-      if (!res.ok) throw new Error('submit')
-        setName('')
+      // DEMO MODE: keep the form for video/visuals, but do NOT send anything anywhere.
+      await new Promise((r) => setTimeout(r, 350))
+
+      setName('')
       setContact('')
       setComment('')
       setSuccess(t.formSuccess)
