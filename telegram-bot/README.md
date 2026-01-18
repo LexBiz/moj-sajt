@@ -10,7 +10,7 @@ cd telegram-bot
 npm install
 ```
 
-2) Required environment variables:
+2) Create `telegram-bot/.env` with:
 ```
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_PUBLIC_URL=https://temoweb.eu
