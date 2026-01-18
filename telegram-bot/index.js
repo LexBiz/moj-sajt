@@ -226,6 +226,64 @@ async function extractIntakeViaAI(text, lang) {
   }
 }
 
+async function classifyMessageViaAI({ text, lang, stage, session }) {
+  if (!OPENAI_API_KEY) return null
+  const payload = {
+    text: String(text || '').slice(0, 1200),
+    lang: lang || 'ru',
+    stage: stage || null,
+    known: {
+      business: session?.business || null,
+      channels: session?.channels || null,
+      pain: session?.pain || null,
+      contact: session?.contact || null,
+    },
+  }
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0,
+        max_tokens: 220,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a strict router for a business AI-sales Telegram bot. Return ONLY minified JSON. ' +
+              'Schema: {intent: one of ["answer_business","answer_channels","answer_pain","product_question","pricing_question","wants_pilot","wants_buy","smalltalk","offtopic","contact","unknown"], business?:string|null, channels?:string|null, pain?:string|null}. ' +
+              'Rules: never invent. If message is not clearly the requested field, do not put it into business/channels/pain. ' +
+              'If message is a greeting/small talk (e.g., "как дела") -> smalltalk. ' +
+              'If message asks about the product/system (how it works, what you do) -> product_question. ' +
+              'If asks about price/packages/pilot -> pricing_question (and optionally wants_pilot). ' +
+              'If provides phone/email/@ -> contact. ' +
+              'If asks about food/dating/politics/etc -> offtopic.',
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const json = await resp.json()
+    const content = json?.choices?.[0]?.message?.content
+    const parsed = safeJsonParse(content)
+    if (!parsed || typeof parsed !== 'object') return null
+    const intent = String(parsed.intent || '').trim()
+    return {
+      intent,
+      business: typeof parsed.business === 'string' && parsed.business.trim() ? parsed.business.trim() : null,
+      channels: typeof parsed.channels === 'string' && parsed.channels.trim() ? parsed.channels.trim() : null,
+      pain: typeof parsed.pain === 'string' && parsed.pain.trim() ? parsed.pain.trim() : null,
+    }
+  } catch {
+    return null
+  }
+}
+
 function buildOfftopicRedirect(lang) {
   if (lang === 'ru') {
     return [
@@ -320,7 +378,8 @@ function buildSystemPrompt(lang) {
     '3) Финал — следующий шаг (контакт/пакет/сроки)',
     'Запрещено: любые markdown-заголовки и решётки (#, ##, ###).',
     'Пиши как владелец: профессионально, с душой, заинтересованно. Если клиент просит подробнее — раскрывай чуть глубже (пример + что входит + срок + следующий шаг).',
-    'Не выдумывай конкретные кейсы/цифры, если их нет. Можно говорить уверенно, но без фейковых “пруфов”.',
+    'Про цифры: можно давать реалистичные диапазоны и примеры расчёта, но без “гарантий”. Формулировки: “обычно”, “часто”, “в типичном кейсе”, “оценка”.',
+    'Разрешённые ориентиры (как пример, не гарантия): скорость ответа становится 1–10 секунд; снижение потерь заявок 15–40%; рост конверсии из входящих 5–20%; экономия времени команды 30–70%.',
     'Никогда не отправляй на сайт “для заказа”. Контакт берём прямо тут: @username, телефон, email.',
     'Если спрашивают “почему нельзя здесь” — объясни кратко и сразу предложи оставить контакт здесь.',
     'Если речь о цене/пилоте — обязательно скажи, что пилот ограничен (5 мест) и скоро закончится. Не пихай пилот в каждый ответ.',
@@ -676,68 +735,77 @@ bot.on('text', async (ctx) => {
   }
 
   if (stage === 'business') {
-    if (isGreeting(userText)) {
-      await ctx.reply('Привет 👋 Я в теме AI‑ассистентов для бизнеса. Давай быстро соберу решение и цену ⚡️')
+    const cls = await classifyMessageViaAI({ text: userText, lang, stage, session })
+    if (cls?.intent === 'smalltalk') {
+      await ctx.reply('На связи 👋 Давай по делу — так я быстрее дам точную цену и план ⚡️')
       await ctx.reply(askForField('business', lang))
       return
     }
-    if (validateBusinessAnswer(userText)) {
-      const business = userText
-      setSession(chatId, { ...session, lang, business, stage: 'channels', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
+    if (cls?.intent === 'answer_business' && cls.business) {
+      setSession(chatId, { ...session, lang, business: cls.business, stage: 'channels', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
       await ctx.reply('Принял ✅')
       await ctx.reply(askForField('channels', lang))
       return
     }
-
-    // Not a business answer -> answer like human, then softly ask missing
+    // If user asks about product/price while we don't have business yet: answer, then ask 1 missing field.
+    if (cls?.intent === 'product_question' || cls?.intent === 'pricing_question') {
+      const extra = buildIntakeContext(session)
+      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+      await ctx.reply(reply)
+      await ctx.reply(askForField('business', lang))
+      return
+    }
+    // fallback: treat as free text question and do not advance stage; after 2 misses -> chat
     const extra = buildIntakeContext(session)
     const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
     const nextMisses = intakeMisses + 1
     const nextStage = nextMisses >= 2 ? 'chat' : 'business'
-    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, history, updatedAt: nowIso() })
+    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, updatedAt: nowIso() })
     await ctx.reply(reply)
-    const q = askForField(pickNextMissingField(session) || 'business', lang)
-    if (q) await ctx.reply(q)
+    await ctx.reply(askForField(pickNextMissingField(session) || 'business', lang))
     return
   }
 
   if (stage === 'channels') {
-    if (validateChannelsAnswer(userText)) {
-      const channels = userText
-      setSession(chatId, { ...session, lang, channels, stage: 'pain', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
+    const cls = await classifyMessageViaAI({ text: userText, lang, stage, session })
+    if (cls?.intent === 'answer_channels' && cls.channels) {
+      setSession(chatId, { ...session, lang, channels: cls.channels, stage: 'pain', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
       await ctx.reply('Ок ✅')
       await ctx.reply(askForField('pain', lang))
       return
     }
-
+    if (cls?.intent === 'product_question' || cls?.intent === 'pricing_question' || cls?.intent === 'smalltalk') {
+      const extra = buildIntakeContext(session)
+      const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
+      await ctx.reply(reply)
+      await ctx.reply(askForField('channels', lang))
+      return
+    }
     const extra = buildIntakeContext(session)
     const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
     const nextMisses = intakeMisses + 1
     const nextStage = nextMisses >= 2 ? 'chat' : 'channels'
-    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, history, updatedAt: nowIso() })
+    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, updatedAt: nowIso() })
     await ctx.reply(reply)
-    const q = askForField(pickNextMissingField(session) || 'channels', lang)
-    if (q) await ctx.reply(q)
+    await ctx.reply(askForField(pickNextMissingField(session) || 'channels', lang))
     return
   }
 
   if (stage === 'pain') {
-    if (validatePainAnswer(userText)) {
-      const pain = userText
-      setSession(chatId, { ...session, lang, pain, stage: 'chat', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
+    const cls = await classifyMessageViaAI({ text: userText, lang, stage, session })
+    if (cls?.intent === 'answer_pain' && cls.pain) {
+      setSession(chatId, { ...session, lang, pain: cls.pain, stage: 'chat', intakeMisses: 0, contact: nextContact || null, updatedAt: nowIso() })
       await ctx.reply('Принял 😤✅')
       await ctx.reply('Теперь можно нормально поговорить по делу: цена / сроки / как записывает / Instagram + WhatsApp ⚡️')
       return
     }
-
     const extra = buildIntakeContext(session)
     const reply = await callOpenAI([{ role: 'user', content: userText }], lang, extra)
     const nextMisses = intakeMisses + 1
     const nextStage = nextMisses >= 2 ? 'chat' : 'pain'
-    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, history, updatedAt: nowIso() })
+    setSession(chatId, { ...session, lang, stage: nextStage, intakeMisses: nextMisses, contact: nextContact || null, updatedAt: nowIso() })
     await ctx.reply(reply)
-    const q = askForField(pickNextMissingField(session) || 'pain', lang)
-    if (q) await ctx.reply(q)
+    await ctx.reply(askForField(pickNextMissingField(session) || 'pain', lang))
     return
   }
 
