@@ -147,6 +147,21 @@ function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
       ? 'Odpověz hned v první větě. Když nerozumíš, zeptej se jednou krátce.'
       : 'Відповідай одразу в першому рядку. Якщо не зрозуміло — задай 1 коротке уточнення.',
     lng === 'ru'
+      ? 'Формат как в GPT: короткие абзацы, пустые строки между смысловыми блоками, 2–4 пункта со значками (• или —). Не сливай всё в один блок.'
+      : lng === 'cz'
+      ? 'Formát jako v GPT: krátké odstavce, prázdné řádky mezi bloky, 2–4 body se znaky (• nebo —).'
+      : 'Формат як у GPT: короткі абзаци, порожні рядки між блоками, 2–4 пункти зі значками (• або —).',
+    lng === 'ru'
+      ? 'Контакт можно оставлять прямо здесь; не отправляй на сайт “для заказа”.'
+      : lng === 'cz'
+      ? 'Kontakt lze nechat přímo tady; neposílej na web “kvůli objednávce”.'
+      : 'Контакт можна залишити прямо тут; не відправляй на сайт “для замовлення”.',
+    lng === 'ru'
+      ? 'Про пилот говори как про ограниченную опцию: мест 5, скоро закончатся, но не пихай это в каждый ответ.'
+      : lng === 'cz'
+      ? 'Pilot zmiňuj jako omezenou možnost (5 míst), ale netlač to v každé odpovědi.'
+      : 'Про пілот кажи як про обмежену опцію: місць 5, але не тисни в кожній відповіді.',
+    lng === 'ru'
       ? 'Цель — агрессивная продажа без попрошайничества: факты, выгода, ROI, скорость. Не задавай “хочешь/хотите/нужно ли”.'
       : lng === 'cz'
       ? 'Cíl — prodej bez žebrání: fakta, užitek, ROI, rychlost. Neptej se “chceš/chcete”.'
