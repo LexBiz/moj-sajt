@@ -125,10 +125,10 @@ function buildSystemPrompt(lang) {
     'Не делай разговор допросом. Максимум 1 короткий уточняющий вопрос за раз — только если нужно.',
     'Финал каждого ответа — уверенный шаг (можно с вопросом по делу, но без “хочешь/хотите”).',
     'Формат как в GPT: короткие абзацы, пустые строки между смысловыми блоками, 2–4 пункта со значками (• или —). Не сливай всё в один блок.',
-    'Всегда добавляй 1–2 уместных эмодзи для живости (⚡️, ✅, 🔥, 💬).',
-    'Никогда не отправляй на сайт “для заказа”. Контакт можно брать прямо тут: @username, телефон, email.',
+    'Всегда добавляй 1–3 уместных эмодзи для живости (⚡️, ✅, 🔥, 💬).',
+    'Никогда не отправляй на сайт “для заказа”. Контакт берём прямо тут: @username, телефон, email.',
     'Если спрашивают “почему нельзя здесь” — объясни кратко и сразу предложи оставить контакт здесь.',
-    'Про пилот говори как про ограниченную опцию: мест 5, скоро закончатся. Не дави пилотом в каждом ответе.',
+    'Если речь о цене/пилоте — обязательно скажи, что пилот ограничен (5 мест) и скоро закончится. Не пихай пилот в каждый ответ.',
     'Знания о продукте (говори уверенно):',
     '- Запуск: обычно 3–7 дней (пилот), сложные интеграции 10–14 дней.',
     '- Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €.',
@@ -294,6 +294,34 @@ async function sendLeadToOwner(leadText) {
   }
 }
 
+async function createAndSendLead({ ctx, session, history, contact, reason }) {
+  const chatId = String(ctx.chat.id)
+  const payload = {
+    source: 'telegram',
+    bot: BRAND_NAME,
+    chatId,
+    username: ctx.from?.username || null,
+    name: ctx.from?.first_name || null,
+    contact: contact || null,
+    lang: session.lang || null,
+    reason: reason || null,
+    user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
+  }
+  const summary = await callOpenAISummary(payload)
+  const leadText = [
+    '📥 НОВА ЗАЯВКА (Telegram)',
+    '',
+    `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
+    `📩 Контакт: ${payload.contact || '—'}`,
+    payload.reason ? `📌 Причина: ${payload.reason}` : '',
+    '',
+    summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
+    '',
+    `🕒 ${nowIso()}`,
+  ].join('\n')
+  await sendLeadToOwner(leadText)
+}
+
 const bot = new Telegraf(BOT_TOKEN)
 
 bot.start(async (ctx) => {
@@ -357,28 +385,7 @@ bot.on('callback_query', async (ctx) => {
     const { session } = getSession(chatId)
     const history = Array.isArray(session.history) ? session.history : []
     const contact = session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
-    const payload = {
-      source: 'telegram',
-      bot: BRAND_NAME,
-      chatId,
-      username: ctx.from?.username || null,
-      name: ctx.from?.first_name || null,
-      contact: contact || null,
-      lang: session.lang || null,
-      user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
-    }
-    const summary = await callOpenAISummary(payload)
-    const leadText = [
-      '📥 НОВА ЗАЯВКА (Telegram)',
-      '',
-      `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
-      `📩 Контакт: ${payload.contact || '—'}`,
-      '',
-      summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
-      '',
-      `🕒 ${nowIso()}`,
-    ].join('\n')
-    await sendLeadToOwner(leadText)
+    await createAndSendLead({ ctx, session, history, contact, reason: 'lead_button' })
     setSession(chatId, { ...session, leadSentAt: nowIso(), updatedAt: nowIso() })
     await ctx.reply('Готово ✅ Резюме отправлено владельцу. Добавь контакт (email/@username/телефон) — чтобы мы сразу стартанули.')
     return
@@ -428,30 +435,16 @@ bot.on('text', async (ctx) => {
 
   const shouldAutoLead = detectPurchaseIntent(userText) || count >= MAX_USER_MESSAGES
   if (shouldAutoLead && !session.leadSentAt) {
-    const payload = {
-      source: 'telegram',
-      bot: BRAND_NAME,
-      chatId,
-      username: ctx.from?.username || null,
-      name: ctx.from?.first_name || null,
-      contact: nextContact || null,
-      lang,
-      user_messages: nextHistory.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
-    }
-    const summary = await callOpenAISummary(payload)
-    const leadText = [
-      '📥 НОВА ЗАЯВКА (Telegram)',
-      '',
-      `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
-      `📩 Контакт: ${payload.contact || '—'}`,
-      '',
-      summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
-      '',
-      `🕒 ${nowIso()}`,
-    ].join('\n')
-    await sendLeadToOwner(leadText)
+    await createAndSendLead({ ctx, session, history: nextHistory, contact: nextContact, reason: 'intent_or_limit' })
     setSession(chatId, { ...session, lang, contact: nextContact, leadSentAt: nowIso(), history: nextHistory, updatedAt: nowIso() })
     await ctx.reply('Принято ✅ Я отправил владельцу резюме и детали. Для старта скинь контакт (email/@username/телефон) — и я зафиксирую его.')
+    return
+  }
+
+  if (maybe && !session.leadSentAt) {
+    await createAndSendLead({ ctx, session, history: nextHistory, contact: maybe, reason: 'contact_provided' })
+    setSession(chatId, { ...session, lang, contact: maybe, leadSentAt: nowIso(), history: nextHistory, updatedAt: nowIso() })
+    await ctx.reply('Контакт получил ✅ Оформил заявку и отправил владельцу. Если есть ещё детали — напиши, я добавлю.')
     return
   }
 

@@ -157,9 +157,9 @@ function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
       ? 'Kontakt lze nechat přímo tady; neposílej na web “kvůli objednávce”.'
       : 'Контакт можна залишити прямо тут; не відправляй на сайт “для замовлення”.',
     lng === 'ru'
-      ? 'Про пилот говори как про ограниченную опцию: мест 5, скоро закончатся, но не пихай это в каждый ответ.'
+      ? 'Если речь о цене/пилоте — обязательно упомяни, что пилот ограничен: всего 5 мест и скоро закончатся. Не пихай в каждый ответ.'
       : lng === 'cz'
-      ? 'Pilot zmiňuj jako omezenou možnost (5 míst), ale netlač to v každé odpovědi.'
+      ? 'Když jde o cenu/pilot, vždy zmínit že pilot je omezený (5 míst), ale netlačit to pořád.'
       : 'Про пілот кажи як про обмежену опцію: місць 5, але не тисни в кожній відповіді.',
     lng === 'ru'
       ? 'Цель — агрессивная продажа без попрошайничества: факты, выгода, ROI, скорость. Не задавай “хочешь/хотите/нужно ли”.'
