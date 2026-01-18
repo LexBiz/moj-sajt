@@ -75,6 +75,8 @@ function normalizeAnswer(text) {
   return String(text || '')
     .replace(/\*\*/g, '')
     .replace(/\*(?=\S)/g, '')
+    // Remove markdown headings like "### Title" that look ugly in Telegram plain text
+    .replace(/(^|\n)\s*#{1,6}\s+/g, '$1')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
@@ -316,6 +318,9 @@ function buildSystemPrompt(lang) {
     '1) 1 строка — прямой ответ/позиция',
     '2) 2–4 пункта — факты/польза/пример (• или —)',
     '3) Финал — следующий шаг (контакт/пакет/сроки)',
+    'Запрещено: любые markdown-заголовки и решётки (#, ##, ###).',
+    'Пиши как владелец: профессионально, с душой, заинтересованно. Если клиент просит подробнее — раскрывай чуть глубже (пример + что входит + срок + следующий шаг).',
+    'Не выдумывай конкретные кейсы/цифры, если их нет. Можно говорить уверенно, но без фейковых “пруфов”.',
     'Никогда не отправляй на сайт “для заказа”. Контакт берём прямо тут: @username, телефон, email.',
     'Если спрашивают “почему нельзя здесь” — объясни кратко и сразу предложи оставить контакт здесь.',
     'Если речь о цене/пилоте — обязательно скажи, что пилот ограничен (5 мест) и скоро закончится. Не пихай пилот в каждый ответ.',
@@ -516,7 +521,10 @@ async function createAndSendLead({ ctx, session, history, contact, reason }) {
     contact: contact || null,
     lang: session.lang || null,
     reason: reason || null,
-    user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
+    business: session.business || null,
+    channels: session.channels || null,
+    pain: session.pain || null,
+    user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_AI_REPLIES),
   }
   const summary = await callOpenAISummary(payload)
   const leadText = [
@@ -525,12 +533,15 @@ async function createAndSendLead({ ctx, session, history, contact, reason }) {
     `👤 Кто: ${payload.name || '—'} ${payload.username ? `(@${payload.username})` : ''}`.trim(),
     `📩 Контакт: ${payload.contact || '—'}`,
     payload.reason ? `📌 Причина: ${payload.reason}` : '',
+    payload.business ? `🏷 Бизнес: ${payload.business}` : '',
+    payload.channels ? `📡 Каналы: ${payload.channels}` : '',
+    payload.pain ? `😤 Боль: ${payload.pain}` : '',
     '',
     summary ? `🧠 Резюме:\n${summary}` : '🧠 Резюме: не удалось собрать (нет OpenAI или ошибка).',
     '',
     `🕒 ${nowIso()}`,
   ].join('\n')
-  await sendLeadToOwner(leadText)
+  return await sendLeadToOwner(leadText)
 }
 
 const bot = new Telegraf(BOT_TOKEN)
@@ -564,7 +575,10 @@ bot.command('lead', async (ctx) => {
     name: ctx.from?.first_name || null,
     contact: contact || null,
     lang: session.lang || null,
-    user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_USER_MESSAGES),
+    business: session.business || null,
+    channels: session.channels || null,
+    pain: session.pain || null,
+    user_messages: history.filter((m) => m.role === 'user').map((m) => m.content).slice(-MAX_AI_REPLIES),
   }
   const summary = await callOpenAISummary(payload)
   const leadText = [
@@ -580,6 +594,10 @@ bot.command('lead', async (ctx) => {
   await sendLeadToOwner(leadText)
   setSession(chatId, { ...session, leadSentAt: nowIso(), updatedAt: nowIso() })
   await ctx.reply('Готово ✅ Я отправил резюме владельцу. Если хочешь — кинь контакт (email/@username/телефон), чтобы мы сразу стартанули.')
+})
+
+bot.command('id', async (ctx) => {
+  await ctx.reply(`Ваш chat_id: ${ctx.chat.id}\nusername: ${ctx.from?.username ? '@' + ctx.from.username : '—'}`)
 })
 
 bot.on('callback_query', async (ctx) => {
@@ -760,10 +778,15 @@ bot.on('text', async (ctx) => {
     return
   }
 
-  if (maybe && !session.leadSentAt) {
-    await createAndSendLead({ ctx, session, history: nextHistory, contact: maybe, reason: 'contact_provided' })
+  // Always push/update lead when a NEW contact is provided (even if a lead was already sent earlier)
+  if (maybe && session.contact !== maybe) {
+    const res = await createAndSendLead({ ctx, session, history: nextHistory, contact: maybe, reason: 'contact_provided' })
     setSession(chatId, { ...session, lang, contact: maybe, leadSentAt: nowIso(), history: nextHistory, updatedAt: nowIso() })
-    await ctx.reply('Контакт получил ✅ Оформил заявку и отправил владельцу. Если есть ещё детали — напиши, я добавлю.')
+    if (res?.attempted && res?.ok) {
+      await ctx.reply('Контакт получил ✅ Заявку отправил владельцу. Если есть ещё детали — напиши, я добавлю.')
+    } else {
+      await ctx.reply('Контакт получил ✅ Заявку зафиксировал. Если не прилетело владельцу — напиши /id (проверим chat_id) и я поправлю доставку.')
+    }
     return
   }
 
