@@ -149,6 +149,39 @@ export default function AdminPage() {
     loadLeads()
   }, [])
 
+  // Persist filters/search “like home”
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('crm_filters_v1')
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      if (typeof parsed.q === 'string') setQ(parsed.q)
+      if (typeof parsed.statusFilter === 'string') setStatusFilter(parsed.statusFilter)
+      if (typeof parsed.sourceFilter === 'string') setSourceFilter(parsed.sourceFilter)
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('crm_filters_v1', JSON.stringify({ q, statusFilter, sourceFilter }))
+    } catch {
+      // ignore
+    }
+  }, [q, statusFilter, sourceFilter])
+
+  // Auto-refresh every 20s when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const t = window.setInterval(() => {
+      refresh()
+    }, 20000)
+    return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated])
+
   const handleLogout = () => {
     localStorage.removeItem('adminPassword')
     setIsAuthenticated(false)
@@ -194,7 +227,21 @@ export default function AdminPage() {
       const d = new Date(l.createdAt)
       if (!Number.isNaN(d.getTime()) && d.toDateString() === today) todayCount++
     }
-    return { total, todayCount, byStatus, bySource }
+    // last 7/30 days counts
+    const now = Date.now()
+    const dayMs = 24 * 60 * 60 * 1000
+    const inDays = (d: Date, days: number) => now - d.getTime() <= days * dayMs
+    const last7 = { flow: 0, telegram: 0, other: 0 }
+    const last30 = { flow: 0, telegram: 0, other: 0 }
+    for (const l of leads) {
+      const d = new Date(l.createdAt)
+      if (Number.isNaN(d.getTime())) continue
+      const src = String(l.source || '').toLowerCase()
+      const bucket = src === 'flow' ? 'flow' : src === 'telegram' ? 'telegram' : 'other'
+      if (inDays(d, 7)) last7[bucket]++
+      if (inDays(d, 30)) last30[bucket]++
+    }
+    return { total, todayCount, byStatus, bySource, last7, last30 }
   }, [leads])
 
   const selected = useMemo(() => leads.find((l) => l.id === selectedId) || null, [leads, selectedId])
@@ -350,6 +397,18 @@ export default function AdminPage() {
                 <p className="text-xs text-slate-400">Всего</p>
                 <p className="text-2xl font-bold text-white">{stats.total}</p>
               </div>
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                <div className="flex flex-wrap gap-4">
+                  <div>
+                    <p className="text-xs text-slate-400">7 дней</p>
+                    <p className="font-semibold">Flow {stats.last7.flow} • Telegram {stats.last7.telegram} • Другое {stats.last7.other}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">30 дней</p>
+                    <p className="font-semibold">Flow {stats.last30.flow} • Telegram {stats.last30.telegram} • Другое {stats.last30.other}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -423,12 +482,38 @@ export default function AdminPage() {
                         <p className="text-xs text-slate-400">Контакт</p>
                         <p className="text-lg font-bold text-white break-all">{selected.contact}</p>
                       </div>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(selected.contact)}
-                        className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                      >
-                        Копировать
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(selected.contact)}
+                          className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                        >
+                          Копировать
+                        </button>
+                        {selected.contact.startsWith('@') ? (
+                          <a
+                            href={`https://t.me/${selected.contact.slice(1)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                          >
+                            Telegram
+                          </a>
+                        ) : /\S+@\S+\.\S+/.test(selected.contact) ? (
+                          <a
+                            href={`mailto:${selected.contact}`}
+                            className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                          >
+                            Email
+                          </a>
+                        ) : /^[+\d][\d\s().-]{6,}$/.test(selected.contact) ? (
+                          <a
+                            href={`tel:${selected.contact.replace(/[^\d+]/g, '')}`}
+                            className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                          >
+                            Позвонить
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">{fmtDate(selected.createdAt)}</p>
                   </div>

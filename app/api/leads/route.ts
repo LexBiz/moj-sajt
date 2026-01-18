@@ -20,6 +20,76 @@ type LeadPayload = {
   phone?: string // for backward compatibility
 }
 
+function getOpenAiKey() {
+  const k = process.env.OPENAI_API_KEY
+  return typeof k === 'string' && k.trim() ? k.trim() : null
+}
+
+async function generateTruthfulSummary(input: {
+  lang?: string | null
+  source?: string | null
+  contact?: string | null
+  businessType?: string | null
+  channel?: string | null
+  pain?: string | null
+  question?: string | null
+  clientMessages?: string[] | null
+}) {
+  const apiKey = getOpenAiKey()
+  if (!apiKey) return null
+
+  const lang = (input.lang || 'ru').toLowerCase()
+  const langLine =
+    lang === 'ua' ? 'Пиши українською.' : lang === 'cz' ? 'Piš česky.' : 'Пиши по‑русски.'
+
+  const payload = {
+    source: input.source || null,
+    contact: input.contact || null,
+    business: input.businessType || null,
+    channels: input.channel || null,
+    pain: input.pain || null,
+    question: input.question || null,
+    clientMessages: Array.isArray(input.clientMessages) ? input.clientMessages.slice(0, 20) : null,
+  }
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        temperature: 0.2,
+        max_tokens: 220,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              langLine,
+              'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM.',
+              'Можно использовать только данные из JSON (ничего не выдумывать).',
+              'Если данных нет — пиши “не уточнили”.',
+              'Формат: 4–7 строк, каждая начинается с эмодзи:',
+              '🏷 бизнес, 📡 каналы, 😤 боль, 💬 запрос/вопрос, 🧩 что хочет/следующий шаг',
+              'Не используй markdown (#, **).',
+            ].join(' '),
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const json = await resp.json()
+    const content = json?.choices?.[0]?.message?.content
+    const s = typeof content === 'string' ? content.trim() : ''
+    return s ? s.slice(0, 1200) : null
+  } catch {
+    return null
+  }
+}
+
 function ensureDataDir() {
   const dir = path.join(process.cwd(), 'data')
   if (!fs.existsSync(dir)) {
@@ -164,6 +234,21 @@ export async function POST(request: NextRequest) {
 
     ensureDataDir()
     const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
+
+    const summaryFromUser = typeof aiSummary === 'string' ? aiSummary.trim() : ''
+    const shouldGenerate = !summaryFromUser || summaryFromUser.length < 40
+    const generatedSummary = shouldGenerate
+      ? await generateTruthfulSummary({
+          lang: lang || null,
+          source: source || 'flow',
+          contact: resolvedContact,
+          businessType: businessType || null,
+          channel: channel || null,
+          pain: pain || null,
+          question: question || null,
+          clientMessages: Array.isArray(clientMessages) ? clientMessages : null,
+        })
+      : null
     
     const newLead = {
       id: Date.now(),
@@ -175,7 +260,7 @@ export async function POST(request: NextRequest) {
       question: question || null,
       clientMessages: Array.isArray(clientMessages) ? clientMessages : null,
       aiRecommendation: aiRecommendation || null,
-      aiSummary: aiSummary || null,
+      aiSummary: generatedSummary || summaryFromUser || null,
       source: source || 'flow',
       lang: lang || null,
       notes: notes || null,
