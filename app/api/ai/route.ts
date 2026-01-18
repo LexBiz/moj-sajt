@@ -162,6 +162,16 @@ function buildContext({ businessType, channel, pain, lang, mode }: AiRequest) {
       ? 'Když jde o cenu/pilot, vždy zmínit že pilot je omezený (5 míst), ale netlačit to pořád.'
       : 'Про пілот кажи як про обмежену опцію: місць 5, але не тисни в кожній відповіді.',
     lng === 'ru'
+      ? 'Жёсткая тема: этот чат ТОЛЬКО про AI‑ассистентов и автоматизацию заявок/продаж для бизнеса.'
+      : lng === 'cz'
+      ? 'Tvrdé pravidlo: chat JE JEN o AI asistentech a automatizaci poptávek/prodeje pro byznys.'
+      : 'Жорстка тема: чат ТІЛЬКИ про AI‑асистентів і автоматизацію заявок/продажів для бізнесу.',
+    lng === 'ru'
+      ? 'Если вопрос не по теме (еда, отношения, личное) — 1 остроумная фраза и сразу перевод в тему бизнеса. Не давай советы не по теме.'
+      : lng === 'cz'
+      ? 'Když je dotaz mimo (jídlo, vztahy, osobní), dej 1 vtipnou větu a vrať to do byznysu. Žádné rady mimo téma.'
+      : 'Якщо питання не по темі (їжа, стосунки, особисте) — 1 дотепна фраза і одразу в тему бізнесу. Без порад поза темою.',
+    lng === 'ru'
       ? 'Цель — агрессивная продажа без попрошайничества: факты, выгода, ROI, скорость. Не задавай “хочешь/хотите/нужно ли”.'
       : lng === 'cz'
       ? 'Cíl — prodej bez žebrání: fakta, užitek, ROI, rychlost. Neptej se “chceš/chcete”.'
