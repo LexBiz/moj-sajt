@@ -205,6 +205,14 @@ app.get('/', (_req, res) => {
   res.json({ ok: true })
 })
 
+app.get(WEBHOOK_PATH, (req, res) => {
+  const secret = req.headers['x-telegram-bot-api-secret-token']
+  if (WEBHOOK_SECRET && secret && secret !== WEBHOOK_SECRET) {
+    return res.status(401).json({ ok: false })
+  }
+  res.json({ ok: true })
+})
+
 app.post(WEBHOOK_PATH, (req, res) => {
   const secret = req.headers['x-telegram-bot-api-secret-token']
   if (WEBHOOK_SECRET && secret !== WEBHOOK_SECRET) {
