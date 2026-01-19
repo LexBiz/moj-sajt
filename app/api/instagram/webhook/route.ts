@@ -147,7 +147,10 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     console.error('Missing INSTAGRAM_ACCESS_TOKEN or INSTAGRAM_IG_USER_ID')
     return
   }
-  const url = `https://graph.facebook.com/v19.0/${IG_USER_ID}/messages`
+  const urlObj = new URL(`https://graph.facebook.com/v19.0/${IG_USER_ID}/messages`)
+  // Always set access_token as query param (URL-encoded) since some Graph endpoints are picky.
+  urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
+  const url = urlObj.toString()
   const body = {
     recipient: { id: recipientId },
     messaging_type: 'RESPONSE',
