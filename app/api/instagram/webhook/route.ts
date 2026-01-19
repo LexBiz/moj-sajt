@@ -57,6 +57,14 @@ function clip(text: string, max = 1000) {
   return `${text.slice(0, max - 1)}…`
 }
 
+function safeJsonPreview(raw: Buffer, max = 1200) {
+  try {
+    return clip(raw.toString('utf8'), max)
+  } catch {
+    return null
+  }
+}
+
 function detectBookingIntent(text: string) {
   return /(запис|запиш|брон|бронь|встреч|созвон|консультац|демо|demo|call|appointment)/i.test(text)
 }
@@ -223,6 +231,7 @@ export async function POST(request: NextRequest) {
     hasIgUserId: Boolean(IG_USER_ID),
     igUserIdLast4: IG_USER_ID ? IG_USER_ID.slice(-4) : null,
   })
+  console.log('IG webhook: raw preview', safeJsonPreview(rawBuffer, 1400))
 
   if (!verifySignature(rawBuffer, signature)) {
     console.warn('IG webhook: invalid signature')
@@ -243,15 +252,34 @@ export async function POST(request: NextRequest) {
   })
 
   const entries = payload?.entry || []
+  let processedCount = 0
   for (const entry of entries) {
     const messages = entry.messaging || []
+    const entryKeys = entry ? Object.keys(entry as any) : []
+    console.log('IG webhook: entry summary', {
+      id: entry?.id || null,
+      time: entry?.time || null,
+      keys: entryKeys,
+      messagingCount: messages.length,
+    })
+
     for (const msg of messages) {
       if (msg.message?.is_echo) continue
       const senderId = msg.sender?.id
       const text = msg.message?.text?.trim()
-      if (!senderId || !text) continue
+      if (!senderId || !text) {
+        console.log('IG webhook: skipped event (no senderId/text or echo)', {
+          senderId: senderId || null,
+          recipientId: msg.recipient?.id || null,
+          hasMessage: Boolean(msg.message),
+          messageKeys: msg.message ? Object.keys(msg.message) : [],
+          isEcho: Boolean(msg.message?.is_echo),
+        })
+        continue
+      }
 
       console.log('IG webhook: incoming message', { senderId, text: clip(text, 200) })
+      processedCount += 1
 
       const contactHint = extractContact(text)
       if (contactHint || detectLeadIntent(text)) {
@@ -266,6 +294,9 @@ export async function POST(request: NextRequest) {
       }
       await sendInstagramMessage(senderId, reply)
     }
+  }
+  if (processedCount === 0) {
+    console.warn('IG webhook: no processable messages found in payload')
   }
 
   return NextResponse.json({ ok: true })
