@@ -10,6 +10,8 @@ export async function GET() {
   const IG_SIGNATURE_BYPASS = (process.env.INSTAGRAM_SIGNATURE_BYPASS || '').trim() === 'true'
   const IG_ACCESS_TOKEN = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim()
   const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
+  const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
+  const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || (IG_API_HOST === 'graph.instagram.com' ? 'v24.0' : 'v19.0')).trim()
 
   return NextResponse.json(
     {
@@ -28,6 +30,10 @@ export async function GET() {
         : null,
       hasIgUserId: Boolean(IG_USER_ID),
       igUserIdLast4: IG_USER_ID ? IG_USER_ID.slice(-4) : null,
+      api: {
+        host: IG_API_HOST,
+        version: IG_API_VERSION,
+      },
     },
     instagramWebhook: getInstagramWebhookState(),
     },

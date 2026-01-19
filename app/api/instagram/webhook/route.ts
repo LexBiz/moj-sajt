@@ -38,6 +38,8 @@ const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
 const IG_SIGNATURE_BYPASS = (process.env.INSTAGRAM_SIGNATURE_BYPASS || '').trim() === 'true'
 const IG_ACCESS_TOKEN = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim()
 const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
+const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
+const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || (IG_API_HOST === 'graph.instagram.com' ? 'v24.0' : 'v19.0')).trim()
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
@@ -164,9 +166,12 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     console.error('Missing INSTAGRAM_ACCESS_TOKEN or INSTAGRAM_IG_USER_ID')
     return
   }
-  const urlObj = new URL(`https://graph.facebook.com/v19.0/${IG_USER_ID}/messages`)
-  // Always set access_token as query param (URL-encoded) since some Graph endpoints are picky.
-  urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
+  const urlObj = new URL(`https://${IG_API_HOST}/${IG_API_VERSION}/${IG_USER_ID}/messages`)
+  // For graph.facebook.com we keep access_token in query (URL-encoded) since many examples use it.
+  // For graph.instagram.com (Instagram API with Instagram Login) we do NOT include it in query.
+  if (IG_API_HOST !== 'graph.instagram.com') {
+    urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
+  }
   const url = urlObj.toString()
   const body = {
     recipient: { id: recipientId },
@@ -192,6 +197,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Both hosts accept Authorization header; it's REQUIRED for graph.instagram.com per docs.
         Authorization: `Bearer ${IG_ACCESS_TOKEN}`,
       },
       body: JSON.stringify(body),
