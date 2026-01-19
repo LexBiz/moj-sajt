@@ -8,12 +8,25 @@ type IgWebhookMessage = {
   message?: { text?: string; is_echo?: boolean }
 }
 
+type IgWebhookChangeValue = {
+  sender?: { id?: string }
+  recipient?: { id?: string }
+  timestamp?: number
+  message?: { mid?: string; text?: string; is_echo?: boolean }
+}
+
+type IgWebhookChange = {
+  field?: string
+  value?: IgWebhookChangeValue
+}
+
 type IgWebhookPayload = {
   object?: string
   entry?: Array<{
     id?: string
     time?: number
     messaging?: IgWebhookMessage[]
+    changes?: IgWebhookChange[]
   }>
 }
 
@@ -315,13 +328,52 @@ export async function POST(request: NextRequest) {
   let processedCount = 0
   for (const entry of entries) {
     const messages = entry.messaging || []
+    const changes = entry.changes || []
     const entryKeys = entry ? Object.keys(entry as any) : []
     console.log('IG webhook: entry summary', {
       id: entry?.id || null,
       time: entry?.time || null,
       keys: entryKeys,
       messagingCount: messages.length,
+      changesCount: changes.length,
     })
+
+    // Newer Instagram Webhooks format uses entry[].changes[].value.message
+    for (const change of changes) {
+      if (change.field !== 'messages') continue
+      const senderId = change.value?.sender?.id
+      const text = change.value?.message?.text?.trim()
+      const isEcho = Boolean(change.value?.message?.is_echo)
+      if (isEcho) continue
+      if (!senderId || !text) {
+        console.log('IG webhook: skipped change (no senderId/text or echo)', {
+          field: change.field || null,
+          senderId: senderId || null,
+          recipientId: change.value?.recipient?.id || null,
+          hasMessage: Boolean(change.value?.message),
+          messageKeys: change.value?.message ? Object.keys(change.value.message) : [],
+          isEcho,
+        })
+        continue
+      }
+
+      console.log('IG webhook: incoming message (changes)', { senderId, text: clip(text, 200) })
+      processedCount += 1
+      recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
+
+      const contactHint = extractContact(text)
+      if (contactHint || detectLeadIntent(text)) {
+        await sendTelegramLead({ senderId, messageText: text, contactHint })
+      }
+
+      let reply = ''
+      if (BOOKING_URL && detectBookingIntent(text)) {
+        reply = `Запись открыта. Выбери слот здесь: ${BOOKING_URL}\nЕсли удобнее без ссылки — напиши день и время, я закреплю.`
+      } else {
+        reply = await generateAiReply(text)
+      }
+      await sendInstagramMessage(senderId, reply)
+    }
 
     for (const msg of messages) {
       if (msg.message?.is_echo) continue
