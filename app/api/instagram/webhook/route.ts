@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordInstagramWebhook } from '../state'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type IgWebhookMessage = {
   sender?: { id?: string }
   recipient?: { id?: string }
