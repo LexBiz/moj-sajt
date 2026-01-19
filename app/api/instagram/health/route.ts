@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getInstagramWebhookState } from '../state'
 
 export async function GET() {
   const IG_VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || '').trim()
@@ -24,6 +25,7 @@ export async function GET() {
       hasIgUserId: Boolean(IG_USER_ID),
       igUserIdLast4: IG_USER_ID ? IG_USER_ID.slice(-4) : null,
     },
+    instagramWebhook: getInstagramWebhookState(),
   })
 }
 

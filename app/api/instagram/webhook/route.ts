@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { recordInstagramWebhook } from '../state'
 
 type IgWebhookMessage = {
   sender?: { id?: string }
@@ -308,6 +309,8 @@ export async function POST(request: NextRequest) {
     object: payload?.object || null,
   })
 
+  recordInstagramWebhook({ object: payload?.object || null })
+
   const entries = payload?.entry || []
   let processedCount = 0
   for (const entry of entries) {
@@ -337,6 +340,7 @@ export async function POST(request: NextRequest) {
 
       console.log('IG webhook: incoming message', { senderId, text: clip(text, 200) })
       processedCount += 1
+      recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
 
       const contactHint = extractContact(text)
       if (contactHint || detectLeadIntent(text)) {
