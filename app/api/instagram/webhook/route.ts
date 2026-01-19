@@ -65,6 +65,10 @@ function safeJsonPreview(raw: Buffer, max = 1200) {
   }
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function detectBookingIntent(text: string) {
   return /(запис|запиш|брон|бронь|встреч|созвон|консультац|демо|demo|call|appointment)/i.test(text)
 }
@@ -150,17 +154,56 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     message: { text: clip(text, 1000) },
   }
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!resp.ok) {
+  const retryDelaysMs = [0, 300, 1200, 2500]
+  let lastStatus: number | null = null
+  let lastBodyPreview = ''
+
+  for (let attempt = 0; attempt < retryDelaysMs.length; attempt += 1) {
+    const delay = retryDelaysMs[attempt]
+    if (delay) await sleep(delay)
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (resp.ok) {
+      console.log('Instagram send ok', { recipientId })
+      return
+    }
+
     const respText = await resp.text().catch(() => '')
-    console.error('Instagram send error', resp.status, respText.slice(0, 400))
-  } else {
-    console.log('Instagram send ok', { recipientId })
+    lastStatus = resp.status
+    lastBodyPreview = respText.slice(0, 400)
+
+    // Retry only for transient/server-side errors or known transient OAuth error.
+    let isTransient = resp.status >= 500
+    try {
+      const parsed = JSON.parse(respText) as any
+      const code = parsed?.error?.code
+      const transient = parsed?.error?.is_transient
+      if (transient === true) isTransient = true
+      if (code === 2) isTransient = true // service temporarily unavailable
+    } catch {
+      // ignore
+    }
+
+    console.error('Instagram send error', {
+      attempt: attempt + 1,
+      status: resp.status,
+      transient: isTransient,
+      body: lastBodyPreview,
+    })
+
+    if (!isTransient) break
   }
+
+  console.error('Instagram send failed (giving up)', {
+    status: lastStatus,
+    body: lastBodyPreview,
+    recipientId,
+  })
 }
 
 async function sendTelegramLead({
