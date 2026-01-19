@@ -147,7 +147,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     console.error('Missing INSTAGRAM_ACCESS_TOKEN or INSTAGRAM_IG_USER_ID')
     return
   }
-  const url = `https://graph.facebook.com/v19.0/${IG_USER_ID}/messages?access_token=${IG_ACCESS_TOKEN}`
+  const url = `https://graph.facebook.com/v19.0/${IG_USER_ID}/messages`
   const body = {
     recipient: { id: recipientId },
     messaging_type: 'RESPONSE',
@@ -158,13 +158,22 @@ async function sendInstagramMessage(recipientId: string, text: string) {
   let lastStatus: number | null = null
   let lastBodyPreview = ''
 
+  const tokenMeta = {
+    len: IG_ACCESS_TOKEN.length,
+    prefix: IG_ACCESS_TOKEN ? IG_ACCESS_TOKEN.slice(0, 4) : null,
+    suffix: IG_ACCESS_TOKEN ? IG_ACCESS_TOKEN.slice(-4) : null,
+  }
+
   for (let attempt = 0; attempt < retryDelaysMs.length; attempt += 1) {
     const delay = retryDelaysMs[attempt]
     if (delay) await sleep(delay)
 
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${IG_ACCESS_TOKEN}`,
+      },
       body: JSON.stringify(body),
     })
 
@@ -194,6 +203,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
       status: resp.status,
       transient: isTransient,
       body: lastBodyPreview,
+      tokenMeta,
     })
 
     if (!isTransient) break
@@ -203,6 +213,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     status: lastStatus,
     body: lastBodyPreview,
     recipientId,
+    tokenMeta,
   })
 }
 
