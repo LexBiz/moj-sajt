@@ -37,9 +37,19 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
     console.warn('INSTAGRAM_APP_SECRET is missing; signature verification skipped')
     return true
   }
-  if (!signatureHeader) return false
+  const header = signatureHeader?.trim()
+  if (!header) return false
+  if (!header.startsWith('sha256=')) return false
+
   const expected = `sha256=${crypto.createHmac('sha256', IG_APP_SECRET).update(rawBody).digest('hex')}`
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader))
+  const expectedBuf = Buffer.from(expected)
+  const actualBuf = Buffer.from(header)
+  if (expectedBuf.length !== actualBuf.length) return false
+  try {
+    return crypto.timingSafeEqual(expectedBuf, actualBuf)
+  } catch {
+    return false
+  }
 }
 
 function clip(text: string, max = 1000) {
@@ -206,6 +216,12 @@ export async function POST(request: NextRequest) {
   console.log('IG webhook: received', {
     hasSignature: Boolean(signature),
     length: rawBuffer.length,
+    hasVerifyToken: Boolean(IG_VERIFY_TOKEN),
+    hasAppSecret: Boolean(IG_APP_SECRET),
+    signatureBypass: IG_SIGNATURE_BYPASS,
+    hasAccessToken: Boolean(IG_ACCESS_TOKEN),
+    hasIgUserId: Boolean(IG_USER_ID),
+    igUserIdLast4: IG_USER_ID ? IG_USER_ID.slice(-4) : null,
   })
 
   if (!verifySignature(rawBuffer, signature)) {
