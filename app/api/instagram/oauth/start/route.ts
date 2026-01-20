@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
   const redirectUri = (process.env.INSTAGRAM_OAUTH_REDIRECT_URI || '').trim()
   const scope =
     (process.env.INSTAGRAM_OAUTH_SCOPE || '').trim() ||
-    'instagram_business_basic,instagram_business_manage_messages'
+    // Default to Facebook OAuth-recognized scopes. You can override via INSTAGRAM_OAUTH_SCOPE.
+    'instagram_basic,instagram_manage_messages'
 
   if (!appId || !redirectUri) {
     return NextResponse.json(

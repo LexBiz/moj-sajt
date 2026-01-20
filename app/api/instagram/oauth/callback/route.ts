@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
         },
       },
       note:
-        'Token stored server-side. DO NOT share tokens. To view it on the server: cat data/instagram-login-token.json',
+        'Token stored server-side. DO NOT share tokens. To view it on the server: cat data/instagram-login-token.json. If OAuth login shows "Invalid Scopes", set INSTAGRAM_OAUTH_SCOPE=instagram_basic,instagram_manage_messages (or the exact scopes available in your app).',
       returnTo,
     },
     { headers: { 'Cache-Control': 'no-store, max-age=0' } },
