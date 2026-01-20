@@ -139,13 +139,33 @@ async function sendWhatsAppText(to: string, text: string) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('hub.mode')
-  const token = searchParams.get('hub.verify_token')
+  const token = (searchParams.get('hub.verify_token') || '').trim()
   const challenge = searchParams.get('hub.challenge')
 
+  console.log('WA webhook: verify attempt', {
+    mode,
+    tokenLen: token.length,
+    tokenPrefix: token ? token.slice(0, 4) : null,
+    tokenSuffix: token ? token.slice(-4) : null,
+    hasChallenge: Boolean(challenge),
+  })
+
   if (mode === 'subscribe' && token && token === VERIFY_TOKEN && challenge) {
-    return new NextResponse(challenge, { status: 200, headers: { 'Cache-Control': 'no-store' } })
+    return new NextResponse(challenge, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'text/plain; charset=utf-8',
+      },
+    })
   }
-  return NextResponse.json({ error: 'Invalid verify token' }, { status: 403, headers: { 'Cache-Control': 'no-store' } })
+  return NextResponse.json(
+    {
+      error: 'Invalid verify token',
+      hint: 'Ensure Meta "Verify token" matches WHATSAPP_VERIFY_TOKEN exactly (including dots/spaces).',
+    },
+    { status: 403, headers: { 'Cache-Control': 'no-store' } },
+  )
 }
 
 export async function POST(request: NextRequest) {
