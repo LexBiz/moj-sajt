@@ -171,6 +171,7 @@ export default function IntegrationsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [lastSendResult, setLastSendResult] = useState<any>(null)
+  const [lastSubscribeResult, setLastSubscribeResult] = useState<any>(null)
 
   const t = I18N[lang]
 
@@ -278,6 +279,26 @@ export default function IntegrationsPage() {
       await loadStatus()
     } catch (e: any) {
       setError(String(e?.message || e || 'Select failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const subscribePage = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/instagram/admin/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ pageId: selectedPageId || undefined }),
+      })
+      const json = await res.json().catch(() => ({}))
+      setLastSubscribeResult(json)
+      if (!res.ok) throw new Error(json?.error || 'Subscribe failed')
+      await loadStatus()
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Subscribe failed'))
     } finally {
       setBusy(false)
     }
@@ -461,6 +482,14 @@ export default function IntegrationsPage() {
             >
               {t.saveSelection}
             </button>
+            <button
+              onClick={subscribePage}
+              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
+              disabled={busy || !selectedPageId}
+              title="Required to receive real (non-test) webhooks for messages"
+            >
+              {lang === 'en' ? 'Subscribe Page to Webhooks' : lang === 'ua' ? 'Підписати Page на Webhooks' : 'Подписать Page на Webhooks'}
+            </button>
             {status?.selected?.updatedAt ? <span className="text-xs text-slate-500">{t.savedAt}: {status.selected.updatedAt}</span> : null}
           </div>
 
@@ -496,6 +525,22 @@ export default function IntegrationsPage() {
             </div>
           </div>
         </div>
+
+        {lastSubscribeResult ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <h2 className="font-bold">{lang === 'en' ? 'Subscription result' : lang === 'ua' ? 'Результат підписки' : 'Результат подписки'}</h2>
+            <p className="text-slate-300 text-sm mt-2">
+              {lang === 'en'
+                ? 'If this fails with missing permissions, you likely need pages_manage_metadata or the correct Page token.'
+                : lang === 'ua'
+                ? 'Якщо тут помилка про права — зазвичай не вистачає pages_manage_metadata або некоректний Page token.'
+                : 'Если тут ошибка про права — обычно не хватает pages_manage_metadata или некорректный Page token.'}
+            </p>
+            <div className="mt-3 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
+              <pre>{JSON.stringify(lastSubscribeResult, null, 2)}</pre>
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-bold">{t.sendTitle}</h2>
