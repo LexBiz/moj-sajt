@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+type Lang = 'en' | 'ru' | 'ua'
+
 type PageAsset = {
   pageId: string
   pageName: string | null
@@ -21,7 +23,140 @@ function clip(s: string, max = 140) {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s
 }
 
+const I18N: Record<Lang, Record<string, string>> = {
+  en: {
+    title: 'Instagram • App Review Demo',
+    goal: 'Goal: show end-to-end flow (Meta Login → select IG asset → send message from UI → see delivery in Instagram app).',
+    backToCrm: 'Back to CRM',
+    logout: 'Logout',
+    loginTitle: 'Integrations • Instagram Review Demo',
+    loginHint: 'Log in with the same admin password as /admin.',
+    adminPassword: 'Admin password',
+    login: 'Login',
+    loading: 'Loading…',
+    metaLoginTitle: '1) Meta Login (OAuth)',
+    metaLoginDesc:
+      'Click the button and complete the Meta login flow. Use an Instagram professional account connected to a Facebook Page.',
+    startMetaLogin: 'Start Meta Login',
+    tokenSaved: 'Token: saved',
+    tokenNotSaved: 'Token: not saved',
+    tipEnglish: 'Tip for recording: keep UI language in English.',
+    webhookTitle: '2) Webhook (incoming DM)',
+    webhookDesc:
+      'In Instagram app, send a DM to the business account. This page will show the last sender ID & message preview (polled every 3s).',
+    totalEvents: 'Total events',
+    lastSenderId: 'Last sender ID',
+    lastText: 'Last text',
+    lastReceived: 'Last received',
+    selectTitle: '3) Select Asset (Page → Instagram account)',
+    selectDesc:
+      'Meta reviewers require showing “resource selection”. Load pages and pick the one with a connected Instagram business account.',
+    loadPages: 'Load Pages',
+    saveSelection: 'Save Selection',
+    savedAt: 'Saved',
+    fbPage: 'Facebook Page',
+    selectPage: 'Select a Page…',
+    igAccount: 'Instagram Business Account (ig-user-id)',
+    sendTitle: '4) Send Message (from App UI)',
+    sendDesc:
+      'For Instagram Messaging API you can only message a user who already messaged you. If recipientId is empty, we use the last sender ID captured by webhook.',
+    recipientOptional: 'Recipient ID (optional)',
+    useLastSender: 'Use last sender',
+    messageText: 'Message text',
+    sendFromApp: 'Send from App',
+    sending: 'Sending…',
+    usingApi: 'Using',
+  },
+  ru: {
+    title: 'Instagram • Демо для App Review',
+    goal: 'Цель: показать полный флоу (Meta Login → выбор IG ресурса → отправка из интерфейса → доставка в Instagram).',
+    backToCrm: 'Назад в CRM',
+    logout: 'Выйти',
+    loginTitle: 'Интеграции • Instagram демо',
+    loginHint: 'Вход тем же паролем, что и в /admin.',
+    adminPassword: 'Пароль админа',
+    login: 'Войти',
+    loading: 'Загрузка…',
+    metaLoginTitle: '1) Вход Meta (OAuth)',
+    metaLoginDesc:
+      'Нажми кнопку и пройди Meta login. Используй Instagram профессиональный аккаунт, привязанный к Facebook Page.',
+    startMetaLogin: 'Запустить Meta Login',
+    tokenSaved: 'Токен: сохранён',
+    tokenNotSaved: 'Токен: не сохранён',
+    tipEnglish: 'Совет для записи видео: язык интерфейса — English (Meta просит).',
+    webhookTitle: '2) Webhook (входящий DM)',
+    webhookDesc:
+      'В Instagram на телефоне отправь DM в бизнес‑аккаунт. Тут появится last sender id и превью сообщения (обновление каждые 3 сек).',
+    totalEvents: 'Всего событий',
+    lastSenderId: 'Последний sender ID',
+    lastText: 'Последний текст',
+    lastReceived: 'Последнее получение',
+    selectTitle: '3) Выбор ресурса (Page → Instagram аккаунт)',
+    selectDesc:
+      'Ревьюверы Meta требуют показать “выбор ресурса”. Загрузи страницы и выбери ту, где есть подключенный Instagram business account.',
+    loadPages: 'Загрузить Pages',
+    saveSelection: 'Сохранить выбор',
+    savedAt: 'Сохранено',
+    fbPage: 'Facebook Page',
+    selectPage: 'Выбери страницу…',
+    igAccount: 'Instagram Business Account (ig-user-id)',
+    sendTitle: '4) Отправка сообщения (из интерфейса)',
+    sendDesc:
+      'Через API можно писать только тем, кто уже написал вам. Если recipientId пустой — используем last sender id из вебхука.',
+    recipientOptional: 'Recipient ID (необязательно)',
+    useLastSender: 'Взять last sender',
+    messageText: 'Текст сообщения',
+    sendFromApp: 'Отправить из приложения',
+    sending: 'Отправляю…',
+    usingApi: 'API',
+  },
+  ua: {
+    title: 'Instagram • Демо для App Review',
+    goal: 'Ціль: показати повний флоу (Meta Login → вибір IG ресурсу → відправка з інтерфейсу → доставка в Instagram).',
+    backToCrm: 'Назад у CRM',
+    logout: 'Вийти',
+    loginTitle: 'Інтеграції • Instagram демо',
+    loginHint: 'Вхід тим самим паролем, що й у /admin.',
+    adminPassword: 'Пароль адміна',
+    login: 'Увійти',
+    loading: 'Завантаження…',
+    metaLoginTitle: '1) Вхід Meta (OAuth)',
+    metaLoginDesc:
+      'Натисни кнопку і пройди Meta login. Використовуй Instagram професійний акаунт, привʼязаний до Facebook Page.',
+    startMetaLogin: 'Запустити Meta Login',
+    tokenSaved: 'Токен: збережено',
+    tokenNotSaved: 'Токен: не збережено',
+    tipEnglish: 'Порада для запису відео: мова інтерфейсу — English (Meta просить).',
+    webhookTitle: '2) Webhook (вхідний DM)',
+    webhookDesc:
+      'В Instagram на телефоні відправ DM у бізнес‑акаунт. Тут зʼявиться last sender id і превʼю повідомлення (оновлення кожні 3 сек).',
+    totalEvents: 'Усього подій',
+    lastSenderId: 'Останній sender ID',
+    lastText: 'Останній текст',
+    lastReceived: 'Останнє отримання',
+    selectTitle: '3) Вибір ресурсу (Page → Instagram акаунт)',
+    selectDesc:
+      'Ревʼювери Meta вимагають показати “вибір ресурсу”. Завантаж Pages і вибери ту, де є підключений Instagram business account.',
+    loadPages: 'Завантажити Pages',
+    saveSelection: 'Зберегти вибір',
+    savedAt: 'Збережено',
+    fbPage: 'Facebook Page',
+    selectPage: 'Обери сторінку…',
+    igAccount: 'Instagram Business Account (ig-user-id)',
+    sendTitle: '4) Відправка повідомлення (з інтерфейсу)',
+    sendDesc:
+      'Через API можна писати лише тим, хто вже написав вам. Якщо recipientId порожній — використовуємо last sender id з вебхука.',
+    recipientOptional: 'Recipient ID (необовʼязково)',
+    useLastSender: 'Взяти last sender',
+    messageText: 'Текст повідомлення',
+    sendFromApp: 'Відправити з додатку',
+    sending: 'Відправляю…',
+    usingApi: 'API',
+  },
+}
+
 export default function IntegrationsPage() {
+  const [lang, setLang] = useState<Lang>('ru')
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(false)
   const authHeader = useMemo(() => ({ Authorization: `Bearer ${password}` }), [password])
@@ -36,6 +171,8 @@ export default function IntegrationsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [lastSendResult, setLastSendResult] = useState<any>(null)
+
+  const t = I18N[lang]
 
   const loadStatus = async () => {
     setError('')
@@ -74,6 +211,29 @@ export default function IntegrationsPage() {
     const saved = localStorage.getItem('adminPassword')
     if (saved) setPassword(saved)
   }, [])
+
+  useEffect(() => {
+    try {
+      const savedLang = (localStorage.getItem('integrations_lang') || '').trim().toLowerCase()
+      if (savedLang === 'en' || savedLang === 'ru' || savedLang === 'ua') setLang(savedLang)
+      else {
+        const nav = (navigator.language || '').toLowerCase()
+        if (nav.startsWith('uk')) setLang('ua')
+        else if (nav.startsWith('ru')) setLang('ru')
+        else setLang('en')
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('integrations_lang', lang)
+    } catch {
+      // ignore
+    }
+  }, [lang])
 
   useEffect(() => {
     if (!password) return
@@ -151,16 +311,25 @@ export default function IntegrationsPage() {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-          <h1 className="text-xl font-bold">Integrations • Instagram Review Demo</h1>
-          <p className="text-slate-300 text-sm mt-2">
-            Log in with the same admin password as <span className="font-semibold">/admin</span>.
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-xl font-bold">{t.loginTitle}</h1>
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Lang)}
+              className="px-2 py-1 rounded-lg bg-slate-900/70 border border-white/10 text-sm"
+            >
+              <option value="ru">RU</option>
+              <option value="ua">UA</option>
+              <option value="en">EN</option>
+            </select>
+          </div>
+          <p className="text-slate-300 text-sm mt-2">{t.loginHint}</p>
           <div className="mt-4 space-y-3">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Admin password"
+              placeholder={t.adminPassword}
               className="w-full px-4 py-3 rounded-xl bg-slate-900/70 border border-white/10 text-white placeholder:text-slate-500"
               disabled={busy}
             />
@@ -170,7 +339,7 @@ export default function IntegrationsPage() {
               disabled={!password || busy}
               className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 py-3 font-semibold disabled:opacity-60"
             >
-              {busy ? 'Loading…' : 'Login'}
+              {busy ? t.loading : t.login}
             </button>
           </div>
         </div>
@@ -186,9 +355,20 @@ export default function IntegrationsPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center gap-3 justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Instagram • App Review Demo</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value as Lang)}
+                className="px-2 py-1 rounded-lg bg-slate-900/70 border border-white/10 text-sm"
+              >
+                <option value="ru">RU</option>
+                <option value="ua">UA</option>
+                <option value="en">EN</option>
+              </select>
+            </div>
             <p className="text-slate-300 text-sm mt-1">
-              Goal: show end-to-end flow (Meta Login → select IG asset → send message from UI → see delivery in Instagram app).
+              {t.goal}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -196,7 +376,7 @@ export default function IntegrationsPage() {
               href="/admin"
               className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold"
             >
-              Back to CRM
+              {t.backToCrm}
             </a>
             <button
               onClick={() => {
@@ -206,7 +386,7 @@ export default function IntegrationsPage() {
               }}
               className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold"
             >
-              Logout
+              {t.logout}
             </button>
           </div>
         </div>
@@ -215,45 +395,50 @@ export default function IntegrationsPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <h2 className="font-bold">1) Meta Login (OAuth)</h2>
+            <h2 className="font-bold">{t.metaLoginTitle}</h2>
             <p className="text-slate-300 text-sm mt-2">
-              Click the button and complete the Meta login flow. Use an Instagram professional account connected to a Facebook Page.
+              {t.metaLoginDesc}
             </p>
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               <a href={connectUrl} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold">
-                Start Meta Login
+                {t.startMetaLogin}
               </a>
               <span className="text-xs text-slate-400">
-                Token: {token?.exists ? `saved (${token?.meta?.prefix}…${token?.meta?.suffix})` : 'not saved'}
+                {token?.exists
+                  ? `${t.tokenSaved} (${token?.meta?.prefix}…${token?.meta?.suffix})`
+                  : t.tokenNotSaved}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-2">Tip for recording: keep UI language in English.</p>
+            <p className="text-xs text-slate-400 mt-2">{t.tipEnglish}</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <h2 className="font-bold">2) Webhook (incoming DM)</h2>
+            <h2 className="font-bold">{t.webhookTitle}</h2>
             <p className="text-slate-300 text-sm mt-2">
-              In Instagram app, send a DM to the business account. This page will show the last sender ID & message preview (polled every 3s).
+              {t.webhookDesc}
             </p>
             <div className="mt-3 text-sm space-y-1">
               <div className="text-slate-200">
-                Total events: <span className="font-semibold">{webhook?.totalReceived ?? '—'}</span>
+                {t.totalEvents}: <span className="font-semibold">{webhook?.totalReceived ?? '—'}</span>
               </div>
               <div className="text-slate-200">
-                Last sender ID: <span className="font-semibold">{webhook?.lastSenderId ?? '—'}</span>
+                {t.lastSenderId}: <span className="font-semibold">{webhook?.lastSenderId ?? '—'}</span>
               </div>
               <div className="text-slate-200">
-                Last text: <span className="font-semibold">{webhook?.lastTextPreview ? clip(webhook.lastTextPreview, 120) : '—'}</span>
+                {t.lastText}:{' '}
+                <span className="font-semibold">{webhook?.lastTextPreview ? clip(webhook.lastTextPreview, 120) : '—'}</span>
               </div>
-              <div className="text-xs text-slate-500">Last received: {webhook?.lastReceivedAt ?? '—'}</div>
+              <div className="text-xs text-slate-500">
+                {t.lastReceived}: {webhook?.lastReceivedAt ?? '—'}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 className="font-bold">3) Select Asset (Page → Instagram account)</h2>
+          <h2 className="font-bold">{t.selectTitle}</h2>
           <p className="text-slate-300 text-sm mt-2">
-            Meta reviewers require showing “resource selection”. Load pages and pick the one with a connected Instagram business account.
+            {t.selectDesc}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -267,21 +452,21 @@ export default function IntegrationsPage() {
               className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold"
               disabled={busy}
             >
-              {busy ? 'Loading…' : 'Load Pages'}
+              {busy ? t.loading : t.loadPages}
             </button>
             <button
               onClick={saveSelection}
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold disabled:opacity-60"
               disabled={busy || !selectedPageId || !selectedIgUserId}
             >
-              Save Selection
+              {t.saveSelection}
             </button>
-            {status?.selected?.updatedAt ? <span className="text-xs text-slate-500">Saved: {status.selected.updatedAt}</span> : null}
+            {status?.selected?.updatedAt ? <span className="text-xs text-slate-500">{t.savedAt}: {status.selected.updatedAt}</span> : null}
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div>
-              <label className="text-xs text-slate-400">Facebook Page</label>
+              <label className="text-xs text-slate-400">{t.fbPage}</label>
               <select
                 value={selectedPageId}
                 onChange={(e) => {
@@ -292,7 +477,7 @@ export default function IntegrationsPage() {
                 }}
                 className="mt-1 w-full px-3 py-3 rounded-xl bg-slate-900/70 border border-white/10"
               >
-                <option value="">Select a Page…</option>
+                <option value="">{t.selectPage}</option>
                 {assets.map((a) => (
                   <option key={a.pageId} value={a.pageId}>
                     {(a.pageName || 'Untitled Page') + (a.igBusinessAccountId ? '' : ' (no IG)')}
@@ -301,7 +486,7 @@ export default function IntegrationsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-400">Instagram Business Account (ig-user-id)</label>
+              <label className="text-xs text-slate-400">{t.igAccount}</label>
               <input
                 value={selectedIgUserId}
                 onChange={(e) => setSelectedIgUserId(e.target.value)}
@@ -313,14 +498,13 @@ export default function IntegrationsPage() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 className="font-bold">4) Send Message (from App UI)</h2>
+          <h2 className="font-bold">{t.sendTitle}</h2>
           <p className="text-slate-300 text-sm mt-2">
-            For Instagram Messaging API you can only message a user who already messaged you. If recipientId is empty, we use the last sender ID
-            captured by webhook.
+            {t.sendDesc}
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div>
-              <label className="text-xs text-slate-400">Recipient ID (optional)</label>
+              <label className="text-xs text-slate-400">{t.recipientOptional}</label>
               <input
                 value={recipientId}
                 onChange={(e) => setRecipientId(e.target.value)}
@@ -336,12 +520,12 @@ export default function IntegrationsPage() {
                 className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
                 disabled={!webhook?.lastSenderId}
               >
-                Use last sender
+                {t.useLastSender}
               </button>
             </div>
           </div>
           <div className="mt-3">
-            <label className="text-xs text-slate-400">Message text</label>
+            <label className="text-xs text-slate-400">{t.messageText}</label>
             <textarea
               value={sendText}
               onChange={(e) => setSendText(e.target.value)}
@@ -355,10 +539,10 @@ export default function IntegrationsPage() {
               disabled={busy || !sendText.trim() || !selectedIgUserId.trim()}
               className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 font-semibold disabled:opacity-60"
             >
-              {busy ? 'Sending…' : 'Send from App'}
+              {busy ? t.sending : t.sendFromApp}
             </button>
             <span className="text-xs text-slate-500">
-              Using: {status?.env?.apiHost}/{status?.env?.apiVersion}
+              {t.usingApi}: {status?.env?.apiHost}/{status?.env?.apiVersion}
             </span>
           </div>
 
