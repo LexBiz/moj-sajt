@@ -265,6 +265,23 @@ export default function IntegrationsPage() {
     return `/api/instagram/oauth/start?returnTo=${returnTo}`
   }, [])
 
+  const connectUrlWithPages = useMemo(() => {
+    const returnTo = encodeURIComponent('/admin/integrations')
+    const scope = encodeURIComponent(
+      [
+        'instagram_business_basic',
+        'instagram_business_manage_messages',
+        // Needed to subscribe the Page to this app so real (non-test) webhooks arrive:
+        'pages_manage_metadata',
+        // Often required to subscribe to "messages" on Page:
+        'pages_messaging',
+        // Helps with Page reading in some setups:
+        'pages_read_engagement',
+      ].join(','),
+    )
+    return `/api/instagram/oauth/start?returnTo=${returnTo}&scope=${scope}`
+  }, [])
+
   const saveSelection = async () => {
     setBusy(true)
     setError('')
@@ -423,6 +440,17 @@ export default function IntegrationsPage() {
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               <a href={connectUrl} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold">
                 {t.startMetaLogin}
+              </a>
+              <a
+                href={connectUrlWithPages}
+                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-semibold"
+                title="Request additional Page permissions so we can subscribe the Page to webhooks"
+              >
+                {lang === 'en'
+                  ? 'Meta Login (with Page permissions)'
+                  : lang === 'ua'
+                  ? 'Meta Login (з правами Page)'
+                  : 'Meta Login (с правами Page)'}
               </a>
               <span className="text-xs text-slate-400">
                 {token?.exists

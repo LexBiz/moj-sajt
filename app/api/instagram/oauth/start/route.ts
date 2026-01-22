@@ -10,9 +10,11 @@ export async function GET(request: NextRequest) {
   const redirectUri = (process.env.INSTAGRAM_OAUTH_REDIRECT_URI || '').trim()
   const urlIn = new URL(request.url)
   const mode = (urlIn.searchParams.get('mode') || '').trim().toLowerCase()
+  const scopeParam = (urlIn.searchParams.get('scope') || '').trim()
   const scope =
+    scopeParam ||
     (process.env.INSTAGRAM_OAUTH_SCOPE || '').trim() ||
-    // Default scopes for Business Messaging App Review. Override via INSTAGRAM_OAUTH_SCOPE if needed.
+    // Default scopes for Business Messaging App Review. Override via INSTAGRAM_OAUTH_SCOPE or ?scope=...
     // You can also set /api/instagram/oauth/start?mode=login to request Instagram Login scopes instead.
     (mode === 'login' ? 'instagram_basic,instagram_manage_messages' : 'instagram_business_basic,instagram_business_manage_messages')
 
