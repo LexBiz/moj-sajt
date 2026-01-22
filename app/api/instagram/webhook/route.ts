@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordInstagramWebhook } from '../state'
+import { readTokenFile } from '../oauth/_store'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -36,10 +37,9 @@ type IgWebhookPayload = {
 const IG_VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || '').trim()
 const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
 const IG_SIGNATURE_BYPASS = (process.env.INSTAGRAM_SIGNATURE_BYPASS || '').trim() === 'true'
-const IG_ACCESS_TOKEN = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim()
 const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
 const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
-const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || (IG_API_HOST === 'graph.instagram.com' ? 'v24.0' : 'v19.0')).trim()
+const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim()
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
@@ -74,6 +74,13 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+function getAccessToken() {
+  const envToken = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim()
+  if (envToken) return envToken
+  const saved = (readTokenFile()?.accessToken || '').trim()
+  return saved
 }
 
 function safeJsonPreview(raw: Buffer, max = 1200) {
@@ -162,6 +169,7 @@ async function generateAiReply(userText: string) {
 }
 
 async function sendInstagramMessage(recipientId: string, text: string) {
+  const IG_ACCESS_TOKEN = getAccessToken()
   if (!IG_ACCESS_TOKEN || !IG_USER_ID) {
     console.error('Missing INSTAGRAM_ACCESS_TOKEN or INSTAGRAM_IG_USER_ID')
     return
@@ -300,6 +308,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
+  const IG_ACCESS_TOKEN = getAccessToken()
 
   console.log('IG webhook: received', {
     hasSignature: Boolean(signature),

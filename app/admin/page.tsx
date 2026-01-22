@@ -410,6 +410,12 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <a
+                href="/admin/integrations"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                Интеграции
+              </a>
               <button
                 onClick={refresh}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"

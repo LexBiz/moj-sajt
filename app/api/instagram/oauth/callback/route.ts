@@ -115,15 +115,15 @@ export async function GET(request: NextRequest) {
       saved: true,
       tokenMeta: meta,
       next: {
-        // Set these on server .env to switch the bot to the Instagram Login Messaging API
+        // Set these on server .env to use the saved token for Graph API calls.
         env: {
-          INSTAGRAM_API_HOST: 'graph.instagram.com',
+          INSTAGRAM_API_HOST: 'graph.facebook.com',
           INSTAGRAM_API_VERSION: 'v24.0',
           INSTAGRAM_ACCESS_TOKEN: '[use saved token file]',
         },
       },
       note:
-        'Token stored server-side. DO NOT share tokens. To view it on the server: cat data/instagram-login-token.json. If OAuth login shows "Invalid Scopes", set INSTAGRAM_OAUTH_SCOPE=instagram_basic,instagram_manage_messages (or the exact scopes available in your app).',
+        'Token stored server-side. DO NOT share tokens. To view it on the server: cat data/instagram-login-token.json. If OAuth login shows "Invalid Scopes", set INSTAGRAM_OAUTH_SCOPE to the exact permissions you requested in App Review (e.g. instagram_business_basic,instagram_business_manage_messages).',
       returnTo,
     },
     { headers: { 'Cache-Control': 'no-store, max-age=0' } },
