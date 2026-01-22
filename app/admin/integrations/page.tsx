@@ -303,14 +303,14 @@ export default function IntegrationsPage() {
     }
   }
 
-  const subscribePage = async () => {
+  const subscribeIg = async () => {
     setBusy(true)
     setError('')
     try {
-      const res = await fetch('/api/instagram/admin/subscribe', {
+      const res = await fetch('/api/instagram/admin/subscribe_ig', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ pageId: selectedPageId || undefined }),
+        body: JSON.stringify({ igUserId: selectedIgUserId || undefined }),
       })
       const json = await res.json().catch(() => ({}))
       setLastSubscribeResult(json)
@@ -513,12 +513,16 @@ export default function IntegrationsPage() {
               {t.saveSelection}
             </button>
             <button
-              onClick={subscribePage}
+              onClick={subscribeIg}
               className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
-              disabled={busy || !selectedPageId}
-              title="Required to receive real (non-test) webhooks for messages"
+              disabled={busy || !selectedIgUserId}
+              title="Subscribe the Instagram business account to this app (enables real, non-test webhooks)"
             >
-              {lang === 'en' ? 'Subscribe Page to Webhooks' : lang === 'ua' ? 'Підписати Page на Webhooks' : 'Подписать Page на Webhooks'}
+              {lang === 'en'
+                ? 'Subscribe IG account to Webhooks'
+                : lang === 'ua'
+                ? 'Підписати IG акаунт на Webhooks'
+                : 'Подписать IG аккаунт на Webhooks'}
             </button>
             {status?.selected?.updatedAt ? <span className="text-xs text-slate-500">{t.savedAt}: {status.selected.updatedAt}</span> : null}
           </div>
@@ -561,10 +565,10 @@ export default function IntegrationsPage() {
             <h2 className="font-bold">{lang === 'en' ? 'Subscription result' : lang === 'ua' ? 'Результат підписки' : 'Результат подписки'}</h2>
             <p className="text-slate-300 text-sm mt-2">
               {lang === 'en'
-                ? 'If this fails with missing permissions, you likely need pages_manage_metadata or the correct Page token.'
+                ? 'If this fails, we will use the error details to see which permission is missing (typically instagram_manage_messages).'
                 : lang === 'ua'
-                ? 'Якщо тут помилка про права — зазвичай не вистачає pages_manage_metadata або некоректний Page token.'
-                : 'Если тут ошибка про права — обычно не хватает pages_manage_metadata или некорректный Page token.'}
+                ? 'Якщо тут помилка про права — у деталях буде назва permission (зазвичай instagram_manage_messages).'
+                : 'Если тут ошибка про права — в деталях будет название permission (обычно instagram_manage_messages).'}
             </p>
             <div className="mt-3 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
               <pre>{JSON.stringify(lastSubscribeResult, null, 2)}</pre>
