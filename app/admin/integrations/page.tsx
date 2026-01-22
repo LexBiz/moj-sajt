@@ -269,13 +269,15 @@ export default function IntegrationsPage() {
     const returnTo = encodeURIComponent('/admin/integrations')
     const scope = encodeURIComponent(
       [
-        'instagram_business_basic',
-        'instagram_business_manage_messages',
+        // NOTE: "instagram_business_*" are App Review feature names, NOT OAuth permissions.
+        'instagram_basic',
+        'instagram_manage_messages',
         // Needed to subscribe the Page to this app so real (non-test) webhooks arrive:
         'pages_manage_metadata',
         // Often required to subscribe to "messages" on Page:
         'pages_messaging',
         // Helps with Page reading in some setups:
+        'pages_show_list',
         'pages_read_engagement',
       ].join(','),
     )
