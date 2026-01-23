@@ -47,6 +47,24 @@ const BOOKING_URL = process.env.BOOKING_URL || ''
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
+function parseAllowlist(raw: string) {
+  const list = raw
+    .split(/[,\s]+/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+  return new Set(list)
+}
+
+// Optional safety switch:
+// If set, the bot will ONLY auto-reply to these sender IDs (Instagram-scoped IDs).
+// Example: INSTAGRAM_ALLOWED_SENDER_IDS=123,456
+const ALLOWED_SENDER_IDS = parseAllowlist(process.env.INSTAGRAM_ALLOWED_SENDER_IDS || '')
+
+function isAllowedSender(senderId: string) {
+  if (ALLOWED_SENDER_IDS.size === 0) return true // allow all by default
+  return ALLOWED_SENDER_IDS.has(senderId)
+}
+
 function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   if (IG_SIGNATURE_BYPASS) {
     console.warn('INSTAGRAM_SIGNATURE_BYPASS=true; signature verification skipped')
@@ -379,6 +397,11 @@ export async function POST(request: NextRequest) {
       processedCount += 1
       recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
 
+      if (!isAllowedSender(senderId)) {
+        console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
+        continue
+      }
+
       const contactHint = extractContact(text)
       if (contactHint || detectLeadIntent(text)) {
         await sendTelegramLead({ senderId, messageText: text, contactHint })
@@ -411,6 +434,11 @@ export async function POST(request: NextRequest) {
       console.log('IG webhook: incoming message', { senderId, text: clip(text, 200) })
       processedCount += 1
       recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
+
+      if (!isAllowedSender(senderId)) {
+        console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
+        continue
+      }
 
       const contactHint = extractContact(text)
       if (contactHint || detectLeadIntent(text)) {

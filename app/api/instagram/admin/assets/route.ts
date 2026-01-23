@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     {
       ok: true,
       pages: out,
-      note: 'Pick a Page that has a connected Instagram professional account (igBusinessAccountId).',
+      note: 'Pick a Page that has a connected Instagram professional account (igBusinessAccountId). This is used for “resource selection” in App Review.',
     },
     { headers: { 'Cache-Control': 'no-store, max-age=0' } },
   )

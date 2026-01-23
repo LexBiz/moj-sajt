@@ -25,8 +25,8 @@ function clip(s: string, max = 140) {
 
 const I18N: Record<Lang, Record<string, string>> = {
   en: {
-    title: 'Instagram • App Review Demo',
-    goal: 'Goal: show end-to-end flow (Meta Login → select IG asset → send message from UI → see delivery in Instagram app).',
+    title: 'Instagram • Integrations Console',
+    goal: 'Internal console: monitor IG webhooks and send test replies. For App Review, switch UI to English and record end-to-end flow.',
     backToCrm: 'Back to CRM',
     logout: 'Logout',
     loginTitle: 'Integrations • Instagram Review Demo',
@@ -68,8 +68,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     usingApi: 'Using',
   },
   ru: {
-    title: 'Instagram • Демо для App Review',
-    goal: 'Цель: показать полный флоу (Meta Login → выбор IG ресурса → отправка из интерфейса → доставка в Instagram).',
+    title: 'Instagram • Консоль интеграций',
+    goal: 'Внутренняя консоль: мониторинг вебхуков и тестовые ответы. Для App Review включи EN и запиши end‑to‑end.',
     backToCrm: 'Назад в CRM',
     logout: 'Выйти',
     loginTitle: 'Интеграции • Instagram демо',
@@ -111,8 +111,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     usingApi: 'API',
   },
   ua: {
-    title: 'Instagram • Демо для App Review',
-    goal: 'Ціль: показати повний флоу (Meta Login → вибір IG ресурсу → відправка з інтерфейсу → доставка в Instagram).',
+    title: 'Instagram • Консоль інтеграцій',
+    goal: 'Внутрішня консоль: моніторинг вебхуків і тестові відповіді. Для App Review увімкни EN і запиши end‑to‑end.',
     backToCrm: 'Назад у CRM',
     logout: 'Вийти',
     loginTitle: 'Інтеграції • Instagram демо',
@@ -171,7 +171,6 @@ export default function IntegrationsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [lastSendResult, setLastSendResult] = useState<any>(null)
-  const [lastSubscribeResult, setLastSubscribeResult] = useState<any>(null)
 
   const t = I18N[lang]
 
@@ -265,24 +264,6 @@ export default function IntegrationsPage() {
     return `/api/instagram/oauth/start?returnTo=${returnTo}`
   }, [])
 
-  const connectUrlWithPages = useMemo(() => {
-    const returnTo = encodeURIComponent('/admin/integrations')
-    const scope = encodeURIComponent(
-      [
-        // NOTE: "instagram_business_*" are App Review feature names, NOT OAuth permissions.
-        'instagram_basic',
-        'instagram_manage_messages',
-        // Needed to subscribe the Page to this app so real (non-test) webhooks arrive:
-        'pages_manage_metadata',
-        // Often required to subscribe to "messages" on Page:
-        'pages_messaging',
-        // Helps with Page reading in some setups:
-        'pages_show_list',
-        'pages_read_engagement',
-      ].join(','),
-    )
-    return `/api/instagram/oauth/start?returnTo=${returnTo}&scope=${scope}`
-  }, [])
 
   const saveSelection = async () => {
     setBusy(true)
@@ -298,26 +279,6 @@ export default function IntegrationsPage() {
       await loadStatus()
     } catch (e: any) {
       setError(String(e?.message || e || 'Select failed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const subscribeIg = async () => {
-    setBusy(true)
-    setError('')
-    try {
-      const res = await fetch('/api/instagram/admin/subscribe_ig', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ igUserId: selectedIgUserId || undefined }),
-      })
-      const json = await res.json().catch(() => ({}))
-      setLastSubscribeResult(json)
-      if (!res.ok) throw new Error(json?.error || 'Subscribe failed')
-      await loadStatus()
-    } catch (e: any) {
-      setError(String(e?.message || e || 'Subscribe failed'))
     } finally {
       setBusy(false)
     }
@@ -443,17 +404,6 @@ export default function IntegrationsPage() {
               <a href={connectUrl} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold">
                 {t.startMetaLogin}
               </a>
-              <a
-                href={connectUrlWithPages}
-                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-semibold"
-                title="Request additional Page permissions so we can subscribe the Page to webhooks"
-              >
-                {lang === 'en'
-                  ? 'Meta Login (with Page permissions)'
-                  : lang === 'ua'
-                  ? 'Meta Login (з правами Page)'
-                  : 'Meta Login (с правами Page)'}
-              </a>
               <span className="text-xs text-slate-400">
                 {token?.exists
                   ? `${t.tokenSaved} (${token?.meta?.prefix}…${token?.meta?.suffix})`
@@ -512,18 +462,6 @@ export default function IntegrationsPage() {
             >
               {t.saveSelection}
             </button>
-            <button
-              onClick={subscribeIg}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
-              disabled={busy || !selectedIgUserId}
-              title="Subscribe the Instagram business account to this app (enables real, non-test webhooks)"
-            >
-              {lang === 'en'
-                ? 'Subscribe IG account to Webhooks'
-                : lang === 'ua'
-                ? 'Підписати IG акаунт на Webhooks'
-                : 'Подписать IG аккаунт на Webhooks'}
-            </button>
             {status?.selected?.updatedAt ? <span className="text-xs text-slate-500">{t.savedAt}: {status.selected.updatedAt}</span> : null}
           </div>
 
@@ -559,22 +497,6 @@ export default function IntegrationsPage() {
             </div>
           </div>
         </div>
-
-        {lastSubscribeResult ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <h2 className="font-bold">{lang === 'en' ? 'Subscription result' : lang === 'ua' ? 'Результат підписки' : 'Результат подписки'}</h2>
-            <p className="text-slate-300 text-sm mt-2">
-              {lang === 'en'
-                ? 'If this fails, we will use the error details to see which permission is missing (typically instagram_manage_messages).'
-                : lang === 'ua'
-                ? 'Якщо тут помилка про права — у деталях буде назва permission (зазвичай instagram_manage_messages).'
-                : 'Если тут ошибка про права — в деталях будет название permission (обычно instagram_manage_messages).'}
-            </p>
-            <div className="mt-3 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
-              <pre>{JSON.stringify(lastSubscribeResult, null, 2)}</pre>
-            </div>
-          </div>
-        ) : null}
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-bold">{t.sendTitle}</h2>
