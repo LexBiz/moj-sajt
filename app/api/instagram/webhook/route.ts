@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordInstagramWebhook } from '../state'
 import { readTokenFile } from '../oauth/_store'
-import { getConversation, updateConversation } from '../conversationStore'
+import { getConversation, updateConversation, type ConversationLang } from '../conversationStore'
 import fs from 'fs'
 import path from 'path'
 
@@ -12,14 +12,23 @@ export const revalidate = 0
 type IgWebhookMessage = {
   sender?: { id?: string }
   recipient?: { id?: string }
-  message?: { text?: string; is_echo?: boolean }
+  message?: {
+    text?: string
+    is_echo?: boolean
+    attachments?: Array<{ type?: string; payload?: { url?: string } }>
+  }
 }
 
 type IgWebhookChangeValue = {
   sender?: { id?: string }
   recipient?: { id?: string }
   timestamp?: number
-  message?: { mid?: string; text?: string; is_echo?: boolean }
+  message?: {
+    mid?: string
+    text?: string
+    is_echo?: boolean
+    attachments?: Array<{ type?: string; payload?: { url?: string } }>
+  }
 }
 
 type IgWebhookChange = {
@@ -46,6 +55,7 @@ const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim()
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const OPENAI_TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1'
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
@@ -96,6 +106,53 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+type IncomingMedia = { kind: 'image' | 'audio' | 'video' | 'file'; url: string }
+
+function extractMedia(anyMessage: any): IncomingMedia[] {
+  const attachments = Array.isArray(anyMessage?.attachments) ? anyMessage.attachments : Array.isArray(anyMessage?.message?.attachments) ? anyMessage.message.attachments : []
+  const out: IncomingMedia[] = []
+  for (const a of attachments) {
+    const url = typeof a?.payload?.url === 'string' ? a.payload.url : null
+    if (!url) continue
+    const t = String(a?.type || '').toLowerCase()
+    const kind: IncomingMedia['kind'] =
+      t.includes('image') || t === 'photo' ? 'image' : t.includes('audio') || t.includes('voice') ? 'audio' : t.includes('video') ? 'video' : 'file'
+    out.push({ kind, url })
+  }
+  return out
+}
+
+function isUkrainianText(s: string) {
+  return /[іїєґ]/i.test(s)
+}
+
+function parseLangChoice(text: string): ConversationLang | null {
+  const t = text.trim().toLowerCase()
+  if (!t) return null
+  if (t === '1' || t === 'ru' || t.includes('рус')) return 'ru'
+  if (t === '2' || t === 'ua' || t.includes('укр') || t.includes('укра')) return 'ua'
+  if (isUkrainianText(t)) return 'ua'
+  return null
+}
+
+function t(lang: ConversationLang, key: string) {
+  const RU: Record<string, string> = {
+    chooseLang: ['Привет! 👋 Я AI‑ассистент.', 'Выбери удобный язык:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    askRepeating: 'Супер ✅ Теперь напиши, пожалуйста, одним сообщением, что нужно — я отвечу. 🙂',
+    contactOk: ['Спасибо! ✅ Контакт получил.', '—', 'Я посмотрю детали и вернусь с конкретным планом.', 'Для точности: ниша + средний чек + источник заявок. 💬'].join('\n'),
+    contactFix: ['Похоже, контакт указан не полностью. 🙌', 'Отправь корректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— или Telegram @username'].join('\n'),
+    askContact: ['Круто, я понял задачу ✅', '—', 'Чтобы продолжить и зафиксировать заявку, отправь контакт:', 'email / телефон / Telegram @username'].join('\n'),
+  }
+  const UA: Record<string, string> = {
+    chooseLang: ['Привіт! 👋 Я AI‑асистент.', 'Обери зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    askRepeating: 'Супер ✅ Тепер напиши, будь ласка, одним повідомленням, що потрібно — я відповім. 🙂',
+    contactOk: ['Дякую! ✅ Контакт отримав.', '—', 'Перегляну деталі й повернусь з конкретним планом.', 'Для точності: ніша + середній чек + джерело заявок. 💬'].join('\n'),
+    contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішли, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
+    askContact: ['Круто, я зрозумів задачу ✅', '—', 'Щоб продовжити й зафіксувати заявку, надішли контакт:', 'email / телефон / Telegram @username'].join('\n'),
+  }
+  return (lang === 'ua' ? UA : RU)[key] || key
 }
 
 function getAccessToken() {
@@ -149,34 +206,62 @@ function hasInvalidContactHint(text: string) {
   return (hasAt || hasDigits) && !normalizeContact(text)
 }
 
-function buildSystemPrompt(stage: string, history: Array<{ role: string; content: string }>) {
+function buildSystemPrompt(lang: ConversationLang, stage: string, history: Array<{ role: string; content: string }>) {
   const lastTurns = history
     .slice(-6)
     .map((m) => `${m.role === 'user' ? 'Клиент' : 'Бот'}: ${clip(m.content, 220)}`)
     .join(' | ')
   return [
-    'Ты — AI-ассистент по внедрению систем автоматизации заявок.',
-    'Стиль: профессионально, уверенно, дружелюбно, без агрессии.',
-    'Цель: помочь клиенту и мягко довести до заявки.',
-    'Всегда пишешь живо, с эмодзи и чёткой пунктуацией.',
-    'Используй короткие блоки, разделяй смысл линиями/разделителями.',
-    'Не используй markdown-звёздочки; можно использовать переносы строк и символы вроде "—".',
-    'Если спрашивают цену/сроки/пакеты — отвечай прямо, кратко и по делу.',
-    'Если нужно задать вопрос — один конкретный вопрос.',
-    'НЕ проси контактные данные, пока стадия не ask_contact.',
-    `Текущая стадия диалога: ${stage}.`,
-    `Последние фразы: ${lastTurns || 'нет истории'}.`,
-    'Знания:',
-    '- Запуск: обычно 3–7 дней (пилот), сложные интеграции 10–14 дней.',
+    lang === 'ua'
+      ? 'Ти — AI‑асистент з впровадження систем автоматизації заявок.'
+      : 'Ты — AI‑ассистент по внедрению систем автоматизации заявок.',
+    lang === 'ua'
+      ? 'Стиль: професійно, дружелюбно, живо, без токсичності.'
+      : 'Стиль: профессионально, дружелюбно, живо, без токсичности.',
+    lang === 'ua'
+      ? 'Ціль: допомогти клієнту та мʼяко довести до заявки.'
+      : 'Цель: помочь клиенту и мягко довести до заявки.',
+    lang === 'ua'
+      ? 'Завжди використовуй емодзі та читабельну структуру (короткі блоки, перенос рядків, "—").'
+      : 'Всегда используй эмодзи и читабельную структуру (короткие блоки, перенос строк, "—").',
+    lang === 'ua'
+      ? 'Не використовуй markdown‑зірочки.'
+      : 'Не используй markdown‑звёздочки.',
+    lang === 'ua'
+      ? 'Не проси контакти, поки стадія не ask_contact.'
+      : 'Не проси контакты, пока стадия не ask_contact.',
+    `Current stage: ${stage}.`,
+    `Recent turns: ${lastTurns || 'none'}.`,
+    lang === 'ua' ? 'Знання:' : 'Знания:',
+    '- Запуск: 3–7 дней (пилот), сложные интеграции 10–14 дней.',
     '- Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €.',
     '- Пилот: полный пакет за $299 (5 мест).',
   ].join(' ')
 }
 
-async function generateAiReply(userText: string, stage: string, history: Array<{ role: string; content: string }>) {
+async function generateAiReply(params: {
+  userText: string
+  lang: ConversationLang
+  stage: string
+  history: Array<{ role: 'user' | 'assistant'; content: string }>
+  images?: string[]
+}) {
+  const { userText, lang, stage, history, images = [] } = params
   if (!OPENAI_API_KEY) {
-    return 'Привет! 👋 Дай 1–2 детали: какой бизнес и откуда приходят заявки — покажу, как это автоматизируем. 🚀'
+    return lang === 'ua'
+      ? 'Привіт! 👋 Дай 1–2 деталі: який бізнес і звідки йдуть заявки — покажу, як це автоматизуємо. 🚀'
+      : 'Привет! 👋 Дай 1–2 детали: какой бизнес и откуда приходят заявки — покажу, как это автоматизируем. 🚀'
   }
+
+  const system = buildSystemPrompt(lang, stage, history)
+  const historyMsgs = history.slice(-8).map((m) => ({ role: m.role, content: m.content }))
+  const userContent =
+    images.length > 0
+      ? ([
+          { type: 'text', text: userText },
+          ...images.slice(0, 3).map((url) => ({ type: 'image_url', image_url: { url } })),
+        ] as any)
+      : userText
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -187,8 +272,9 @@ async function generateAiReply(userText: string, stage: string, history: Array<{
     body: JSON.stringify({
       model: OPENAI_MODEL,
       messages: [
-        { role: 'system', content: buildSystemPrompt(stage, history) },
-        { role: 'user', content: userText },
+        { role: 'system', content: system },
+        ...historyMsgs,
+        { role: 'user', content: userContent },
       ],
       temperature: 0.75,
       presence_penalty: 0.2,
@@ -200,15 +286,54 @@ async function generateAiReply(userText: string, stage: string, history: Array<{
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     console.error('OpenAI error', response.status, text.slice(0, 400))
-    return 'Я на связи ✅ Напиши коротко: ниша + источник заявок — и я покажу решение. ✍️'
+    return lang === 'ua'
+      ? 'Я на звʼязку ✅ Напиши коротко: ніша + джерело заявок — і я покажу рішення. ✍️'
+      : 'Я на связи ✅ Напиши коротко: ниша + источник заявок — и я покажу решение. ✍️'
   }
 
   const json = (await response.json()) as any
   const content = json?.choices?.[0]?.message?.content
   if (typeof content !== 'string') {
-    return 'Дай 1–2 детали по бизнесу, и я соберу решение. 💡'
+    return lang === 'ua' ? 'Дай 1–2 деталі по бізнесу — і я зберу рішення. 💡' : 'Дай 1–2 детали по бизнесу — и я соберу решение. 💡'
   }
   return clip(content.trim(), 1000)
+}
+
+async function fetchBinary(url: string) {
+  const token = getAccessToken()
+  const resp = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+  if (!resp.ok) return null
+  const ab = await resp.arrayBuffer()
+  return Buffer.from(ab)
+}
+
+async function transcribeAudio(url: string) {
+  if (!OPENAI_API_KEY) return null
+  const buf = await fetchBinary(url)
+  if (!buf) return null
+  try {
+    const form = new FormData()
+    form.append('model', OPENAI_TRANSCRIBE_MODEL)
+    form.append('file', new Blob([buf]), 'audio.mp3')
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+      body: form,
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      console.error('OpenAI transcribe error', resp.status, t.slice(0, 200))
+      return null
+    }
+    const json = (await resp.json()) as any
+    const text = typeof json?.text === 'string' ? json.text.trim() : null
+    return text && text.length > 0 ? text : null
+  } catch (e) {
+    console.error('Transcribe exception', e)
+    return null
+  }
 }
 
 function ensureLeadsFile() {
@@ -222,6 +347,7 @@ function saveLeadFromInstagram(input: {
   contact: { type: 'email' | 'phone' | 'telegram'; value: string }
   clientMessages: string[]
   lastMessage: string
+  lang: ConversationLang
 }) {
   ensureLeadsFile()
   const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
@@ -237,7 +363,7 @@ function saveLeadFromInstagram(input: {
     aiRecommendation: null,
     aiSummary: null,
     source: 'instagram',
-    lang: 'ru',
+    lang: input.lang,
     notes: `senderId: ${input.senderId} | contactType: ${input.contact.type}`,
     createdAt: new Date().toISOString(),
     status: 'new',
@@ -380,8 +506,35 @@ async function sendTelegramLead({
   }
 }
 
-async function handleIncomingMessage(senderId: string, text: string) {
+async function handleIncomingMessage(senderId: string, text: string, media: IncomingMedia[]) {
   const conversation = getConversation(senderId)
+  const lang = conversation.lang
+  const maybeLang = parseLangChoice(text)
+
+  // language selection gate
+  if (!lang) {
+    if (maybeLang) {
+      updateConversation(senderId, { lang: maybeLang })
+      const pending = (conversation.pendingText || '').trim()
+      updateConversation(senderId, { pendingText: null })
+      if (pending) {
+        // Process the original message content after language choice
+        await handleIncomingMessage(senderId, pending, media)
+        return
+      }
+      await sendInstagramMessage(senderId, t(maybeLang, 'askRepeating'))
+      return
+    }
+    // store the first message as pending and ask for language
+    const pendingText = conversation.pendingText ? conversation.pendingText : text
+    updateConversation(senderId, { pendingText })
+    await sendInstagramMessage(senderId, t('ru', 'chooseLang'))
+    return
+  }
+
+  // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
+  if (maybeLang && maybeLang === lang && text.trim().length <= 3) return
+
   const history = [...conversation.history, { role: 'user' as const, content: text }].slice(-12)
   const userTurns = history.filter((m) => m.role === 'user').length
   const contact = normalizeContact(text)
@@ -400,15 +553,11 @@ async function handleIncomingMessage(senderId: string, text: string) {
       contact,
       clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
       lastMessage: text,
+      lang,
     })
     updateConversation(senderId, { stage: 'collected', leadId, history })
     await sendTelegramLead({ senderId, messageText: text, contactHint: contact.value })
-    const reply = [
-      'Спасибо! ✅ Контакт получил.',
-      '—',
-      'Я посмотрю детали и вернусь с конкретным планом.',
-      'Если удобно, напиши ещё: ниша + средний чек + источник заявок. 💬',
-    ].join('\n')
+    const reply = t(lang, 'contactOk')
     updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
@@ -416,13 +565,7 @@ async function handleIncomingMessage(senderId: string, text: string) {
 
   if (hasInvalidContactHint(text)) {
     updateConversation(senderId, { stage: 'ask_contact', history })
-    const reply = [
-      'Похоже, контакт указан не полностью. 🙌',
-      'Отправь, пожалуйста, корректно:',
-      '— email (name@domain.com) или',
-      '— телефон (+380..., +49..., +7...) или',
-      '— Telegram @username',
-    ].join('\n')
+    const reply = t(lang, 'contactFix')
     updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
@@ -432,18 +575,21 @@ async function handleIncomingMessage(senderId: string, text: string) {
   updateConversation(senderId, { stage: nextStage, history })
 
   if (nextStage === 'ask_contact') {
-    const reply = [
-      'Круто, я понял задачу. ✅',
-      '—',
-      'Чтобы собрать точную систему под тебя, отправь контакт:',
-      'email / телефон / Telegram @username',
-    ].join('\n')
+    const reply = t(lang, 'askContact')
     updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
   }
 
-  const reply = await generateAiReply(text, nextStage, history)
+  const images = media.filter((m) => m.kind === 'image').map((m) => m.url)
+  const audio = media.find((m) => m.kind === 'audio')?.url || null
+  const transcript = audio ? await transcribeAudio(audio) : null
+  const composedUserText =
+    transcript && transcript.length > 0
+      ? `${text}\n\n[Voice message transcript]: ${transcript}`
+      : text || (images.length > 0 ? '[Image sent]' : '')
+
+  const reply = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
   updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
   await sendInstagramMessage(senderId, reply)
 }
@@ -516,9 +662,10 @@ export async function POST(request: NextRequest) {
       if (change.field !== 'messages') continue
       const senderId = change.value?.sender?.id
       const text = change.value?.message?.text?.trim()
+      const media = extractMedia(change.value)
       const isEcho = Boolean(change.value?.message?.is_echo)
       if (isEcho) continue
-      if (!senderId || !text) {
+      if (!senderId || (!text && media.length === 0)) {
         console.log('IG webhook: skipped change (no senderId/text or echo)', {
           field: change.field || null,
           senderId: senderId || null,
@@ -530,17 +677,18 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      console.log('IG webhook: incoming message (changes)', { senderId, text: clip(text, 200) })
+      console.log('IG webhook: incoming message (changes)', { senderId, text: text ? clip(text, 200) : null, mediaCount: media.length })
       processedCount += 1
-      recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
-      await handleIncomingMessage(senderId, text)
+      recordInstagramWebhook({ senderId, textPreview: clip(text || '[media]', 120) })
+      await handleIncomingMessage(senderId, text || '', media)
     }
 
     for (const msg of messages) {
       if (msg.message?.is_echo) continue
       const senderId = msg.sender?.id
       const text = msg.message?.text?.trim()
-      if (!senderId || !text) {
+      const media = extractMedia(msg)
+      if (!senderId || (!text && media.length === 0)) {
         console.log('IG webhook: skipped event (no senderId/text or echo)', {
           senderId: senderId || null,
           recipientId: msg.recipient?.id || null,
@@ -551,10 +699,10 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      console.log('IG webhook: incoming message', { senderId, text: clip(text, 200) })
+      console.log('IG webhook: incoming message', { senderId, text: text ? clip(text, 200) : null, mediaCount: media.length })
       processedCount += 1
-      recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
-      await handleIncomingMessage(senderId, text)
+      recordInstagramWebhook({ senderId, textPreview: clip(text || '[media]', 120) })
+      await handleIncomingMessage(senderId, text || '', media)
     }
   }
   if (processedCount === 0) {

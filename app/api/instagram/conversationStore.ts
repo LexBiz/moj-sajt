@@ -8,9 +8,13 @@ export type ConversationMessage = {
   content: string
 }
 
+export type ConversationLang = 'ru' | 'ua'
+
 export type ConversationState = {
   senderId: string
   stage: ConversationStage
+  lang: ConversationLang | null
+  pendingText: string | null
   history: ConversationMessage[]
   leadId: number | null
   createdAt: string
@@ -47,6 +51,8 @@ export function getConversation(senderId: string): ConversationState {
   return {
     senderId,
     stage: 'new',
+    lang: null,
+    pendingText: null,
     history: [],
     leadId: null,
     createdAt: now,
