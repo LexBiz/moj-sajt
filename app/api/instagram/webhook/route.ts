@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordInstagramWebhook } from '../state'
 import { readTokenFile } from '../oauth/_store'
+import { getConversation, updateConversation } from '../conversationStore'
+import fs from 'fs'
+import path from 'path'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -43,9 +46,10 @@ const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim()
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-const BOOKING_URL = process.env.BOOKING_URL || ''
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
+
+const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 
 function parseAllowlist(raw: string) {
   const list = raw
@@ -121,26 +125,47 @@ function detectLeadIntent(text: string) {
   return /(купит|цена|стоим|пакет|сколько|интерес|нужно|хочу|подключ|заказ|демо|созвон|запис)/i.test(text)
 }
 
-function extractContact(text: string) {
+function normalizeContact(text: string) {
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]
-  if (email) return email
-  const phone = text.match(/\+?\d[\d\s().-]{7,}/)?.[0]
-  if (phone) return phone.replace(/\s+/g, ' ').trim()
+  if (email) return { type: 'email' as const, value: email.trim() }
+
+  const phoneMatch = text.match(/\+?\d[\d\s().-]{7,}/)?.[0]
+  if (phoneMatch) {
+    const cleaned = phoneMatch.replace(/[^\d+]/g, '')
+    const digits = cleaned.replace(/[^\d]/g, '')
+    if (digits.length >= 8) return { type: 'phone' as const, value: cleaned }
+  }
+
   const tg = text.match(/@[\w\d_]{3,}/)?.[0]
-  if (tg) return tg
+  if (tg) return { type: 'telegram' as const, value: tg.trim() }
+
   return null
 }
 
-function buildSystemPrompt() {
+function hasInvalidContactHint(text: string) {
+  // If user tries to send contact but it doesn't match any pattern, ask again.
+  const hasAt = text.includes('@')
+  const hasDigits = /\d{6,}/.test(text)
+  return (hasAt || hasDigits) && !normalizeContact(text)
+}
+
+function buildSystemPrompt(stage: string, history: Array<{ role: string; content: string }>) {
+  const lastTurns = history
+    .slice(-6)
+    .map((m) => `${m.role === 'user' ? 'Клиент' : 'Бот'}: ${clip(m.content, 220)}`)
+    .join(' | ')
   return [
-    'Ты — AI-менеджер по продажам систем автоматизации заявок.',
-    'Стиль: уверенно, дерзко, остроумно, но без оскорблений личности.',
-    'Цель: агрессивная продажа через факты и контраст “как сейчас” vs “как после системы”.',
-    'Запрещено: вода, лекции, советы “сделай сам”.',
-    'Никогда не задавай вопрос “хочешь/хотите/нужно ли”.',
-    'Если оффтоп — 1 короткая колкая связка и сразу к теме заявок/потерь/скорости.',
-    'Если спрашивают цену/сроки/пакеты — это всегда по теме, отвечай прямо.',
-    'Формат: короткие абзацы или маркеры, без markdown-звёздочек.',
+    'Ты — AI-ассистент по внедрению систем автоматизации заявок.',
+    'Стиль: профессионально, уверенно, дружелюбно, без агрессии.',
+    'Цель: помочь клиенту и мягко довести до заявки.',
+    'Всегда пишешь живо, с эмодзи и чёткой пунктуацией.',
+    'Используй короткие блоки, разделяй смысл линиями/разделителями.',
+    'Не используй markdown-звёздочки; можно использовать переносы строк и символы вроде "—".',
+    'Если спрашивают цену/сроки/пакеты — отвечай прямо, кратко и по делу.',
+    'Если нужно задать вопрос — один конкретный вопрос.',
+    'НЕ проси контактные данные, пока стадия не ask_contact.',
+    `Текущая стадия диалога: ${stage}.`,
+    `Последние фразы: ${lastTurns || 'нет истории'}.`,
     'Знания:',
     '- Запуск: обычно 3–7 дней (пилот), сложные интеграции 10–14 дней.',
     '- Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €.',
@@ -148,9 +173,9 @@ function buildSystemPrompt() {
   ].join(' ')
 }
 
-async function generateAiReply(userText: string) {
+async function generateAiReply(userText: string, stage: string, history: Array<{ role: string; content: string }>) {
   if (!OPENAI_API_KEY) {
-    return 'Система в онлайне. Напиши пару деталей про бизнес и каналы — покажу, как автоматизация закроет заявки.'
+    return 'Привет! 👋 Дай 1–2 детали: какой бизнес и откуда приходят заявки — покажу, как это автоматизируем. 🚀'
   }
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -162,10 +187,10 @@ async function generateAiReply(userText: string) {
     body: JSON.stringify({
       model: OPENAI_MODEL,
       messages: [
-        { role: 'system', content: buildSystemPrompt() },
+        { role: 'system', content: buildSystemPrompt(stage, history) },
         { role: 'user', content: userText },
       ],
-      temperature: 0.9,
+      temperature: 0.75,
       presence_penalty: 0.2,
       frequency_penalty: 0.2,
       max_tokens: 350,
@@ -175,15 +200,59 @@ async function generateAiReply(userText: string) {
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     console.error('OpenAI error', response.status, text.slice(0, 400))
-    return 'Система работает. Дай 1–2 детали по бизнесу — покажу, как закроем заявки без ручного хаоса.'
+    return 'Я на связи ✅ Напиши коротко: ниша + источник заявок — и я покажу решение. ✍️'
   }
 
   const json = (await response.json()) as any
   const content = json?.choices?.[0]?.message?.content
   if (typeof content !== 'string') {
-    return 'Система работает. Дай 1–2 детали по бизнесу — покажу, как закроем заявки без ручного хаоса.'
+    return 'Дай 1–2 детали по бизнесу, и я соберу решение. 💡'
   }
   return clip(content.trim(), 1000)
+}
+
+function ensureLeadsFile() {
+  const dir = path.join(process.cwd(), 'data')
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]))
+}
+
+function saveLeadFromInstagram(input: {
+  senderId: string
+  contact: { type: 'email' | 'phone' | 'telegram'; value: string }
+  clientMessages: string[]
+  lastMessage: string
+}) {
+  ensureLeadsFile()
+  const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
+  const newLead = {
+    id: Date.now(),
+    name: null,
+    contact: input.contact.value,
+    businessType: null,
+    channel: 'Instagram',
+    pain: null,
+    question: input.lastMessage || null,
+    clientMessages: input.clientMessages.slice(0, 20),
+    aiRecommendation: null,
+    aiSummary: null,
+    source: 'instagram',
+    lang: 'ru',
+    notes: `senderId: ${input.senderId} | contactType: ${input.contact.type}`,
+    createdAt: new Date().toISOString(),
+    status: 'new',
+  }
+  leads.unshift(newLead)
+  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
+  return newLead.id
+}
+
+function shouldAskForContact(stage: string, text: string, userTurns: number) {
+  if (stage === 'ask_contact' || stage === 'collected' || stage === 'done') return false
+  if (detectLeadIntent(text) || detectBookingIntent(text)) return true
+  if (/цена|стоимость|пакет|срок|подключ/i.test(text)) return true
+  if (userTurns >= 2) return true
+  return false
 }
 
 async function sendInstagramMessage(recipientId: string, text: string) {
@@ -311,6 +380,74 @@ async function sendTelegramLead({
   }
 }
 
+async function handleIncomingMessage(senderId: string, text: string) {
+  const conversation = getConversation(senderId)
+  const history = [...conversation.history, { role: 'user' as const, content: text }].slice(-12)
+  const userTurns = history.filter((m) => m.role === 'user').length
+  const contact = normalizeContact(text)
+
+  // Always store the message first
+  updateConversation(senderId, { history })
+
+  if (!isAllowedSender(senderId)) {
+    console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
+    return
+  }
+
+  if (contact && conversation.leadId == null) {
+    const leadId = saveLeadFromInstagram({
+      senderId,
+      contact,
+      clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
+      lastMessage: text,
+    })
+    updateConversation(senderId, { stage: 'collected', leadId, history })
+    await sendTelegramLead({ senderId, messageText: text, contactHint: contact.value })
+    const reply = [
+      'Спасибо! ✅ Контакт получил.',
+      '—',
+      'Я посмотрю детали и вернусь с конкретным планом.',
+      'Если удобно, напиши ещё: ниша + средний чек + источник заявок. 💬',
+    ].join('\n')
+    updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+    await sendInstagramMessage(senderId, reply)
+    return
+  }
+
+  if (hasInvalidContactHint(text)) {
+    updateConversation(senderId, { stage: 'ask_contact', history })
+    const reply = [
+      'Похоже, контакт указан не полностью. 🙌',
+      'Отправь, пожалуйста, корректно:',
+      '— email (name@domain.com) или',
+      '— телефон (+380..., +49..., +7...) или',
+      '— Telegram @username',
+    ].join('\n')
+    updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+    await sendInstagramMessage(senderId, reply)
+    return
+  }
+
+  const nextStage = shouldAskForContact(conversation.stage, text, userTurns) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
+  updateConversation(senderId, { stage: nextStage, history })
+
+  if (nextStage === 'ask_contact') {
+    const reply = [
+      'Круто, я понял задачу. ✅',
+      '—',
+      'Чтобы собрать точную систему под тебя, отправь контакт:',
+      'email / телефон / Telegram @username',
+    ].join('\n')
+    updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+    await sendInstagramMessage(senderId, reply)
+    return
+  }
+
+  const reply = await generateAiReply(text, nextStage, history)
+  updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+  await sendInstagramMessage(senderId, reply)
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('hub.mode')
@@ -396,24 +533,7 @@ export async function POST(request: NextRequest) {
       console.log('IG webhook: incoming message (changes)', { senderId, text: clip(text, 200) })
       processedCount += 1
       recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
-
-      if (!isAllowedSender(senderId)) {
-        console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
-        continue
-      }
-
-      const contactHint = extractContact(text)
-      if (contactHint || detectLeadIntent(text)) {
-        await sendTelegramLead({ senderId, messageText: text, contactHint })
-      }
-
-      let reply = ''
-      if (BOOKING_URL && detectBookingIntent(text)) {
-        reply = `Запись открыта. Выбери слот здесь: ${BOOKING_URL}\nЕсли удобнее без ссылки — напиши день и время, я закреплю.`
-      } else {
-        reply = await generateAiReply(text)
-      }
-      await sendInstagramMessage(senderId, reply)
+      await handleIncomingMessage(senderId, text)
     }
 
     for (const msg of messages) {
@@ -434,24 +554,7 @@ export async function POST(request: NextRequest) {
       console.log('IG webhook: incoming message', { senderId, text: clip(text, 200) })
       processedCount += 1
       recordInstagramWebhook({ senderId, textPreview: clip(text, 120) })
-
-      if (!isAllowedSender(senderId)) {
-        console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
-        continue
-      }
-
-      const contactHint = extractContact(text)
-      if (contactHint || detectLeadIntent(text)) {
-        await sendTelegramLead({ senderId, messageText: text, contactHint })
-      }
-
-      let reply = ''
-      if (BOOKING_URL && detectBookingIntent(text)) {
-        reply = `Запись открыта. Выбери слот здесь: ${BOOKING_URL}\nЕсли удобнее без ссылки — напиши день и время, я закреплю.`
-      } else {
-        reply = await generateAiReply(text)
-      }
-      await sendInstagramMessage(senderId, reply)
+      await handleIncomingMessage(senderId, text)
     }
   }
   if (processedCount === 0) {
