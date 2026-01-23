@@ -182,6 +182,18 @@ function detectLeadIntent(text: string) {
   return /(купит|цена|стоим|пакет|сколько|интерес|нужно|хочу|подключ|заказ|демо|созвон|запис)/i.test(text)
 }
 
+function detectAiIdentityQuestion(text: string) {
+  return /(ты\s+.*ai|справжн\w*\s+ai|реальн\w*\s+ai|ти\s+.*ai|бот\?|ти\s+бот|штучн\w*\s+інтелект|искусственн\w*\s+интеллект)/i.test(
+    text,
+  )
+}
+
+function detectReadyToProceed(text: string) {
+  return /(ок|okay|давай|погнали|готов|хочу|цікав|интересно|підключ|подключ|консультац|созвон|дзвінок|звонок|почнемо|почати)/i.test(
+    text,
+  )
+}
+
 function normalizeContact(text: string) {
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]
   if (email) return { type: 'email' as const, value: email.trim() }
@@ -377,7 +389,8 @@ function shouldAskForContact(stage: string, text: string, userTurns: number) {
   if (stage === 'ask_contact' || stage === 'collected' || stage === 'done') return false
   if (detectLeadIntent(text) || detectBookingIntent(text)) return true
   if (/цена|стоимость|пакет|срок|подключ/i.test(text)) return true
-  if (userTurns >= 2) return true
+  // Ask for contact ONLY when user indicates readiness (otherwise it looks like a шаблон).
+  if (userTurns >= 3 && stage !== 'new' && detectReadyToProceed(text)) return true
   return false
 }
 
@@ -534,6 +547,29 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
   if (maybeLang && maybeLang === lang && text.trim().length <= 3) return
+
+  // Handle "are you real AI/bot" type questions early (do NOT jump to contact request)
+  if (detectAiIdentityQuestion(text)) {
+    const reply =
+      lang === 'ua'
+        ? [
+            'Так 😊 Я AI‑асистент.',
+            '—',
+            'Я відповідаю тут у Direct і допомагаю розібратись з автоматизацією заявок.',
+            'Щоб я був максимально корисним: яка у тебе ніша і звідки зараз приходять заявки? 💬',
+          ].join('\n')
+        : [
+            'Да 😊 Я AI‑ассистент.',
+            '—',
+            'Я отвечаю здесь в Direct и помогаю с автоматизацией заявок.',
+            'Чтобы быть полезным: какая у тебя ниша и откуда сейчас приходят заявки? 💬',
+          ].join('\n')
+
+    const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-12) as ConversationMessage[]
+    updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history })
+    await sendInstagramMessage(senderId, reply)
+    return
+  }
 
   const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-12) as ConversationMessage[]
   const userTurns = history.filter((m) => m.role === 'user').length
