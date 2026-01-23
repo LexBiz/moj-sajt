@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordInstagramWebhook } from '../state'
 import { readTokenFile } from '../oauth/_store'
-import { getConversation, updateConversation, type ConversationLang } from '../conversationStore'
+import { getConversation, updateConversation, type ConversationLang, type ConversationMessage } from '../conversationStore'
 import fs from 'fs'
 import path from 'path'
 
@@ -535,7 +535,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
   if (maybeLang && maybeLang === lang && text.trim().length <= 3) return
 
-  const history = [...conversation.history, { role: 'user' as const, content: text }].slice(-12)
+  const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-12) as ConversationMessage[]
   const userTurns = history.filter((m) => m.role === 'user').length
   const contact = normalizeContact(text)
 
@@ -558,7 +558,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     updateConversation(senderId, { stage: 'collected', leadId, history })
     await sendTelegramLead({ senderId, messageText: text, contactHint: contact.value })
     const reply = t(lang, 'contactOk')
-    updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
   }
@@ -566,7 +566,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   if (hasInvalidContactHint(text)) {
     updateConversation(senderId, { stage: 'ask_contact', history })
     const reply = t(lang, 'contactFix')
-    updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
   }
@@ -576,7 +576,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   if (nextStage === 'ask_contact') {
     const reply = t(lang, 'askContact')
-    updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
   }
@@ -590,7 +590,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       : text || (images.length > 0 ? '[Image sent]' : '')
 
   const reply = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
-  updateConversation(senderId, { history: [...history, { role: 'assistant', content: reply }].slice(-12) })
+  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
   await sendInstagramMessage(senderId, reply)
 }
 
