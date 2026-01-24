@@ -1,0 +1,19 @@
+{
+  "name": "moy-netifai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted mini-Netlify for static HTML folders: upload folder, publish instantly.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^2.0.0",
+    "nanoid": "^5.1.2"
+  }
+}
+
+

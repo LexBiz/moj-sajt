@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Мой “нетифай” — загрузка сайтов</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0b1020; color: #e8eaf2; }
+      .wrap { max-width: 920px; margin: 0 auto; padding: 28px 16px 60px; }
+      h1 { font-size: 22px; margin: 0 0 14px; }
+      .card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-radius: 14px; padding: 16px; margin: 14px 0; }
+      label { display: block; font-size: 12px; opacity: .85; margin: 10px 0 6px; }
+      input[type="text"], input[type="password"] { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.2); color: #fff; }
+      input[type="file"] { width: 100%; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 760px) { .row { grid-template-columns: 1fr; } }
+      button { cursor: pointer; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.10); color: #fff; }
+      button.primary { background: #4f7cff; border-color: rgba(79,124,255,.55); }
+      button.danger { background: rgba(255,70,70,.18); border-color: rgba(255,70,70,.35); }
+      .muted { opacity: .8; font-size: 12px; }
+      .drop { margin-top: 10px; padding: 18px; border-radius: 14px; border: 1px dashed rgba(255,255,255,.18); background: rgba(0,0,0,.12); }
+      .drop.drag { border-color: rgba(79,124,255,.8); background: rgba(79,124,255,.10); }
+      .sites { display: grid; gap: 10px; }
+      .site { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: rgba(0,0,0,.15); border: 1px solid rgba(255,255,255,.08); }
+      .site a { color: #b9ccff; text-decoration: none; }
+      .site a:hover { text-decoration: underline; }
+      pre { white-space: pre-wrap; background: rgba(0,0,0,.25); padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.10); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Мой “нетифай”</h1>
+      <div class="muted">Загрузить папку с HTML → получить ссылку. Для выбора папки используй кнопку “Выбрать папку”.</div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Токен (если включён ADMIN_TOKEN)</label>
+            <input id="token" type="password" placeholder="вставь токен, если нужен" />
+          </div>
+          <div>
+            <label>Имя сайта (slug)</label>
+            <input id="name" type="text" placeholder="например: client1" />
+          </div>
+        </div>
+
+        <label>Папка проекта</label>
+        <input id="folder" type="file" webkitdirectory directory multiple />
+
+        <div id="drop" class="drop">
+          Можно попробовать перетащить файлы сюда, но надёжнее — “Выбрать папку”.
+        </div>
+
+        <div style="margin-top: 12px; display:flex; gap:10px; flex-wrap: wrap;">
+          <button class="primary" id="uploadBtn">Загрузить и опубликовать</button>
+          <button id="refreshBtn">Обновить список</button>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <div class="muted">Результат:</div>
+          <pre id="out">—</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content: space-between; align-items:center; gap: 10px;">
+          <div>
+            <div style="font-weight: 600;">Опубликованные сайты</div>
+            <div class="muted">Ссылки работают по пути <code>/sites/&lt;slug&gt;/</code> (и по поддомену, если включить ROOT_DOMAIN).</div>
+          </div>
+          <button class="danger" id="clearToken">Очистить токен</button>
+        </div>
+        <div style="height: 10px;"></div>
+        <div id="sites" class="sites"></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const tokenEl = $("token");
+      const nameEl = $("name");
+      const folderEl = $("folder");
+      const outEl = $("out");
+      const sitesEl = $("sites");
+      const dropEl = $("drop");
+
+      tokenEl.value = localStorage.getItem("adminToken") || "";
+      tokenEl.addEventListener("input", () => localStorage.setItem("adminToken", tokenEl.value));
+      $("clearToken").addEventListener("click", () => {
+        localStorage.removeItem("adminToken");
+        tokenEl.value = "";
+      });
+
+      function authHeaders() {
+        const t = tokenEl.value.trim();
+        return t ? { Authorization: "Bearer " + t } : {};
+      }
+
+      function setOut(obj) {
+        outEl.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+      }
+
+      async function refreshSites() {
+        sitesEl.innerHTML = "";
+        try {
+          const r = await fetch("/api/sites", { headers: { ...authHeaders() } });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw data;
+          const sites = data.sites || [];
+          if (!sites.length) {
+            sitesEl.innerHTML = '<div class="muted">Пока пусто.</div>';
+            return;
+          }
+          for (const slug of sites) {
+            const div = document.createElement("div");
+            div.className = "site";
+            div.innerHTML = `
+              <div>
+                <div style="font-weight: 600">${slug}</div>
+                <div class="muted">
+                  <a href="/sites/${slug}/" target="_blank" rel="noreferrer">/sites/${slug}/</a>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button data-open="${slug}">Открыть</button>
+                <button class="danger" data-del="${slug}">Удалить</button>
+              </div>
+            `;
+            sitesEl.appendChild(div);
+          }
+          sitesEl.querySelectorAll("button[data-open]").forEach((b) => {
+            b.addEventListener("click", () => window.open(`/sites/${b.dataset.open}/`, "_blank"));
+          });
+          sitesEl.querySelectorAll("button[data-del]").forEach((b) => {
+            b.addEventListener("click", async () => {
+              if (!confirm(`Удалить сайт ${b.dataset.del}?`)) return;
+              const r = await fetch(`/api/sites/${b.dataset.del}`, { method: "DELETE", headers: { ...authHeaders() } });
+              const data = await r.json().catch(() => ({}));
+              if (!r.ok) return setOut(data);
+              setOut({ ok: true });
+              refreshSites();
+            });
+          });
+        } catch (e) {
+          sitesEl.innerHTML = '<div class="muted">Не удалось загрузить список. Проверь токен.</div>';
+          setOut(e);
+        }
+      }
+
+      async function uploadCurrentFolder(extraFiles = []) {
+        const name = nameEl.value.trim() || "site";
+        const files = [...folderEl.files, ...extraFiles];
+        if (!files.length) return setOut("Выбери папку (кнопка “Папка проекта”).");
+
+        const fd = new FormData();
+        fd.append("name", name);
+        for (const file of files) {
+          // Important: keep relative path so server can rebuild folders
+          const rel = file.webkitRelativePath || file.name;
+          fd.append("files", file, rel);
+        }
+
+        setOut("Загружаю...");
+        const r = await fetch("/api/sites", { method: "POST", body: fd, headers: { ...authHeaders() } });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) return setOut(data);
+        setOut(data);
+        refreshSites();
+      }
+
+      $("uploadBtn").addEventListener("click", () => uploadCurrentFolder());
+      $("refreshBtn").addEventListener("click", () => refreshSites());
+      refreshSites();
+
+      // Drag & drop (best-effort): files only. Folder drop support varies by browser.
+      dropEl.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropEl.classList.add("drag");
+      });
+      dropEl.addEventListener("dragleave", () => dropEl.classList.remove("drag"));
+      dropEl.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dropEl.classList.remove("drag");
+        const files = [...(e.dataTransfer?.files || [])];
+        if (!files.length) return setOut("Не получилось прочитать файлы из drop.");
+        await uploadCurrentFolder(files);
+      });
+    </script>
+  </body>
+</html>
+
+

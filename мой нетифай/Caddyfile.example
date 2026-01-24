@@ -1,0 +1,49 @@
+# Пример для Caddy под “экосистему”:
+# - Корень домена (основной Next.js сайт) НЕ ломаем
+# - Wildcard поддомены (client1, client2, …) отдаем в “мой нетифай”
+# - Отдельный поддомен под админку публикации (deploy.example.com)
+#
+# Важно: wildcard-сертификат Let's Encrypt требует DNS-01, но Caddy умеет проще:
+# "on-demand TLS" — отдельный сертификат на каждый поддомен выпускается при первом заходе.
+#
+# 1) В DNS должны быть:
+#    A     @   -> IP твоего VPS
+#    A/CNAME  * -> IP/домен твоего VPS (wildcard поддомены)
+#
+# 2) Node-процессы (пример портов):
+#    - Next.js:         127.0.0.1:3000
+#    - “мой нетифай”:   127.0.0.1:3100
+#
+# 3) В “мой нетифай” выставь:
+#    ROOT_DOMAIN=example.com
+#    ADMIN_HOSTNAMES=deploy.example.com
+#
+# После этого:
+# - https://example.com/              → основной сайт (Next.js)
+# - https://deploy.example.com/       → админка загрузки
+# - https://client1.example.com/      → опубликованный сайт client1
+
+{
+  email you@example.com
+
+  # защита от злоупотребления on-demand TLS: Caddy спрашивает backend, можно ли выдавать сертификат
+  on_demand_tls {
+    ask http://127.0.0.1:3100/internal/ask
+  }
+}
+
+example.com {
+  encode zstd gzip
+  reverse_proxy 127.0.0.1:3000
+}
+
+deploy.example.com, *.example.com {
+  tls {
+    on_demand
+  }
+
+  encode zstd gzip
+  reverse_proxy 127.0.0.1:3100
+}
+
+
