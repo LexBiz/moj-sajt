@@ -25,6 +25,8 @@
       .site { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: rgba(0,0,0,.15); border: 1px solid rgba(255,255,255,.08); }
       .site a { color: #b9ccff; text-decoration: none; }
       .site a:hover { text-decoration: underline; }
+      .site .title { cursor: pointer; }
+      .site .title:hover { text-decoration: underline; }
       pre { white-space: pre-wrap; background: rgba(0,0,0,.25); padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.10); }
     </style>
   </head>
@@ -57,6 +59,10 @@
           <button id="refreshBtn">Обновить список</button>
         </div>
 
+        <div class="muted" style="margin-top:10px;">
+          Подсказка: чтобы <b>обновить</b> существующий сайт — нажми на его название в списке ниже и выбери папку заново.
+        </div>
+
         <div style="margin-top: 12px;">
           <div class="muted">Результат:</div>
           <pre id="out">—</pre>
@@ -69,7 +75,10 @@
             <div style="font-weight: 600;">Опубликованные сайты</div>
             <div class="muted">Ссылки работают по пути <code>/sites/&lt;slug&gt;/</code> (и по поддомену, если включить ROOT_DOMAIN).</div>
           </div>
-          <button class="danger" id="clearToken">Очистить токен</button>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+            <button id="copyLinks">Скопировать все ссылки</button>
+            <button class="danger" id="clearToken">Очистить токен</button>
+          </div>
         </div>
         <div style="height: 10px;"></div>
         <div id="sites" class="sites"></div>
@@ -84,6 +93,11 @@
       const outEl = $("out");
       const sitesEl = $("sites");
       const dropEl = $("drop");
+      const copyLinksBtn = $("copyLinks");
+
+      let rootDomain = null;
+      let knownSites = new Set();
+      let pendingRedeploySlug = null;
 
       tokenEl.value = localStorage.getItem("adminToken") || "";
       tokenEl.addEventListener("input", () => localStorage.setItem("adminToken", tokenEl.value));
@@ -101,13 +115,42 @@
         outEl.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
       }
 
+      function buildPublicUrl(slug) {
+        if (rootDomain) return `https://${slug}.${rootDomain}/`;
+        return `${location.origin}/sites/${slug}/`;
+      }
+
+      async function copyToClipboard(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.setAttribute("readonly", "readonly");
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            return true;
+          } catch {
+            return false;
+          }
+        }
+      }
+
       async function refreshSites() {
         sitesEl.innerHTML = "";
         try {
           const r = await fetch("/api/sites", { headers: { ...authHeaders() } });
           const data = await r.json().catch(() => ({}));
           if (!r.ok) throw data;
+          rootDomain = data.rootDomain || null;
           const sites = data.sites || [];
+          knownSites = new Set(sites);
           if (!sites.length) {
             sitesEl.innerHTML = '<div class="muted">Пока пусто.</div>';
             return;
@@ -115,11 +158,12 @@
           for (const slug of sites) {
             const div = document.createElement("div");
             div.className = "site";
+            const publicUrl = buildPublicUrl(slug);
             div.innerHTML = `
               <div>
-                <div style="font-weight: 600">${slug}</div>
+                <div class="title" data-redeploy="${slug}" style="font-weight: 600">${slug}</div>
                 <div class="muted">
-                  <a href="/sites/${slug}/" target="_blank" rel="noreferrer">/sites/${slug}/</a>
+                  <a href="${publicUrl}" target="_blank" rel="noreferrer">${publicUrl}</a>
                 </div>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
@@ -130,7 +174,17 @@
             sitesEl.appendChild(div);
           }
           sitesEl.querySelectorAll("button[data-open]").forEach((b) => {
-            b.addEventListener("click", () => window.open(`/sites/${b.dataset.open}/`, "_blank"));
+            b.addEventListener("click", () => window.open(buildPublicUrl(b.dataset.open), "_blank"));
+          });
+          sitesEl.querySelectorAll("[data-redeploy]").forEach((el) => {
+            el.addEventListener("click", () => {
+              const slug = el.dataset.redeploy;
+              if (!slug) return;
+              pendingRedeploySlug = slug;
+              nameEl.value = slug;
+              setOut(`Выбран redeploy: ${slug}. Теперь выбери папку (откроется выбор)…`);
+              folderEl.click();
+            });
           });
           sitesEl.querySelectorAll("button[data-del]").forEach((b) => {
             b.addEventListener("click", async () => {
@@ -148,7 +202,8 @@
         }
       }
 
-      async function uploadCurrentFolder(extraFiles = []) {
+      async function uploadCurrentFolder(extraFiles = [], opts = {}) {
+        const overwriteSlug = opts.overwriteSlug || null;
         const name = nameEl.value.trim() || "site";
         const files = [...folderEl.files, ...extraFiles];
         if (!files.length) return setOut("Выбери папку (кнопка “Папка проекта”).");
@@ -162,7 +217,23 @@
         }
 
         setOut("Загружаю...");
-        const r = await fetch("/api/sites", { method: "POST", body: fd, headers: { ...authHeaders() } });
+
+        // If slug exists, ask user whether to overwrite (unless overwrite explicitly requested).
+        if (!overwriteSlug && knownSites.has(name)) {
+          const ok = confirm(`Сайт "${name}" уже существует. Перезаписать (redeploy) вместо создания "${name}-2"?`);
+          if (ok) {
+            const r = await fetch(`/api/sites/${encodeURIComponent(name)}`, { method: "PUT", body: fd, headers: { ...authHeaders() } });
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) return setOut(data);
+            setOut(data);
+            refreshSites();
+            return;
+          }
+        }
+
+        const target = overwriteSlug ? `/api/sites/${encodeURIComponent(overwriteSlug)}` : "/api/sites";
+        const method = overwriteSlug ? "PUT" : "POST";
+        const r = await fetch(target, { method, body: fd, headers: { ...authHeaders() } });
         const data = await r.json().catch(() => ({}));
         if (!r.ok) return setOut(data);
         setOut(data);
@@ -171,6 +242,21 @@
 
       $("uploadBtn").addEventListener("click", () => uploadCurrentFolder());
       $("refreshBtn").addEventListener("click", () => refreshSites());
+
+      copyLinksBtn.addEventListener("click", async () => {
+        if (!knownSites.size) await refreshSites();
+        if (!knownSites.size) return setOut("Список пуст.");
+        const links = [...knownSites].map((slug) => buildPublicUrl(slug)).join("\n");
+        const ok = await copyToClipboard(links);
+        setOut(ok ? { ok: true, copied: [...knownSites].length } : { error: "Не удалось скопировать (браузер запретил)." });
+      });
+
+      folderEl.addEventListener("change", async () => {
+        if (!pendingRedeploySlug) return;
+        const slug = pendingRedeploySlug;
+        pendingRedeploySlug = null;
+        await uploadCurrentFolder([], { overwriteSlug: slug });
+      });
       refreshSites();
 
       // Drag & drop (best-effort): files only. Folder drop support varies by browser.

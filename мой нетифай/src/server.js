@@ -58,6 +58,63 @@ async function listSites() {
   return dirs;
 }
 
+function getRelPathFromUploadFile(file) {
+  const relRaw = String(file?.originalname || "")
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+
+  // Drop any leading folder name so upload of "myproject/index.html" becomes "index.html"
+  const rel = relRaw.includes("/") ? relRaw.split("/").slice(1).join("/") : relRaw;
+  if (!rel || rel.includes("..")) return null;
+  return rel;
+}
+
+async function writeUploadedFilesToDir(targetDir, files) {
+  for (const f of files) {
+    const rel = getRelPathFromUploadFile(f);
+    if (!rel) continue;
+    const dest = path.join(targetDir, rel);
+    if (!isPathInside(targetDir, dest)) continue;
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.writeFile(dest, f.buffer);
+  }
+}
+
+async function stageSiteFromUpload(slug, files) {
+  await ensureDirs();
+  const stageDir = path.join(SITES_DIR, `${slug}.__tmp__${nanoid(6).toLowerCase()}`);
+  await fs.mkdir(stageDir, { recursive: true });
+
+  await writeUploadedFilesToDir(stageDir, files);
+
+  const indexPath = path.join(stageDir, "index.html");
+  const hasIndex = existsSync(indexPath);
+  return { stageDir, hasIndex };
+}
+
+async function atomicallyReplaceDir(finalDir, stageDir) {
+  // Rename old -> backup, stage -> final, then delete backup.
+  const backupDir = `${finalDir}.__bak__${nanoid(6).toLowerCase()}`;
+
+  if (existsSync(finalDir)) {
+    await fs.rename(finalDir, backupDir);
+  }
+
+  try {
+    await fs.rename(stageDir, finalDir);
+  } catch (e) {
+    // best-effort rollback
+    if (!existsSync(finalDir) && existsSync(backupDir)) {
+      await fs.rename(backupDir, finalDir).catch(() => {});
+    }
+    throw e;
+  }
+
+  if (existsSync(backupDir)) {
+    await fs.rm(backupDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 function getSlugFromHostname(hostname) {
   const host = (hostname || "").toLowerCase();
   if (!ROOT_DOMAIN) return null;
@@ -93,7 +150,7 @@ const upload = multer({
 
 app.get("/api/sites", requireAuth, async (req, res) => {
   const sites = await listSites();
-  res.json({ sites });
+  res.json({ sites, rootDomain: ROOT_DOMAIN || null });
 });
 
 app.delete("/api/sites/:slug", requireAuth, async (req, res) => {
@@ -114,40 +171,43 @@ app.post("/api/sites", requireAuth, upload.array("files"), async (req, res) => {
     slug = `${desired}-${n++}`;
   }
 
-  const siteDir = path.join(SITES_DIR, slug);
-  await fs.mkdir(siteDir, { recursive: true });
-
   const files = req.files || [];
   if (!files.length) {
-    await fs.rm(siteDir, { recursive: true, force: true });
     return res.status(400).json({ error: "No files uploaded" });
   }
 
-  for (const f of files) {
-    // Client should send webkitRelativePath. Some browsers send as originalname only.
-    const relRaw =
-      String(f.originalname || "")
-        .replace(/\\/g, "/")
-        .replace(/^\/+/, "");
-
-    // Drop any leading folder name so upload of "myproject/index.html" becomes "index.html"
-    const rel = relRaw.includes("/") ? relRaw.split("/").slice(1).join("/") : relRaw;
-    if (!rel || rel.includes("..")) continue;
-
-    const dest = path.join(siteDir, rel);
-    if (!isPathInside(siteDir, dest)) continue;
-    await fs.mkdir(path.dirname(dest), { recursive: true });
-    await fs.writeFile(dest, f.buffer);
-  }
-
-  // If index.html missing, still allow (maybe single-page in subfolder) — but warn.
-  const indexPath = path.join(siteDir, "index.html");
-  const hasIndex = existsSync(indexPath);
+  const siteDir = path.join(SITES_DIR, slug);
+  const { stageDir, hasIndex } = await stageSiteFromUpload(slug, files);
+  await atomicallyReplaceDir(siteDir, stageDir);
 
   res.json({
     ok: true,
     slug,
     hasIndex,
+    urlPath: `/sites/${slug}/`,
+    urlSubdomain: ROOT_DOMAIN ? `https://${slug}.${ROOT_DOMAIN}/` : null
+  });
+});
+
+// Redeploy/overwrite existing site (atomic replace)
+app.put("/api/sites/:slug", requireAuth, upload.array("files"), async (req, res) => {
+  await ensureDirs();
+
+  const slug = safeSlug(req.params.slug);
+  const siteDir = path.join(SITES_DIR, slug);
+  if (!existsSync(siteDir)) return res.status(404).json({ error: "Not found" });
+
+  const files = req.files || [];
+  if (!files.length) return res.status(400).json({ error: "No files uploaded" });
+
+  const { stageDir, hasIndex } = await stageSiteFromUpload(slug, files);
+  await atomicallyReplaceDir(siteDir, stageDir);
+
+  res.json({
+    ok: true,
+    slug,
+    hasIndex,
+    overwritten: true,
     urlPath: `/sites/${slug}/`,
     urlSubdomain: ROOT_DOMAIN ? `https://${slug}.${ROOT_DOMAIN}/` : null
   });
