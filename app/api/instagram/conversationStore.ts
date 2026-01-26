@@ -17,6 +17,9 @@ export type ConversationState = {
   pendingText: string | null
   history: ConversationMessage[]
   leadId: number | null
+  lastUserAt: string | null
+  lastAssistantAt: string | null
+  followUpSentAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -32,7 +35,16 @@ function loadAll(): Record<string, ConversationState> {
   try {
     if (!fs.existsSync(FILE)) return {}
     const raw = fs.readFileSync(FILE, 'utf8')
-    return JSON.parse(raw) as Record<string, ConversationState>
+    const parsed = JSON.parse(raw) as Record<string, any>
+    // Backward-compatible normalization for older stored shapes.
+    for (const k of Object.keys(parsed || {})) {
+      const c = parsed[k] || {}
+      if (typeof c.lastUserAt === 'undefined') c.lastUserAt = null
+      if (typeof c.lastAssistantAt === 'undefined') c.lastAssistantAt = null
+      if (typeof c.followUpSentAt === 'undefined') c.followUpSentAt = null
+      parsed[k] = c
+    }
+    return parsed as Record<string, ConversationState>
   } catch {
     return {}
   }
@@ -55,6 +67,9 @@ export function getConversation(senderId: string): ConversationState {
     pendingText: null,
     history: [],
     leadId: null,
+    lastUserAt: null,
+    lastAssistantAt: null,
+    followUpSentAt: null,
     createdAt: now,
     updatedAt: now,
   }
@@ -72,6 +87,10 @@ export function updateConversation(senderId: string, next: Partial<ConversationS
   all[senderId] = merged
   saveAll(all)
   return merged
+}
+
+export function getAllConversations() {
+  return loadAll()
 }
 
 export function deleteConversation(senderId: string) {
