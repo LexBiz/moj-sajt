@@ -6,6 +6,10 @@ import { getConversation, updateConversation, type ConversationLang, type Conver
 import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
+import { startInstagramFollowupScheduler } from '../followupScheduler'
+
+// Start follow-up scheduler once per server process (enabled via env).
+startInstagramFollowupScheduler()
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -148,6 +152,12 @@ function detectLangFromText(text: string): ConversationLang {
   if (isUkrainianText(t) || /(\b(ви|ваш|ваша|ваші)\b)/i.test(t)) return 'ua'
   // Russian has letters that Ukrainian doesn't use (ы, э, ё)
   if (/[ыэё]/i.test(t)) return 'ru'
+  // Common Russian words (helps for texts without ы/э/ё)
+  if (/(привет|здравствуйте|пожалуйста|как\s+дела|как\s+это|мне|нужно|хочу|скажите|расскажите|можете|подскажите|стоимость|сколько)/i.test(t))
+    return 'ru'
+  // Common Ukrainian words
+  if (/(вітаю|добридень|будь\s+ласка|як\s+це|мені|потрібно|хочу|скажіть|розкажіть|можете|підкажіть|вартість|скільки)/i.test(t))
+    return 'ua'
   // If unclear, default to Ukrainian 🇺🇦 (per requirement)
   return 'ua'
 }
