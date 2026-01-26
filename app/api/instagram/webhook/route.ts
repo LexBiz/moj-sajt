@@ -286,7 +286,6 @@ function stripContactAskBlock(text: string) {
 }
 
 // readiness scoring + stage heuristic live in ../../temowebPrompt
-}
 
 async function generateAiReply(params: {
   userText: string
