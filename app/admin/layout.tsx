@@ -1,11 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 
 function NavLink({ href, label }: { href: string; label: string }) {
-  const pathname = usePathname() || ''
+  const [pathname, setPathname] = useState('')
+  useEffect(() => {
+    try {
+      setPathname(window.location.pathname || '')
+    } catch {
+      setPathname('')
+    }
+  }, [])
   const active = pathname === href || (href !== '/admin' && pathname.startsWith(href + '/')) || (href !== '/admin' && pathname === href)
   return (
     <Link
