@@ -10,6 +10,11 @@ export type ConversationMessage = {
 
 export type ConversationLang = 'ru' | 'ua'
 
+export type ConversationContactDraft = {
+  phone: string | null
+  email: string | null
+}
+
 export type ConversationState = {
   senderId: string
   stage: ConversationStage
@@ -17,6 +22,7 @@ export type ConversationState = {
   pendingText: string | null
   history: ConversationMessage[]
   leadId: number | null
+  contactDraft: ConversationContactDraft | null
   lastUserAt: string | null
   lastAssistantAt: string | null
   followUpSentAt: string | null
@@ -42,6 +48,7 @@ function loadAll(): Record<string, ConversationState> {
       if (typeof c.lastUserAt === 'undefined') c.lastUserAt = null
       if (typeof c.lastAssistantAt === 'undefined') c.lastAssistantAt = null
       if (typeof c.followUpSentAt === 'undefined') c.followUpSentAt = null
+      if (typeof c.contactDraft === 'undefined') c.contactDraft = null
       parsed[k] = c
     }
     return parsed as Record<string, ConversationState>
@@ -67,6 +74,7 @@ export function getConversation(senderId: string): ConversationState {
     pendingText: null,
     history: [],
     leadId: null,
+    contactDraft: null,
     lastUserAt: null,
     lastAssistantAt: null,
     followUpSentAt: null,

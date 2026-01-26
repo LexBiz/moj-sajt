@@ -7,6 +7,7 @@ const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 type LeadPayload = {
   name?: string
   contact?: string
+  email?: string
   businessType?: string
   channel?: string
   pain?: string
@@ -225,7 +226,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as LeadPayload
-    const { name, contact, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, notes, phone } = body
+    const { name, contact, email, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, notes, phone } = body
 
     const resolvedContact = contact || phone
     if (!resolvedContact) {
@@ -254,6 +255,7 @@ export async function POST(request: NextRequest) {
       id: Date.now(),
       name: name || null,
       contact: resolvedContact,
+      email: typeof email === 'string' && email.trim() ? email.trim() : null,
       businessType: businessType || null,
       channel: channel || null,
       pain: pain || null,

@@ -6,6 +6,7 @@ type Lead = {
   id: number
   name: string | null
   contact: string
+  email?: string | null
   businessType: string | null
   channel: string | null
   pain: string | null
@@ -30,6 +31,15 @@ const STATUS_LABEL: Record<LeadStatus, string> = {
   won: 'Сделка',
   lost: 'Потеря',
   junk: 'Спам',
+}
+
+function readinessUi(r: NonNullable<Lead['aiReadiness']>) {
+  const label = r.label
+  const score = Math.round(Number(r.score || 0))
+  if (label === 'READY') return { text: `Готов (${score}/100)`, tone: 'bg-emerald-500/15 text-emerald-200 border-emerald-400/30' }
+  if (label === 'HOT') return { text: `Горячий (${score}/100)`, tone: 'bg-orange-500/15 text-orange-200 border-orange-400/30' }
+  if (label === 'WARM') return { text: `Тёплый (${score}/100)`, tone: 'bg-amber-500/15 text-amber-200 border-amber-400/30' }
+  return { text: `Холодный (${score}/100)`, tone: 'bg-slate-500/15 text-slate-200 border-slate-400/30' }
 }
 
 function badgeClass(status: string) {
@@ -665,6 +675,9 @@ export default function AdminPage() {
                       <div>
                         <p className="text-xs text-slate-400">Контакт</p>
                         <p className="text-lg font-bold text-white break-all">{(selected as any)?.contact ? String((selected as any).contact) : '—'}</p>
+                        {(selected as any)?.email ? (
+                          <p className="text-xs text-slate-400 mt-1 break-all">{String((selected as any).email)}</p>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -711,7 +724,7 @@ export default function AdminPage() {
                     {selected.aiReadiness ? (
                       <div className="flex justify-between gap-3">
                         <span className="text-slate-400">Готовность</span>
-                        <span className="text-right">{selected.aiReadiness.label} ({Math.round(selected.aiReadiness.score)}/100)</span>
+                        <span className="text-right">{readinessUi(selected.aiReadiness).text}</span>
                       </div>
                     ) : null}
                     <div className="flex justify-between gap-3">
@@ -740,8 +753,8 @@ export default function AdminPage() {
                       <div className="flex items-center justify-between gap-3 mb-2">
                         <p className="text-xs text-slate-400">Сообщения клиента</p>
                         {selected.aiReadiness ? (
-                          <span className="text-[11px] px-2 py-1 rounded-full border border-white/10 bg-white/5 text-slate-200">
-                            {selected.aiReadiness.label} · {Math.round(selected.aiReadiness.score)}/100
+                          <span className={`text-[11px] px-2 py-1 rounded-full border ${readinessUi(selected.aiReadiness).tone}`}>
+                            {readinessUi(selected.aiReadiness).text}
                           </span>
                         ) : null}
                       </div>

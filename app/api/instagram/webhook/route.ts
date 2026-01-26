@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordInstagramAi, recordInstagramWebhook } from '../state'
 import { readTokenFile } from '../oauth/_store'
-import { getConversation, updateConversation, type ConversationLang, type ConversationMessage } from '../conversationStore'
+import { getConversation, updateConversation, type ConversationLang, type ConversationMessage, type ConversationContactDraft } from '../conversationStore'
 import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
@@ -177,14 +177,14 @@ function t(lang: ConversationLang, key: string) {
     askRepeating: 'Отлично ✅ Напишите, пожалуйста, одним сообщением, что нужно — я отвечу. 🙂',
     contactOk: ['Спасибо! ✅ Контакт получил.', '—', 'Я посмотрю детали и вернусь с конкретным планом.', 'Для точности: ниша + средний чек + источник заявок. 💬'].join('\n'),
     contactFix: ['Похоже, контакт указан не полностью. 🙌', 'Отправьте, пожалуйста, корректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— или Telegram @username'].join('\n'),
-    askContact: ['Отлично, задачу понял ✅', '—', 'Чтобы продолжить и зафиксировать заявку, отправьте контакт:', 'email / телефон / Telegram @username'].join('\n'),
+    askContact: ['Отлично, задачу понял ✅', '—', 'Чтобы зафиксировать заявку, пришлите, пожалуйста:', '1) телефон (обязательно) 📞', '2) email (обязательно) ✉️'].join('\n'),
   }
   const UA: Record<string, string> = {
     chooseLang: ['Вітаю! 👋 Я персональний AI‑асистент TemoWeb.', 'Оберіть зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
     askRepeating: 'Чудово ✅ Напишіть, будь ласка, одним повідомленням, що потрібно — я відповім. 🙂',
     contactOk: ['Дякую! ✅ Контакт отримав.', '—', 'Перегляну деталі й повернусь з конкретним планом.', 'Для точності: ніша + середній чек + джерело заявок. 💬'].join('\n'),
     contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішліть, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
-    askContact: ['Чудово, задачу зрозумів ✅', '—', 'Щоб продовжити й зафіксувати заявку, надішліть контакт:', 'email / телефон / Telegram @username'].join('\n'),
+    askContact: ['Чудово, задачу зрозумів ✅', '—', 'Щоб зафіксувати заявку, надішліть, будь ласка:', '1) телефон (обовʼязково) 📞', '2) email (обовʼязково) ✉️'].join('\n'),
   }
   return (lang === 'ua' ? UA : RU)[key] || key
 }
@@ -256,28 +256,32 @@ function detectResetIntent(text: string) {
   )
 }
 
-function normalizeContact(text: string) {
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]
-  if (email) return { type: 'email' as const, value: email.trim() }
+function extractEmail(text: string) {
+  const email = String(text || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]
+  return email ? email.trim() : null
+}
 
-  const phoneMatch = text.match(/\+?\d[\d\s().-]{7,}/)?.[0]
-  if (phoneMatch) {
-    const cleaned = phoneMatch.replace(/[^\d+]/g, '')
-    const digits = cleaned.replace(/[^\d]/g, '')
-    if (digits.length >= 8) return { type: 'phone' as const, value: cleaned }
-  }
+function extractPhone(text: string) {
+  const phoneMatch = String(text || '').match(/\+?\d[\d\s().-]{7,}/)?.[0]
+  if (!phoneMatch) return null
+  const cleaned = phoneMatch.replace(/[^\d+]/g, '')
+  const digits = cleaned.replace(/[^\d]/g, '')
+  if (digits.length < 8) return null
+  return cleaned
+}
 
-  const tg = text.match(/@[\w\d_]{3,}/)?.[0]
-  if (tg) return { type: 'telegram' as const, value: tg.trim() }
-
-  return null
+function extractContactDraft(text: string): ConversationContactDraft | null {
+  const email = extractEmail(text)
+  const phone = extractPhone(text)
+  if (!email && !phone) return null
+  return { email: email || null, phone: phone || null }
 }
 
 function hasInvalidContactHint(text: string) {
   // If user tries to send contact but it doesn't match any pattern, ask again.
   const hasAt = text.includes('@')
   const hasDigits = /\d{6,}/.test(text)
-  return (hasAt || hasDigits) && !normalizeContact(text)
+  return (hasAt || hasDigits) && !extractContactDraft(text)
 }
 
 function containsContactAsk(text: string) {
@@ -472,14 +476,14 @@ function readinessLabel(score: number): LeadReadiness['label'] {
 async function generateLeadAiSummary(input: {
   lang: ConversationLang
   readiness: LeadReadiness
-  clientMessages: string[]
+  history: ConversationMessage[]
 }) {
   const OPENAI_API_KEY = getOpenAiKey()
   if (!OPENAI_API_KEY) return null
 
   const payload = {
     readiness: input.readiness,
-    clientMessages: input.clientMessages.slice(0, 18),
+    transcript: input.history.slice(-12).map((m) => ({ role: m.role, content: clip(m.content, 240) })),
   }
 
   const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
@@ -524,7 +528,8 @@ async function generateLeadAiSummary(input: {
 
 async function saveLeadFromInstagram(input: {
   senderId: string
-  contact: { type: 'email' | 'phone' | 'telegram'; value: string }
+  phone: string
+  email: string
   clientMessages: string[]
   lastMessage: string
   lang: ConversationLang
@@ -536,7 +541,8 @@ async function saveLeadFromInstagram(input: {
   const newLead = {
     id: Date.now(),
     name: null,
-    contact: input.contact.value,
+    contact: input.phone,
+    email: input.email,
     businessType: null,
     channel: 'Instagram',
     pain: null,
@@ -547,7 +553,7 @@ async function saveLeadFromInstagram(input: {
     aiReadiness: input.aiReadiness,
     source: 'instagram',
     lang: input.lang,
-    notes: `senderId: ${input.senderId} | contactType: ${input.contact.type}`,
+    notes: `senderId: ${input.senderId}`,
     createdAt: new Date().toISOString(),
     status: 'new',
   }
@@ -698,8 +704,10 @@ async function sendTelegramLead({
 
 async function handleIncomingMessage(senderId: string, text: string, media: IncomingMedia[]) {
   const conversation = getConversation(senderId)
-  const lang = conversation.lang
   const maybeLang = parseLangChoice(text)
+  const requestedLang = parseLangSwitch(text) || maybeLang
+  // Start ALWAYS in Ukrainian by default. Switch only when user explicitly asks.
+  const lang: ConversationLang | null = conversation.lang || requestedLang || 'ua'
 
   // Hard reset: user asks to "start over" -> clear conversation state and restart language selection.
   if (detectResetIntent(text)) {
@@ -716,22 +724,8 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   }
 
   // language selection gate
-  if (!lang) {
-    // If user explicitly chose language (1/2/ru/ua) - respect it.
-    if (maybeLang) {
-      updateConversation(senderId, { lang: maybeLang, pendingText: null })
-      await sendInstagramMessage(senderId, t(maybeLang, 'askRepeating'))
-      updateConversation(senderId, { lastAssistantAt: nowIso() })
-      return
-    }
-    // Auto language by first message text.
-    const auto = detectLangFromText(text)
-    updateConversation(senderId, { lang: auto, pendingText: null })
-    // First message must introduce itself as personal AI assistant (required).
-    // We answer immediately via AI, using the user's original message.
-    // Continue with the normal flow using the detected language.
-    await handleIncomingMessage(senderId, text, media)
-    return
+  if (!conversation.lang) {
+    updateConversation(senderId, { lang, pendingText: null })
   }
 
   // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
@@ -786,7 +780,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-12) as ConversationMessage[]
   const userTurns = history.filter((m) => m.role === 'user').length
-  const contact = normalizeContact(text)
+  const draftFromText = extractContactDraft(text)
   const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
 
   // Always store the message first
@@ -797,39 +791,76 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
-  if (contact && conversation.leadId == null) {
-    const readiness = { score: readinessScore, label: readinessLabel(readinessScore), stage: computeStageHeuristic(text, readinessScore) }
-    const aiSummary =
-      (await generateLeadAiSummary({
-        lang,
-        readiness,
+  // Contact capture: require BOTH phone + email before creating a lead.
+  if (conversation.leadId == null) {
+    const existingDraft = conversation.contactDraft || { phone: null, email: null }
+    const mergedDraft = {
+      phone: draftFromText?.phone || existingDraft.phone,
+      email: draftFromText?.email || existingDraft.email,
+    }
+    const hasAny = Boolean(mergedDraft.phone || mergedDraft.email)
+    const hasBoth = Boolean(mergedDraft.phone && mergedDraft.email)
+
+    if (hasAny) updateConversation(senderId, { contactDraft: mergedDraft })
+
+    if (hasBoth) {
+      const readiness = { score: readinessScore, label: readinessLabel(readinessScore), stage: computeStageHeuristic(text, readinessScore) }
+      const aiSummary =
+        (await generateLeadAiSummary({
+          lang,
+          readiness,
+          history,
+        })) || null
+      const leadId = await saveLeadFromInstagram({
+        senderId,
+        phone: mergedDraft.phone!,
+        email: mergedDraft.email!,
         clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
-      })) || null
-    const leadId = await saveLeadFromInstagram({
-      senderId,
-      contact,
-      clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
-      lastMessage: text,
-      lang,
-      aiSummary,
-      aiReadiness: readiness,
-    })
-    updateConversation(senderId, { stage: 'collected', leadId, history })
-    await sendTelegramLead({ senderId, messageText: text, contactHint: contact.value })
-    // Confirm via AI (no templates); fallback only if OpenAI is unavailable.
-    const ai = await generateAiReply({
-      userText: `Client provided contact: ${contact.value}. Thank them and confirm next steps. Keep it short.`,
-      lang,
-      stage: 'collected',
-      history,
-      images: [],
-    })
-    recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-    const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
-    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
-    await sendInstagramMessage(senderId, reply)
-    updateConversation(senderId, { lastAssistantAt: nowIso() })
-    return
+        lastMessage: text,
+        lang,
+        aiSummary,
+        aiReadiness: readiness,
+      })
+      updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
+      await sendTelegramLead({ senderId, messageText: text, contactHint: `${mergedDraft.phone} | ${mergedDraft.email}` })
+      const ai = await generateAiReply({
+        userText: `Client provided phone: ${mergedDraft.phone} and email: ${mergedDraft.email}. Thank them and confirm next steps. Keep it short.`,
+        lang,
+        stage: 'collected',
+        history,
+        images: [],
+      })
+      recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+      const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
+      updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
+      await sendInstagramMessage(senderId, reply)
+      updateConversation(senderId, { lastAssistantAt: nowIso() })
+      return
+    }
+
+    // If user provided only one piece, ask for the missing one (AI preferred).
+    if (hasAny) {
+      const missing = mergedDraft.phone ? 'email' : 'phone'
+      updateConversation(senderId, { stage: 'ask_contact', history })
+      const ai = await generateAiReply({
+        userText:
+          missing === 'email'
+            ? 'Client shared phone number. Thank them and ask ONLY for email (mandatory) to finalize the request.'
+            : 'Client shared email. Thank them and ask ONLY for phone number (mandatory) to finalize the request.',
+        lang,
+        stage: 'ask_contact',
+        history,
+        images: [],
+        readinessScore,
+        channel: 'instagram',
+      })
+      recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+      const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'askContact')
+      updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
+      await sendInstagramMessage(senderId, reply)
+      updateConversation(senderId, { lastAssistantAt: nowIso() })
+      return
+    }
   }
 
   if (hasInvalidContactHint(text)) {
