@@ -38,8 +38,8 @@
       <div class="card">
         <div class="row">
           <div>
-            <label>Токен (если включён ADMIN_TOKEN)</label>
-            <input id="token" type="password" placeholder="вставь токен, если нужен" />
+            <label>Токен “мой нетифай” (ADMIN_TOKEN)</label>
+            <input id="token" type="password" placeholder="это НЕ пароль от /admin (CRM)" />
           </div>
           <div>
             <label>Имя сайта (slug)</label>
@@ -162,14 +162,26 @@
         try {
           const r = await fetch(apiUrl("/api/sites"), { headers: { ...authHeaders() } });
           const data = await r.json().catch(() => ({}));
-          if (!r.ok) throw data;
+          if (!r.ok) {
+            const msg =
+              r.status === 401
+                ? "Неверный токен. Введи ADMIN_TOKEN именно от “мой нетифай” (это не пароль CRM /admin)."
+                : data?.error || `Ошибка загрузки списка (HTTP ${r.status}).`;
+            setOut({ error: msg, details: data });
+            sitesEl.innerHTML = `<div class="muted">${msg}</div>`;
+            return;
+          }
           rootDomain = data.rootDomain || null;
           const sites = data.sites || [];
           knownSites = new Set(sites);
           if (!sites.length) {
-            sitesEl.innerHTML = '<div class="muted">Пока пусто.</div>';
+            const dd = data?.dataDir ? `<div class="muted">DATA_DIR: <code>${data.dataDir}</code></div>` : "";
+            sitesEl.innerHTML = `<div class="muted">Пока пусто.</div>${dd}`;
+            setOut({ ok: true, count: data?.count ?? sites.length, dataDir: data?.dataDir, sitesDir: data?.sitesDir });
             return;
           }
+          // Helpful debug info in output (so you can see which DATA_DIR you are reading from)
+          setOut({ ok: true, count: data?.count ?? sites.length, dataDir: data?.dataDir, sitesDir: data?.sitesDir });
           for (const slug of sites) {
             const div = document.createElement("div");
             div.className = "site";
@@ -212,7 +224,7 @@
             });
           });
         } catch (e) {
-          sitesEl.innerHTML = '<div class="muted">Не удалось загрузить список. Проверь токен.</div>';
+          sitesEl.innerHTML = '<div class="muted">Не удалось загрузить список. Проверь токен и прокси /mynetlify/*.</div>';
           setOut(e);
         }
       }

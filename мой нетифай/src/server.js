@@ -150,7 +150,13 @@ const upload = multer({
 
 app.get("/api/sites", requireAuth, async (req, res) => {
   const sites = await listSites();
-  res.json({ sites, rootDomain: ROOT_DOMAIN || null });
+  res.json({
+    sites,
+    rootDomain: ROOT_DOMAIN || null,
+    count: sites.length,
+    dataDir: DATA_DIR,
+    sitesDir: SITES_DIR,
+  });
 });
 
 app.delete("/api/sites/:slug", requireAuth, async (req, res) => {
@@ -248,6 +254,8 @@ await ensureDirs();
 app.listen(PORT, HOST, () => {
   console.log(`Mini-netlify running on http://${HOST}:${PORT}`);
   console.log(`Admin UI: http://localhost:${PORT}/admin/`);
+  console.log(`DATA_DIR: ${DATA_DIR}`);
+  console.log(`SITES_DIR: ${SITES_DIR}`);
   if (ADMIN_TOKEN) console.log("Auth: enabled (ADMIN_TOKEN set)");
   if (ROOT_DOMAIN) console.log(`Subdomain mode enabled for *.${ROOT_DOMAIN}`);
 });
