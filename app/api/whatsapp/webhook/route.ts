@@ -34,6 +34,9 @@ const APP_SECRET = (process.env.WHATSAPP_APP_SECRET || process.env.INSTAGRAM_APP
 const SIGNATURE_BYPASS = (process.env.WHATSAPP_SIGNATURE_BYPASS || '').trim() === 'true'
 const ACCESS_TOKEN = (process.env.WHATSAPP_ACCESS_TOKEN || '').trim()
 const PHONE_NUMBER_ID = (process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim()
+const WHATSAPP_API_HOST = (process.env.WHATSAPP_API_HOST || 'graph.facebook.com').trim()
+const WHATSAPP_API_VERSION = (process.env.WHATSAPP_API_VERSION || 'v22.0').trim()
+const IGNORE_TEST_EVENTS = (process.env.WHATSAPP_IGNORE_TEST_EVENTS || 'true').trim() !== 'false'
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
@@ -108,12 +111,13 @@ async function generateAiReply(userText: string) {
   return typeof content === 'string' && content.trim() ? clip(content.trim(), 900) : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
 }
 
-async function sendWhatsAppText(to: string, text: string) {
-  if (!ACCESS_TOKEN || !PHONE_NUMBER_ID) {
+async function sendWhatsAppText(to: string, text: string, opts?: { phoneNumberId?: string | null }) {
+  const phoneNumberId = (opts?.phoneNumberId || PHONE_NUMBER_ID || '').trim()
+  if (!ACCESS_TOKEN || !phoneNumberId) {
     console.error('Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID')
     return
   }
-  const url = `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`
+  const url = `https://${WHATSAPP_API_HOST}/${WHATSAPP_API_VERSION}/${phoneNumberId}/messages`
   const body = {
     messaging_product: 'whatsapp',
     to,
@@ -132,7 +136,7 @@ async function sendWhatsAppText(to: string, text: string) {
     const t = await resp.text().catch(() => '')
     console.error('WhatsApp send error', resp.status, t.slice(0, 500))
   } else {
-    console.log('WhatsApp send ok', { to })
+    console.log('WhatsApp send ok', { to, phoneNumberIdLast4: phoneNumberId.slice(-4), api: `${WHATSAPP_API_HOST}/${WHATSAPP_API_VERSION}` })
   }
 }
 
@@ -191,6 +195,8 @@ export async function POST(request: NextRequest) {
     const changes = entry?.changes || []
     for (const ch of changes) {
       const value = ch.value
+      const metaPhoneNumberId = value?.metadata?.phone_number_id?.trim() || null
+      const metaDisplayPhone = value?.metadata?.display_phone_number?.trim() || null
       const messages = value?.messages || []
       for (const m of messages) {
         const from = m.from
@@ -201,8 +207,17 @@ export async function POST(request: NextRequest) {
         if (type !== 'text' || !text) continue
 
         console.log('WA webhook: incoming text', { from, text: clip(text, 200) })
+        // Meta "Test" webhook often sends a dummy message from 16315551181 with body "this is a text message".
+        if (IGNORE_TEST_EVENTS && (from === '16315551181' || text.toLowerCase() === 'this is a text message')) {
+          console.log('WA webhook: ignoring test event', {
+            from,
+            metaDisplayPhone,
+            metaPhoneNumberIdLast4: metaPhoneNumberId ? metaPhoneNumberId.slice(-4) : null,
+          })
+          continue
+        }
         const reply = await generateAiReply(text)
-        await sendWhatsAppText(from, reply)
+        await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
       }
     }
   }
