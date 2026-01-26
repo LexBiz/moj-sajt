@@ -13,7 +13,12 @@ type AiRequest = {
 }
 
 function getLang(lang?: AiRequest['lang']) {
-  return lang === 'ru' || lang === 'cz' ? lang : 'ua'
+  if (lang === 'ru' || lang === 'cz' || lang === 'ua') return lang
+  return 'ru'
+}
+
+function looksUkrainian(text: string) {
+  return /[іїєґ]/i.test(String(text || ''))
 }
 
 function buildFallback({ businessType, channel, pain, question, lang, mode }: AiRequest) {
@@ -335,7 +340,10 @@ async function callOpenAI(
     console.error('OPENAI_API_KEY is missing; using fallback')
     return { content: null, summary: null, error: 'missing_api_key' }
   }
-  const lng = getLang(lang)
+  // Auto language by user message if caller didn't provide.
+  const hist = Array.isArray(history) ? history : []
+  const lastUser = [...hist].reverse().find((m) => m.role === 'user')?.content || ''
+  const lng = lang ? getLang(lang) : looksUkrainian(lastUser) ? 'ua' : 'ru'
   // Use the new TemoWeb prompt for UA/RU (website channel). Keep legacy for CZ.
   const langSystem =
     lng === 'ru'

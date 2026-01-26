@@ -74,10 +74,11 @@ async function generateAiReply(userText: string) {
   if (!OPENAI_API_KEY) {
     return 'Принято. Напиши нишу и где приходят заявки — покажу, как автоматизация заберёт это на себя.'
   }
+  const isUa = /[іїєґ]/i.test(String(userText || ''))
   const userTurns = 1
   const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
   const system = buildTemoWebSystemPrompt({
-    lang: 'ru',
+    lang: isUa ? 'ua' : 'ru',
     channel: 'whatsapp',
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,

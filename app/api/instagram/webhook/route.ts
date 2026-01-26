@@ -141,6 +141,13 @@ function isUkrainianText(s: string) {
   return /[іїєґ]/i.test(s)
 }
 
+function detectLangFromText(text: string): ConversationLang {
+  const t = String(text || '').trim()
+  if (!t) return 'ru'
+  if (isUkrainianText(t) || /(\b(ви|ваш|ваша|ваші)\b)/i.test(t)) return 'ua'
+  return 'ru'
+}
+
 function parseLangChoice(text: string): ConversationLang | null {
   const t = text.trim().toLowerCase()
   if (!t) return null
@@ -152,18 +159,18 @@ function parseLangChoice(text: string): ConversationLang | null {
 
 function t(lang: ConversationLang, key: string) {
   const RU: Record<string, string> = {
-    chooseLang: ['Привет! 👋 Менеджер TemoWeb на связи.', 'Выбери удобный язык:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
-    askRepeating: 'Супер ✅ Теперь напиши, пожалуйста, одним сообщением, что нужно — я отвечу. 🙂',
+    chooseLang: ['Здравствуйте! 👋 Я персональный AI‑ассистент TemoWeb.', 'Выберите удобный язык:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    askRepeating: 'Отлично ✅ Напишите, пожалуйста, одним сообщением, что нужно — я отвечу. 🙂',
     contactOk: ['Спасибо! ✅ Контакт получил.', '—', 'Я посмотрю детали и вернусь с конкретным планом.', 'Для точности: ниша + средний чек + источник заявок. 💬'].join('\n'),
-    contactFix: ['Похоже, контакт указан не полностью. 🙌', 'Отправь корректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— или Telegram @username'].join('\n'),
-    askContact: ['Круто, я понял задачу ✅', '—', 'Чтобы продолжить и зафиксировать заявку, отправь контакт:', 'email / телефон / Telegram @username'].join('\n'),
+    contactFix: ['Похоже, контакт указан не полностью. 🙌', 'Отправьте, пожалуйста, корректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— или Telegram @username'].join('\n'),
+    askContact: ['Отлично, задачу понял ✅', '—', 'Чтобы продолжить и зафиксировать заявку, отправьте контакт:', 'email / телефон / Telegram @username'].join('\n'),
   }
   const UA: Record<string, string> = {
-    chooseLang: ['Привіт! 👋 Менеджер TemoWeb на звʼязку.', 'Обери зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
-    askRepeating: 'Супер ✅ Тепер напиши, будь ласка, одним повідомленням, що потрібно — я відповім. 🙂',
+    chooseLang: ['Вітаю! 👋 Я персональний AI‑асистент TemoWeb.', 'Оберіть зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    askRepeating: 'Чудово ✅ Напишіть, будь ласка, одним повідомленням, що потрібно — я відповім. 🙂',
     contactOk: ['Дякую! ✅ Контакт отримав.', '—', 'Перегляну деталі й повернусь з конкретним планом.', 'Для точності: ніша + середній чек + джерело заявок. 💬'].join('\n'),
-    contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішли, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
-    askContact: ['Круто, я зрозумів задачу ✅', '—', 'Щоб продовжити й зафіксувати заявку, надішли контакт:', 'email / телефон / Telegram @username'].join('\n'),
+    contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішліть, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
+    askContact: ['Чудово, задачу зрозумів ✅', '—', 'Щоб продовжити й зафіксувати заявку, надішліть контакт:', 'email / телефон / Telegram @username'].join('\n'),
   }
   return (lang === 'ua' ? UA : RU)[key] || key
 }
@@ -316,6 +323,11 @@ async function generateAiReply(params: {
     readinessScore,
   })
   const historyMsgs = history.slice(-8).map((m) => ({ role: m.role, content: m.content }))
+  const isFirstAssistantMsg = history.filter((m) => m.role === 'assistant').length === 0
+  const firstMsgRule =
+    lang === 'ua'
+      ? 'Це перше повідомлення в діалозі: обовʼязково представтесь як "персональний AI‑асистент TemoWeb" і відповідайте на "Ви".'
+      : 'Это первое сообщение в диалоге: обязательно представьтесь как "персональный AI‑ассистент TemoWeb" и общайтесь на "Вы".'
   const userContent =
     images.length > 0
       ? ([
@@ -334,6 +346,7 @@ async function generateAiReply(params: {
       model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: system },
+        ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }] : []),
         ...historyMsgs,
         { role: 'user', content: userContent },
       ],
@@ -598,28 +611,25 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       history: [],
       leadId: null,
     })
-    await sendInstagramMessage(senderId, t('ru', 'chooseLang'))
+    await sendInstagramMessage(senderId, t(detectLangFromText(text), 'chooseLang'))
     return
   }
 
   // language selection gate
   if (!lang) {
+    // If user explicitly chose language (1/2/ru/ua) - respect it.
     if (maybeLang) {
-      updateConversation(senderId, { lang: maybeLang })
-      const pending = (conversation.pendingText || '').trim()
-      updateConversation(senderId, { pendingText: null })
-      if (pending) {
-        // Process the original message content after language choice
-        await handleIncomingMessage(senderId, pending, media)
-        return
-      }
+      updateConversation(senderId, { lang: maybeLang, pendingText: null })
       await sendInstagramMessage(senderId, t(maybeLang, 'askRepeating'))
       return
     }
-    // store the first message as pending and ask for language
-    const pendingText = conversation.pendingText ? conversation.pendingText : text
-    updateConversation(senderId, { pendingText })
-    await sendInstagramMessage(senderId, t('ru', 'chooseLang'))
+    // Auto language by first message text.
+    const auto = detectLangFromText(text)
+    updateConversation(senderId, { lang: auto, pendingText: null })
+    // First message must introduce itself as personal AI assistant (required).
+    // We answer immediately via AI, using the user's original message.
+    // Continue with the normal flow using the detected language.
+    await handleIncomingMessage(senderId, text, media)
     return
   }
 
