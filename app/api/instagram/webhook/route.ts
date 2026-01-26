@@ -205,9 +205,8 @@ function detectAiIdentityQuestion(text: string) {
 }
 
 function detectReadyToProceed(text: string) {
-  return /(ок|okay|давай|погнали|готов|хочу|цікав|интересно|підключ|подключ|консультац|созвон|дзвінок|звонок|почнемо|почати)/i.test(
-    text,
-  )
+  // Keep this strict: "интересно/цікав" is NOT readiness to proceed (it triggers premature ask_contact).
+  return /(ок|okay|давай|погнали|готов|підключ|подключ|консультац|созвон|дзвінок|звонок|почнемо|почати)/i.test(text)
 }
 
 function detectResetIntent(text: string) {
@@ -647,7 +646,16 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     })
     updateConversation(senderId, { stage: 'collected', leadId, history })
     await sendTelegramLead({ senderId, messageText: text, contactHint: contact.value })
-    const reply = t(lang, 'contactOk')
+    // Confirm via AI (no templates); fallback only if OpenAI is unavailable.
+    const ai = await generateAiReply({
+      userText: `Client provided contact: ${contact.value}. Thank them and confirm next steps. Keep it short.`,
+      lang,
+      stage: 'collected',
+      history,
+      images: [],
+    })
+    recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+    const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
     updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
@@ -655,7 +663,18 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   if (hasInvalidContactHint(text)) {
     updateConversation(senderId, { stage: 'ask_contact', history })
-    const reply = t(lang, 'contactFix')
+    // Ask to resend contact (prefer AI, fallback to a short deterministic hint)
+    const ai = await generateAiReply({
+      userText:
+        `Client tried to send contact but it looks invalid: "${clip(text, 120)}". ` +
+        `Ask them to resend ONLY one of: email / phone / Telegram @username.`,
+      lang,
+      stage: 'ask_contact',
+      history,
+      images: [],
+    })
+    recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+    const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactFix')
     updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
     return
@@ -672,16 +691,11 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       ? `${text}\n\n[Voice message transcript]: ${transcript}`
       : text || (images.length > 0 ? '[Image sent]' : '')
 
+  // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
   const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
-  // If we are explicitly in ask_contact stage, but OpenAI is unavailable,
-  // prefer a dedicated contact CTA instead of a generic fallback.
-  const finalReply = nextStage === 'ask_contact' && ai.provider !== 'openai' ? t(lang, 'askContact') : ai.reply
-  recordInstagramAi({
-    provider: ai.provider === 'openai' ? 'openai' : 'fallback',
-    detail: nextStage === 'ask_contact' && ai.provider !== 'openai' ? `${ai.detail || 'fallback'}|ask_contact_template` : ai.detail,
-  })
-  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: finalReply }].slice(-12) })
-  await sendInstagramMessage(senderId, finalReply)
+  recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: ai.reply }].slice(-12) })
+  await sendInstagramMessage(senderId, ai.reply)
 }
 
 export async function GET(request: NextRequest) {
