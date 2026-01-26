@@ -191,7 +191,11 @@ function detectBookingIntent(text: string) {
 }
 
 function detectLeadIntent(text: string) {
-  return /(купит|цена|стоим|пакет|сколько|интерес|нужно|хочу|подключ|заказ|демо|созвон|запис)/i.test(text)
+  // Keep this reasonably strict: too-broad triggers ("хочу/нужно/интерес") makes the bot spam ask_contact templates.
+  // We want the AI to answer first, then ask for contact when there's clear purchase/booking intent.
+  return /(куп(ить|лю)|цена|стоим|пакет|сколько|подключ|замов|заказ|демо|demo|созвон|консультац|дзвінок|звонок|запис|брон)/i.test(
+    text,
+  )
 }
 
 function detectAiIdentityQuestion(text: string) {
@@ -638,13 +642,6 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const nextStage = shouldAskForContact(conversation.stage, text, userTurns) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
   updateConversation(senderId, { stage: nextStage, history })
 
-  if (nextStage === 'ask_contact') {
-    const reply = t(lang, 'askContact')
-    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
-    await sendInstagramMessage(senderId, reply)
-    return
-  }
-
   const images = media.filter((m) => m.kind === 'image').map((m) => m.url)
   const audio = media.find((m) => m.kind === 'audio')?.url || null
   const transcript = audio ? await transcribeAudio(audio) : null
@@ -654,9 +651,15 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       : text || (images.length > 0 ? '[Image sent]' : '')
 
   const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
-  recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: ai.reply }].slice(-12) })
-  await sendInstagramMessage(senderId, ai.reply)
+  // If we are explicitly in ask_contact stage, but OpenAI is unavailable,
+  // prefer a dedicated contact CTA instead of a generic fallback.
+  const finalReply = nextStage === 'ask_contact' && ai.provider !== 'openai' ? t(lang, 'askContact') : ai.reply
+  recordInstagramAi({
+    provider: ai.provider === 'openai' ? 'openai' : 'fallback',
+    detail: nextStage === 'ask_contact' && ai.provider !== 'openai' ? `${ai.detail || 'fallback'}|ask_contact_template` : ai.detail,
+  })
+  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: finalReply }].slice(-12) })
+  await sendInstagramMessage(senderId, finalReply)
 }
 
 export async function GET(request: NextRequest) {

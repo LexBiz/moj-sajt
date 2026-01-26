@@ -14,7 +14,16 @@ type StatusPayload = {
   ok: boolean
   token?: { exists: boolean; meta?: { len: number; prefix: string; suffix: string }; obtainedAt?: string }
   selected?: { selectedPageId: string | null; selectedIgUserId: string | null; updatedAt: string | null }
-  webhook?: { totalReceived: number; lastReceivedAt: string | null; lastObject: string | null; lastSenderId: string | null; lastTextPreview: string | null }
+  webhook?: {
+    totalReceived: number
+    lastReceivedAt: string | null
+    lastObject: string | null
+    lastSenderId: string | null
+    lastTextPreview: string | null
+    lastAiProvider?: 'openai' | 'fallback' | null
+    lastAiDetail?: string | null
+    lastAiAt?: string | null
+  }
   env?: {
     hasAccessToken: boolean
     hasIgUserId: boolean
@@ -431,6 +440,11 @@ export default function IntegrationsPage() {
               </div>
               <div className="text-xs text-slate-500">
                 {t.lastReceived}: {webhook?.lastReceivedAt ?? '—'}
+              </div>
+              <div className="text-xs text-slate-500">
+                AI: {webhook?.lastAiProvider ? webhook.lastAiProvider : '—'}
+                {webhook?.lastAiDetail ? ` • ${clip(webhook.lastAiDetail, 160)}` : ''}
+                {webhook?.lastAiAt ? ` • ${webhook.lastAiAt}` : ''}
               </div>
             </div>
           </div>
