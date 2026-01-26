@@ -29,6 +29,9 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.*
+.env.backup*
+.env.save*
 
 # vercel
 .vercel
@@ -45,6 +48,11 @@ next-env.d.ts
 /telegram-bot/data/*.json
 /telegram-bot/*.log
 /telegram-bot/**/*.log
+/telegram-bot/package-lock.json
 
 /мой нетифай/data/
 /мой нетифай/data/*.json
+
+# server/local helpers (not source code)
+/.pult/
+/current
