@@ -242,6 +242,48 @@ function hasInvalidContactHint(text: string) {
   return (hasAt || hasDigits) && !normalizeContact(text)
 }
 
+function containsContactAsk(text: string) {
+  const t = String(text || '').toLowerCase()
+  if (!t) return false
+  return (
+    t.includes('отправ') && t.includes('контакт') ||
+    t.includes('пришл') && t.includes('контакт') ||
+    t.includes('надішл') && t.includes('контакт') ||
+    t.includes('send') && t.includes('contact') ||
+    t.includes('email /') ||
+    t.includes('телефон') ||
+    t.includes('telegram @') ||
+    t.includes('@username') ||
+    t.includes('зафиксировать') && t.includes('заявк') ||
+    t.includes('зафіксувати') && t.includes('заявк')
+  )
+}
+
+function stripContactAskBlock(text: string) {
+  const lines = String(text || '').split(/\r?\n/)
+  if (lines.length === 0) return text
+  // If a contact CTA appears near the end, drop it (and separator line right above it).
+  const lastIdx = lines.length - 1
+  const startSearch = Math.max(0, lastIdx - 12)
+  let cutAt = -1
+  for (let i = startSearch; i <= lastIdx; i += 1) {
+    if (containsContactAsk(lines[i])) {
+      cutAt = i
+      break
+    }
+  }
+  if (cutAt === -1) return text.trim()
+  let cut = cutAt
+  // Remove a preceding separator line like "—" or empty line blocks
+  while (cut > 0) {
+    const prev = lines[cut - 1].trim()
+    if (prev === '—' || prev === '-' || prev === '') cut -= 1
+    else break
+  }
+  const kept = lines.slice(0, cut).join('\n').trim()
+  return kept || text.trim()
+}
+
 function buildSystemPrompt(lang: ConversationLang, stage: string, history: Array<{ role: string; content: string }>) {
   const lastTurns = history
     .slice(-6)
@@ -249,14 +291,14 @@ function buildSystemPrompt(lang: ConversationLang, stage: string, history: Array
     .join(' | ')
   return [
     lang === 'ua'
-      ? 'Ти — AI‑асистент з впровадження систем автоматизації заявок.'
-      : 'Ты — AI‑ассистент по внедрению систем автоматизации заявок.',
+      ? 'Ти — живий sales‑менеджер компанії TemoWeb (AI‑асистент у Direct).'
+      : 'Ты — живой sales‑менеджер компании TemoWeb (AI‑ассистент в Direct).',
     lang === 'ua'
-      ? 'Стиль: професійно, дружелюбно, живо, без токсичності.'
-      : 'Стиль: профессионально, дружелюбно, живо, без токсичности.',
+      ? 'Стиль: професійно, дружелюбно, живо, як людина. Без токсичності.'
+      : 'Стиль: профессионально, дружелюбно, живо, как человек. Без токсичности.',
     lang === 'ua'
-      ? 'Ціль: допомогти клієнту та мʼяко довести до заявки.'
-      : 'Цель: помочь клиенту и мягко довести до заявки.',
+      ? 'Ціль: відповісти по суті та “продати” користь TemoWeb через прості приклади.'
+      : 'Цель: ответить по сути и “продать” пользу TemoWeb через простые примеры.',
     lang === 'ua'
       ? 'Завжди використовуй емодзі та читабельну структуру (короткі блоки, перенос рядків, "—").'
       : 'Всегда используй эмодзи и читабельную структуру (короткие блоки, перенос строк, "—").',
@@ -264,8 +306,17 @@ function buildSystemPrompt(lang: ConversationLang, stage: string, history: Array
       ? 'Не використовуй markdown‑зірочки.'
       : 'Не используй markdown‑звёздочки.',
     lang === 'ua'
-      ? 'Не проси контакти, поки стадія не ask_contact.'
-      : 'Не проси контакты, пока стадия не ask_contact.',
+      ? 'ПРАВИЛО: не проси контакти, поки стадія не ask_contact. Навіть якщо клієнт грубий/оффтоп — не тисни.'
+      : 'ПРАВИЛО: не проси контакты, пока стадия не ask_contact. Даже если клиент грубый/оффтоп — не дави.',
+    lang === 'ua'
+      ? 'Якщо стадія ask_contact: попроси контакт МАКСИМУМ 1 раз за кілька повідомлень, без копіпасти. Якщо клієнт не дає контакт — просто продовжуй відповідати по суті.'
+      : 'Если стадия ask_contact: попроси контакт МАКСИМУМ 1 раз за несколько сообщений, без копипасты. Если клиент не даёт контакт — просто продолжай отвечать по сути.',
+    lang === 'ua'
+      ? 'Оффтоп (погода/особисте): 1 коротка людська фраза + мʼякий поворот назад у бізнес. НЕ додавай “надішли контакт”.'
+      : 'Оффтоп (погода/личное): 1 короткая человеческая фраза + мягкий поворот обратно в бизнес. НЕ добавляй “отправь контакт”.',
+    lang === 'ua'
+      ? 'Питай максимум 1 уточнення за раз (ніша/канали/біль) і тільки якщо це допомагає відповісти.'
+      : 'Задавай максимум 1 уточнение за раз (ниша/каналы/боль) и только если это помогает ответить.',
     `Current stage: ${stage}.`,
     `Recent turns: ${lastTurns || 'none'}.`,
     lang === 'ua' ? 'Знання:' : 'Знания:',
@@ -693,9 +744,21 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
   const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
+  // Guardrail: if model tries to paste "send contact" too often, strip it unless we really are in ask_contact.
+  const recentAsks = history
+    .filter((m) => m.role === 'assistant')
+    .slice(-3)
+    .some((m) => containsContactAsk(m.content))
+  let reply = ai.reply
+  if (nextStage !== 'ask_contact') {
+    reply = stripContactAskBlock(reply)
+  } else if (recentAsks && containsContactAsk(reply)) {
+    // Don't repeat contact request every turn.
+    reply = stripContactAskBlock(reply)
+  }
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: ai.reply }].slice(-12) })
-  await sendInstagramMessage(senderId, ai.reply)
+  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
+  await sendInstagramMessage(senderId, reply)
 }
 
 export async function GET(request: NextRequest) {
