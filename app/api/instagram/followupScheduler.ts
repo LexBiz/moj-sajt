@@ -132,10 +132,11 @@ async function tickOnce() {
     const sent = await sendInstagramMessage(senderId, msg)
     if (!sent.ok) continue
 
+    const nextHistory: ConversationMessage[] = [...(Array.isArray(c.history) ? c.history : []), { role: 'assistant' as const, content: msg }].slice(-12) as any
     updateConversation(senderId, {
       followUpSentAt: nowIso(),
       lastAssistantAt: nowIso(),
-      history: [...(c.history || []), { role: 'assistant', content: msg }].slice(-12),
+      history: nextHistory,
     })
     console.log('IG followup sent', { senderId, at: nowIso() })
   }
