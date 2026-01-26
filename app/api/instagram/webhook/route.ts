@@ -143,9 +143,13 @@ function isUkrainianText(s: string) {
 
 function detectLangFromText(text: string): ConversationLang {
   const t = String(text || '').trim()
-  if (!t) return 'ru'
+  if (!t) return 'ua'
+  // Ukrainian has unique letters
   if (isUkrainianText(t) || /(\b(ви|ваш|ваша|ваші)\b)/i.test(t)) return 'ua'
-  return 'ru'
+  // Russian has letters that Ukrainian doesn't use (ы, э, ё)
+  if (/[ыэё]/i.test(t)) return 'ru'
+  // If unclear, default to Ukrainian 🇺🇦 (per requirement)
+  return 'ua'
 }
 
 function parseLangChoice(text: string): ConversationLang | null {
@@ -328,6 +332,10 @@ async function generateAiReply(params: {
     lang === 'ua'
       ? 'Це перше повідомлення в діалозі: обовʼязково представтесь як "персональний AI‑асистент TemoWeb" і відповідайте на "Ви".'
       : 'Это первое сообщение в диалоге: обязательно представьтесь как "персональный AI‑ассистент TemoWeb" и общайтесь на "Вы".'
+  const firstMsgLangAsk =
+    lang === 'ua'
+      ? 'У цьому ж першому повідомленні додайте 1 короткий рядок: "Якою мовою Вам зручніше: Русский 🇷🇺 чи Українська 🇺🇦? Якщо не скажете — відповідаю українською 🇺🇦."'
+      : 'В этом же первом сообщении добавьте 1 короткую строку: "На каком языке Вам удобно: Русский 🇷🇺 или Українська 🇺🇦? Если не скажете — по умолчанию отвечаю українською 🇺🇦."'
   const userContent =
     images.length > 0
       ? ([
@@ -346,7 +354,7 @@ async function generateAiReply(params: {
       model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: system },
-        ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }] : []),
+        ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
         ...historyMsgs,
         { role: 'user', content: userContent },
       ],
@@ -426,12 +434,76 @@ function ensureLeadsFile() {
   if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]))
 }
 
-function saveLeadFromInstagram(input: {
+type LeadReadiness = { score: number; label: 'COLD' | 'WARM' | 'HOT' | 'READY'; stage: string }
+
+function readinessLabel(score: number): LeadReadiness['label'] {
+  if (score >= 70) return 'READY'
+  if (score >= 55) return 'HOT'
+  if (score >= 30) return 'WARM'
+  return 'COLD'
+}
+
+async function generateLeadAiSummary(input: {
+  lang: ConversationLang
+  readiness: LeadReadiness
+  clientMessages: string[]
+}) {
+  const OPENAI_API_KEY = getOpenAiKey()
+  if (!OPENAI_API_KEY) return null
+
+  const payload = {
+    readiness: input.readiness,
+    clientMessages: input.clientMessages.slice(0, 18),
+  }
+
+  const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0.2,
+        max_tokens: 240,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              langLine,
+              'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM TemoWeb.',
+              'Можно использовать только данные из JSON (ничего не выдумывать).',
+              'Формат: 5–8 строк, каждая начинается с эмодзи.',
+              'Первая строка — готовность покупки: 🟢/🟡/🟠/🔴 + label + score.',
+              'Дальше: 🏷 ниша/бизнес (если есть), 😤 боль, 💬 что хочет, 🧩 следующий шаг.',
+              'Без markdown (#, **). Обращайся на "Вы/Ви".',
+            ].join(' '),
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const json = (await resp.json()) as any
+    const content = json?.choices?.[0]?.message?.content
+    const s = typeof content === 'string' ? content.trim() : ''
+    return s ? s.slice(0, 1200) : null
+  } catch {
+    return null
+  }
+}
+
+async function saveLeadFromInstagram(input: {
   senderId: string
   contact: { type: 'email' | 'phone' | 'telegram'; value: string }
   clientMessages: string[]
   lastMessage: string
   lang: ConversationLang
+  aiSummary: string | null
+  aiReadiness: LeadReadiness
 }) {
   ensureLeadsFile()
   const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
@@ -445,7 +517,8 @@ function saveLeadFromInstagram(input: {
     question: input.lastMessage || null,
     clientMessages: input.clientMessages.slice(0, 20),
     aiRecommendation: null,
-    aiSummary: null,
+    aiSummary: input.aiSummary,
+    aiReadiness: input.aiReadiness,
     source: 'instagram',
     lang: input.lang,
     notes: `senderId: ${input.senderId} | contactType: ${input.contact.type}`,
@@ -673,12 +746,21 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   }
 
   if (contact && conversation.leadId == null) {
-    const leadId = saveLeadFromInstagram({
+    const readiness = { score: readinessScore, label: readinessLabel(readinessScore), stage: computeStageHeuristic(text, readinessScore) }
+    const aiSummary =
+      (await generateLeadAiSummary({
+        lang,
+        readiness,
+        clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
+      })) || null
+    const leadId = await saveLeadFromInstagram({
       senderId,
       contact,
       clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
       lastMessage: text,
       lang,
+      aiSummary,
+      aiReadiness: readiness,
     })
     updateConversation(senderId, { stage: 'collected', leadId, history })
     await sendTelegramLead({ senderId, messageText: text, contactHint: contact.value })

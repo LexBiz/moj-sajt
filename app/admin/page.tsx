@@ -12,6 +12,7 @@ type Lead = {
   question: string | null
   clientMessages: string[] | null
   aiSummary: string | null
+  aiReadiness?: { score: number; label: 'COLD' | 'WARM' | 'HOT' | 'READY'; stage?: string | null } | null
   source: string | null
   lang: string | null
   notes?: string | null
@@ -707,6 +708,12 @@ export default function AdminPage() {
                       <span className="text-slate-400">Источник</span>
                       <span>{selected.source || '—'}{selected.lang ? ` (${selected.lang})` : ''}</span>
                     </div>
+                    {selected.aiReadiness ? (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-slate-400">Готовность</span>
+                        <span className="text-right">{selected.aiReadiness.label} ({Math.round(selected.aiReadiness.score)}/100)</span>
+                      </div>
+                    ) : null}
                     <div className="flex justify-between gap-3">
                       <span className="text-slate-400">Бизнес</span>
                       <span className="text-right">{selected.businessType || '—'}</span>
@@ -730,7 +737,14 @@ export default function AdminPage() {
 
                   {Array.isArray(selected.clientMessages) && selected.clientMessages.length ? (
                     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-xs text-slate-400 mb-2">Сообщения клиента</p>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <p className="text-xs text-slate-400">Сообщения клиента</p>
+                        {selected.aiReadiness ? (
+                          <span className="text-[11px] px-2 py-1 rounded-full border border-white/10 bg-white/5 text-slate-200">
+                            {selected.aiReadiness.label} · {Math.round(selected.aiReadiness.score)}/100
+                          </span>
+                        ) : null}
+                      </div>
                       <div className="space-y-2">
                         {selected.clientMessages.slice(0, 20).map((m, i) => (
                           <div key={i} className="text-sm text-slate-100 whitespace-pre-wrap border-l-2 border-indigo-400/40 pl-3">
