@@ -74,4 +74,17 @@ export function updateConversation(senderId: string, next: Partial<ConversationS
   return merged
 }
 
+export function deleteConversation(senderId: string) {
+  const all = loadAll()
+  if (all[senderId]) {
+    delete all[senderId]
+    saveAll(all)
+  }
+}
+
+export function resetConversation(senderId: string) {
+  deleteConversation(senderId)
+  return getConversation(senderId)
+}
+
 

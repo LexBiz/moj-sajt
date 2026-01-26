@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getInstagramWebhookState } from '../state'
+import { getBuildInfo } from '../../_build'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function GET() {
+  const build = getBuildInfo()
   const IG_VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || '').trim()
   const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
   const IG_SIGNATURE_BYPASS = (process.env.INSTAGRAM_SIGNATURE_BYPASS || '').trim() === 'true'
@@ -19,6 +21,7 @@ export async function GET() {
   return NextResponse.json(
     {
     ok: true,
+    build,
     instagram: {
       hasVerifyToken: Boolean(IG_VERIFY_TOKEN),
       hasAppSecret: Boolean(IG_APP_SECRET),

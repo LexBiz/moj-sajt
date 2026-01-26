@@ -3,6 +3,7 @@ import { requireAdmin } from '../_auth'
 import { readTokenFile, tokenMeta } from '../../oauth/_store'
 import { readInstagramAdminConfig } from '../_store'
 import { getInstagramWebhookState } from '../../state'
+import { getBuildInfo } from '../../../_build'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -14,10 +15,12 @@ export async function GET(request: NextRequest) {
   const cfg = readInstagramAdminConfig()
 
   const openaiKey = (process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || '').trim()
+  const build = getBuildInfo()
 
   return NextResponse.json(
     {
       ok: true,
+      build,
       auth: { ok: true },
       token: tokenFile?.accessToken ? { exists: true, meta: tokenMeta(tokenFile.accessToken), obtainedAt: tokenFile.obtainedAt } : { exists: false },
       selected: cfg,

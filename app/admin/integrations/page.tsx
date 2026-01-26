@@ -12,6 +12,7 @@ type PageAsset = {
 
 type StatusPayload = {
   ok: boolean
+  build?: { rev: string | null; short: string | null; source: 'git' | 'env' | 'none' }
   token?: { exists: boolean; meta?: { len: number; prefix: string; suffix: string }; obtainedAt?: string }
   selected?: { selectedPageId: string | null; selectedIgUserId: string | null; updatedAt: string | null }
   webhook?: {
@@ -186,6 +187,7 @@ export default function IntegrationsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [lastSendResult, setLastSendResult] = useState<any>(null)
+  const [lastResetResult, setLastResetResult] = useState<any>(null)
 
   const t = I18N[lang]
 
@@ -318,6 +320,28 @@ export default function IntegrationsPage() {
       await loadStatus()
     } catch (e: any) {
       setError(String(e?.message || e || 'Send failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resetConversation = async () => {
+    setBusy(true)
+    setError('')
+    setLastResetResult(null)
+    try {
+      const res = await fetch('/api/instagram/admin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ senderId: recipientId || status?.webhook?.lastSenderId || '' }),
+      })
+      const json = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) throw new Error(json?.error || 'Reset failed')
+      setLastResetResult(json)
+      // reload status right after reset
+      await loadStatus()
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Reset failed'))
     } finally {
       setBusy(false)
     }
@@ -556,8 +580,19 @@ export default function IntegrationsPage() {
             >
               {busy ? t.sending : t.sendFromApp}
             </button>
+            <button
+              onClick={resetConversation}
+              disabled={busy || !(recipientId || status?.webhook?.lastSenderId)}
+              className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
+              title="Reset stored conversation state for this sender"
+            >
+              Reset convo
+            </button>
             <span className="text-xs text-slate-500">
               {t.usingApi}: {status?.env?.apiHost}/{status?.env?.apiVersion}
+            </span>
+            <span className="text-xs text-slate-500">
+              • Build: {status?.build?.short ? `${status.build.short} (${status.build.source})` : '—'}
             </span>
             <span className="text-xs text-slate-500">
               • OpenAI: {status?.env?.openai?.hasKey ? `${status?.env?.openai?.model} (${status?.env?.openai?.keyMeta?.prefix}…${status?.env?.openai?.keyMeta?.suffix})` : 'NO KEY'}
@@ -567,6 +602,11 @@ export default function IntegrationsPage() {
           {lastSendResult ? (
             <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
               <pre>{JSON.stringify(lastSendResult, null, 2)}</pre>
+            </div>
+          ) : null}
+          {lastResetResult ? (
+            <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
+              <pre>{JSON.stringify(lastResetResult, null, 2)}</pre>
             </div>
           ) : null}
         </div>
