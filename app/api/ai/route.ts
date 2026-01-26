@@ -171,7 +171,7 @@ async function callOpenAI(
     console.error('OPENAI_API_KEY is missing; using fallback')
     return { content: null, summary: null, error: 'missing_api_key' }
   }
-  // Language: default UA, but allow explicit switch command.
+  // Language: default UA, switch only by explicit user command (or explicit request.lang).
   const hist = Array.isArray(history) ? history : []
   const lastUser = [...hist].reverse().find((m) => m.role === 'user')?.content || ''
   const explicit = parseLangSwitch(lastUser)

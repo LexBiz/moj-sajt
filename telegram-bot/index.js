@@ -403,54 +403,29 @@ function buildSystemPrompt(lang) {
   return core.join('\n')
 }
 
-function buildWelcome(lang) {
-  const base = lang === 'ru'
-    ? [
-        `Здравствуйте! 👋 Я персональный AI‑ассистент ${BRAND_NAME}.`,
-        '',
-        'Я здесь, чтобы за 2–3 минуты:',
-        '• объяснить на примере, как AI‑ассистент принесёт тебе деньги 💸',
-        '• назвать цену и сроки без “менеджеров и звонков” ✅',
-        '• оформить заявку прямо в этом чате (контакт + краткий итог) 📩',
-        '',
-        'Что мы делаем в TemoWeb:',
-        '• AI‑ассистент отвечает, продаёт и записывает 24/7 ⚡️',
-        '• заявки из Instagram/сайта/WhatsApp → в один поток 🎯',
-        '• меньше ручной рутины, меньше потерь 🔥',
-        '',
-        'Сразу по делу: выбирай язык и пиши, что у тебя за бизнес 👇',
-        '',
-        'Выбери язык общения:',
-      ]
-    : [
-        `Вітаю! 👋 Я персональний AI‑асистент ${BRAND_NAME}.`,
-        '',
-        'Хто ми і що робимо:',
-        '• AI‑асистенти, які продають, відповідають і записують клієнтів 24/7',
-        '• Збираємо заявки з Instagram/сайту/месенджерів в один потік',
-        '• Прибираємо хаос і ручну переписку',
-        '',
-        'Що отримаєш у результаті:',
-        '• Менше втрачених клієнтів',
-        '• Швидші відповіді і зрозумілий статус кожної заявки',
-        '• Запуск 3–7 днів (пілот), складні кейси 10–14 днів',
-        '',
-        'Пруфи:',
-        '• Покажу кейси і сценарій під твій бізнес',
-        '• Ціни прозорі, без “прихованих робіт”',
-        '',
-        'Обери мову спілкування:',
-      ]
-  return [...base].join('\n')
-}
-
-function buildLanguageKeyboard() {
-  return Markup.inlineKeyboard([
-    Markup.button.callback('Українська', 'lang:ua'),
-    Markup.button.callback('Русский', 'lang:ru'),
-    Markup.button.callback('English', 'lang:en'),
-    Markup.button.url('🌐 Сайт', BRAND_SITE_URL),
-  ])
+function buildWelcomeShort(lang) {
+  if (lang === 'ru') {
+    return [
+      `Здравствуйте! 👋 Я персональный AI‑ассистент ${BRAND_NAME}.`,
+      'Можно написать, на каком языке Вам удобно. Если не скажете — по умолчанию українською 🇺🇦.',
+      '',
+      'Чем могу помочь по вашему бизнесу? (ниша + откуда идут заявки)',
+    ].join('\n')
+  }
+  if (lang === 'en') {
+    return [
+      `Hi! 👋 I’m your personal AI assistant from ${BRAND_NAME}.`,
+      'You can tell me which language you prefer. If you don’t — default is Ukrainian 🇺🇦.',
+      '',
+      'What business are you in and where do leads come from?',
+    ].join('\n')
+  }
+  return [
+    `Вітаю! 👋 Я персональний AI‑асистент ${BRAND_NAME}.`,
+    'Можете написати, якою мовою Вам зручно. Якщо не скажете — за замовчуванням українською 🇺🇦.',
+    '',
+    'Чим можу допомогти по Вашому бізнесу? (ніша + звідки йдуть заявки)',
+  ].join('\n')
 }
 
 function buildLeadKeyboard() {
@@ -649,14 +624,17 @@ bot.start(async (ctx) => {
       await ctx.replyWithPhoto(BRAND_LOGO_URL).catch(() => null)
     }
   } catch {}
-  // If user already configured BotFather "before start" welcome, keep /start message short.
-  await ctx.reply(buildWelcome('ru'), { ...buildLanguageKeyboard(), disable_web_page_preview: true })
+  const chatId = String(ctx.chat.id)
+  // Unified behavior: default UA, no language keyboard. User can switch by text ("говорите на русском").
+  setSession(chatId, { lang: 'ua', stage: 'chat', intakeMisses: 0, business: null, channels: null, pain: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
+  await ctx.reply(buildWelcomeShort('ua'), { disable_web_page_preview: true })
 })
 
 bot.command('reset', async (ctx) => {
   const chatId = String(ctx.chat.id)
-  setSession(chatId, { lang: null, stage: 'business', intakeMisses: 0, business: null, channels: null, pain: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
-  await ctx.reply('Сессия сброшена. Выбери язык общения:', buildLanguageKeyboard())
+  setSession(chatId, { lang: 'ua', stage: 'chat', intakeMisses: 0, business: null, channels: null, pain: null, history: [], leadSentAt: null, contact: null, updatedAt: nowIso() })
+  await ctx.reply('Сесію скинуто ✅')
+  await ctx.reply(buildWelcomeShort('ua'))
 })
 
 bot.command('lead', async (ctx) => {
@@ -717,26 +695,7 @@ bot.on('callback_query', async (ctx) => {
     await ctx.reply('Готово ✅ Резюме отправлено владельцу. Добавь контакт (email/@username/телефон) — чтобы мы сразу стартанули.')
     return
   }
-  if (!data.startsWith('lang:')) return
-  const lang = data.split(':')[1]
-  const chatId = String(ctx.chat.id)
-  const { session } = getSession(chatId)
-  const next = {
-    ...session,
-    lang,
-    stage: 'chat',
-    intakeMisses: session.intakeMisses || 0,
-    business: session.business || null,
-    channels: session.channels || null,
-    pain: session.pain || null,
-    history: session.history || [],
-    leadSentAt: session.leadSentAt || null,
-    contact: session.contact || null,
-    updatedAt: nowIso(),
-  }
-  setSession(chatId, next)
-  await ctx.answerCbQuery(`Язык: ${lang.toUpperCase()}`)
-  await ctx.reply(buildWelcome(lang))
+  await ctx.answerCbQuery('Ок')
 })
 
 bot.on('text', async (ctx) => {
@@ -754,6 +713,15 @@ bot.on('text', async (ctx) => {
     setSession(chatId, { ...session, lang, stage: 'chat', updatedAt: nowIso() })
   }
   const history = Array.isArray(session.history) ? session.history : []
+
+  // If user greets — greet back (no long lecture).
+  if (isGreeting(userText) && history.length < 2) {
+    const greet = buildWelcomeShort(lang)
+    const updated = [...history, { role: 'user', content: userText }, { role: 'assistant', content: greet }].slice(-MAX_MODEL_MESSAGES)
+    setSession(chatId, { ...session, lang, stage: 'chat', history: updated, updatedAt: nowIso() })
+    await ctx.reply(greet)
+    return
+  }
   const maybe = detectContact(userText)
   const nextContact = maybe || session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
 
