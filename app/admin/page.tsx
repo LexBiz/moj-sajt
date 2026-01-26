@@ -663,34 +663,35 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <p className="text-xs text-slate-400">Контакт</p>
-                        <p className="text-lg font-bold text-white break-all">{selected.contact}</p>
+                        <p className="text-lg font-bold text-white break-all">{(selected as any)?.contact ? String((selected as any).contact) : '—'}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => navigator.clipboard.writeText(selected.contact)}
+                          onClick={() => navigator.clipboard.writeText(String((selected as any)?.contact || ''))}
                           className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                          disabled={!String((selected as any)?.contact || '').trim()}
                         >
                           Копировать
                         </button>
-                        {selected.contact.startsWith('@') ? (
+                        {String((selected as any)?.contact || '').startsWith('@') ? (
                           <a
-                            href={`https://t.me/${selected.contact.slice(1)}`}
+                            href={`https://t.me/${String((selected as any)?.contact || '').slice(1)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
                           >
                             Telegram
                           </a>
-                        ) : /\S+@\S+\.\S+/.test(selected.contact) ? (
+                        ) : /\S+@\S+\.\S+/.test(String((selected as any)?.contact || '')) ? (
                           <a
-                            href={`mailto:${selected.contact}`}
+                            href={`mailto:${String((selected as any)?.contact || '')}`}
                             className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
                           >
                             Email
                           </a>
-                        ) : /^[+\d][\d\s().-]{6,}$/.test(selected.contact) ? (
+                        ) : /^[+\d][\d\s().-]{6,}$/.test(String((selected as any)?.contact || '')) ? (
                           <a
-                            href={`tel:${selected.contact.replace(/[^\d+]/g, '')}`}
+                            href={`tel:${String((selected as any)?.contact || '').replace(/[^\d+]/g, '')}`}
                             className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
                           >
                             Позвонить
