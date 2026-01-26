@@ -20,8 +20,9 @@
 #
 # После этого:
 # - https://example.com/              → основной сайт (Next.js)
-# - https://deploy.example.com/       → админка загрузки
+# - https://deploy.example.com/       → админка загрузки (вариант A)
 # - https://client1.example.com/      → опубликованный сайт client1
+# - https://example.com/mynetlify/admin/ → админка загрузки в одном домене (вариант B)
 
 {
   email you@example.com
@@ -34,6 +35,13 @@
 
 example.com {
   encode zstd gzip
+
+  # Вариант B (рекомендуется): “мой нетифай” живёт в одном домене под путём /mynetlify/*
+  # Тогда можно встроить его в Next.js админку (например /admin/netlify).
+  handle_path /mynetlify/* {
+    reverse_proxy 127.0.0.1:3100
+  }
+
   reverse_proxy 127.0.0.1:3000
 }
 
@@ -45,5 +53,6 @@ deploy.example.com, *.example.com {
   encode zstd gzip
   reverse_proxy 127.0.0.1:3100
 }
+
 
 

@@ -55,6 +55,22 @@ npm start
 
 Файл с примером конфигурации: `Caddyfile.example` (on-demand TLS).
 
+## “Одна админка на одном домене” (рекомендуется)
+
+Если у тебя Next.js админка уже живёт на `https://example.com/admin`, можно сделать так, чтобы
+“мой нетифай” тоже открывался **на этом же домене**, без отдельного поддомена:
+
+- `https://example.com/admin` → CRM/интеграции (Next.js)
+- `https://example.com/mynetlify/admin/` → админка “мой нетифай”
+
+Для этого в Caddy добавь правило **до** `reverse_proxy` на Next.js:
+
+```caddy
+handle_path /mynetlify/* {
+  reverse_proxy 127.0.0.1:3100
+}
+```
+
 ## Ограничения MVP
 
 - Это **не билд‑система** (как Netlify build). Это публикация “как есть”.

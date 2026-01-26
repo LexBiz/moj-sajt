@@ -373,12 +373,6 @@ export default function IntegrationsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href="/admin"
-              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold"
-            >
-              {t.backToCrm}
-            </a>
             <button
               onClick={() => {
                 localStorage.removeItem('adminPassword')
