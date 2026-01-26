@@ -5,6 +5,7 @@ import { readTokenFile } from '../oauth/_store'
 import { getConversation, updateConversation, type ConversationLang, type ConversationMessage } from '../conversationStore'
 import fs from 'fs'
 import path from 'path'
+import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -151,14 +152,14 @@ function parseLangChoice(text: string): ConversationLang | null {
 
 function t(lang: ConversationLang, key: string) {
   const RU: Record<string, string> = {
-    chooseLang: ['Привет! 👋 Я AI‑ассистент.', 'Выбери удобный язык:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    chooseLang: ['Привет! 👋 Менеджер TemoWeb на связи.', 'Выбери удобный язык:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
     askRepeating: 'Супер ✅ Теперь напиши, пожалуйста, одним сообщением, что нужно — я отвечу. 🙂',
     contactOk: ['Спасибо! ✅ Контакт получил.', '—', 'Я посмотрю детали и вернусь с конкретным планом.', 'Для точности: ниша + средний чек + источник заявок. 💬'].join('\n'),
     contactFix: ['Похоже, контакт указан не полностью. 🙌', 'Отправь корректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— или Telegram @username'].join('\n'),
     askContact: ['Круто, я понял задачу ✅', '—', 'Чтобы продолжить и зафиксировать заявку, отправь контакт:', 'email / телефон / Telegram @username'].join('\n'),
   }
   const UA: Record<string, string> = {
-    chooseLang: ['Привіт! 👋 Я AI‑асистент.', 'Обери зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    chooseLang: ['Привіт! 👋 Менеджер TemoWeb на звʼязку.', 'Обери зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
     askRepeating: 'Супер ✅ Тепер напиши, будь ласка, одним повідомленням, що потрібно — я відповім. 🙂',
     contactOk: ['Дякую! ✅ Контакт отримав.', '—', 'Перегляну деталі й повернусь з конкретним планом.', 'Для точності: ніша + середній чек + джерело заявок. 💬'].join('\n'),
     contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішли, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
@@ -284,46 +285,7 @@ function stripContactAskBlock(text: string) {
   return kept || text.trim()
 }
 
-function buildSystemPrompt(lang: ConversationLang, stage: string, history: Array<{ role: string; content: string }>) {
-  const lastTurns = history
-    .slice(-6)
-    .map((m) => `${m.role === 'user' ? 'Клиент' : 'Бот'}: ${clip(m.content, 220)}`)
-    .join(' | ')
-  return [
-    lang === 'ua'
-      ? 'Ти — живий sales‑менеджер компанії TemoWeb (AI‑асистент у Direct).'
-      : 'Ты — живой sales‑менеджер компании TemoWeb (AI‑ассистент в Direct).',
-    lang === 'ua'
-      ? 'Стиль: професійно, дружелюбно, живо, як людина. Без токсичності.'
-      : 'Стиль: профессионально, дружелюбно, живо, как человек. Без токсичности.',
-    lang === 'ua'
-      ? 'Ціль: відповісти по суті та “продати” користь TemoWeb через прості приклади.'
-      : 'Цель: ответить по сути и “продать” пользу TemoWeb через простые примеры.',
-    lang === 'ua'
-      ? 'Завжди використовуй емодзі та читабельну структуру (короткі блоки, перенос рядків, "—").'
-      : 'Всегда используй эмодзи и читабельную структуру (короткие блоки, перенос строк, "—").',
-    lang === 'ua'
-      ? 'Не використовуй markdown‑зірочки.'
-      : 'Не используй markdown‑звёздочки.',
-    lang === 'ua'
-      ? 'ПРАВИЛО: не проси контакти, поки стадія не ask_contact. Навіть якщо клієнт грубий/оффтоп — не тисни.'
-      : 'ПРАВИЛО: не проси контакты, пока стадия не ask_contact. Даже если клиент грубый/оффтоп — не дави.',
-    lang === 'ua'
-      ? 'Якщо стадія ask_contact: попроси контакт МАКСИМУМ 1 раз за кілька повідомлень, без копіпасти. Якщо клієнт не дає контакт — просто продовжуй відповідати по суті.'
-      : 'Если стадия ask_contact: попроси контакт МАКСИМУМ 1 раз за несколько сообщений, без копипасты. Если клиент не даёт контакт — просто продолжай отвечать по сути.',
-    lang === 'ua'
-      ? 'Оффтоп (погода/особисте): 1 коротка людська фраза + мʼякий поворот назад у бізнес. НЕ додавай “надішли контакт”.'
-      : 'Оффтоп (погода/личное): 1 короткая человеческая фраза + мягкий поворот обратно в бизнес. НЕ добавляй “отправь контакт”.',
-    lang === 'ua'
-      ? 'Питай максимум 1 уточнення за раз (ніша/канали/біль) і тільки якщо це допомагає відповісти.'
-      : 'Задавай максимум 1 уточнение за раз (ниша/каналы/боль) и только если это помогает ответить.',
-    `Current stage: ${stage}.`,
-    `Recent turns: ${lastTurns || 'none'}.`,
-    lang === 'ua' ? 'Знання:' : 'Знания:',
-    '- Запуск: 3–7 дней (пилот), сложные интеграции 10–14 дней.',
-    '- Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €.',
-    '- Пилот: полный пакет за $299 (5 мест).',
-  ].join(' ')
+// readiness scoring + stage heuristic live in ../../temowebPrompt
 }
 
 async function generateAiReply(params: {
@@ -332,8 +294,10 @@ async function generateAiReply(params: {
   stage: string
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   images?: string[]
+  readinessScore?: number
+  channel?: 'instagram'
 }) {
-  const { userText, lang, stage, history, images = [] } = params
+  const { userText, lang, stage, history, images = [], readinessScore = 0 } = params
   const OPENAI_API_KEY = getOpenAiKey()
   if (!OPENAI_API_KEY) {
     return {
@@ -346,7 +310,12 @@ async function generateAiReply(params: {
     }
   }
 
-  const system = buildSystemPrompt(lang, stage, history)
+  const system = buildTemoWebSystemPrompt({
+    lang,
+    channel: 'instagram',
+    stage: computeStageHeuristic(userText, readinessScore),
+    readinessScore,
+  })
   const historyMsgs = history.slice(-8).map((m) => ({ role: m.role, content: m.content }))
   const userContent =
     images.length > 0
@@ -476,12 +445,18 @@ function saveLeadFromInstagram(input: {
   return newLead.id
 }
 
-function shouldAskForContact(stage: string, text: string, userTurns: number) {
+function shouldAskForContact(stage: string, text: string, userTurns: number, readinessScore: number) {
   if (stage === 'ask_contact' || stage === 'collected' || stage === 'done') return false
-  if (detectLeadIntent(text) || detectBookingIntent(text)) return true
-  if (/цена|стоимость|пакет|срок|подключ/i.test(text)) return true
+  // ASK_CONTACT is allowed only when score is high enough (per the prompt).
+  if (readinessScore < 55) return false
+  // Clear "start intent" signals
+  if (/(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(text)) return true
+  // Booking intent implies readiness, but still keep it non-early.
+  if (detectBookingIntent(text)) return true
+  // Price/package questions: move to contact only after some context is collected.
+  if (userTurns >= 3 && /цена|стоимость|пакет|тариф|срок/i.test(text)) return true
   // Ask for contact ONLY when user indicates readiness (otherwise it looks like a шаблон).
-  if (userTurns >= 3 && stage !== 'new' && detectReadyToProceed(text)) return true
+  if (userTurns >= 4 && stage !== 'new' && detectReadyToProceed(text)) return true
   return false
 }
 
@@ -657,16 +632,16 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     const reply =
       lang === 'ua'
         ? [
-            'Так 😊 Я AI‑асистент.',
+            'Я менеджер TemoWeb 🙂',
             '—',
-            'Я відповідаю тут у Direct і допомагаю розібратись з автоматизацією заявок.',
-            'Щоб я був максимально корисним: яка у тебе ніша і звідки зараз приходять заявки? 💬',
+            'Пишу тут у Direct і допомагаю розібратись, як автоматизація може принести більше заявок і забрати ручну рутину.',
+            'Щоб підказати точніше: яка у тебе ніша і звідки зараз приходять клієнти?',
           ].join('\n')
         : [
-            'Да 😊 Я AI‑ассистент.',
+            'Я менеджер TemoWeb 🙂',
             '—',
-            'Я отвечаю здесь в Direct и помогаю с автоматизацией заявок.',
-            'Чтобы быть полезным: какая у тебя ниша и откуда сейчас приходят заявки? 💬',
+            'Пишу здесь в Direct и помогаю разобраться, как автоматизация может принести больше заявок и убрать ручную рутину.',
+            'Чтобы подсказать точнее: какая у тебя ниша и откуда сейчас приходят клиенты?',
           ].join('\n')
 
     const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-12) as ConversationMessage[]
@@ -678,6 +653,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-12) as ConversationMessage[]
   const userTurns = history.filter((m) => m.role === 'user').length
   const contact = normalizeContact(text)
+  const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
 
   // Always store the message first
   updateConversation(senderId, { history })
@@ -731,7 +707,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
-  const nextStage = shouldAskForContact(conversation.stage, text, userTurns) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
+  const nextStage = shouldAskForContact(conversation.stage, text, userTurns, readinessScore) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
   updateConversation(senderId, { stage: nextStage, history })
 
   const images = media.filter((m) => m.kind === 'image').map((m) => m.url)
@@ -743,7 +719,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       : text || (images.length > 0 ? '[Image sent]' : '')
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
-  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
+  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram' })
   // Guardrail: if model tries to paste "send contact" too often, strip it unless we really are in ask_contact.
   const recentAsks = history
     .filter((m) => m.role === 'assistant')

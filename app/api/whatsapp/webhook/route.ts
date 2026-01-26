@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
+import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -69,22 +70,18 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   }
 }
 
-function buildSystemPrompt() {
-  return [
-    'Ты — AI-менеджер по продажам систем автоматизации заявок (WhatsApp).',
-    'Стиль: уверенно, дерзко, остроумно, без оскорблений личности.',
-    'Цель: агрессивная продажа через факты и контраст “как сейчас” vs “как после системы”.',
-    'Запрещено: вода, лекции, советы “сделай сам”.',
-    'Формат: короткие абзацы или маркеры, без markdown (#, **).',
-    'Если спрашивают цену/сроки/пакеты — отвечай прямо.',
-    'Пакеты: 600–900 €, 1200–1500 €, 2000–3000 €. Пилот: $299 (5 мест).',
-  ].join(' ')
-}
-
 async function generateAiReply(userText: string) {
   if (!OPENAI_API_KEY) {
     return 'Принято. Напиши нишу и где приходят заявки — покажу, как автоматизация заберёт это на себя.'
   }
+  const userTurns = 1
+  const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
+  const system = buildTemoWebSystemPrompt({
+    lang: 'ru',
+    channel: 'whatsapp',
+    stage: computeStageHeuristic(userText, readinessScore),
+    readinessScore,
+  })
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -94,7 +91,7 @@ async function generateAiReply(userText: string) {
     body: JSON.stringify({
       model: OPENAI_MODEL,
       messages: [
-        { role: 'system', content: buildSystemPrompt() },
+        { role: 'system', content: system },
         { role: 'user', content: userText },
       ],
       temperature: 0.8,

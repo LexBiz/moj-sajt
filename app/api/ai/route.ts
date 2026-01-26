@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
 
 type AiRequest = {
   businessType?: string
@@ -267,7 +268,7 @@ function normalizeAnswer(text: string) {
   return out.trim()
 }
 
-function buildSystemPrompt(lng: ReturnType<typeof getLang>) {
+function buildLegacySystemPrompt(lng: ReturnType<typeof getLang>) {
   if (lng === 'ru') {
     return [
       'Ты — живой, остроумный AI-интерфейс готовой системы приёма заявок (не “консультант”).',
@@ -335,13 +336,23 @@ async function callOpenAI(
     return { content: null, summary: null, error: 'missing_api_key' }
   }
   const lng = getLang(lang)
+  // Use the new TemoWeb prompt for UA/RU (website channel). Keep legacy for CZ.
   const langSystem =
     lng === 'ru'
       ? 'Отвечай только на русском.'
       : lng === 'cz'
       ? 'Odpovídej pouze česky.'
       : 'Відповідай тільки українською.'
-  const systemPrompt = buildSystemPrompt(lng)
+  const systemPrompt =
+    lng === 'cz'
+      ? buildLegacySystemPrompt(lng)
+      : (() => {
+          const lastUser = Array.isArray(history) ? [...history].reverse().find((m) => m.role === 'user')?.content || '' : ''
+          const userTurns = Array.isArray(history) ? history.filter((m) => m.role === 'user').length : 1
+          const readinessScore = computeReadinessScoreHeuristic(lastUser, userTurns)
+          const stage = computeStageHeuristic(lastUser, readinessScore)
+          return buildTemoWebSystemPrompt({ lang: lng === 'ru' ? 'ru' : 'ua', channel: 'website', stage, readinessScore })
+        })()
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -354,7 +365,7 @@ async function callOpenAI(
       messages: [
         {
           role: 'system',
-          content: `${langSystem} ${systemPrompt}`,
+          content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
         },
         { role: 'system', content: context },
         ...(history || []),
