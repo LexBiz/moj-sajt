@@ -210,6 +210,15 @@ function detectReadyToProceed(text: string) {
   )
 }
 
+function detectResetIntent(text: string) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return false
+  return (
+    /^(давай\s+заново|заново|с\s*начала|сначала|по\s*новой|з\s*нуля|обнули|обнулить|reset|restart|start\s*over)\b/i.test(t) ||
+    /\b(давай\s+заново|почнемо\s+заново|почати\s+заново|з\s*нуля|обнули|reset|restart|start\s*over)\b/i.test(t)
+  )
+}
+
 function normalizeContact(text: string) {
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]
   if (email) return { type: 'email' as const, value: email.trim() }
@@ -555,6 +564,19 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const conversation = getConversation(senderId)
   const lang = conversation.lang
   const maybeLang = parseLangChoice(text)
+
+  // Hard reset: user asks to "start over" -> clear conversation state and restart language selection.
+  if (detectResetIntent(text)) {
+    updateConversation(senderId, {
+      stage: 'new',
+      lang: null,
+      pendingText: null,
+      history: [],
+      leadId: null,
+    })
+    await sendInstagramMessage(senderId, t('ru', 'chooseLang'))
+    return
+  }
 
   // language selection gate
   if (!lang) {
