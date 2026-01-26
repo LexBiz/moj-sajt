@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { recordInstagramWebhook } from '../state'
+import { recordInstagramAi, recordInstagramWebhook } from '../state'
 import { readTokenFile } from '../oauth/_store'
 import { getConversation, updateConversation, type ConversationLang, type ConversationMessage } from '../conversationStore'
 import fs from 'fs'
@@ -53,9 +53,21 @@ const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
 const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
 const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim()
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-const OPENAI_TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1'
+function getOpenAiKey() {
+  // Support both names (people often set OPENAI_KEY by habit).
+  const k = (process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || '').trim()
+  return k
+}
+
+function openAiKeyMeta(k: string) {
+  const key = (k || '').trim()
+  return key
+    ? { len: key.length, prefix: key.slice(0, 4), suffix: key.slice(-4) }
+    : { len: 0, prefix: null as any, suffix: null as any }
+}
+
+const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
@@ -259,10 +271,16 @@ async function generateAiReply(params: {
   images?: string[]
 }) {
   const { userText, lang, stage, history, images = [] } = params
+  const OPENAI_API_KEY = getOpenAiKey()
   if (!OPENAI_API_KEY) {
-    return lang === 'ua'
-      ? 'Привіт! 👋 Дай 1–2 деталі: який бізнес і звідки йдуть заявки — покажу, як це автоматизуємо. 🚀'
-      : 'Привет! 👋 Дай 1–2 детали: какой бизнес и откуда приходят заявки — покажу, как это автоматизируем. 🚀'
+    return {
+      reply:
+        lang === 'ua'
+          ? 'Привіт! 👋 Напиши 1–2 деталі: ніша + звідки зараз йдуть заявки — і я покажу, як це автоматизуємо. 🚀'
+          : 'Привет! 👋 Напиши 1–2 детали: ниша + откуда сейчас идут заявки — и я покажу, как это автоматизируем. 🚀',
+      provider: 'fallback' as const,
+      detail: 'missing_openai_key',
+    }
   }
 
   const system = buildSystemPrompt(lang, stage, history)
@@ -298,17 +316,26 @@ async function generateAiReply(params: {
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     console.error('OpenAI error', response.status, text.slice(0, 400))
-    return lang === 'ua'
-      ? 'Я на звʼязку ✅ Напиши коротко: ніша + джерело заявок — і я покажу рішення. ✍️'
-      : 'Я на связи ✅ Напиши коротко: ниша + источник заявок — и я покажу решение. ✍️'
+    return {
+      reply:
+        lang === 'ua'
+          ? 'Я на звʼязку ✅ Напиши коротко: ніша + джерело заявок — і я покажу рішення. ✍️'
+          : 'Я на связи ✅ Напиши коротко: ниша + источник заявок — и я покажу решение. ✍️',
+      provider: 'fallback' as const,
+      detail: `openai_http_${response.status}`,
+    }
   }
 
   const json = (await response.json()) as any
   const content = json?.choices?.[0]?.message?.content
   if (typeof content !== 'string') {
-    return lang === 'ua' ? 'Дай 1–2 деталі по бізнесу — і я зберу рішення. 💡' : 'Дай 1–2 детали по бизнесу — и я соберу решение. 💡'
+    return {
+      reply: lang === 'ua' ? 'Дай 1–2 деталі по бізнесу — і я зберу рішення. 💡' : 'Дай 1–2 детали по бизнесу — и я соберу решение. 💡',
+      provider: 'fallback' as const,
+      detail: 'openai_bad_response',
+    }
   }
-  return clip(content.trim(), 1000)
+  return { reply: clip(content.trim(), 1000), provider: 'openai' as const, detail: null }
 }
 
 async function fetchBinary(url: string) {
@@ -322,6 +349,7 @@ async function fetchBinary(url: string) {
 }
 
 async function transcribeAudio(url: string) {
+  const OPENAI_API_KEY = getOpenAiKey()
   if (!OPENAI_API_KEY) return null
   const buf = await fetchBinary(url)
   if (!buf) return null
@@ -625,9 +653,10 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       ? `${text}\n\n[Voice message transcript]: ${transcript}`
       : text || (images.length > 0 ? '[Image sent]' : '')
 
-  const reply = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
-  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
-  await sendInstagramMessage(senderId, reply)
+  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images })
+  recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: ai.reply }].slice(-12) })
+  await sendInstagramMessage(senderId, ai.reply)
 }
 
 export async function GET(request: NextRequest) {
@@ -646,6 +675,7 @@ export async function POST(request: NextRequest) {
   const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
   const IG_ACCESS_TOKEN = getAccessToken()
+  const OPENAI_API_KEY = getOpenAiKey()
 
   console.log('IG webhook: received', {
     hasSignature: Boolean(signature),
@@ -656,6 +686,11 @@ export async function POST(request: NextRequest) {
     hasAccessToken: Boolean(IG_ACCESS_TOKEN),
     hasIgUserId: Boolean(IG_USER_ID),
     igUserIdLast4: IG_USER_ID ? IG_USER_ID.slice(-4) : null,
+    openai: {
+      hasKey: Boolean(OPENAI_API_KEY),
+      model: OPENAI_MODEL,
+      keyMeta: Boolean(OPENAI_API_KEY) ? openAiKeyMeta(OPENAI_API_KEY) : null,
+    },
   })
   console.log('IG webhook: raw preview', safeJsonPreview(rawBuffer, 1400))
 

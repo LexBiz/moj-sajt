@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
   const tokenFile = readTokenFile()
   const cfg = readInstagramAdminConfig()
 
+  const openaiKey = (process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || '').trim()
+
   return NextResponse.json(
     {
       ok: true,
@@ -25,11 +27,18 @@ export async function GET(request: NextRequest) {
         hasIgUserId: Boolean((process.env.INSTAGRAM_IG_USER_ID || '').trim()),
         apiHost: (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim(),
         apiVersion: (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim(),
+        openai: {
+          hasKey: Boolean(openaiKey),
+          model: (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim(),
+          keyMeta: openaiKey ? { len: openaiKey.length, prefix: openaiKey.slice(0, 4), suffix: openaiKey.slice(-4) } : null,
+        },
       },
     },
     { headers: { 'Cache-Control': 'no-store, max-age=0' } },
   )
 }
+
+
 
 
 

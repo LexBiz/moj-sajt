@@ -13,6 +13,8 @@ export async function GET() {
   const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
   const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim()
   const IG_DEBUG_SECRET = (process.env.INSTAGRAM_DEBUG_SECRET || '').trim()
+  const OPENAI_KEY = (process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || '').trim()
+  const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 
   return NextResponse.json(
     {
@@ -36,6 +38,11 @@ export async function GET() {
         host: IG_API_HOST,
         version: IG_API_VERSION,
       },
+    },
+    openai: {
+      hasKey: Boolean(OPENAI_KEY),
+      model: OPENAI_MODEL,
+      keyMeta: OPENAI_KEY ? { len: OPENAI_KEY.length, prefix: OPENAI_KEY.slice(0, 4), suffix: OPENAI_KEY.slice(-4) } : null,
     },
     instagramWebhook: getInstagramWebhookState(),
     },

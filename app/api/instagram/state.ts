@@ -4,6 +4,9 @@ export type InstagramWebhookState = {
   lastObject: string | null
   lastSenderId: string | null
   lastTextPreview: string | null
+  lastAiProvider?: 'openai' | 'fallback' | null
+  lastAiDetail?: string | null
+  lastAiAt?: string | null
 }
 
 import fs from 'fs'
@@ -15,6 +18,9 @@ const state: InstagramWebhookState = {
   lastObject: null,
   lastSenderId: null,
   lastTextPreview: null,
+  lastAiProvider: null,
+  lastAiDetail: null,
+  lastAiAt: null,
 }
 
 const STATE_FILE = process.env.INSTAGRAM_WEBHOOK_STATE_FILE || 'data/instagram-webhook-state.json'
@@ -29,6 +35,10 @@ function loadFromDisk() {
     if (typeof parsed.lastObject === 'string' || parsed.lastObject === null) state.lastObject = parsed.lastObject ?? null
     if (typeof parsed.lastSenderId === 'string' || parsed.lastSenderId === null) state.lastSenderId = parsed.lastSenderId ?? null
     if (typeof parsed.lastTextPreview === 'string' || parsed.lastTextPreview === null) state.lastTextPreview = parsed.lastTextPreview ?? null
+    if (parsed.lastAiProvider === 'openai' || parsed.lastAiProvider === 'fallback' || parsed.lastAiProvider === null)
+      state.lastAiProvider = parsed.lastAiProvider ?? null
+    if (typeof parsed.lastAiDetail === 'string' || parsed.lastAiDetail === null) state.lastAiDetail = parsed.lastAiDetail ?? null
+    if (typeof parsed.lastAiAt === 'string' || parsed.lastAiAt === null) state.lastAiAt = parsed.lastAiAt ?? null
   } catch {
     // ignore
   }
@@ -57,6 +67,15 @@ export function recordInstagramWebhook(payload: {
   state.lastObject = payload.object ?? null
   if (payload.senderId) state.lastSenderId = payload.senderId
   if (payload.textPreview) state.lastTextPreview = payload.textPreview
+  saveToDisk()
+}
+
+// Update only AI diagnostics (do NOT increment totalReceived).
+export function recordInstagramAi(payload: { provider: 'openai' | 'fallback'; detail?: string | null }) {
+  loadFromDisk()
+  state.lastAiProvider = payload.provider
+  state.lastAiDetail = payload.detail ?? null
+  state.lastAiAt = new Date().toISOString()
   saveToDisk()
 }
 

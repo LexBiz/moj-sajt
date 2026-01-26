@@ -15,7 +15,13 @@ type StatusPayload = {
   token?: { exists: boolean; meta?: { len: number; prefix: string; suffix: string }; obtainedAt?: string }
   selected?: { selectedPageId: string | null; selectedIgUserId: string | null; updatedAt: string | null }
   webhook?: { totalReceived: number; lastReceivedAt: string | null; lastObject: string | null; lastSenderId: string | null; lastTextPreview: string | null }
-  env?: { hasAccessToken: boolean; hasIgUserId: boolean; apiHost: string; apiVersion: string }
+  env?: {
+    hasAccessToken: boolean
+    hasIgUserId: boolean
+    apiHost: string
+    apiVersion: string
+    openai?: { hasKey: boolean; model: string; keyMeta: { len: number; prefix: string; suffix: string } | null }
+  }
   error?: string
 }
 
@@ -538,6 +544,9 @@ export default function IntegrationsPage() {
             </button>
             <span className="text-xs text-slate-500">
               {t.usingApi}: {status?.env?.apiHost}/{status?.env?.apiVersion}
+            </span>
+            <span className="text-xs text-slate-500">
+              • OpenAI: {status?.env?.openai?.hasKey ? `${status?.env?.openai?.model} (${status?.env?.openai?.keyMeta?.prefix}…${status?.env?.openai?.keyMeta?.suffix})` : 'NO KEY'}
             </span>
           </div>
 
