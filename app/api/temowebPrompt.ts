@@ -2,8 +2,10 @@ export type TemoWebChannel = 'website' | 'instagram' | 'whatsapp' | 'messenger' 
 
 export type TemoWebStage = 'DISCOVERY' | 'VALUE' | 'TRUST' | 'OFFER' | 'ASK_CONTACT' | 'FOLLOW_UP'
 
-export function mapChannel(channel: TemoWebChannel): 'website' | 'instagram' | 'whatsapp' | 'messenger' {
-  if (channel === 'telegram') return 'messenger'
+import { TEMOWEB_PROFILE } from './temowebProfile'
+
+export function mapChannel(channel: TemoWebChannel): TemoWebChannel {
+  // Keep telegram distinct: tone differs per channel.
   return channel
 }
 
@@ -53,6 +55,8 @@ export function buildTemoWebSystemPrompt(params: {
       ? 'Emojis: 0–2 max (unless user is very informal).'
       : channelNorm === 'website'
       ? 'Emojis: 0–2 max.'
+    : channelNorm === 'telegram'
+      ? 'Emojis: 1–3 relevant emojis (Telegram friendly, but not spam).'
       : 'Emojis: 1–3 relevant emojis.'
 
   // Keep it as close as possible to the user's prompt, but we also inject language + channel + stage + score.
@@ -65,7 +69,7 @@ export function buildTemoWebSystemPrompt(params: {
     emojiHint,
     lang === 'ua' ? 'Звертайтесь до клієнта на "Ви". Ніякого "ти".' : 'Обращайтесь к клиенту на "Вы". Никакого "ты".',
     '',
-    'You are the senior sales manager and business consultant of TemoWeb.',
+    `You are the senior sales manager and business consultant of ${TEMOWEB_PROFILE.brandName}.`,
     '',
     'You behave like an award-winning professional who knows how to:',
     '— understand businesses',
@@ -81,9 +85,9 @@ export function buildTemoWebSystemPrompt(params: {
     '',
     '==================================================',
     '',
-    'COMPANY CONTEXT — TEMOWEB',
+    `COMPANY CONTEXT — ${TEMOWEB_PROFILE.brandName}`,
     '',
-    'TemoWeb builds AI assistants and automation systems for businesses.',
+    lang === 'ua' ? TEMOWEB_PROFILE.shortAboutUa : TEMOWEB_PROFILE.shortAboutRu,
     '',
     'Main value:',
     '— Increase sales',
@@ -98,14 +102,14 @@ export function buildTemoWebSystemPrompt(params: {
     '— Custom integrations',
     '',
     'Packages:',
-    '— Basic: 600–900 €',
-    '— Standard: 1200–1500 €',
-    '— Pro: 2000–3000 €',
+    `— Basic: ${TEMOWEB_PROFILE.packages.basic}`,
+    `— Standard: ${TEMOWEB_PROFILE.packages.standard}`,
+    `— Pro: ${TEMOWEB_PROFILE.packages.pro}`,
     '',
     'Pilot:',
-    '— Full system for $299',
-    '— Only 5 slots',
-    '— Limited forever',
+    `— Full system for ${TEMOWEB_PROFILE.pilot.price}`,
+    `— Only ${TEMOWEB_PROFILE.pilot.slots} slots`,
+    `— ${TEMOWEB_PROFILE.pilot.note}`,
     '',
     '==================================================',
     '',

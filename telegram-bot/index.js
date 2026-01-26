@@ -15,6 +15,7 @@ const BRAND_LOGO_URL = String(process.env.TELEGRAM_BRAND_LOGO_URL || 'https://te
 const BRAND_TAGLINE_RU = String(process.env.TELEGRAM_BRAND_TAGLINE_RU || 'AI‑ассистенты, которые продают и записывают клиентов 24/7').trim()
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const TEMOWEB_AI_URL = String(process.env.TEMOWEB_AI_URL || 'http://127.0.0.1:3013/api/ai').trim()
 const TEMOWEB_LEADS_INGEST_URL = String(process.env.TEMOWEB_LEADS_INGEST_URL || '').trim()
 const TEMOWEB_LEADS_INGEST_SECRET = String(process.env.TEMOWEB_LEADS_INGEST_SECRET || '').trim()
 
@@ -120,6 +121,16 @@ function isGreeting(text) {
   return /^(привет|здравствуй|здравствуйте|хай|hi|hello|hey|yo|добрый\s*(день|вечер|утро)|как\s*дела|как\s*ты|как\s*жизнь|что\s*нового|че\s*как|як\s*справи|як\s*ти|how\s*are\s*you)\b[\s!.]*$/i.test(
     s
   )
+}
+
+function parseLangSwitch(text) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return null
+  if (/(говори|говорите|разговаривай|пиши|пишіть|пиши)\s+.*(рус|рос|russian)/i.test(t)) return 'ru'
+  if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(укр|укра|ukrain)/i.test(t)) return 'ua'
+  if (/\bрус(ский|ском)\b/i.test(t)) return 'ru'
+  if (/\bукра(їнськ|инск|їнською)\b/i.test(t)) return 'ua'
+  return null
 }
 
 function validateBusinessAnswer(text) {
@@ -450,41 +461,41 @@ function buildLeadKeyboard() {
 }
 
 async function callOpenAI(history, lang, extraContextText) {
-  if (!OPENAI_API_KEY) {
-    return 'Система готова. Пиши суть бизнеса — покажу, как быстро автоматизация продаёт и экономит.'
+  // Use the unified TemoWeb prompt via the Next.js /api/ai endpoint (channel-aware).
+  // This keeps behavior consistent with Instagram/Website and only changes tone by currentChannel.
+  try {
+    const resp = await fetch(TEMOWEB_AI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentChannel: 'telegram',
+        lang: lang || undefined,
+        mode: 'post',
+        history,
+        // Keep extra intake context as optional structured hints (won't override persona).
+        pain: null,
+        question: null,
+        channel: null,
+        businessType: null,
+        aiSummary: extraContextText || null,
+      }),
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      console.error('TEMOWEB_AI_URL http error', resp.status, t.slice(0, 240))
+      return lang === 'ru'
+        ? 'Ок ✅ Напишите 1–2 детали (ниша + откуда заявки) — и я предложу схему.'
+        : 'Ок ✅ Напишіть 1–2 деталі (ніша + звідки заявки) — і я запропоную схему.'
+    }
+    const json = await resp.json().catch(() => null)
+    const answer = json?.answer || json?.recommendation || json?.content || null
+    return normalizeAnswer(answer || '')
+  } catch (e) {
+    console.error('TEMOWEB_AI_URL exception', e?.message || e)
+    return lang === 'ru'
+      ? 'Ок ✅ Напишите 1–2 детали (ниша + откуда заявки) — и я предложу схему.'
+      : 'Ок ✅ Напишіть 1–2 деталі (ніша + звідки заявки) — і я запропоную схему.'
   }
-
-  const messages = [
-    { role: 'system', content: buildSystemPrompt(lang) },
-    ...(extraContextText ? [{ role: 'system', content: extraContextText }] : []),
-    ...history,
-  ]
-
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages,
-      temperature: 0.9,
-      presence_penalty: 0.2,
-      frequency_penalty: 0.2,
-      max_tokens: 420,
-    }),
-  })
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '')
-    console.error('OpenAI error', resp.status, text.slice(0, 300))
-    return 'Система в онлайне. Дай пару деталей по бизнесу — покажу точную схему и цену.'
-  }
-
-  const json = await resp.json()
-  const content = json?.choices?.[0]?.message?.content
-  return normalizeAnswer(content)
 }
 
 async function callOpenAISummary(payload) {
@@ -713,7 +724,7 @@ bot.on('callback_query', async (ctx) => {
   const next = {
     ...session,
     lang,
-    stage: 'business',
+    stage: 'chat',
     intakeMisses: session.intakeMisses || 0,
     business: session.business || null,
     channels: session.channels || null,
@@ -725,34 +736,28 @@ bot.on('callback_query', async (ctx) => {
   }
   setSession(chatId, next)
   await ctx.answerCbQuery(`Язык: ${lang.toUpperCase()}`)
-  await ctx.reply(
-    [
-      'Супер ✅',
-      '',
-      'Начнём быстро:',
-      '• какой у тебя бизнес?',
-      '',
-      'Пример: “кофейня”, “салон”, “ремонт телефонов”, “онлайн‑школа”.',
-    ].join('\n')
-  )
+  await ctx.reply(buildWelcome(lang))
 })
 
 bot.on('text', async (ctx) => {
   const chatId = String(ctx.chat.id)
   const { session } = getSession(chatId)
-  const lang = session.lang || null
-
-  if (!lang) {
-    await ctx.reply('Сначала выбери язык общения:', buildLanguageKeyboard())
-    return
-  }
+  // Default language like Instagram: Ukrainian unless user explicitly asks to switch.
+  const baseLang = session.lang || 'ua'
 
   const userText = ctx.message.text.trim()
+  const requestedLang = parseLangSwitch(userText)
+  const lang = requestedLang || baseLang
+
+  // Force unified behavior: always chat stage (like Instagram).
+  if (!session.lang || session.stage !== 'chat' || (requestedLang && requestedLang !== session.lang)) {
+    setSession(chatId, { ...session, lang, stage: 'chat', updatedAt: nowIso() })
+  }
   const history = Array.isArray(session.history) ? session.history : []
   const maybe = detectContact(userText)
   const nextContact = maybe || session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
 
-  const stage = session.stage || 'business'
+  const stage = 'chat'
   const intakeMisses = Number(session.intakeMisses || 0)
 
   // Setup stages: business -> channels -> pain -> chat
