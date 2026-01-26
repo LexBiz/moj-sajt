@@ -198,6 +198,22 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function nowIso() {
+  return new Date().toISOString()
+}
+
+function parseLangSwitch(text: string): ConversationLang | null {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return null
+  // "Speak Russian/Ukrainian" style commands
+  if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(рус|рос|russian)/i.test(t)) return 'ru'
+  if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(укр|укра|ukrain)/i.test(t)) return 'ua'
+  // Direct mentions
+  if (/\bрус(ский|ском)\b/i.test(t)) return 'ru'
+  if (/\bукра(їнськ|инск|їнською)\b/i.test(t)) return 'ua'
+  return null
+}
+
 function detectBookingIntent(text: string) {
   return /(запис|запиш|брон|бронь|встреч|созвон|консультац|демо|demo|call|appointment)/i.test(text)
 }
@@ -685,6 +701,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       leadId: null,
     })
     await sendInstagramMessage(senderId, t(detectLangFromText(text), 'chooseLang'))
+    updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
@@ -694,6 +711,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     if (maybeLang) {
       updateConversation(senderId, { lang: maybeLang, pendingText: null })
       await sendInstagramMessage(senderId, t(maybeLang, 'askRepeating'))
+      updateConversation(senderId, { lastAssistantAt: nowIso() })
       return
     }
     // Auto language by first message text.
@@ -708,6 +726,29 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
   if (maybeLang && maybeLang === lang && text.trim().length <= 3) return
+
+  // Allow switching language at any time.
+  const switchLang = parseLangSwitch(text)
+  if (switchLang && switchLang !== lang) {
+    updateConversation(senderId, { lang: switchLang })
+    const ai = await generateAiReply({
+      userText:
+        switchLang === 'ua'
+          ? 'Client asked to switch language to Ukrainian. Confirm politely and continue.'
+          : 'Client asked to switch language to Russian. Confirm politely and continue.',
+      lang: switchLang,
+      stage: conversation.stage || 'qualify',
+      history: conversation.history as any,
+      images: [],
+      readinessScore: 35,
+      channel: 'instagram',
+    })
+    recordInstagramAi({ provider: ai.provider, detail: ai.detail })
+    const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: ai.reply }].slice(-12) as any
+    updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso() })
+    await sendInstagramMessage(senderId, ai.reply)
+    return
+  }
 
   // Handle "are you real AI/bot" type questions early (do NOT jump to contact request)
   if (detectAiIdentityQuestion(text)) {
@@ -729,6 +770,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-12) as ConversationMessage[]
     updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history })
     await sendInstagramMessage(senderId, reply)
+    updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
@@ -738,7 +780,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
 
   // Always store the message first
-  updateConversation(senderId, { history })
+  updateConversation(senderId, { history, lastUserAt: nowIso() })
 
   if (!isAllowedSender(senderId)) {
     console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
@@ -776,6 +818,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
     updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
+    updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
@@ -795,6 +838,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactFix')
     updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
     await sendInstagramMessage(senderId, reply)
+    updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
@@ -826,6 +870,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
   updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
   await sendInstagramMessage(senderId, reply)
+  updateConversation(senderId, { lastAssistantAt: nowIso() })
 }
 
 export async function GET(request: NextRequest) {
