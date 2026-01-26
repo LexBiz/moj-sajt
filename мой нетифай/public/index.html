@@ -99,6 +99,21 @@
       let knownSites = new Set();
       let pendingRedeploySlug = null;
 
+      // If served behind a path proxy (e.g. https://example.com/mynetlify/admin/),
+      // all API calls must include the base path (/mynetlify). When served at root
+      // (e.g. https://deploy.example.com/admin/), base path is empty.
+      function basePath() {
+        const p = String(location.pathname || "");
+        const idx = p.indexOf("/admin");
+        if (idx <= 0) return "";
+        const base = p.slice(0, idx);
+        return base === "/" ? "" : base;
+      }
+
+      function apiUrl(path) {
+        return basePath() + path;
+      }
+
       tokenEl.value = localStorage.getItem("adminToken") || "";
       tokenEl.addEventListener("input", () => localStorage.setItem("adminToken", tokenEl.value));
       $("clearToken").addEventListener("click", () => {
@@ -117,7 +132,7 @@
 
       function buildPublicUrl(slug) {
         if (rootDomain) return `https://${slug}.${rootDomain}/`;
-        return `${location.origin}/sites/${slug}/`;
+        return `${location.origin}${apiUrl("")}/sites/${slug}/`;
       }
 
       async function copyToClipboard(text) {
@@ -145,7 +160,7 @@
       async function refreshSites() {
         sitesEl.innerHTML = "";
         try {
-          const r = await fetch("/api/sites", { headers: { ...authHeaders() } });
+          const r = await fetch(apiUrl("/api/sites"), { headers: { ...authHeaders() } });
           const data = await r.json().catch(() => ({}));
           if (!r.ok) throw data;
           rootDomain = data.rootDomain || null;
@@ -189,7 +204,7 @@
           sitesEl.querySelectorAll("button[data-del]").forEach((b) => {
             b.addEventListener("click", async () => {
               if (!confirm(`Удалить сайт ${b.dataset.del}?`)) return;
-              const r = await fetch(`/api/sites/${b.dataset.del}`, { method: "DELETE", headers: { ...authHeaders() } });
+              const r = await fetch(apiUrl(`/api/sites/${b.dataset.del}`), { method: "DELETE", headers: { ...authHeaders() } });
               const data = await r.json().catch(() => ({}));
               if (!r.ok) return setOut(data);
               setOut({ ok: true });
@@ -222,7 +237,7 @@
         if (!overwriteSlug && knownSites.has(name)) {
           const ok = confirm(`Сайт "${name}" уже существует. Перезаписать (redeploy) вместо создания "${name}-2"?`);
           if (ok) {
-            const r = await fetch(`/api/sites/${encodeURIComponent(name)}`, { method: "PUT", body: fd, headers: { ...authHeaders() } });
+            const r = await fetch(apiUrl(`/api/sites/${encodeURIComponent(name)}`), { method: "PUT", body: fd, headers: { ...authHeaders() } });
             const data = await r.json().catch(() => ({}));
             if (!r.ok) return setOut(data);
             setOut(data);
@@ -231,7 +246,7 @@
           }
         }
 
-        const target = overwriteSlug ? `/api/sites/${encodeURIComponent(overwriteSlug)}` : "/api/sites";
+        const target = overwriteSlug ? apiUrl(`/api/sites/${encodeURIComponent(overwriteSlug)}`) : apiUrl("/api/sites");
         const method = overwriteSlug ? "PUT" : "POST";
         const r = await fetch(target, { method, body: fd, headers: { ...authHeaders() } });
         const data = await r.json().catch(() => ({}));
