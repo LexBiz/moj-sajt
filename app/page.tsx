@@ -529,13 +529,13 @@ export default function Home() {
                   </div>
 
                   {/* Packages (premium cards) */}
-                  <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="md:grid md:gap-6 md:grid-cols-3 flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
                     {pricing.map((p) => {
                       const isPopular = p.key === 'business'
                       return (
                         <div
                           key={p.key}
-                          className={`relative rounded-[28px] border p-7 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_35px_110px_rgba(0,0,0,0.45)] ${
+                          className={`relative rounded-[28px] border p-7 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_35px_110px_rgba(0,0,0,0.45)] snap-start flex-shrink-0 w-[88%] sm:w-[70%] md:w-auto ${
                             isPopular
                               ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 to-white/5'
                               : 'border-white/10 bg-white/5 hover:border-white/20'
@@ -560,11 +560,15 @@ export default function Home() {
                             <div className="rounded-2xl bg-black/20 border border-white/10 p-4 space-y-2">
                               <div className="flex items-center justify-between text-sm">
                                 <span className="text-white/60">{profileLang === 'ua' ? 'Впровадження' : 'Внедрение'}</span>
-                                <span className="text-white font-black">{p.setup}</span>
+                                <span className="text-white font-black text-lg sm:text-xl drop-shadow-[0_10px_30px_rgba(255,255,255,0.25)]">
+                                  {p.setup}
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="text-white/60">{profileLang === 'ua' ? 'Підтримка' : 'Поддержка'}</span>
-                                <span className="text-white font-black">{p.support}</span>
+                                <span className="text-white font-black text-lg sm:text-xl drop-shadow-[0_10px_30px_rgba(255,255,255,0.25)]">
+                                  {p.support}
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="text-white/60">{profileLang === 'ua' ? 'Мін. строк' : 'Мин. срок'}</span>
@@ -623,9 +627,12 @@ export default function Home() {
                   {/* Add-ons */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.addonsTitle}</h4>
-                    <div className="grid gap-5 lg:grid-cols-2">
+                    <div className="lg:grid lg:gap-5 lg:grid-cols-2 flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
                       {addons.map((a) => (
-                        <div key={a.key} className="rounded-[26px] bg-white/5 border border-white/10 p-6 hover:border-white/20 transition-all">
+                        <div
+                          key={a.key}
+                          className="rounded-[26px] bg-white/5 border border-white/10 p-6 hover:border-white/20 transition-all snap-start flex-shrink-0 w-[88%] sm:w-[70%] lg:w-auto"
+                        >
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-2">
                               <p className="text-base font-black text-white">{a.title}</p>
