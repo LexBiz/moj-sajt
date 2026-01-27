@@ -21,6 +21,10 @@ type StatusPayload = {
     lastObject: string | null
     lastSenderId: string | null
     lastTextPreview: string | null
+    lastCommentId?: string | null
+    lastCommentReplyId?: string | null
+    lastCommentReplyOk?: boolean | null
+    lastCommentReplyError?: string | null
     lastAiProvider?: 'openai' | 'fallback' | null
     lastAiDetail?: string | null
     lastAiAt?: string | null
@@ -188,6 +192,7 @@ export default function IntegrationsPage() {
   const [error, setError] = useState('')
   const [lastSendResult, setLastSendResult] = useState<any>(null)
   const [lastResetResult, setLastResetResult] = useState<any>(null)
+  const [lastCommentDebug, setLastCommentDebug] = useState<any>(null)
 
   const t = I18N[lang]
 
@@ -370,6 +375,24 @@ export default function IntegrationsPage() {
     }
   }
 
+  const debugLastComment = async () => {
+    setBusy(true)
+    setError('')
+    setLastCommentDebug(null)
+    try {
+      const cid = status?.webhook?.lastCommentId
+      if (!cid) throw new Error('No lastCommentId yet (write a comment first)')
+      const res = await fetch(`/api/instagram/admin/comment_debug?commentId=${encodeURIComponent(String(cid))}`, { headers: authHeader })
+      const json = await res.json().catch(() => ({}))
+      setLastCommentDebug(json)
+      if (!res.ok) throw new Error(json?.error || 'Debug failed')
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Debug failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
@@ -489,10 +512,24 @@ export default function IntegrationsPage() {
                 {t.lastReceived}: {webhook?.lastReceivedAt ?? '—'}
               </div>
               <div className="text-xs text-slate-500">
+                Comment: {webhook?.lastCommentId ? `${String(webhook.lastCommentId).slice(0, 8)}…` : '—'}{' '}
+                {webhook?.lastCommentReplyOk === true ? '✅ replied' : webhook?.lastCommentReplyOk === false ? `❌ ${webhook?.lastCommentReplyError || 'error'}` : ''}
+              </div>
+              <div className="text-xs text-slate-500">
                 AI: {webhook?.lastAiProvider ? webhook.lastAiProvider : '—'}
                 {webhook?.lastAiDetail ? ` • ${clip(webhook.lastAiDetail, 160)}` : ''}
                 {webhook?.lastAiAt ? ` • ${webhook.lastAiAt}` : ''}
               </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={debugLastComment}
+                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
+                disabled={busy || !webhook?.lastCommentId}
+                title="Fetch comment + replies via Graph API to verify whether the reply exists."
+              >
+                Check last comment replies
+              </button>
             </div>
           </div>
         </div>
@@ -638,6 +675,11 @@ export default function IntegrationsPage() {
           {lastResetResult ? (
             <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
               <pre>{JSON.stringify(lastResetResult, null, 2)}</pre>
+            </div>
+          ) : null}
+          {lastCommentDebug ? (
+            <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-xs text-slate-200 overflow-auto">
+              <pre>{JSON.stringify(lastCommentDebug, null, 2)}</pre>
             </div>
           ) : null}
         </div>

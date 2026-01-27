@@ -4,6 +4,10 @@ export type InstagramWebhookState = {
   lastObject: string | null
   lastSenderId: string | null
   lastTextPreview: string | null
+  lastCommentId?: string | null
+  lastCommentReplyId?: string | null
+  lastCommentReplyOk?: boolean | null
+  lastCommentReplyError?: string | null
   lastAiProvider?: 'openai' | 'fallback' | null
   lastAiDetail?: string | null
   lastAiAt?: string | null
@@ -18,6 +22,10 @@ const state: InstagramWebhookState = {
   lastObject: null,
   lastSenderId: null,
   lastTextPreview: null,
+  lastCommentId: null,
+  lastCommentReplyId: null,
+  lastCommentReplyOk: null,
+  lastCommentReplyError: null,
   lastAiProvider: null,
   lastAiDetail: null,
   lastAiAt: null,
@@ -35,6 +43,13 @@ function loadFromDisk() {
     if (typeof parsed.lastObject === 'string' || parsed.lastObject === null) state.lastObject = parsed.lastObject ?? null
     if (typeof parsed.lastSenderId === 'string' || parsed.lastSenderId === null) state.lastSenderId = parsed.lastSenderId ?? null
     if (typeof parsed.lastTextPreview === 'string' || parsed.lastTextPreview === null) state.lastTextPreview = parsed.lastTextPreview ?? null
+    if (typeof (parsed as any).lastCommentId === 'string' || (parsed as any).lastCommentId === null) state.lastCommentId = (parsed as any).lastCommentId ?? null
+    if (typeof (parsed as any).lastCommentReplyId === 'string' || (parsed as any).lastCommentReplyId === null)
+      state.lastCommentReplyId = (parsed as any).lastCommentReplyId ?? null
+    if (typeof (parsed as any).lastCommentReplyOk === 'boolean' || (parsed as any).lastCommentReplyOk === null)
+      state.lastCommentReplyOk = (parsed as any).lastCommentReplyOk ?? null
+    if (typeof (parsed as any).lastCommentReplyError === 'string' || (parsed as any).lastCommentReplyError === null)
+      state.lastCommentReplyError = (parsed as any).lastCommentReplyError ?? null
     if (parsed.lastAiProvider === 'openai' || parsed.lastAiProvider === 'fallback' || parsed.lastAiProvider === null)
       state.lastAiProvider = parsed.lastAiProvider ?? null
     if (typeof parsed.lastAiDetail === 'string' || parsed.lastAiDetail === null) state.lastAiDetail = parsed.lastAiDetail ?? null
@@ -59,6 +74,10 @@ export function recordInstagramWebhook(payload: {
   object?: string | null
   senderId?: string | null
   textPreview?: string | null
+  commentId?: string | null
+  commentReplyId?: string | null
+  commentReplyOk?: boolean | null
+  commentReplyError?: string | null
 }) {
   // lazy-load once on first use
   if (state.totalReceived === 0 && state.lastReceivedAt === null) loadFromDisk()
@@ -67,6 +86,10 @@ export function recordInstagramWebhook(payload: {
   state.lastObject = payload.object ?? null
   if (payload.senderId) state.lastSenderId = payload.senderId
   if (payload.textPreview) state.lastTextPreview = payload.textPreview
+  if (typeof payload.commentId === 'string' || payload.commentId === null) state.lastCommentId = payload.commentId ?? null
+  if (typeof payload.commentReplyId === 'string' || payload.commentReplyId === null) state.lastCommentReplyId = payload.commentReplyId ?? null
+  if (typeof payload.commentReplyOk === 'boolean' || payload.commentReplyOk === null) state.lastCommentReplyOk = payload.commentReplyOk ?? null
+  if (typeof payload.commentReplyError === 'string' || payload.commentReplyError === null) state.lastCommentReplyError = payload.commentReplyError ?? null
   saveToDisk()
 }
 

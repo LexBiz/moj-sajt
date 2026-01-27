@@ -150,7 +150,16 @@ async function sendInstagramCommentReply(commentId: string, message: string) {
     console.error('IG comment reply error', resp.status, t.slice(0, 300))
     return { ok: false as const, error: `http_${resp.status}` as const }
   }
-  return { ok: true as const }
+  const text = await resp.text().catch(() => '')
+  const json = (() => {
+    try {
+      return JSON.parse(text) as any
+    } catch {
+      return null
+    }
+  })()
+  const replyId = typeof json?.id === 'string' ? json.id : null
+  return { ok: true as const, replyId }
 }
 
 async function generateCommentAiReply(params: { text: string; lang: ConversationLang }) {
@@ -236,10 +245,14 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   // Try sending comment reply using available ids (comment_id first, then fallback).
   let sentOk = false
   let lastErr: string | null = null
+  let replyId: string | null = null
+  let usedCommentId: string | null = null
   for (const cid of commentIdCandidates) {
     const sent = await sendInstagramCommentReply(cid, reply)
     if (sent.ok) {
       sentOk = true
+      replyId = (sent as any).replyId || null
+      usedCommentId = cid
       break
     }
     lastErr = sent.error
@@ -272,6 +285,10 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
       `comment:${fromUsername ? `${fromUsername}: ` : ''}${text}${sentOk ? ' ✅replied' : lastErr ? ` ❌${lastErr}` : ''}`,
       120
     ),
+    commentId: usedCommentId || (commentIdPrimary || commentIdFallback) || null,
+    commentReplyId: replyId,
+    commentReplyOk: sentOk,
+    commentReplyError: sentOk ? null : lastErr,
   })
 
   return { processed: sentOk }
