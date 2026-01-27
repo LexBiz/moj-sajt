@@ -174,10 +174,27 @@ function isPlusSignal(text: string) {
 function detectCommentLang(text: string): ConversationLang {
   const t = String(text || '').trim()
   if (!t) return 'ua'
+
+  // Hard default UA for very short / symbol-only comments (prevents random EN/RU)
+  if (isPlusSignal(t)) return 'ua'
+  if (isEmojiOrLikeOnly(t)) return 'ua'
+  if (t.length <= 3) return 'ua'
+
+  // Strong Ukrainian markers
   if (/[іїєґ]/i.test(t)) return 'ua'
+  if (/\b(дякую|будь\s*ласка|як|це|працює|скільки|ціна|можна|підкажіть|потрібно|хочу)\b/i.test(t)) return 'ua'
+
+  // Strong Russian markers
   if (/[ыэё]/i.test(t)) return 'ru'
-  if (/[a-z]/i.test(t) && !/[а-яіїєґ]/i.test(t)) return 'en'
-  // fallback: default UA
+  if (/\b(спасибо|пожалуйста|как|это|работает|сколько|цена|можно|подскажите|нужно|хочу|проверить)\b/i.test(t)) return 'ru'
+
+  // English: only if there are enough latin letters and no Cyrillic at all
+  const hasLatin = /[a-z]/i.test(t)
+  const hasCyr = /[а-яіїєґ]/i.test(t)
+  const latinCount = (t.match(/[a-z]/gi) || []).length
+  if (hasLatin && !hasCyr && latinCount >= 6) return 'en'
+
+  // default UA (per requirement)
   return 'ua'
 }
 
@@ -476,7 +493,7 @@ function detectLangFromText(text: string): ConversationLang {
   const t = String(text || '').trim()
   if (!t) return 'ua'
   // Ukrainian has unique letters
-  if (isUkrainianText(t) || /(\b(ви|ваш|ваша|ваші)\b)/i.test(t)) return 'ua'
+  if (isUkrainianText(t) || /(\b(ви|ваші)\b)/i.test(t)) return 'ua'
   // Russian has letters that Ukrainian doesn't use (ы, э, ё)
   if (/[ыэё]/i.test(t)) return 'ru'
   // Common Russian words (helps for texts without ы/э/ё)
