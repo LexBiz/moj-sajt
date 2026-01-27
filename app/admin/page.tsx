@@ -4,6 +4,7 @@ import { useMemo, useEffect, useState } from 'react'
 type LeadStatus = 'new' | 'contacted' | 'qualified' | 'won' | 'lost' | 'junk'
 type Lead = {
   id: number
+  tenantId?: string | null
   name: string | null
   contact: string
   email?: string | null
@@ -105,6 +106,8 @@ export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
+  const [tenantId, setTenantId] = useState<string>('temoweb')
+  const [tenants, setTenants] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
@@ -124,7 +127,7 @@ export default function AdminPage() {
     setError('')
 
     try {
-      const response = await fetch('/api/leads', {
+      const response = await fetch(`/api/leads?tenantId=${encodeURIComponent(tenantId || 'temoweb')}`, {
         headers: {
           'Authorization': `Bearer ${password}`
         }
@@ -133,6 +136,7 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json()
         setLeads(data)
+        await loadTenants(password)
         setIsAuthenticated(true)
         localStorage.setItem('adminPassword', password)
       } else {
@@ -145,12 +149,29 @@ export default function AdminPage() {
     }
   }
 
+  const loadTenants = async (savedPassword?: string) => {
+    const p = savedPassword || localStorage.getItem('adminPassword') || ''
+    if (!p) return
+    try {
+      const res = await fetch('/api/tenants', { headers: { Authorization: `Bearer ${p}` } })
+      if (!res.ok) return
+      const json = (await res.json().catch(() => ({}))) as any
+      const list = Array.isArray(json?.tenants) ? json.tenants : []
+      const compact = list
+        .map((t: any) => ({ id: String(t?.id || ''), name: String(t?.name || t?.id || '') }))
+        .filter((t: any) => t.id)
+      setTenants(compact)
+    } catch {
+      // ignore
+    }
+  }
+
   const loadLeads = async () => {
     const savedPassword = localStorage.getItem('adminPassword')
     if (!savedPassword) return
 
     try {
-      const response = await fetch('/api/leads', {
+      const response = await fetch(`/api/leads?tenantId=${encodeURIComponent(tenantId || 'temoweb')}`, {
         headers: {
           'Authorization': `Bearer ${savedPassword}`
         }
@@ -172,7 +193,7 @@ export default function AdminPage() {
     if (!savedPassword) return
     setLoading(true)
     try {
-      const response = await fetch('/api/leads', {
+      const response = await fetch(`/api/leads?tenantId=${encodeURIComponent(tenantId || 'temoweb')}`, {
         headers: { Authorization: `Bearer ${savedPassword}` },
       })
       if (!response.ok) throw new Error('Failed')
@@ -186,8 +207,28 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    // Restore active tenant before first load
+    try {
+      const savedTenant = (localStorage.getItem('activeTenantId') || '').trim()
+      if (savedTenant) setTenantId(savedTenant)
+    } catch {
+      // ignore
+    }
     loadLeads()
+    loadTenants()
   }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('activeTenantId', tenantId)
+    } catch {
+      // ignore
+    }
+    if (isAuthenticated) {
+      refresh()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId])
 
   // Persist filters/search “like home”
   useEffect(() => {
@@ -379,6 +420,21 @@ export default function AdminPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
+              <select
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                disabled={loading}
+                title="К какому клиенту (tenant) относятся заявки"
+              >
+                {(tenants.length ? tenants : [{ id: 'temoweb', name: 'TemoWeb (внутренний)' }]).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <input
                 type="password"
                 value={password}
@@ -421,6 +477,18 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <select
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm"
+                title="Активный клиент (tenant)"
+              >
+                {(tenants.length ? tenants : [{ id: 'temoweb', name: 'TemoWeb (внутренний)' }]).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
               <button
                 onClick={refresh}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"

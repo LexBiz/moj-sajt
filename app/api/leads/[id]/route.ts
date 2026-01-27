@@ -3,6 +3,14 @@ import fs from 'fs'
 import path from 'path'
 
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+const DEFAULT_TENANT_ID = 'temoweb'
+
+function normalizeTenantId(input: unknown) {
+  const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
+  if (!raw) return DEFAULT_TENANT_ID
+  const safe = raw.replace(/[^a-z0-9_-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+  return safe || DEFAULT_TENANT_ID
+}
 
 function ensureDataDir() {
   const dir = path.join(process.cwd(), 'data')
@@ -35,6 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const updated = {
       ...leads[idx],
+      tenantId: (leads[idx] as any)?.tenantId ? normalizeTenantId((leads[idx] as any).tenantId) : DEFAULT_TENANT_ID,
       ...(nextStatus ? { status: nextStatus } : {}),
       notes: nextNotes,
       updatedAt: new Date().toISOString(),

@@ -3,8 +3,17 @@ import fs from 'fs'
 import path from 'path'
 
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+const DEFAULT_TENANT_ID = 'temoweb'
+
+function normalizeTenantId(input: unknown) {
+  const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
+  if (!raw) return DEFAULT_TENANT_ID
+  const safe = raw.replace(/[^a-z0-9_-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+  return safe || DEFAULT_TENANT_ID
+}
 
 type LeadPayload = {
+  tenantId?: string
   name?: string
   contact?: string
   email?: string
@@ -218,7 +227,20 @@ export async function GET(request: NextRequest) {
   }
 
   ensureDataDir()
-  const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
+  const { searchParams } = new URL(request.url)
+  const tenantId = normalizeTenantId(searchParams.get('tenantId'))
+
+  const raw = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
+  const leadsArr = Array.isArray(raw) ? raw : []
+  const leads = leadsArr
+    .map((l: any) => ({
+      ...l,
+      tenantId: l?.tenantId ? normalizeTenantId(l.tenantId) : DEFAULT_TENANT_ID,
+    }))
+    .filter((l: any) => {
+      if (tenantId === DEFAULT_TENANT_ID) return l.tenantId === DEFAULT_TENANT_ID
+      return l.tenantId === tenantId
+    })
   
   return NextResponse.json(leads)
 }
@@ -226,13 +248,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as LeadPayload
-    const { name, contact, email, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, notes, phone } = body
+    const { tenantId, name, contact, email, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, notes, phone } = body
 
     const resolvedContact = contact || phone
     if (!resolvedContact) {
       return NextResponse.json({ error: 'Contact is required' }, { status: 400 })
     }
 
+    const resolvedTenantId = normalizeTenantId(tenantId)
     ensureDataDir()
     const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
 
@@ -253,6 +276,7 @@ export async function POST(request: NextRequest) {
     
     const newLead = {
       id: Date.now(),
+      tenantId: resolvedTenantId,
       name: name || null,
       contact: resolvedContact,
       email: typeof email === 'string' && email.trim() ? email.trim() : null,
