@@ -197,17 +197,24 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   const verb = String(v?.verb || 'add').toLowerCase()
   if (verb && verb !== 'add') return { processed: false as const, reason: 'not_add' as const }
 
-  const commentId = String(v?.id || v?.comment_id || '').trim()
+  // IMPORTANT:
+  // For IG "comments" webhooks, value.id is often the MEDIA id, while value.comment_id is the real comment id.
+  // If we use media id, /{id}/replies will fail and it will look like "bot doesn't reply".
+  const commentIdPrimary = String(v?.comment_id || '').trim()
+  const commentIdFallback = String(v?.id || '').trim()
+  const commentIdCandidates = [commentIdPrimary, commentIdFallback].filter(Boolean)
   const text = String(v?.text || v?.message || '').trim()
   const fromId = String(v?.from?.id || v?.sender_id || v?.sender?.id || '').trim()
   const fromUsername = String(v?.from?.username || v?.from?.name || '').trim()
 
-  if (!commentId || !text) return { processed: false as const, reason: 'missing_comment' as const }
-  if (wasCommentProcessed(commentId)) return { processed: false as const, reason: 'duplicate' as const }
+  if (!commentIdCandidates.length || !text) return { processed: false as const, reason: 'missing_comment' as const }
+  // Dedupe by REAL comment id when available; otherwise fallback to whatever id we have.
+  const dedupeKey = commentIdPrimary || commentIdFallback
+  if (dedupeKey && wasCommentProcessed(dedupeKey)) return { processed: false as const, reason: 'duplicate' as const }
 
   // Do not reply to our own comments if present.
   if (fromId && IG_USER_ID && fromId === IG_USER_ID) {
-    markCommentProcessed(commentId)
+    if (dedupeKey) markCommentProcessed(dedupeKey)
     return { processed: false as const, reason: 'self' as const }
   }
 
@@ -226,9 +233,19 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
     reply = (await generateCommentAiReply({ text, lang })) || (lang === 'ua' ? 'Дякую за коментар! 🙌' : 'Спасибо за комментарий! 🙌')
   }
 
-  const sent = await sendInstagramCommentReply(commentId, reply)
-  // Mark processed regardless to avoid spam retries if API blocks it.
-  markCommentProcessed(commentId)
+  // Try sending comment reply using available ids (comment_id first, then fallback).
+  let sentOk = false
+  let lastErr: string | null = null
+  for (const cid of commentIdCandidates) {
+    const sent = await sendInstagramCommentReply(cid, reply)
+    if (sent.ok) {
+      sentOk = true
+      break
+    }
+    lastErr = sent.error
+  }
+  // Mark processed ONLY if we actually replied (avoid "stuck" when ID was wrong).
+  if (sentOk && dedupeKey) markCommentProcessed(dedupeKey)
 
   if (isPriceIntent(text) && IG_COMMENT_DM_ON_PRICE && fromId) {
     // Try to DM; if IG blocks (no open window), it's fine — public reply already sent.
@@ -251,10 +268,13 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
 
   recordInstagramWebhook({
     senderId: fromId || null,
-    textPreview: clip(`comment:${fromUsername ? `${fromUsername}: ` : ''}${text}`, 120),
+    textPreview: clip(
+      `comment:${fromUsername ? `${fromUsername}: ` : ''}${text}${sentOk ? ' ✅replied' : lastErr ? ` ❌${lastErr}` : ''}`,
+      120
+    ),
   })
 
-  return { processed: sent.ok as boolean }
+  return { processed: sentOk }
 }
 
 function parseAllowlist(raw: string) {
