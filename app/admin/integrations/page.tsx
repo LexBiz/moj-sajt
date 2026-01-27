@@ -301,6 +301,29 @@ export default function IntegrationsPage() {
     }
   }
 
+  const subscribeIg = async (fields: string) => {
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/instagram/admin/subscribe_ig', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({
+          igUserId: selectedIgUserId.trim() || undefined,
+          fields,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      setLastSendResult(json)
+      if (!res.ok) throw new Error(json?.error || 'Subscribe failed')
+      await loadStatus()
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Subscribe failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const send = async () => {
     setBusy(true)
     setError('')
@@ -499,6 +522,14 @@ export default function IntegrationsPage() {
               disabled={busy || !selectedPageId || !selectedIgUserId}
             >
               {t.saveSelection}
+            </button>
+            <button
+              onClick={() => subscribeIg('messages,message_reactions,messaging_postbacks,comments')}
+              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-semibold disabled:opacity-60"
+              disabled={busy || !selectedIgUserId.trim()}
+              title="Subscribe the selected IG business account to app fields. For comments delivery you must include 'comments'."
+            >
+              Subscribe IG: messages+comments
             </button>
             {status?.selected?.updatedAt ? <span className="text-xs text-slate-500">{t.savedAt}: {status.selected.updatedAt}</span> : null}
           </div>
