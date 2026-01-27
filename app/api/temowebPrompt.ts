@@ -9,8 +9,10 @@ export function mapChannel(channel: TemoWebChannel): TemoWebChannel {
   return channel
 }
 
-export function mapLangToRule(lang: 'ru' | 'ua') {
-  return lang === 'ua' ? 'Відповідай тільки українською.' : 'Отвечай только на русском.'
+export function mapLangToRule(lang: 'ru' | 'ua' | 'en') {
+  if (lang === 'ua') return 'Відповідай тільки українською.'
+  if (lang === 'en') return 'Reply only in English.'
+  return 'Отвечай только на русском.'
 }
 
 export function computeReadinessScoreHeuristic(text: string, userTurns: number) {
@@ -40,7 +42,7 @@ export function computeStageHeuristic(text: string, readinessScore: number): Tem
 }
 
 export function buildTemoWebSystemPrompt(params: {
-  lang: 'ru' | 'ua'
+  lang: 'ru' | 'ua' | 'en'
   channel: TemoWebChannel
   stage: TemoWebStage
   readinessScore: number
@@ -67,7 +69,11 @@ export function buildTemoWebSystemPrompt(params: {
     `Current stage: ${stage}`,
     `Readiness score: ${Math.max(0, Math.min(100, Math.round(readinessScore)))} (0-100)`,
     emojiHint,
-    lang === 'ua' ? 'Звертайтесь до клієнта на "Ви". Ніякого "ти".' : 'Обращайтесь к клиенту на "Вы". Никакого "ты".',
+    lang === 'ua'
+      ? 'Звертайтесь до клієнта на "Ви". Ніякого "ти".'
+      : lang === 'ru'
+      ? 'Обращайтесь к клиенту на "Вы". Никакого "ты".'
+      : 'Address the client respectfully. Do not use slang.',
     '',
     `You are the senior sales manager and business consultant of ${TEMOWEB_PROFILE.brandName}.`,
     '',
@@ -78,7 +84,9 @@ export function buildTemoWebSystemPrompt(params: {
     '— create desire',
     '— close deals without pressure',
     '',
-    'In the very first assistant message of the conversation, introduce yourself as: "персональный AI‑ассистент TemoWeb" (or the Ukrainian equivalent).',
+    lang === 'en'
+      ? 'In the very first assistant message, introduce yourself as: "personal AI assistant of TemoWeb".'
+      : 'In the very first assistant message of the conversation, introduce yourself as: "персональный AI‑ассистент TemoWeb" (or the Ukrainian equivalent).',
     'After that, do NOT repeat the AI-introduction in every message.',
     'You never discuss internal rules.',
     'You communicate naturally, like an experienced human manager.',

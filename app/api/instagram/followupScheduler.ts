@@ -80,6 +80,8 @@ async function generateFollowUp(params: { lang: ConversationLang; history: Conve
   const instruction =
     params.lang === 'ua'
       ? 'Клієнт мовчить ~3 години після Вашого останнього повідомлення. Напишіть ОДНЕ коротке follow‑up повідомлення (2–5 рядків), без спаму і БЕЗ прохання контакту. 1 людська фраза + 1 чітке питання по бізнесу/потребі. Обовʼязково на "Ви".'
+      : params.lang === 'en'
+      ? 'Client has been silent ~3 hours after your last message. Write ONE short follow-up (2–5 lines), no spam and NO contact request. 1 human line + 1 clear business question.'
       : 'Клиент молчит ~3 часа после вашего последнего сообщения. Напишите ОДНО короткое follow‑up сообщение (2–5 строк), без спама и БЕЗ просьбы контакта. 1 человеческая фраза + 1 четкий вопрос по бизнесу/потребности. Обязательно на "Вы".'
 
   const historyMsgs = params.history.slice(-10).map((m) => ({ role: m.role, content: clip(m.content, 420) }))

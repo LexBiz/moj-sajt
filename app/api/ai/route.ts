@@ -8,21 +8,22 @@ type AiRequest = {
   pain?: string
   question?: string | null
   history?: { role: 'user' | 'assistant'; content: string }[]
-  lang?: 'ua' | 'ru' | 'cz'
+  lang?: 'ua' | 'ru' | 'en' | 'cz'
   mode?: 'show' | 'post'
   aiSummary?: string | null
 }
 
 function getLang(lang?: AiRequest['lang']) {
-  if (lang === 'ru' || lang === 'cz' || lang === 'ua') return lang
+  if (lang === 'ru' || lang === 'cz' || lang === 'ua' || lang === 'en') return lang
   return 'ua'
 }
 
-function parseLangSwitch(text: string): 'ru' | 'ua' | null {
+function parseLangSwitch(text: string): 'ru' | 'ua' | 'en' | null {
   const t = String(text || '').trim().toLowerCase()
   if (!t) return null
   if (/(говори|говорите|разговаривай|пиши|пишіть|пиши)\s+.*(рус|рос|russian)/i.test(t)) return 'ru'
   if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(укр|укра|ukrain)/i.test(t)) return 'ua'
+  if (/(english|англ|speak\s+english|in\s+english)/i.test(t)) return 'en'
   if (/\bрус(ский|ском)\b/i.test(t)) return 'ru'
   if (/\bукра(їнськ|инск|їнською)\b/i.test(t)) return 'ua'
   return null
@@ -200,6 +201,8 @@ async function callOpenAI(
       ? null
       : lng === 'ru'
       ? 'Это первое сообщение: представьтесь как "персональный AI‑ассистент TemoWeb" и добавьте 1 строку про язык: "Можно написать, на каком языке удобно. Если не скажете — по умолчанию українською 🇺🇦."'
+      : lng === 'en'
+      ? 'This is the first message: introduce yourself as "personal AI assistant of TemoWeb" and add 1 line: "You can tell me your preferred language. If you don’t — default is Ukrainian 🇺🇦."'
       : 'Це перше повідомлення: представтесь як "персональний AI‑асистент TemoWeb" і додайте 1 рядок про мову: "Можете написати, якою мовою зручно. Якщо не скажете — за замовчуванням українською 🇺🇦."'
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {

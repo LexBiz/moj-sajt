@@ -81,6 +81,7 @@ const COMMENTS_PROCESSED_FILE = path.join(process.cwd(), 'data', 'instagram-comm
 
 const IG_COMMENT_REPLY_ENABLED = (process.env.INSTAGRAM_COMMENT_REPLY_ENABLED || '').trim() === 'true'
 const IG_COMMENT_DM_ON_PRICE = (process.env.INSTAGRAM_COMMENT_DM_ON_PRICE || '').trim() !== 'false'
+const IG_COMMENT_DM_ON_PLUS = (process.env.INSTAGRAM_COMMENT_DM_ON_PLUS || '').trim() !== 'false'
 
 function ensureCommentsFile() {
   const dir = path.dirname(COMMENTS_PROCESSED_FILE)
@@ -162,18 +163,89 @@ async function sendInstagramCommentReply(commentId: string, message: string) {
   return { ok: true as const, replyId }
 }
 
-async function generateCommentAiReply(params: { text: string; lang: ConversationLang }) {
+function isPlusSignal(text: string) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return false
+  if (t === '+' || t === '++' || t === '+1' || t === '＋' || t === '➕') return true
+  if (/^\+{1,5}$/.test(t)) return true
+  return /\b(плюс|plus)\b/.test(t)
+}
+
+function detectCommentLang(text: string): ConversationLang {
+  const t = String(text || '').trim()
+  if (!t) return 'ua'
+  if (/[іїєґ]/i.test(t)) return 'ua'
+  if (/[ыэё]/i.test(t)) return 'ru'
+  if (/[a-z]/i.test(t) && !/[а-яіїєґ]/i.test(t)) return 'en'
+  // fallback: default UA
+  return 'ua'
+}
+
+function buildPlusFirstDm(lang: ConversationLang) {
+  if (lang === 'ru') {
+    return 'Привет 🙂 видел твой “+” под видео  \n\nПодскажи, у тебя какой сейчас бизнес?'
+  }
+  if (lang === 'en') {
+    return 'Hi 🙂 saw your “+” under the video  \n\nWhat kind of business do you run?'
+  }
+  return 'Привіт 🙂 бачив твій “+” під відео  \n\nПідкажи, який у тебе зараз бізнес?'
+}
+
+async function generatePublicCommentReply(params: { text: string; lang: ConversationLang }) {
   const OPENAI_API_KEY = getOpenAiKey()
   if (!OPENAI_API_KEY) return null
 
   const userText = String(params.text || '').trim()
-  const readinessScore = computeReadinessScoreHeuristic(userText, 1)
-  const stage = computeStageHeuristic(userText, readinessScore)
-  const system = buildTemoWebSystemPrompt({ lang: params.lang, channel: 'instagram', stage, readinessScore })
-  const instruction =
-    params.lang === 'ua'
-      ? 'Це публічний коментар в Instagram. Відповідь: 1–3 короткі рядки, живо, з 1–3 емодзі. Якщо це питання — відповідай по суті. Не проси контакт. Якщо це про ціну — скажи, що написали в Direct.'
-      : 'Это публичный комментарий в Instagram. Ответ: 1–3 короткие строки, живо, с 1–3 эмодзи. Если это вопрос — отвечай по сути. Не проси контакт. Если это про цену — скажи, что написали в Direct.'
+  const system = [
+    '=== ROLE ===',
+    'You are TemoWeb’s public brand defender and lead generator in Instagram comments.',
+    'You represent a strong, confident, high-status company.',
+    'You are never submissive.',
+    'You are never aggressive.',
+    'You are controlled, sharp, and professional.',
+    'You never say you are an AI.',
+    '',
+    '=== LANGUAGE RULE ===',
+    'Always reply in the same language as the user comment.',
+    'RU → Russian',
+    'UA → Ukrainian',
+    'EN → English',
+    'Never mix languages.',
+    '',
+    '=== MAIN OBJECTIVE ===',
+    '— With serious users → move to DM',
+    '— With haters → protect brand publicly',
+    '— With trolls → close topic',
+    '— With prospects → create interest',
+    'Not every comment must go to DM.',
+    '',
+    '=== COMMENT CATEGORIES ===',
+    '1) SERIOUS INTEREST (price/how/details/integration): calm, confident, helpful → brief answer → offer DM.',
+    '2) SKEPTICAL BUT RATIONAL: firm, respectful → short proof → optional DM.',
+    '3) TOXIC HATE / TROLLING: cold, sharp, minimal, dominant → public boundary → no DM.',
+    '4) PRAISE / SUPPORT: appreciative, confident → thanks → soft engagement.',
+    '5) OFF-TOPIC / JOKES: light, controlled → redirect or close.',
+    '',
+    '=== DM RULE ===',
+    'Go to DM ONLY if user shows interest / meaningful question / business intent.',
+    'Never push DM to trolls/haters/empty commenters.',
+    '',
+    '=== EMOJI POLICY ===',
+    'Interest/praise: 0–2',
+    'Hate/conflict: 0',
+    'Business topics: max 1',
+    'Never use emojis in arguments.',
+    '',
+    '=== SELF-CHECK ===',
+    '1) Does this show strength?',
+    '2) Does this protect brand?',
+    '3) Does this filter bad leads?',
+    '4) Does this attract serious clients?',
+    'If NO — rewrite.',
+  ].join('\n')
+
+  const langLine =
+    params.lang === 'ru' ? 'Reply ONLY in Russian.' : params.lang === 'en' ? 'Reply ONLY in English.' : 'Reply ONLY in Ukrainian.'
 
   try {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -182,10 +254,10 @@ async function generateCommentAiReply(params: { text: string; lang: Conversation
       body: JSON.stringify({
         model: OPENAI_MODEL,
         temperature: 0.7,
-        max_tokens: 120,
+        max_tokens: 130,
         messages: [
+          { role: 'system', content: langLine },
           { role: 'system', content: system },
-          { role: 'system', content: instruction },
           { role: 'user', content: userText },
         ],
       }),
@@ -198,6 +270,10 @@ async function generateCommentAiReply(params: { text: string; lang: Conversation
   } catch {
     return null
   }
+}
+
+async function generateCommentAiReply(params: { text: string; lang: ConversationLang }) {
+  return await generatePublicCommentReply(params)
 }
 
 async function handleIncomingCommentChange(change: IgWebhookChange) {
@@ -227,19 +303,32 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
     return { processed: false as const, reason: 'self' as const }
   }
 
-  const explicitLang = parseLangSwitch(text)
-  const lang: ConversationLang = explicitLang || 'ua'
+  const lang: ConversationLang = detectCommentLang(text)
 
   let reply: string | null = null
-  if (isPriceIntent(text)) {
+  const plus = isPlusSignal(text)
+
+  if (plus) {
+    // Public acknowledgement + DM (first message template).
+    reply =
+      lang === 'ua'
+        ? 'Добре ✅ Написав(ла) Вам у Direct.'
+        : lang === 'en'
+        ? "Got it ✅ I messaged you in Direct."
+        : 'Хорошо ✅ Написал(а) Вам в Direct.'
+  } else if (isPriceIntent(text)) {
     reply =
       lang === 'ua'
         ? 'Дякую! Написав(ла) Вам у Direct ✅'
+        : lang === 'en'
+        ? 'Thanks! I messaged you in Direct ✅'
         : 'Спасибо! Написал(а) Вам в Direct ✅'
   } else if (isEmojiOrLikeOnly(text)) {
-    reply = lang === 'ua' ? 'Дякуємо! ❤️' : 'Спасибо! ❤️'
+    reply = lang === 'ua' ? 'Дякуємо! ❤️' : lang === 'en' ? 'Thank you! ❤️' : 'Спасибо! ❤️'
   } else {
-    reply = (await generateCommentAiReply({ text, lang })) || (lang === 'ua' ? 'Дякую за коментар! 🙌' : 'Спасибо за комментарий! 🙌')
+    reply =
+      (await generateCommentAiReply({ text, lang })) ||
+      (lang === 'ua' ? 'Дякую за коментар! 🙌' : lang === 'en' ? 'Thanks for the comment! 🙌' : 'Спасибо за комментарий! 🙌')
   }
 
   // Try sending comment reply using available ids (comment_id first, then fallback).
@@ -260,13 +349,22 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   // Mark processed ONLY if we actually replied (avoid "stuck" when ID was wrong).
   if (sentOk && dedupeKey) markCommentProcessed(dedupeKey)
 
-  if (isPriceIntent(text) && IG_COMMENT_DM_ON_PRICE && fromId) {
+  // DM rules:
+  // - price intent: DM is allowed (to continue in private)
+  // - plus signal: DM using fixed template (lead conversion assistant)
+  if (((isPriceIntent(text) && IG_COMMENT_DM_ON_PRICE) || (plus && IG_COMMENT_DM_ON_PLUS)) && fromId) {
     // Try to DM; if IG blocks (no open window), it's fine — public reply already sent.
-    const dmText =
-      lang === 'ua'
+    const dmText = plus
+      ? buildPlusFirstDm(lang)
+      : lang === 'ua'
         ? [
             'Вітаю! 👋 Я персональний AI‑асистент TemoWeb.',
-            'Підкажіть, будь ласка, Ваш бізнес і звідки зараз йдуть заявки — і я порахую пакет + строки. ⚡️',
+            'Підкажіть, будь ласка, Ваш бізнес і звідки зараз йдуть заявки — і я підберу пакет + строки. ⚡️',
+          ].join('\n')
+        : lang === 'en'
+        ? [
+            'Hi! 👋 I’m your personal AI assistant from TemoWeb.',
+            'Tell me your business and where leads come from — I’ll suggest the right package + timeline. ⚡️',
           ].join('\n')
         : [
             'Здравствуйте! 👋 Я персональный AI‑ассистент TemoWeb.',
@@ -274,6 +372,19 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
           ].join('\n')
     try {
       await sendInstagramMessage(fromId, dmText)
+      if (plus) {
+        // Seed conversation so next DM continues with main system (and avoid re-sending).
+        const c = getConversation(fromId)
+        const seededHistory = Array.isArray(c.history) ? c.history : []
+        const nextHistory: ConversationMessage[] = [...seededHistory, { role: 'assistant' as const, content: dmText }].slice(-12) as any
+        updateConversation(fromId, {
+          lang,
+          stage: 'qualify',
+          history: nextHistory,
+          lastAssistantAt: nowIso(),
+          lastPlusDmAt: nowIso(),
+        } as any)
+      }
     } catch {
       // ignore
     }
@@ -402,7 +513,14 @@ function t(lang: ConversationLang, key: string) {
     contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішліть, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
     askContact: ['Чудово, задачу зрозумів ✅', '—', 'Щоб зафіксувати заявку, надішліть, будь ласка:', '1) телефон (обовʼязково) 📞', '2) email (обовʼязково) ✉️'].join('\n'),
   }
-  return (lang === 'ua' ? UA : RU)[key] || key
+  const EN: Record<string, string> = {
+    chooseLang: ['Hi! 👋 I’m your personal AI assistant of TemoWeb.', 'Choose a language:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
+    askRepeating: 'Great ✅ Please write in one message what you need — I’ll reply. 🙂',
+    contactOk: ['Thanks! ✅ I got your contact.', '—', 'I’ll review details and come back with a clear plan.', 'To be precise: niche + avg ticket + lead source. 💬'].join('\n'),
+    contactFix: ['Looks like the contact is incomplete. 🙌', 'Please send correctly:', '— email (name@domain.com)', '— phone (+... )'].join('\n'),
+    askContact: ['Got it ✅', '—', 'To lock the request, please send:', '1) phone (required) 📞', '2) email (required) ✉️'].join('\n'),
+  }
+  return (lang === 'ua' ? UA : lang === 'en' ? EN : RU)[key] || key
 }
 
 function getAccessToken() {
@@ -434,6 +552,7 @@ function parseLangSwitch(text: string): ConversationLang | null {
   // "Speak Russian/Ukrainian" style commands
   if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(рус|рос|russian)/i.test(t)) return 'ru'
   if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(укр|укра|ukrain)/i.test(t)) return 'ua'
+  if (/(english|англ|speak\s+english|in\s+english)/i.test(t)) return 'en'
   // Direct mentions
   if (/\bрус(ский|ском)\b/i.test(t)) return 'ru'
   if (/\bукра(їнськ|инск|їнською)\b/i.test(t)) return 'ua'

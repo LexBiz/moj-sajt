@@ -8,7 +8,7 @@ export type ConversationMessage = {
   content: string
 }
 
-export type ConversationLang = 'ru' | 'ua'
+export type ConversationLang = 'ru' | 'ua' | 'en'
 
 export type ConversationContactDraft = {
   phone: string | null
@@ -26,6 +26,7 @@ export type ConversationState = {
   lastUserAt: string | null
   lastAssistantAt: string | null
   followUpSentAt: string | null
+  lastPlusDmAt?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -49,6 +50,7 @@ function loadAll(): Record<string, ConversationState> {
       if (typeof c.lastAssistantAt === 'undefined') c.lastAssistantAt = null
       if (typeof c.followUpSentAt === 'undefined') c.followUpSentAt = null
       if (typeof c.contactDraft === 'undefined') c.contactDraft = null
+      if (typeof c.lastPlusDmAt === 'undefined') c.lastPlusDmAt = null
       parsed[k] = c
     }
     return parsed as Record<string, ConversationState>
@@ -78,6 +80,7 @@ export function getConversation(senderId: string): ConversationState {
     lastUserAt: null,
     lastAssistantAt: null,
     followUpSentAt: null,
+    lastPlusDmAt: null,
     createdAt: now,
     updatedAt: now,
   }
