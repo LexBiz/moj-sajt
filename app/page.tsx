@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { MessageSquare, Zap, CheckCircle2, Users, Calendar, TrendingUp, Scissors, Car, GraduationCap, Wrench, Briefcase } from 'lucide-react'
+import { MessageSquare, Zap, CheckCircle2, Users, Calendar, TrendingUp, Scissors, Car, GraduationCap, Wrench, Briefcase, Shield, Sparkles, Plus } from 'lucide-react'
+import { TEMOWEB_PROFILE } from './api/temowebProfile'
 
 type Lang = 'ua' | 'ru' | 'cz'
 
@@ -23,12 +24,10 @@ type Dict = {
   resultTitle: string
   resultBullets: { text: string; stat?: string }[]
   resultCta: string
-  packagesTitle: string
-  packages: { name: string; price: string; desc: string; cta: string }[]
+  pricingTitle: string
+  pricingSubtitle: string
   addonsTitle: string
-  addons: { name: string; price: string; desc: string }[]
   faqTitle: string
-  faq: { q: string; a: string }[]
   formTitle: string
   formSubtitle: string
   name: string
@@ -72,32 +71,10 @@ const dict: Record<Lang, Dict> = {
       { text: 'Менше хаосу — більше продажів', stat: 'Мінус ручна робота' },
     ],
     resultCta: 'Побачити це в дії',
-    packagesTitle: 'Пакети',
-    packages: [
-      { name: 'START', price: '990 € + 220 €/міс', desc: 'До 2 каналів. AI‑асистент відповідає + уточнює. Збір заявки + базова CRM + Telegram‑сповіщення.', cta: '⚡️ Замовити' },
-      { name: 'BUSINESS', price: '1 900 € + 390 €/міс', desc: 'До 3 каналів. Сценарії: запис/FAQ/кваліфікація/контакти/заперечення. CRM‑воронка + базова аналітика.', cta: '⚡️ Замовити' },
-      { name: 'PRO', price: '3 900 € + 790 €/міс', desc: 'До 5 каналів. Інтеграції (оплати/календар/звітність) + пріоритет. Щомісячні покращення конверсії.', cta: '⚡️ Замовити' },
-    ],
+    pricingTitle: 'Пакети та модулі',
+    pricingSubtitle: 'Фіксовані умови. Прозорий обсяг. Підтримка, щоб інтеграції не “падали”.',
     addonsTitle: 'Додаткові модулі',
-    addons: [
-      { name: 'Додатковий канал', price: '+200 € + 60 €/міс', desc: 'Понад ліміт пакета (наприклад WhatsApp).' },
-      { name: 'Оплати Stripe', price: '+390 € + 40 €/міс', desc: 'Checkout + статуси оплати в CRM + сповіщення.' },
-      { name: 'Онлайн‑запис / календар', price: '+290 € + 30 €/міс', desc: 'Calendly/Google Calendar + підтвердження/нагадування.' },
-      { name: 'Авто‑нагадування / розсилки', price: '+220 € + 25 €/міс', desc: 'Повернення лідів: “не відповіли / не записались”.' },
-      { name: 'Аналітика (розширена)', price: '+250 € + 35 €/міс', desc: 'Звіти по каналах і конверсії.' },
-      { name: 'Зовнішня CRM (HubSpot/Pipedrive)', price: '+450 € + 60 €/міс', desc: 'Синхронізація лідів і статусів.' },
-      { name: 'Мультимовність', price: '+180 € / мова + 15 €/міс', desc: 'Додаткові мови у сценаріях і відповідях.' },
-      { name: 'Пріоритетна підтримка', price: '+120 €/міс', desc: 'Швидша реакція та фікси.' },
-    ],
-    faqTitle: 'FAQ',
-    faq: [
-      {
-        q: 'Чому є щомісячна оплата?',
-        a: 'Платформи (Meta/WhatsApp/Telegram) регулярно змінюють токени/правила. Підтримка = моніторинг, оновлення доступів і фікси збоїв.',
-      },
-      { q: 'Можна лише впровадження без підписки?', a: 'Ні. Беремо проєкти тільки із супроводом — інакше не гарантуємо стабільність.' },
-      { q: 'Скільки часу запуск?', a: 'Start: 5–7 роб. днів. Business: 7–14 днів. Pro: від 14 днів (залежить від доступів).' },
-    ],
+    faqTitle: 'Часті питання',
     formTitle: 'Хочеш рішення прямо зараз?',
     formSubtitle: 'Я покажу, як це може працювати у вашому бізнесі',
     name: 'Імʼя',
@@ -139,32 +116,10 @@ const dict: Record<Lang, Dict> = {
       { text: 'Меньше хаоса — больше продаж', stat: 'Минус ручная работа' },
     ],
     resultCta: 'Увидеть это в действии',
-    packagesTitle: 'Пакеты',
-    packages: [
-      { name: 'START', price: '990 € + 220 €/мес', desc: 'До 2 каналов. AI‑ассистент отвечает + уточняет. Сбор заявки + базовая CRM + Telegram‑уведомления.', cta: '⚡️ Заказать' },
-      { name: 'BUSINESS', price: '1 900 € + 390 €/мес', desc: 'До 3 каналов. Сценарии: запись/FAQ/квалификация/контакты/возражения. CRM‑воронка + базовая аналитика.', cta: '⚡️ Заказать' },
-      { name: 'PRO', price: '3 900 € + 790 €/мес', desc: 'До 5 каналов. Интеграции (оплаты/календарь/отчёты) + приоритет. Ежемесячные улучшения конверсии.', cta: '⚡️ Заказать' },
-    ],
+    pricingTitle: 'Пакеты и модули',
+    pricingSubtitle: 'Фиксированные условия. Прозрачный объём. Поддержка, чтобы интеграции не “падали”.',
     addonsTitle: 'Дополнительные модули',
-    addons: [
-      { name: 'Дополнительный канал', price: '+200 € + 60 €/мес', desc: 'Сверх лимита пакета (например WhatsApp).' },
-      { name: 'Оплаты Stripe', price: '+390 € + 40 €/мес', desc: 'Checkout + статусы оплаты в CRM + уведомления.' },
-      { name: 'Онлайн‑запись / календарь', price: '+290 € + 30 €/мес', desc: 'Calendly/Google Calendar + подтверждения/напоминания.' },
-      { name: 'Авто‑напоминания / рассылки', price: '+220 € + 25 €/мес', desc: 'Возврат лидов: “не ответили / не записались”.' },
-      { name: 'Аналитика (расширенная)', price: '+250 € + 35 €/мес', desc: 'Отчёты по каналам и конверсии.' },
-      { name: 'Внешняя CRM (HubSpot/Pipedrive)', price: '+450 € + 60 €/мес', desc: 'Синхронизация лидов и статусов.' },
-      { name: 'Мультиязычность', price: '+180 € / язык + 15 €/мес', desc: 'Дополнительные языки в сценариях и ответах.' },
-      { name: 'Приоритетная поддержка', price: '+120 €/мес', desc: 'Ускоренная реакция и фиксы.' },
-    ],
-    faqTitle: 'FAQ',
-    faq: [
-      {
-        q: 'Почему есть ежемесячная оплата?',
-        a: 'Платформы (Meta/WhatsApp/Telegram) регулярно меняют токены/правила. Поддержка = мониторинг, обновление доступов и фиксы сбоев.',
-      },
-      { q: 'Можно только внедрение без подписки?', a: 'Нет. Берём проекты только с сопровождением — иначе не гарантируем стабильность.' },
-      { q: 'Сколько времени запуск?', a: 'Start: 5–7 раб. дней. Business: 7–14 дней. Pro: от 14 дней (зависит от доступов).' },
-    ],
+    faqTitle: 'Частые вопросы',
     formTitle: 'Хочешь решение прямо сейчас?',
     formSubtitle: 'Я покажу, как это может работать в вашем бизнесе',
     name: 'Имя',
@@ -206,29 +161,10 @@ const dict: Record<Lang, Dict> = {
       { text: 'Méně chaosu — více prodejů', stat: 'Minus ruční práce' },
     ],
     resultCta: 'Uvidět to v akci',
-    packagesTitle: 'Balíčky',
-    packages: [
-      { name: 'START', price: '990 € + 220 €/m', desc: 'Up to 2 channels. AI replies + asks clarifying questions. Lead capture + basic CRM + Telegram alerts.', cta: '⚡️ Objednat' },
-      { name: 'BUSINESS', price: '1 900 € + 390 €/m', desc: 'Up to 3 channels. Scenarios: booking/FAQ/qualification/contacts. CRM pipeline + basic analytics.', cta: '⚡️ Objednat' },
-      { name: 'PRO', price: '3 900 € + 790 €/m', desc: 'Up to 5 channels. Integrations (payments/calendar/reports) + priority. Monthly improvements.', cta: '⚡️ Objednat' },
-    ],
-    addonsTitle: 'Extra moduly',
-    addons: [
-      { name: 'Extra channel', price: '+200 € + 60 €/m', desc: 'Beyond plan limit (e.g. WhatsApp).' },
-      { name: 'Stripe payments', price: '+390 € + 40 €/m', desc: 'Checkout + payment status in CRM + alerts.' },
-      { name: 'Booking / calendar', price: '+290 € + 30 €/m', desc: 'Calendly/Google Calendar + confirmations.' },
-      { name: 'Reminders / follow-ups', price: '+220 € + 25 €/m', desc: 'Lead recovery sequences.' },
-      { name: 'Advanced analytics', price: '+250 € + 35 €/m', desc: 'Channel/conversion reports.' },
-      { name: 'External CRM sync', price: '+450 € + 60 €/m', desc: 'HubSpot/Pipedrive sync.' },
-      { name: 'Multilingual', price: '+180 € / lang + 15 €/m', desc: 'Additional languages.' },
-      { name: 'Priority support', price: '+120 €/m', desc: 'Faster response and fixes.' },
-    ],
+    pricingTitle: 'Packages and modules',
+    pricingSubtitle: 'Fixed terms. Clear scope. Support so integrations stay stable.',
+    addonsTitle: 'Extra modules',
     faqTitle: 'FAQ',
-    faq: [
-      { q: 'Why monthly support?', a: 'Platforms change tokens/rules. Support = monitoring and fixes so it keeps working.' },
-      { q: 'Can I buy setup only?', a: 'No. Projects are delivered with ongoing support to guarantee stability.' },
-      { q: 'How long to launch?', a: 'Start: 5–7 work days. Business: 7–14 days. Pro: 14+ days.' },
-    ],
     formTitle: 'Chceš řešení hned teď?',
     formSubtitle: 'Ukážu, jak to může fungovat ve tvém byznysu',
     name: 'Jméno',
@@ -257,6 +193,41 @@ export default function Home() {
   const t = dict[lang]
   const ctaHref = '/flow?src=site'
   const aboutHref = 'https://t.me/temoxa_1'
+
+  const profileLang = lang === 'ru' ? ('ru' as const) : lang === 'ua' ? ('ua' as const) : ('ru' as const)
+
+  const pricing = (() => {
+    const p = TEMOWEB_PROFILE.packages
+    const fmt = (n: number) => `${n.toLocaleString('ru-RU')} €`
+    const pack = (key: 'start' | 'business' | 'pro') => {
+      const x = p[key]
+      return {
+        key,
+        name: key.toUpperCase(),
+        title: profileLang === 'ua' ? x.titleUa : x.titleRu,
+        setup: fmt(x.setupEur),
+        support: `${fmt(x.supportEurPerMonth)}/${profileLang === 'ua' ? 'міс' : 'мес'}`,
+        minMonths: x.supportMinMonths,
+        channels: x.channelsUpTo,
+        what: (profileLang === 'ua' ? x.whatYouGetUa : x.whatYouGetRu) as string[],
+        supportInc: (profileLang === 'ua' ? x.supportIncludesUa : x.supportIncludesRu) as string[],
+        fits: profileLang === 'ua' ? x.fitsUa : x.fitsRu,
+      }
+    }
+    return [pack('start'), pack('business'), pack('pro')]
+  })()
+
+  const addons = TEMOWEB_PROFILE.addons.map((a) => {
+    const fmt = (n: number) => `${n.toLocaleString('ru-RU')} €`
+    const title = profileLang === 'ua' ? a.titleUa : a.titleRu
+    const includes = profileLang === 'ua' ? a.includesUa : a.includesRu
+    const setup = a.setupEur > 0 ? `+${fmt(a.setupEur)}` : '—'
+    const monthly = a.supportEurPerMonth > 0 ? `+${fmt(a.supportEurPerMonth)}/${profileLang === 'ua' ? 'міс' : 'мес'}` : '—'
+    return { key: a.key, title, setup, monthly, includes }
+  })
+
+  const faq = TEMOWEB_PROFILE.faq.map((x) => ({ q: profileLang === 'ua' ? x.qUa : x.qRu, a: profileLang === 'ua' ? x.aUa : x.aRu }))
+  const [faqOpen, setFaqOpen] = useState<number | null>(0)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -550,80 +521,168 @@ export default function Home() {
                   </a>
               </div>
 
-                {/* PACKAGES + ADDONS + FAQ */}
+                {/* PRICING */}
                 <div className="pt-10 border-t border-white/10 space-y-10">
-                  {/* PACKAGES */}
-                  <div className="space-y-6">
-                    <h4 className="text-xl sm:text-3xl font-black text-white text-center">
-                      {t.packagesTitle}
-                    </h4>
-
-                    <div className="grid gap-5 lg:grid-cols-3">
-                      {t.packages.map((p) => (
-                        <div
-                          key={p.name}
-                          className="group relative bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-7 shadow-sm transition-all duration-300 hover:border-white/20 hover:shadow-md hover:-translate-y-1"
-                        >
-                          <div className="space-y-4">
-                            <div className="flex items-start justify-between gap-3">
-                <div>
-                                <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{p.name}</p>
-                                <p className="text-3xl font-black text-white leading-tight">{p.price}</p>
-                </div>
-                              <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/70 shadow-inner">
-                                ⚡
+                  <div className="space-y-3 text-center">
+                    <h3 className="text-2xl sm:text-4xl font-black text-white">{t.pricingTitle}</h3>
+                    <p className="text-sm sm:text-base text-white/70 max-w-3xl mx-auto">{t.pricingSubtitle}</p>
                   </div>
-                </div>
-                            <p className="text-sm text-white/70 leading-relaxed">{p.desc}</p>
+
+                  {/* Packages (premium cards) */}
+                  <div className="grid gap-6 lg:grid-cols-3">
+                    {pricing.map((p) => {
+                      const isPopular = p.key === 'business'
+                      return (
+                        <div
+                          key={p.key}
+                          className={`relative rounded-[28px] border p-7 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_35px_110px_rgba(0,0,0,0.45)] ${
+                            isPopular
+                              ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 to-white/5'
+                              : 'border-white/10 bg-white/5 hover:border-white/20'
+                          }`}
+                        >
+                          {isPopular && (
+                            <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-blue-500 px-4 py-1.5 text-xs font-black text-white shadow-lg shadow-blue-500/30">
+                              <Sparkles className="w-4 h-4" /> {profileLang === 'ua' ? 'Найпопулярніший' : 'Самый популярный'}
+                            </div>
+                          )}
+                          <div className="space-y-5">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-bold text-white/60 uppercase tracking-[0.2em]">{p.name}</p>
+                                <p className="text-lg font-black text-white leading-snug pt-1">{p.title}</p>
+                              </div>
+                              <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                <Shield className="w-5 h-5 text-white/70" />
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl bg-black/20 border border-white/10 p-4 space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-white/60">{profileLang === 'ua' ? 'Впровадження' : 'Внедрение'}</span>
+                                <span className="text-white font-black">{p.setup}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-white/60">{profileLang === 'ua' ? 'Підтримка' : 'Поддержка'}</span>
+                                <span className="text-white font-black">{p.support}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-white/60">{profileLang === 'ua' ? 'Мін. строк' : 'Мин. срок'}</span>
+                                <span className="text-white font-black">
+                                  {p.minMonths} {profileLang === 'ua' ? 'міс' : 'мес'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-white/60">{profileLang === 'ua' ? 'Канали' : 'Каналы'}</span>
+                                <span className="text-white font-black">≤ {p.channels}</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{profileLang === 'ua' ? 'Що ви отримуєте' : 'Что вы получаете'}</p>
+                              <ul className="space-y-2">
+                                {p.what.slice(0, 6).map((x) => (
+                                  <li key={x} className="flex items-start gap-2 text-sm text-white/80 leading-relaxed">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                                    <span>{x}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="space-y-3 pt-1">
+                              <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{profileLang === 'ua' ? 'Підтримка включає' : 'Поддержка включает'}</p>
+                              <ul className="space-y-2">
+                                {p.supportInc.slice(0, 4).map((x) => (
+                                  <li key={x} className="flex items-start gap-2 text-sm text-white/75 leading-relaxed">
+                                    <Users className="w-4 h-4 text-white/50 mt-0.5 flex-shrink-0" />
+                                    <span>{x}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <p className="text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">{p.fits}</p>
+
                             <a
                               href={ctaHref}
-                              className="inline-flex w-full items-center justify-center rounded-2xl bg-white/10 border border-white/10 px-6 py-4 text-base font-black text-white/80 hover:bg-white/15 hover:border-white/20 transition-all"
+                              className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-4 text-base font-black text-white transition-all ${
+                                isPopular
+                                  ? 'bg-blue-500 hover:bg-blue-400 shadow-[0_18px_50px_rgba(59,130,246,0.35)]'
+                                  : 'bg-white/10 border border-white/10 hover:bg-white/15 hover:border-white/20'
+                              }`}
                             >
-                              {p.cta}
-                </a>
-              </div>
-            </div>
-            ))}
-          </div>
-        </div>
+                              {profileLang === 'ua' ? 'Обговорити під мій бізнес' : 'Обсудить под мой бизнес'}
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
 
-                  {/* ADDONS */}
+                  {/* Add-ons */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.addonsTitle}</h4>
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      {t.addons.map((a) => (
-                        <div
-                          key={a.name}
-                          className="bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-6 hover:border-white/20 transition-all"
-                        >
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      {addons.map((a) => (
+                        <div key={a.key} className="rounded-[26px] bg-white/5 border border-white/10 p-6 hover:border-white/20 transition-all">
                           <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1">
-                              <p className="text-base font-black text-white">{a.name}</p>
-                              <p className="text-sm text-blue-300 font-bold">{a.price}</p>
+                            <div className="space-y-2">
+                              <p className="text-base font-black text-white">{a.title}</p>
+                              <div className="flex flex-wrap gap-2 text-xs font-bold">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-white/80">
+                                  <Plus className="w-3.5 h-3.5" /> {a.setup} {profileLang === 'ua' ? 'підключення' : 'подключение'}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-white/80">
+                                  <Calendar className="w-3.5 h-3.5" /> {a.monthly}
+                                </span>
+                              </div>
                             </div>
-                            <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/70 shadow-inner">
-                              ✨
+                            <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                              <Zap className="w-5 h-5 text-white/70" />
                             </div>
                           </div>
-                          <p className="text-sm text-white/70 leading-relaxed pt-3">{a.desc}</p>
+                          <ul className="pt-4 space-y-2">
+                            {a.includes.slice(0, 4).map((x) => (
+                              <li key={x} className="flex items-start gap-2 text-sm text-white/75 leading-relaxed">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                                <span>{x}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* FAQ */}
+                  {/* FAQ (accordion) */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.faqTitle}</h4>
-                    <div className="grid gap-4">
-                      {t.faq.map((x) => (
-                        <div key={x.q} className="bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-6 hover:border-white/20 transition-all">
-                          <p className="text-base font-black text-white">{x.q}</p>
-                          <p className="text-sm text-white/70 leading-relaxed pt-2">{x.a}</p>
-                        </div>
-                      ))}
+                    <div className="grid gap-3">
+                      {faq.map((x, idx) => {
+                        const open = faqOpen === idx
+                        return (
+                          <button
+                            key={x.q}
+                            type="button"
+                            onClick={() => setFaqOpen((p) => (p === idx ? null : idx))}
+                            className="text-left rounded-[22px] bg-white/5 border border-white/10 px-6 py-5 hover:border-white/20 transition-all"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1">
+                                <p className="text-base font-black text-white">{x.q}</p>
+                                {open && <p className="text-sm text-white/70 leading-relaxed pt-2">{x.a}</p>}
+                              </div>
+                              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                <TrendingUp className={`w-4 h-4 text-white/70 transition-transform ${open ? 'rotate-180' : ''}`} />
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
-          </div>
+                </div>
               </div>
               </div>
             </div>

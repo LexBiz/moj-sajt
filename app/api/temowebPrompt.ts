@@ -55,8 +55,11 @@ function renderPricing(lang: 'ru' | 'ua') {
     return [
       'Пакети:',
       `— START: впровадження ${fmtMoneyEur(p.start.setupEur)}, підтримка ${fmtMoneyEur(p.start.supportEurPerMonth)}/міс (мін. ${p.start.supportMinMonths} міс), до ${p.start.channelsUpTo} каналів`,
+      `  Що дає: ${p.start.whatYouGetUa.slice(0, 3).join(' • ')}`,
       `— BUSINESS: впровадження ${fmtMoneyEur(p.business.setupEur)}, підтримка ${fmtMoneyEur(p.business.supportEurPerMonth)}/міс (мін. ${p.business.supportMinMonths} міс), до ${p.business.channelsUpTo} каналів`,
+      `  Що дає: ${p.business.whatYouGetUa.slice(0, 3).join(' • ')}`,
       `— PRO: впровадження ${fmtMoneyEur(p.pro.setupEur)}, підтримка ${fmtMoneyEur(p.pro.supportEurPerMonth)}/міс (мін. ${p.pro.supportMinMonths}–12 міс), до ${p.pro.channelsUpTo} каналів`,
+      `  Що дає: ${p.pro.whatYouGetUa.slice(0, 3).join(' • ')}`,
       '',
       'Терміни запуску (в середньому):',
       `— Start: ${p.launchTime.start}`,
@@ -67,8 +70,11 @@ function renderPricing(lang: 'ru' | 'ua') {
   return [
     'Пакеты:',
     `— START: внедрение ${fmtMoneyEur(p.start.setupEur)}, поддержка ${fmtMoneyEur(p.start.supportEurPerMonth)}/мес (мин. ${p.start.supportMinMonths} мес), до ${p.start.channelsUpTo} каналов`,
+    `  Что даёт: ${p.start.whatYouGetRu.slice(0, 3).join(' • ')}`,
     `— BUSINESS: внедрение ${fmtMoneyEur(p.business.setupEur)}, поддержка ${fmtMoneyEur(p.business.supportEurPerMonth)}/мес (мин. ${p.business.supportMinMonths} мес), до ${p.business.channelsUpTo} каналов`,
+    `  Что даёт: ${p.business.whatYouGetRu.slice(0, 3).join(' • ')}`,
     `— PRO: внедрение ${fmtMoneyEur(p.pro.setupEur)}, поддержка ${fmtMoneyEur(p.pro.supportEurPerMonth)}/мес (мин. ${p.pro.supportMinMonths}–12 мес), до ${p.pro.channelsUpTo} каналов`,
+    `  Что даёт: ${p.pro.whatYouGetRu.slice(0, 3).join(' • ')}`,
     '',
     'Сроки запуска (в среднем):',
     `— Start: ${p.launchTime.start}`,
@@ -91,7 +97,7 @@ function renderAddons(lang: 'ru' | 'ua') {
 
 function renderFaq(lang: 'ru' | 'ua') {
   const title = lang === 'ua' ? 'FAQ (коротко):' : 'FAQ (коротко):'
-  const items = TEMOWEB_PROFILE.faq.slice(0, 4).map((x) => (lang === 'ua' ? `— ${x.qUa}: ${x.aUa}` : `— ${x.qRu}: ${x.aRu}`))
+  const items = TEMOWEB_PROFILE.faq.slice(0, 6).map((x) => (lang === 'ua' ? `— ${x.qUa}: ${x.aUa}` : `— ${x.qRu}: ${x.aRu}`))
   return [title, ...items].join('\n')
 }
 
