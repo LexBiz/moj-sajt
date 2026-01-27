@@ -166,9 +166,19 @@ async function sendInstagramCommentReply(commentId: string, message: string) {
 function isPlusSignal(text: string) {
   const t = String(text || '').trim().toLowerCase()
   if (!t) return false
-  if (t === '+' || t === '++' || t === '+1' || t === '＋' || t === '➕') return true
-  if (/^\+{1,5}$/.test(t)) return true
-  return /\b(плюс|plus)\b/.test(t)
+  // Normalize common punctuation/spaces for word checks
+  const cleaned = t.replace(/[“”"'.!,;:()[\]{}<>]/g, ' ').replace(/\s+/g, ' ').trim()
+  // Pure symbol plus
+  if (cleaned === '+' || cleaned === '++' || cleaned === '+1' || cleaned === '＋' || cleaned === '➕') return true
+  if (/^\+{1,8}$/.test(cleaned)) return true
+  // Any plus symbol anywhere
+  if (cleaned.includes('+') || cleaned.includes('＋') || cleaned.includes('➕')) return true
+  // Word forms (RU/UA/EN)
+  if (/\bplus\b/i.test(cleaned)) return true
+  if (/\bплюс\b/i.test(cleaned)) return true
+  if (/\bплюсик\b/i.test(cleaned)) return true
+  if (/\bплюси\b/i.test(cleaned)) return true
+  return false
 }
 
 function detectCommentLang(text: string): ConversationLang {
@@ -248,9 +258,9 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     'Never push DM to trolls/haters/empty commenters.',
     '',
     '=== EMOJI POLICY ===',
-    'Interest/praise: 0–2',
+    'Interest/praise: 1–3',
     'Hate/conflict: 0',
-    'Business topics: max 1',
+    'Business topics: max 2',
     'Never use emojis in arguments.',
     '',
     '=== SELF-CHECK ===',
@@ -329,17 +339,17 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
     // Public acknowledgement + DM (first message template).
     reply =
       lang === 'ua'
-        ? 'Добре ✅ Написав(ла) Вам у Direct.'
+        ? 'Супер ✅ Уже написав Вам у Direct 😉'
         : lang === 'en'
-        ? "Got it ✅ I messaged you in Direct."
-        : 'Хорошо ✅ Написал(а) Вам в Direct.'
+        ? 'Great ✅ Messaged you in Direct 😉'
+        : 'Супер ✅ Уже написал Вам в Direct 😉'
   } else if (isPriceIntent(text)) {
     reply =
       lang === 'ua'
-        ? 'Дякую! Написав(ла) Вам у Direct ✅'
+        ? 'Дякую! Написав Вам у Direct ✅😉'
         : lang === 'en'
-        ? 'Thanks! I messaged you in Direct ✅'
-        : 'Спасибо! Написал(а) Вам в Direct ✅'
+        ? 'Thanks! Messaged you in Direct ✅😉'
+        : 'Спасибо! Написал Вам в Direct ✅😉'
   } else if (isEmojiOrLikeOnly(text)) {
     reply = lang === 'ua' ? 'Дякуємо! ❤️' : lang === 'en' ? 'Thank you! ❤️' : 'Спасибо! ❤️'
   } else {
