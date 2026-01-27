@@ -22,7 +22,7 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
   if (/(у\s+меня|мы\s+|клиент|заявк|заказ|продаж|ниша|бизнес|салон|кофейн|ремонт|стомат|барбершоп|школа)/i.test(t)) score += 15
   if (/(как|почему|зачем|что|як|чому|що)\b/i.test(t)) score += 8
   if (/(срок|сроки|время|термин|інтеграц|integration|процесс|как\s+это\s+работает)/i.test(t)) score += 10
-  if (/(цена|стоим|сколько|пакет|тариф|оплат|pilot|пилот)/i.test(t)) score += 18
+  if (/(цена|стоим|сколько|пакет|тариф|оплат|поддержк|setup|внедрен)/i.test(t)) score += 18
   if (/(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) score += 28
   if (/(погод|weather|политик|polit|отношен|dating|ресторан|кафе|кофе|анекдот|фильм|сериал|спорт)/i.test(t)) score -= 12
   if (t.length <= 3) score -= 8
@@ -35,10 +35,64 @@ export function computeStageHeuristic(text: string, readinessScore: number): Tem
   const t = String(text || '').trim()
   if (!t) return 'DISCOVERY'
   if (readinessScore >= 55 && /(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) return 'ASK_CONTACT'
-  if (/(цена|стоим|сколько|пакет|тариф|pilot|пилот)/i.test(t)) return 'OFFER'
+  if (/(цена|стоим|сколько|пакет|тариф|поддержк|setup|внедрен)/i.test(t)) return 'OFFER'
   if (/(интеграц|integration|процесс|срок|сроки|гарант|надеж|безопас)/i.test(t)) return 'TRUST'
   if (/(интерес|цікав|покажи|пример|як\s+це\s+допоможе|how\s+it\s+helps)/i.test(t)) return 'VALUE'
   return 'DISCOVERY'
+}
+
+function fmtMoneyEur(n: number) {
+  try {
+    return `${n.toLocaleString('ru-RU')} €`
+  } catch {
+    return `${n} €`
+  }
+}
+
+function renderPricing(lang: 'ru' | 'ua') {
+  const p = TEMOWEB_PROFILE.packages
+  if (lang === 'ua') {
+    return [
+      'Пакети:',
+      `— START: впровадження ${fmtMoneyEur(p.start.setupEur)}, підтримка ${fmtMoneyEur(p.start.supportEurPerMonth)}/міс (мін. ${p.start.supportMinMonths} міс), до ${p.start.channelsUpTo} каналів`,
+      `— BUSINESS: впровадження ${fmtMoneyEur(p.business.setupEur)}, підтримка ${fmtMoneyEur(p.business.supportEurPerMonth)}/міс (мін. ${p.business.supportMinMonths} міс), до ${p.business.channelsUpTo} каналів`,
+      `— PRO: впровадження ${fmtMoneyEur(p.pro.setupEur)}, підтримка ${fmtMoneyEur(p.pro.supportEurPerMonth)}/міс (мін. ${p.pro.supportMinMonths}–12 міс), до ${p.pro.channelsUpTo} каналів`,
+      '',
+      'Терміни запуску (в середньому):',
+      `— Start: ${p.launchTime.start}`,
+      `— Business: ${p.launchTime.business}`,
+      `— Pro: ${p.launchTime.pro}`,
+    ].join('\n')
+  }
+  return [
+    'Пакеты:',
+    `— START: внедрение ${fmtMoneyEur(p.start.setupEur)}, поддержка ${fmtMoneyEur(p.start.supportEurPerMonth)}/мес (мин. ${p.start.supportMinMonths} мес), до ${p.start.channelsUpTo} каналов`,
+    `— BUSINESS: внедрение ${fmtMoneyEur(p.business.setupEur)}, поддержка ${fmtMoneyEur(p.business.supportEurPerMonth)}/мес (мин. ${p.business.supportMinMonths} мес), до ${p.business.channelsUpTo} каналов`,
+    `— PRO: внедрение ${fmtMoneyEur(p.pro.setupEur)}, поддержка ${fmtMoneyEur(p.pro.supportEurPerMonth)}/мес (мин. ${p.pro.supportMinMonths}–12 мес), до ${p.pro.channelsUpTo} каналов`,
+    '',
+    'Сроки запуска (в среднем):',
+    `— Start: ${p.launchTime.start}`,
+    `— Business: ${p.launchTime.business}`,
+    `— Pro: ${p.launchTime.pro}`,
+  ].join('\n')
+}
+
+function renderAddons(lang: 'ru' | 'ua') {
+  const list = TEMOWEB_PROFILE.addons
+  const title = lang === 'ua' ? 'Додаткові модулі:' : 'Дополнительные модули:'
+  const rows = list.map((a) => {
+    const name = lang === 'ua' ? a.titleUa : a.titleRu
+    const setup = a.setupEur > 0 ? `+${fmtMoneyEur(a.setupEur)} підключення` : lang === 'ua' ? 'без разового підключення' : 'без разового подключения'
+    const monthly = a.supportEurPerMonth > 0 ? `+${fmtMoneyEur(a.supportEurPerMonth)}/міс` : `+0 €/міс`
+    return `— ${name}: ${setup}, ${monthly}`
+  })
+  return [title, ...rows].join('\n')
+}
+
+function renderFaq(lang: 'ru' | 'ua') {
+  const title = lang === 'ua' ? 'FAQ (коротко):' : 'FAQ (коротко):'
+  const items = TEMOWEB_PROFILE.faq.slice(0, 4).map((x) => (lang === 'ua' ? `— ${x.qUa}: ${x.aUa}` : `— ${x.qRu}: ${x.aRu}`))
+  return [title, ...items].join('\n')
 }
 
 export function buildTemoWebSystemPrompt(params: {
@@ -109,15 +163,11 @@ export function buildTemoWebSystemPrompt(params: {
     '— CRM & lead automation',
     '— Custom integrations',
     '',
-    'Packages:',
-    `— Basic: ${TEMOWEB_PROFILE.packages.basic}`,
-    `— Standard: ${TEMOWEB_PROFILE.packages.standard}`,
-    `— Pro: ${TEMOWEB_PROFILE.packages.pro}`,
+    lang === 'ua' ? renderPricing('ua') : lang === 'ru' ? renderPricing('ru') : renderPricing('ru'),
     '',
-    'Pilot:',
-    `— Full system for ${TEMOWEB_PROFILE.pilot.price}`,
-    `— Only ${TEMOWEB_PROFILE.pilot.slots} slots`,
-    `— ${TEMOWEB_PROFILE.pilot.note}`,
+    lang === 'ua' ? renderAddons('ua') : lang === 'ru' ? renderAddons('ru') : renderAddons('ru'),
+    '',
+    lang === 'ua' ? renderFaq('ua') : lang === 'ru' ? renderFaq('ru') : renderFaq('ru'),
     '',
     '==================================================',
     '',
@@ -275,7 +325,6 @@ export function buildTemoWebSystemPrompt(params: {
     'Goal: present solution',
     'Allowed:',
     '— Recommend package',
-    '— Mention pilot',
     '— Explain why',
     'Forbidden:',
     '— No forcing',

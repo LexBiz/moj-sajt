@@ -25,11 +25,10 @@ type Dict = {
   resultCta: string
   packagesTitle: string
   packages: { name: string; price: string; desc: string; cta: string }[]
-  pilotTitle: string
-  pilotDesc: string
-  pilotList: string[]
-  pilotCta: string
-  pilotNote: string
+  addonsTitle: string
+  addons: { name: string; price: string; desc: string }[]
+  faqTitle: string
+  faq: { q: string; a: string }[]
   formTitle: string
   formSubtitle: string
   name: string
@@ -75,15 +74,30 @@ const dict: Record<Lang, Dict> = {
     resultCta: 'Побачити це в дії',
     packagesTitle: 'Пакети',
     packages: [
-      { name: 'Пакет 1', price: '600–900 €', desc: 'База: сайт + AI чат + заявки + Telegram.', cta: '⚡️ Замовити' },
-      { name: 'Пакет 2', price: '1200–1500 €', desc: 'Більше автоматики: онлайн‑запис, сценарії, статуси.', cta: '⚡️ Замовити' },
-      { name: 'Пакет 3', price: '2000–3000 €', desc: 'Максимум: інтеграції, CRM/таблиця, аналітика, кастом.', cta: '⚡️ Замовити' },
+      { name: 'START', price: '990 € + 220 €/міс', desc: 'До 2 каналів. AI‑асистент відповідає + уточнює. Збір заявки + базова CRM + Telegram‑сповіщення.', cta: '⚡️ Замовити' },
+      { name: 'BUSINESS', price: '1 900 € + 390 €/міс', desc: 'До 3 каналів. Сценарії: запис/FAQ/кваліфікація/контакти/заперечення. CRM‑воронка + базова аналітика.', cta: '⚡️ Замовити' },
+      { name: 'PRO', price: '3 900 € + 790 €/міс', desc: 'До 5 каналів. Інтеграції (оплати/календар/звітність) + пріоритет. Щомісячні покращення конверсії.', cta: '⚡️ Замовити' },
     ],
-    pilotTitle: '🏎 Пілотні проекти — перші 5 бізнесів отримують систему за $299!',
-    pilotDesc: 'Тестуєш систему, бачиш як вона працює. Отримуєш повний пакет — за $299. Місць лише 5.',
-    pilotList: ['Сайт + AI чат для клієнтів', 'Автоматичне приймання заявок', 'Онлайн‑запис і Telegram повідомлення'],
-    pilotCta: '⚡️ Стати пілотом зараз',
-    pilotNote: 'Після 5 бізнесів — повертаємося до стандартних пакетів.',
+    addonsTitle: 'Додаткові модулі',
+    addons: [
+      { name: 'Додатковий канал', price: '+200 € + 60 €/міс', desc: 'Понад ліміт пакета (наприклад WhatsApp).' },
+      { name: 'Оплати Stripe', price: '+390 € + 40 €/міс', desc: 'Checkout + статуси оплати в CRM + сповіщення.' },
+      { name: 'Онлайн‑запис / календар', price: '+290 € + 30 €/міс', desc: 'Calendly/Google Calendar + підтвердження/нагадування.' },
+      { name: 'Авто‑нагадування / розсилки', price: '+220 € + 25 €/міс', desc: 'Повернення лідів: “не відповіли / не записались”.' },
+      { name: 'Аналітика (розширена)', price: '+250 € + 35 €/міс', desc: 'Звіти по каналах і конверсії.' },
+      { name: 'Зовнішня CRM (HubSpot/Pipedrive)', price: '+450 € + 60 €/міс', desc: 'Синхронізація лідів і статусів.' },
+      { name: 'Мультимовність', price: '+180 € / мова + 15 €/міс', desc: 'Додаткові мови у сценаріях і відповідях.' },
+      { name: 'Пріоритетна підтримка', price: '+120 €/міс', desc: 'Швидша реакція та фікси.' },
+    ],
+    faqTitle: 'FAQ',
+    faq: [
+      {
+        q: 'Чому є щомісячна оплата?',
+        a: 'Платформи (Meta/WhatsApp/Telegram) регулярно змінюють токени/правила. Підтримка = моніторинг, оновлення доступів і фікси збоїв.',
+      },
+      { q: 'Можна лише впровадження без підписки?', a: 'Ні. Беремо проєкти тільки із супроводом — інакше не гарантуємо стабільність.' },
+      { q: 'Скільки часу запуск?', a: 'Start: 5–7 роб. днів. Business: 7–14 днів. Pro: від 14 днів (залежить від доступів).' },
+    ],
     formTitle: 'Хочеш рішення прямо зараз?',
     formSubtitle: 'Я покажу, як це може працювати у вашому бізнесі',
     name: 'Імʼя',
@@ -127,15 +141,30 @@ const dict: Record<Lang, Dict> = {
     resultCta: 'Увидеть это в действии',
     packagesTitle: 'Пакеты',
     packages: [
-      { name: 'Пакет 1', price: '600–900 €', desc: 'База: сайт + AI чат + заявки + Telegram.', cta: '⚡️ Заказать' },
-      { name: 'Пакет 2', price: '1200–1500 €', desc: 'Больше автоматики: онлайн‑запись, сценарии, статусы.', cta: '⚡️ Заказать' },
-      { name: 'Пакет 3', price: '2000–3000 €', desc: 'Максимум: интеграции, CRM/таблица, аналитика, кастом.', cta: '⚡️ Заказать' },
+      { name: 'START', price: '990 € + 220 €/мес', desc: 'До 2 каналов. AI‑ассистент отвечает + уточняет. Сбор заявки + базовая CRM + Telegram‑уведомления.', cta: '⚡️ Заказать' },
+      { name: 'BUSINESS', price: '1 900 € + 390 €/мес', desc: 'До 3 каналов. Сценарии: запись/FAQ/квалификация/контакты/возражения. CRM‑воронка + базовая аналитика.', cta: '⚡️ Заказать' },
+      { name: 'PRO', price: '3 900 € + 790 €/мес', desc: 'До 5 каналов. Интеграции (оплаты/календарь/отчёты) + приоритет. Ежемесячные улучшения конверсии.', cta: '⚡️ Заказать' },
     ],
-    pilotTitle: '🏎 Пилотные проекты — первые 5 бизнесов получают систему за $299!',
-    pilotDesc: 'Тестируешь систему, видишь как она работает. Получаешь полный пакет — за $299. Мест всего 5.',
-    pilotList: ['Сайт + AI чат для клиентов', 'Автоматический приём заявок', 'Онлайн‑запись и Telegram уведомления'],
-    pilotCta: '⚡️ Стать пилотом сейчас',
-    pilotNote: 'После 5 бизнесов — возвращаемся к стандартным пакетам.',
+    addonsTitle: 'Дополнительные модули',
+    addons: [
+      { name: 'Дополнительный канал', price: '+200 € + 60 €/мес', desc: 'Сверх лимита пакета (например WhatsApp).' },
+      { name: 'Оплаты Stripe', price: '+390 € + 40 €/мес', desc: 'Checkout + статусы оплаты в CRM + уведомления.' },
+      { name: 'Онлайн‑запись / календарь', price: '+290 € + 30 €/мес', desc: 'Calendly/Google Calendar + подтверждения/напоминания.' },
+      { name: 'Авто‑напоминания / рассылки', price: '+220 € + 25 €/мес', desc: 'Возврат лидов: “не ответили / не записались”.' },
+      { name: 'Аналитика (расширенная)', price: '+250 € + 35 €/мес', desc: 'Отчёты по каналам и конверсии.' },
+      { name: 'Внешняя CRM (HubSpot/Pipedrive)', price: '+450 € + 60 €/мес', desc: 'Синхронизация лидов и статусов.' },
+      { name: 'Мультиязычность', price: '+180 € / язык + 15 €/мес', desc: 'Дополнительные языки в сценариях и ответах.' },
+      { name: 'Приоритетная поддержка', price: '+120 €/мес', desc: 'Ускоренная реакция и фиксы.' },
+    ],
+    faqTitle: 'FAQ',
+    faq: [
+      {
+        q: 'Почему есть ежемесячная оплата?',
+        a: 'Платформы (Meta/WhatsApp/Telegram) регулярно меняют токены/правила. Поддержка = мониторинг, обновление доступов и фиксы сбоев.',
+      },
+      { q: 'Можно только внедрение без подписки?', a: 'Нет. Берём проекты только с сопровождением — иначе не гарантируем стабильность.' },
+      { q: 'Сколько времени запуск?', a: 'Start: 5–7 раб. дней. Business: 7–14 дней. Pro: от 14 дней (зависит от доступов).' },
+    ],
     formTitle: 'Хочешь решение прямо сейчас?',
     formSubtitle: 'Я покажу, как это может работать в вашем бизнесе',
     name: 'Имя',
@@ -179,15 +208,27 @@ const dict: Record<Lang, Dict> = {
     resultCta: 'Uvidět to v akci',
     packagesTitle: 'Balíčky',
     packages: [
-      { name: 'Balíček 1', price: '600–900 €', desc: 'Základ: web + AI chat + poptávky + Telegram.', cta: '⚡️ Objednat' },
-      { name: 'Balíček 2', price: '1200–1500 €', desc: 'Více automatiky: online rezervace, scénáře, statusy.', cta: '⚡️ Objednat' },
-      { name: 'Balíček 3', price: '2000–3000 €', desc: 'Maximum: integrace, CRM/tabulka, analytika, custom.', cta: '⚡️ Objednat' },
+      { name: 'START', price: '990 € + 220 €/m', desc: 'Up to 2 channels. AI replies + asks clarifying questions. Lead capture + basic CRM + Telegram alerts.', cta: '⚡️ Objednat' },
+      { name: 'BUSINESS', price: '1 900 € + 390 €/m', desc: 'Up to 3 channels. Scenarios: booking/FAQ/qualification/contacts. CRM pipeline + basic analytics.', cta: '⚡️ Objednat' },
+      { name: 'PRO', price: '3 900 € + 790 €/m', desc: 'Up to 5 channels. Integrations (payments/calendar/reports) + priority. Monthly improvements.', cta: '⚡️ Objednat' },
     ],
-    pilotTitle: '🏎 Pilotní projekty — prvních 5 firem má systém za $299!',
-    pilotDesc: 'Otestuješ systém, uvidíš jak běží. Dostaneš plný balíček — za $299. Jen 5 míst.',
-    pilotList: ['Web + AI chat pro klienty', 'Automatický příjem poptávek', 'Online rezervace + Telegram notifikace'],
-    pilotCta: '⚡️ Být pilot teď',
-    pilotNote: 'Po 5 firmách se vracíme ke standardním balíčkům.',
+    addonsTitle: 'Extra moduly',
+    addons: [
+      { name: 'Extra channel', price: '+200 € + 60 €/m', desc: 'Beyond plan limit (e.g. WhatsApp).' },
+      { name: 'Stripe payments', price: '+390 € + 40 €/m', desc: 'Checkout + payment status in CRM + alerts.' },
+      { name: 'Booking / calendar', price: '+290 € + 30 €/m', desc: 'Calendly/Google Calendar + confirmations.' },
+      { name: 'Reminders / follow-ups', price: '+220 € + 25 €/m', desc: 'Lead recovery sequences.' },
+      { name: 'Advanced analytics', price: '+250 € + 35 €/m', desc: 'Channel/conversion reports.' },
+      { name: 'External CRM sync', price: '+450 € + 60 €/m', desc: 'HubSpot/Pipedrive sync.' },
+      { name: 'Multilingual', price: '+180 € / lang + 15 €/m', desc: 'Additional languages.' },
+      { name: 'Priority support', price: '+120 €/m', desc: 'Faster response and fixes.' },
+    ],
+    faqTitle: 'FAQ',
+    faq: [
+      { q: 'Why monthly support?', a: 'Platforms change tokens/rules. Support = monitoring and fixes so it keeps working.' },
+      { q: 'Can I buy setup only?', a: 'No. Projects are delivered with ongoing support to guarantee stability.' },
+      { q: 'How long to launch?', a: 'Start: 5–7 work days. Business: 7–14 days. Pro: 14+ days.' },
+    ],
     formTitle: 'Chceš řešení hned teď?',
     formSubtitle: 'Ukážu, jak to může fungovat ve tvém byznysu',
     name: 'Jméno',
@@ -509,53 +550,9 @@ export default function Home() {
                   </a>
               </div>
 
-                {/* PILOT + PACKAGES (inside the same block to keep the page structure clean) */}
+                {/* PACKAGES + ADDONS + FAQ */}
                 <div className="pt-10 border-t border-white/10 space-y-10">
-                  {/* PILOT (main focus) */}
-                  <div className="relative overflow-hidden rounded-[36px] border-2 border-amber-400 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 p-8 sm:p-12 shadow-[0_35px_120px_rgba(245,158,11,0.18)]">
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.4),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(251,146,60,0.3),transparent_60%)]" />
-                    <div className="absolute -top-20 -right-20 w-72 h-72 bg-amber-200/30 blur-3xl rounded-full" />
-                    <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-orange-200/30 blur-3xl rounded-full" />
-
-                    <div className="relative space-y-6">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div className="space-y-2">
-                          <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                            {t.pilotTitle}
-              </h3>
-                          <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-3xl">
-                            {t.pilotDesc}
-              </p>
-                </div>
-                        <div className="inline-flex items-center justify-center rounded-3xl bg-white/10 backdrop-blur border border-amber-400/50 px-5 py-3 text-xs sm:text-sm font-black text-amber-300 shadow-sm">
-                          5 місць / 5 місць / 5 míst
-                </div>
-                </div>
-
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {t.pilotList.map((x) => (
-                          <div
-                            key={x}
-                            className="rounded-2xl bg-white/10 backdrop-blur border border-amber-400/30 px-4 py-3 text-sm text-white/80 shadow-sm"
-                          >
-                            — {x}
-              </div>
-                        ))}
-                </div>
-
-                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center pt-1">
-                        <a
-                          href={ctaHref}
-                          className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 px-10 py-5 text-base sm:text-lg font-black text-white hover:from-amber-500 hover:via-orange-600 hover:to-rose-600 hover:scale-105 active:scale-95 transition-all shadow-[0_22px_70px_rgba(251,191,36,0.35)]"
-                        >
-                          {t.pilotCta} →
-                        </a>
-                        <p className="text-xs text-white/70 italic">{t.pilotNote}</p>
-          </div>
-        </div>
-        </div>
-        
-                  {/* PACKAGES (background / secondary) */}
+                  {/* PACKAGES */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black text-white text-center">
                       {t.packagesTitle}
@@ -589,6 +586,43 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+                  {/* ADDONS */}
+                  <div className="space-y-6">
+                    <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.addonsTitle}</h4>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {t.addons.map((a) => (
+                        <div
+                          key={a.name}
+                          className="bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-6 hover:border-white/20 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <p className="text-base font-black text-white">{a.name}</p>
+                              <p className="text-sm text-blue-300 font-bold">{a.price}</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/70 shadow-inner">
+                              ✨
+                            </div>
+                          </div>
+                          <p className="text-sm text-white/70 leading-relaxed pt-3">{a.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* FAQ */}
+                  <div className="space-y-6">
+                    <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.faqTitle}</h4>
+                    <div className="grid gap-4">
+                      {t.faq.map((x) => (
+                        <div key={x.q} className="bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-6 hover:border-white/20 transition-all">
+                          <p className="text-base font-black text-white">{x.q}</p>
+                          <p className="text-sm text-white/70 leading-relaxed pt-2">{x.a}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
           </div>
               </div>
               </div>
