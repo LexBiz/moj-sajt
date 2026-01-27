@@ -174,10 +174,8 @@ function isPlusSignal(text: string) {
   // Any plus symbol anywhere
   if (cleaned.includes('+') || cleaned.includes('＋') || cleaned.includes('➕')) return true
   // Word forms (RU/UA/EN)
-  if (/\bplus\b/i.test(cleaned)) return true
-  if (/\bплюс\b/i.test(cleaned)) return true
-  if (/\bплюсик\b/i.test(cleaned)) return true
-  if (/\bплюси\b/i.test(cleaned)) return true
+  // NOTE: JS \b uses ASCII word chars and does NOT work for Cyrillic. Use Unicode-aware boundaries instead.
+  if (/(?:^|[^\p{L}\p{N}_])(plus|плюсик|плюс|плюси)(?:$|[^\p{L}\p{N}_])/iu.test(cleaned)) return true
   return false
 }
 
