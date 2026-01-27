@@ -77,6 +77,185 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+const COMMENTS_PROCESSED_FILE = path.join(process.cwd(), 'data', 'instagram-comments-processed.json')
+
+const IG_COMMENT_REPLY_ENABLED = (process.env.INSTAGRAM_COMMENT_REPLY_ENABLED || '').trim() === 'true'
+const IG_COMMENT_DM_ON_PRICE = (process.env.INSTAGRAM_COMMENT_DM_ON_PRICE || '').trim() !== 'false'
+
+function ensureCommentsFile() {
+  const dir = path.dirname(COMMENTS_PROCESSED_FILE)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  if (!fs.existsSync(COMMENTS_PROCESSED_FILE)) fs.writeFileSync(COMMENTS_PROCESSED_FILE, JSON.stringify({}))
+}
+
+function loadProcessedComments(): Record<string, string> {
+  try {
+    ensureCommentsFile()
+    const raw = fs.readFileSync(COMMENTS_PROCESSED_FILE, 'utf8')
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function markCommentProcessed(commentId: string) {
+  if (!commentId) return
+  const all = loadProcessedComments()
+  all[String(commentId)] = new Date().toISOString()
+  try {
+    fs.writeFileSync(COMMENTS_PROCESSED_FILE, JSON.stringify(all, null, 2), 'utf8')
+  } catch {
+    // ignore
+  }
+}
+
+function wasCommentProcessed(commentId: string) {
+  if (!commentId) return false
+  const all = loadProcessedComments()
+  return Boolean(all[String(commentId)])
+}
+
+function isEmojiOrLikeOnly(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return false
+  // no letters/digits, short -> treat as "like/emoji"
+  if (/[a-zа-яіїєґ0-9]/i.test(t)) return false
+  return t.length <= 14
+}
+
+function isPriceIntent(text: string) {
+  const t = String(text || '').toLowerCase()
+  if (!t) return false
+  return /(цена|стоим|сколько|прайс|price|варт|скільки|пакет|тариф)/i.test(t)
+}
+
+async function sendInstagramCommentReply(commentId: string, message: string) {
+  const IG_ACCESS_TOKEN = getAccessToken()
+  if (!IG_ACCESS_TOKEN) {
+    console.error('Missing INSTAGRAM_ACCESS_TOKEN for comment reply')
+    return { ok: false as const, error: 'missing_token' as const }
+  }
+  const urlObj = new URL(`https://${IG_API_HOST}/${IG_API_VERSION}/${commentId}/replies`)
+  if (IG_API_HOST !== 'graph.instagram.com') {
+    urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
+  }
+  const resp = await fetch(urlObj.toString(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${IG_ACCESS_TOKEN}` },
+    body: JSON.stringify({ message: clip(message, 900) }),
+  })
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '')
+    console.error('IG comment reply error', resp.status, t.slice(0, 300))
+    return { ok: false as const, error: `http_${resp.status}` as const }
+  }
+  return { ok: true as const }
+}
+
+async function generateCommentAiReply(params: { text: string; lang: ConversationLang }) {
+  const OPENAI_API_KEY = getOpenAiKey()
+  if (!OPENAI_API_KEY) return null
+
+  const userText = String(params.text || '').trim()
+  const readinessScore = computeReadinessScoreHeuristic(userText, 1)
+  const stage = computeStageHeuristic(userText, readinessScore)
+  const system = buildTemoWebSystemPrompt({ lang: params.lang, channel: 'instagram', stage, readinessScore })
+  const instruction =
+    params.lang === 'ua'
+      ? 'Це публічний коментар в Instagram. Відповідь: 1–3 короткі рядки, живо, з 1–3 емодзі. Якщо це питання — відповідай по суті. Не проси контакт. Якщо це про ціну — скажи, що написали в Direct.'
+      : 'Это публичный комментарий в Instagram. Ответ: 1–3 короткие строки, живо, с 1–3 эмодзи. Если это вопрос — отвечай по сути. Не проси контакт. Если это про цену — скажи, что написали в Direct.'
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0.7,
+        max_tokens: 120,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'system', content: instruction },
+          { role: 'user', content: userText },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const json = (await resp.json()) as any
+    const content = json?.choices?.[0]?.message?.content
+    const out = typeof content === 'string' ? content.trim() : ''
+    return out ? out.slice(0, 700) : null
+  } catch {
+    return null
+  }
+}
+
+async function handleIncomingCommentChange(change: IgWebhookChange) {
+  if (!IG_COMMENT_REPLY_ENABLED) return { processed: false as const, reason: 'disabled' as const }
+  const v: any = change?.value as any
+  const verb = String(v?.verb || 'add').toLowerCase()
+  if (verb && verb !== 'add') return { processed: false as const, reason: 'not_add' as const }
+
+  const commentId = String(v?.id || v?.comment_id || '').trim()
+  const text = String(v?.text || v?.message || '').trim()
+  const fromId = String(v?.from?.id || v?.sender_id || v?.sender?.id || '').trim()
+  const fromUsername = String(v?.from?.username || v?.from?.name || '').trim()
+
+  if (!commentId || !text) return { processed: false as const, reason: 'missing_comment' as const }
+  if (wasCommentProcessed(commentId)) return { processed: false as const, reason: 'duplicate' as const }
+
+  // Do not reply to our own comments if present.
+  if (fromId && IG_USER_ID && fromId === IG_USER_ID) {
+    markCommentProcessed(commentId)
+    return { processed: false as const, reason: 'self' as const }
+  }
+
+  const explicitLang = parseLangSwitch(text)
+  const lang: ConversationLang = explicitLang || 'ua'
+
+  let reply: string | null = null
+  if (isPriceIntent(text)) {
+    reply =
+      lang === 'ua'
+        ? 'Дякую! Написав(ла) Вам у Direct ✅'
+        : 'Спасибо! Написал(а) Вам в Direct ✅'
+  } else if (isEmojiOrLikeOnly(text)) {
+    reply = lang === 'ua' ? 'Дякуємо! ❤️' : 'Спасибо! ❤️'
+  } else {
+    reply = (await generateCommentAiReply({ text, lang })) || (lang === 'ua' ? 'Дякую за коментар! 🙌' : 'Спасибо за комментарий! 🙌')
+  }
+
+  const sent = await sendInstagramCommentReply(commentId, reply)
+  // Mark processed regardless to avoid spam retries if API blocks it.
+  markCommentProcessed(commentId)
+
+  if (isPriceIntent(text) && IG_COMMENT_DM_ON_PRICE && fromId) {
+    // Try to DM; if IG blocks (no open window), it's fine — public reply already sent.
+    const dmText =
+      lang === 'ua'
+        ? [
+            'Вітаю! 👋 Я персональний AI‑асистент TemoWeb.',
+            'Підкажіть, будь ласка, Ваш бізнес і звідки зараз йдуть заявки — і я порахую пакет + строки. ⚡️',
+          ].join('\n')
+        : [
+            'Здравствуйте! 👋 Я персональный AI‑ассистент TemoWeb.',
+            'Подскажите, пожалуйста, ваш бизнес и откуда сейчас идут заявки — и я подберу пакет + сроки. ⚡️',
+          ].join('\n')
+    try {
+      await sendInstagramMessage(fromId, dmText)
+    } catch {
+      // ignore
+    }
+  }
+
+  recordInstagramWebhook({
+    senderId: fromId || null,
+    textPreview: clip(`comment:${fromUsername ? `${fromUsername}: ` : ''}${text}`, 120),
+  })
+
+  return { processed: sent.ok as boolean }
+}
 
 function parseAllowlist(raw: string) {
   const list = raw
@@ -983,30 +1162,38 @@ export async function POST(request: NextRequest) {
       changesCount: changes.length,
     })
 
-    // Newer Instagram Webhooks format uses entry[].changes[].value.message
+    // Newer Instagram Webhooks format uses entry[].changes[].*
     for (const change of changes) {
-      if (change.field !== 'messages') continue
-      const senderId = change.value?.sender?.id
-      const text = change.value?.message?.text?.trim()
-      const media = extractMedia(change.value)
-      const isEcho = Boolean(change.value?.message?.is_echo)
-      if (isEcho) continue
-      if (!senderId || (!text && media.length === 0)) {
-        console.log('IG webhook: skipped change (no senderId/text or echo)', {
-          field: change.field || null,
-          senderId: senderId || null,
-          recipientId: change.value?.recipient?.id || null,
-          hasMessage: Boolean(change.value?.message),
-          messageKeys: change.value?.message ? Object.keys(change.value.message) : [],
-          isEcho,
-        })
+      if (change.field === 'messages') {
+        const senderId = change.value?.sender?.id
+        const text = change.value?.message?.text?.trim()
+        const media = extractMedia(change.value)
+        const isEcho = Boolean(change.value?.message?.is_echo)
+        if (isEcho) continue
+        if (!senderId || (!text && media.length === 0)) {
+          console.log('IG webhook: skipped change (no senderId/text or echo)', {
+            field: change.field || null,
+            senderId: senderId || null,
+            recipientId: change.value?.recipient?.id || null,
+            hasMessage: Boolean(change.value?.message),
+            messageKeys: change.value?.message ? Object.keys(change.value.message) : [],
+            isEcho,
+          })
+          continue
+        }
+
+        console.log('IG webhook: incoming message (changes)', { senderId, text: text ? clip(text, 200) : null, mediaCount: media.length })
+        processedCount += 1
+        recordInstagramWebhook({ senderId, textPreview: clip(text || '[media]', 120) })
+        await handleIncomingMessage(senderId, text || '', media)
         continue
       }
 
-      console.log('IG webhook: incoming message (changes)', { senderId, text: text ? clip(text, 200) : null, mediaCount: media.length })
-      processedCount += 1
-      recordInstagramWebhook({ senderId, textPreview: clip(text || '[media]', 120) })
-      await handleIncomingMessage(senderId, text || '', media)
+      if (change.field === 'comments') {
+        const r = await handleIncomingCommentChange(change)
+        if (r.processed) processedCount += 1
+        continue
+      }
     }
 
     for (const msg of messages) {
