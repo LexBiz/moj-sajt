@@ -959,7 +959,8 @@ app.post(WEBHOOK_PATH, (req, res) => {
 })
 
 const port = Number(process.env.PORT || 3020)
-app.listen(port, () => {
-  console.log(`Telegram bot listening on ${port}`)
+const host = String(process.env.HOST || '127.0.0.1').trim() || '127.0.0.1'
+app.listen(port, host, () => {
+  console.log(`Telegram bot listening on http://${host}:${port}`)
 })
 
