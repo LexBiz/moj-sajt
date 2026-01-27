@@ -227,7 +227,7 @@ export default function Home() {
   })
 
   const faq = TEMOWEB_PROFILE.faq.map((x) => ({ q: profileLang === 'ua' ? x.qUa : x.qRu, a: profileLang === 'ua' ? x.aUa : x.aRu }))
-  const [faqOpen, setFaqOpen] = useState<number | null>(0)
+  const [faqOpen, setFaqOpen] = useState<number | null>(null)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -674,7 +674,7 @@ export default function Home() {
                                 {open && <p className="text-sm text-white/70 leading-relaxed pt-2">{x.a}</p>}
                               </div>
                               <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                <TrendingUp className={`w-4 h-4 text-white/70 transition-transform ${open ? 'rotate-180' : ''}`} />
+                                <Plus className={`w-4 h-4 text-white/70 transition-transform ${open ? 'rotate-45' : ''}`} />
                               </div>
                             </div>
                           </button>
