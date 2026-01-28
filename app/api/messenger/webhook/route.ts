@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
-import { recordMessengerWebhook } from '../state'
+import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 
 export const dynamic = 'force-dynamic'
@@ -182,8 +182,10 @@ export async function POST(request: NextRequest) {
   const signature = request.headers.get('x-hub-signature-256')
 
   console.log('Messenger webhook: received', { hasSignature: Boolean(signature), length: rawBuffer.length })
+  recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: null, note: null })
   if (!verifySignature(rawBuffer, signature)) {
     console.warn('Messenger webhook: invalid signature')
+    recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'invalid_signature', note: 'Signature verification failed' })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
   }
 
@@ -192,13 +194,16 @@ export async function POST(request: NextRequest) {
     payload = JSON.parse(rawBuffer.toString('utf8'))
   } catch (e) {
     console.error('Messenger webhook: invalid JSON', e)
+    recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'invalid_json', note: 'JSON parse failed' })
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   const entries = payload?.entry || []
+  if (!entries.length) recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'no_entries', note: `object=${String(payload?.object || '')}` })
   for (const entry of entries) {
     const pageId = String(entry?.id || '').trim()
     const events = entry?.messaging || []
+    if (!events.length) recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'no_events', note: `pageId=${pageId || '—'}` })
     for (const ev of events) {
       const senderId = String(ev?.sender?.id || '').trim()
       const msgText = ev?.message?.text?.trim() || null
@@ -214,6 +219,7 @@ export async function POST(request: NextRequest) {
       const status = conn?.status || 'draft'
       if (status === 'disabled') {
         console.log('Messenger webhook: connection disabled; ignoring message', { pageId, senderIdLast4: senderId.slice(-4) })
+        recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ignored', note: `disabled pageId=${pageId || '—'}` })
         continue
       }
 
@@ -226,6 +232,7 @@ export async function POST(request: NextRequest) {
       console.log('Messenger webhook: incoming text', { pageId, senderIdLast4: senderId.slice(-4), text: clip(msgText, 200) })
       const reply = await generateAiReply(msgText)
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
+      recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })
     }
   }
 

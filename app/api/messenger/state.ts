@@ -7,6 +7,13 @@ export type MessengerWebhookState = {
   lastPageId: string | null
   lastSenderId: string | null
   lastTextPreview: string | null
+
+  // Debug: last POST attempt meta (even if signature/json fails)
+  lastPostAt: string | null
+  lastPostLength: number | null
+  lastPostHasSignature: boolean | null
+  lastPostResult: 'ok' | 'invalid_signature' | 'invalid_json' | 'no_entries' | 'no_events' | 'ignored' | 'error' | null
+  lastPostNote: string | null
 }
 
 const state: MessengerWebhookState = {
@@ -15,6 +22,12 @@ const state: MessengerWebhookState = {
   lastPageId: null,
   lastSenderId: null,
   lastTextPreview: null,
+
+  lastPostAt: null,
+  lastPostLength: null,
+  lastPostHasSignature: null,
+  lastPostResult: null,
+  lastPostNote: null,
 }
 
 const STATE_FILE = (process.env.MESSENGER_WEBHOOK_STATE_FILE || '').trim() || 'data/messenger-webhook-state.json'
@@ -29,6 +42,13 @@ function loadFromDisk() {
     if (typeof parsed.lastPageId === 'string' || parsed.lastPageId === null) state.lastPageId = parsed.lastPageId ?? null
     if (typeof parsed.lastSenderId === 'string' || parsed.lastSenderId === null) state.lastSenderId = parsed.lastSenderId ?? null
     if (typeof parsed.lastTextPreview === 'string' || parsed.lastTextPreview === null) state.lastTextPreview = parsed.lastTextPreview ?? null
+
+    if (typeof parsed.lastPostAt === 'string' || parsed.lastPostAt === null) state.lastPostAt = parsed.lastPostAt ?? null
+    if (typeof parsed.lastPostLength === 'number' || parsed.lastPostLength === null) state.lastPostLength = parsed.lastPostLength ?? null
+    if (typeof parsed.lastPostHasSignature === 'boolean' || parsed.lastPostHasSignature === null)
+      state.lastPostHasSignature = parsed.lastPostHasSignature ?? null
+    if (typeof parsed.lastPostResult === 'string' || parsed.lastPostResult === null) state.lastPostResult = (parsed.lastPostResult as any) ?? null
+    if (typeof parsed.lastPostNote === 'string' || parsed.lastPostNote === null) state.lastPostNote = parsed.lastPostNote ?? null
   } catch {
     // ignore
   }
@@ -55,6 +75,21 @@ export function recordMessengerWebhook(input: {
   if (input.pageId) state.lastPageId = input.pageId
   if (input.senderId) state.lastSenderId = input.senderId
   if (input.textPreview) state.lastTextPreview = input.textPreview
+  saveToDisk()
+}
+
+export function recordMessengerPost(input: {
+  length?: number | null
+  hasSignature?: boolean | null
+  result?: MessengerWebhookState['lastPostResult']
+  note?: string | null
+}) {
+  loadFromDisk()
+  state.lastPostAt = new Date().toISOString()
+  if (typeof input.length === 'number') state.lastPostLength = input.length
+  if (typeof input.hasSignature === 'boolean') state.lastPostHasSignature = input.hasSignature
+  if (input.result) state.lastPostResult = input.result
+  if (input.note != null) state.lastPostNote = String(input.note)
   saveToDisk()
 }
 
