@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import path from 'path'
 import { requireAdmin } from '@/app/lib/adminAuth'
-import { readJsonFile, writeJsonFile } from '@/app/lib/jsonStore'
+import { getTenantProfile, upsertTenantProfile } from '@/app/lib/storage'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -25,8 +24,6 @@ export type TenantProfile = {
   managerTelegramChatId: string | null
   notes: string | null
 }
-
-const FILE = path.join(process.cwd(), 'data', 'tenant-profiles.json')
 
 function normalizeTenantId(input: unknown) {
   const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
@@ -53,25 +50,17 @@ function defaultProfile(tenantId: string): TenantProfile {
   }
 }
 
-function readAll(): TenantProfile[] {
-  const list = readJsonFile<TenantProfile[]>(FILE, [])
-  return Array.isArray(list) ? list : []
-}
-
-function writeAll(list: TenantProfile[]) {
-  writeJsonFile(FILE, list)
-}
-
 export async function GET(request: NextRequest) {
   if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(request.url)
   const tenantId = normalizeTenantId(searchParams.get('tenantId'))
-  const all = readAll()
   if (tenantId) {
-    const found = all.find((p) => p.tenantId === tenantId) || null
+    const found = (await getTenantProfile(tenantId)) as TenantProfile | null
     return NextResponse.json({ ok: true, profile: found })
   }
-  return NextResponse.json({ ok: true, profiles: all }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
+  // For now, keep listing via JSON-store in UI by fetching per tenant (admin UI already uses tenant selector).
+  // Return empty list to avoid exposing huge DB reads until we add pagination.
+  return NextResponse.json({ ok: true, profiles: [] }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
 
 export async function POST(request: NextRequest) {
@@ -80,8 +69,7 @@ export async function POST(request: NextRequest) {
   const tenantId = normalizeTenantId(body.tenantId)
   if (!tenantId) return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
 
-  const all = readAll()
-  const existing = all.find((p) => p.tenantId === tenantId) || defaultProfile(tenantId)
+  const existing = ((await getTenantProfile(tenantId)) as TenantProfile | null) || defaultProfile(tenantId)
 
   const next: TenantProfile = {
     ...existing,
@@ -103,8 +91,7 @@ export async function POST(request: NextRequest) {
     notes: body.notes == null ? existing.notes : String(body.notes).trim() || null,
   }
 
-  const out = [next, ...all.filter((p) => p.tenantId !== tenantId)]
-  writeAll(out)
+  await upsertTenantProfile(next as any)
   return NextResponse.json({ ok: true, profile: next }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import path from 'path'
 import { requireAdmin } from '@/app/lib/adminAuth'
-import { readJsonFile, writeJsonFile } from '@/app/lib/jsonStore'
+import { listChannelConnections, upsertChannelConnection } from '@/app/lib/storage'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -24,8 +23,6 @@ export type ChannelConnection = {
   notes: string | null
 }
 
-const FILE = path.join(process.cwd(), 'data', 'channel-connections.json')
-
 function normalizeId(input: unknown) {
   const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
   if (!raw) return ''
@@ -39,21 +36,12 @@ function normalizeChannel(input: unknown): ChannelType | null {
   return null
 }
 
-function readAll(): ChannelConnection[] {
-  const list = readJsonFile<ChannelConnection[]>(FILE, [])
-  return Array.isArray(list) ? list : []
-}
-
-function writeAll(list: ChannelConnection[]) {
-  writeJsonFile(FILE, list)
-}
-
 export async function GET(request: NextRequest) {
   if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(request.url)
   const tenantId = normalizeId(searchParams.get('tenantId'))
   const channel = normalizeChannel(searchParams.get('channel'))
-  const all = readAll()
+  const all = (await listChannelConnections()) as ChannelConnection[]
   const filtered = all.filter((c) => {
     if (tenantId && c.tenantId !== tenantId) return false
     if (channel && c.channel !== channel) return false
@@ -76,7 +64,7 @@ export async function POST(request: NextRequest) {
   if (!channel) return NextResponse.json({ error: 'channel is required' }, { status: 400 })
 
   const now = new Date().toISOString()
-  const all = readAll()
+  const all = (await listChannelConnections()) as ChannelConnection[]
 
   const id =
     normalizeId(body.id) ||
@@ -98,8 +86,7 @@ export async function POST(request: NextRequest) {
     notes: body.notes == null ? existing?.notes || null : String(body.notes).trim() || null,
   }
 
-  const out = [next, ...all.filter((c) => c.id !== id)]
-  writeAll(out)
+  await upsertChannelConnection(next as any)
   return NextResponse.json({ ok: true, connection: next }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
 
