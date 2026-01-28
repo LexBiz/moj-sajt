@@ -116,11 +116,11 @@ export function buildTemoWebSystemPrompt(params: {
       : channelNorm === 'whatsapp'
       ? 'Emojis: 0–2 max (unless user is very informal).'
       : channelNorm === 'website'
-      ? 'Emojis: 0–2 max.'
+      ? 'Emojis: 0–1 max (Website: максимально коротко, без “эмодзи-шума”).'
       : channelNorm === 'messenger'
       ? 'Emojis: 1–2 max (Messenger: friendly, but not “Instagram emoji spam”).'
     : channelNorm === 'telegram'
-      ? 'Emojis: 1–3 relevant emojis (Telegram friendly, but not spam).'
+      ? 'Emojis: 1–2 relevant emojis (Telegram: коротко, по делу, без “простыней”).'
       : 'Emojis: 1–3 relevant emojis.'
 
   // Keep it as close as possible to the user's prompt, but we also inject language + channel + stage + score.

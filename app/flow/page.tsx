@@ -551,6 +551,8 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // Default internal tenant (later we’ll drive this via widget key / connection).
+          tenantId: 'temoweb',
           name: form.name,
           contact: form.contact,
           businessType: businessResolved,
