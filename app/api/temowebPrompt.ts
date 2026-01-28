@@ -117,6 +117,8 @@ export function buildTemoWebSystemPrompt(params: {
       ? 'Emojis: 0–2 max (unless user is very informal).'
       : channelNorm === 'website'
       ? 'Emojis: 0–2 max.'
+      : channelNorm === 'messenger'
+      ? 'Emojis: 0–2 max (Messenger: friendly but not “Instagram emoji spam”).'
     : channelNorm === 'telegram'
       ? 'Emojis: 1–3 relevant emojis (Telegram friendly, but not spam).'
       : 'Emojis: 1–3 relevant emojis.'

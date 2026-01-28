@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
+import { appendMessage, getConversation } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 
 export const dynamic = 'force-dynamic'
@@ -49,6 +50,31 @@ const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+function normalizeAnswer(text: string) {
+  let out = text
+  out = out.replace(/\*\*/g, '')
+  out = out.replace(/\*(?=\S)/g, '')
+  out = out.replace(/(^|\n)\s*#{1,6}\s+/g, '$1')
+  out = out.replace(/(^|\n)\s*\*\s+/g, '$1— ')
+  out = out.replace(/\n{3,}/g, '\n\n')
+  return out.trim()
+}
+
+function enforceSingleQuestion(text: string) {
+  const out = String(text || '')
+  const qs = (out.match(/\?/g) || []).length
+  if (qs <= 1) return out
+  let remaining = 1
+  const chars = out.split('')
+  for (let i = chars.length - 1; i >= 0; i -= 1) {
+    if (chars[i] === '?') {
+      if (remaining > 0) remaining -= 1
+      else chars[i] = '.'
+    }
+  }
+  return chars.join('')
 }
 
 function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
@@ -100,7 +126,7 @@ async function generateAiReply(userText: string) {
         { role: 'user', content: userText },
       ],
       temperature: 0.8,
-      max_tokens: 320,
+      max_tokens: 360,
     }),
   })
   if (!resp.ok) {
@@ -110,7 +136,53 @@ async function generateAiReply(userText: string) {
   }
   const j = (await resp.json().catch(() => ({}))) as any
   const content = j?.choices?.[0]?.message?.content
-  return typeof content === 'string' && content.trim() ? clip(content.trim(), 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
+  const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
+  const guarded = enforceSingleQuestion(cleaned)
+  return guarded ? clip(guarded, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
+}
+
+async function generateAiReplyWithHistory(input: { userText: string; history: Array<{ role: 'user' | 'assistant'; content: string }> }) {
+  const userText = input.userText
+  if (!OPENAI_API_KEY) return generateAiReply(userText)
+  const hist = Array.isArray(input.history) ? input.history : []
+  const lastUser = userText
+  const isUa = /[іїєґ]/i.test(String(lastUser || ''))
+  const userTurns = hist.filter((m) => m.role === 'user').length || 1
+  const readinessScore = computeReadinessScoreHeuristic(lastUser, userTurns)
+  const stage = computeStageHeuristic(lastUser, readinessScore)
+  const system = buildTemoWebSystemPrompt({ lang: isUa ? 'ua' : 'ru', channel: 'messenger', stage, readinessScore })
+  const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
+  const firstMsgRule = isFirstAssistant
+    ? isUa
+      ? 'Це перше повідомлення: представтесь як "персональний AI‑асистент TemoWeb". Питай максимум 1 питання.'
+      : 'Это первое сообщение: представьтесь как "персональный AI‑ассистент TemoWeb". Задай максимум 1 вопрос.'
+    : null
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: 'system', content: system },
+        ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
+        ...hist.slice(-16),
+        { role: 'user', content: userText },
+      ],
+      temperature: 0.85,
+      max_tokens: 420,
+    }),
+  })
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '')
+    console.error('OpenAI error (Messenger/history)', resp.status, t.slice(0, 300))
+    return generateAiReply(userText)
+  }
+  const j = (await resp.json().catch(() => ({}))) as any
+  const content = j?.choices?.[0]?.message?.content
+  const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
+  const guarded = enforceSingleQuestion(cleaned)
+  return guarded ? clip(guarded, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
 }
 
 async function sendMessengerText(opts: { pageAccessToken: string; recipientId: string; text: string }) {
@@ -230,8 +302,12 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('Messenger webhook: incoming text', { pageId, senderIdLast4: senderId.slice(-4), text: clip(msgText, 200) })
-      const reply = await generateAiReply(msgText)
+      const conv = getConversation(pageId, senderId)
+      appendMessage(pageId, senderId, { role: 'user', content: msgText })
+      const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
+      const reply = await generateAiReplyWithHistory({ userText: msgText, history })
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
+      appendMessage(pageId, senderId, { role: 'assistant', content: reply })
       recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })
     }
   }
