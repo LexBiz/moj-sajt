@@ -22,7 +22,7 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
   if (/(у\s+меня|мы\s+|клиент|заявк|заказ|продаж|ниша|бизнес|салон|кофейн|ремонт|стомат|барбершоп|школа)/i.test(t)) score += 15
   if (/(как|почему|зачем|что|як|чому|що)\b/i.test(t)) score += 8
   if (/(срок|сроки|время|термин|інтеграц|integration|процесс|как\s+это\s+работает)/i.test(t)) score += 10
-  if (/(цена|стоим|сколько|пакет|тариф|оплат|поддержк|setup|внедрен)/i.test(t)) score += 18
+  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|оплат|поддержк|setup|внедрен)/i.test(t)) score += 18
   if (/(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) score += 28
   if (/(погод|weather|политик|polit|отношен|dating|ресторан|кафе|кофе|анекдот|фильм|сериал|спорт)/i.test(t)) score -= 12
   if (t.length <= 3) score -= 8
@@ -35,7 +35,7 @@ export function computeStageHeuristic(text: string, readinessScore: number): Tem
   const t = String(text || '').trim()
   if (!t) return 'DISCOVERY'
   if (readinessScore >= 55 && /(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) return 'ASK_CONTACT'
-  if (/(цена|стоим|сколько|пакет|тариф|поддержк|setup|внедрен)/i.test(t)) return 'OFFER'
+  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|поддержк|setup|внедрен)/i.test(t)) return 'OFFER'
   if (/(интеграц|integration|процесс|срок|сроки|гарант|надеж|безопас)/i.test(t)) return 'TRUST'
   if (/(интерес|цікав|покажи|пример|як\s+це\s+допоможе|how\s+it\s+helps)/i.test(t)) return 'VALUE'
   return 'DISCOVERY'
@@ -129,11 +129,17 @@ export function buildTemoWebSystemPrompt(params: {
     `Current stage: ${stage}`,
     `Readiness score: ${Math.max(0, Math.min(100, Math.round(readinessScore)))} (0-100)`,
     emojiHint,
+    'FORMAT RULE: plain text only. No markdown (#, **, *). Use short paragraphs and "—" bullets.',
     lang === 'ua'
       ? 'Звертайтесь до клієнта на "Ви". Ніякого "ти".'
       : lang === 'ru'
       ? 'Обращайтесь к клиенту на "Вы". Никакого "ты".'
       : 'Address the client respectfully. Do not use slang.',
+    'ASKING RULE: ask максимум 1 уточняющий вопрос за сообщение (исключение: когда собираете контакт — можно попросить телефон+email в одном сообщении).',
+    'SALES RULE: do NOT push the most expensive package. Recommend the minimal suitable option based on the client needs.',
+    'If client clearly says: "нужен только 1 канал" — recommend START (and mention optional add-ons like payments/calendar as modules).',
+    'Do NOT mention contracts/documents/legal steps unless the client explicitly asks.',
+    'PRICE RULE: never drop the biggest number by default. If user did NOT ask price — do not list prices; just say you will recommend after 1 clarifying question.',
     '',
     `You are the senior sales manager and business consultant of ${TEMOWEB_PROFILE.brandName}.`,
     '',
@@ -169,9 +175,18 @@ export function buildTemoWebSystemPrompt(params: {
     '— CRM & lead automation',
     '— Custom integrations',
     '',
-    lang === 'ua' ? renderPricing('ua') : lang === 'ru' ? renderPricing('ru') : renderPricing('ru'),
+    // Pricing is useful ONLY when the user is in OFFER stage (asking about price/packages).
+    stage === 'OFFER'
+      ? lang === 'ua'
+        ? renderPricing('ua')
+        : lang === 'ru'
+        ? renderPricing('ru')
+        : renderPricing('ru')
+      : lang === 'ua'
+      ? 'Пакети: START / BUSINESS / PRO (підберемо після 1 уточнення).'
+      : 'Пакеты: START / BUSINESS / PRO (подберём после 1 уточнения).',
     '',
-    lang === 'ua' ? renderAddons('ua') : lang === 'ru' ? renderAddons('ru') : renderAddons('ru'),
+    stage === 'OFFER' ? (lang === 'ua' ? renderAddons('ua') : lang === 'ru' ? renderAddons('ru') : renderAddons('ru')) : '',
     '',
     lang === 'ua' ? renderFaq('ua') : lang === 'ru' ? renderFaq('ru') : renderFaq('ru'),
     '',

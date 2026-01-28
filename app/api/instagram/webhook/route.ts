@@ -130,7 +130,7 @@ function isEmojiOrLikeOnly(text: string) {
 function isPriceIntent(text: string) {
   const t = String(text || '').toLowerCase()
   if (!t) return false
-  return /(цена|стоим|сколько|прайс|price|варт|скільки|пакет|тариф)/i.test(t)
+  return /(цена|стоим|сколько|прайс|price|ціна|вартість|варт|скільки|скільки\s+кошту|пакет|тариф)/i.test(t)
 }
 
 function isToxicOrHateComment(text: string) {
@@ -806,7 +806,14 @@ async function generateAiReply(params: {
       detail: 'openai_bad_response',
     }
   }
-  return { reply: clip(content.trim(), 1000), provider: 'openai' as const, detail: null }
+  // Strip markdown-ish formatting that sometimes appears (**bold**, *bullets*).
+  // Keep it plain-text for Instagram DM.
+  let out = content.trim()
+  out = out.replace(/\*\*/g, '')
+  out = out.replace(/\*(?=\S)/g, '')
+  out = out.replace(/(^|\n)\s*\*\s+/g, '$1— ')
+  out = out.replace(/\n{3,}/g, '\n\n')
+  return { reply: clip(out.trim(), 1000), provider: 'openai' as const, detail: null }
 }
 
 async function fetchBinary(url: string) {
