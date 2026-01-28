@@ -120,6 +120,7 @@ export default function AdminPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [editStatus, setEditStatus] = useState<string>('new')
   const [editNotes, setEditNotes] = useState<string>('')
+  const [filtersOpen, setFiltersOpen] = useState(true)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -406,6 +407,157 @@ export default function AdminPage() {
     await saveSelected()
   }
 
+  const LeadDetail = ({ variant }: { variant: 'desktop' | 'mobile' }) => {
+    if (!selected) {
+      return <div className="text-slate-400 text-sm">Выбери заявку — и тут будут детали, статусы и заметки.</div>
+    }
+    return (
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400">Контакт</p>
+              <p className="text-lg font-bold text-white break-all">{(selected as any)?.contact ? String((selected as any).contact) : '—'}</p>
+              {(selected as any)?.email ? <p className="text-xs text-slate-400 mt-1 break-all">{String((selected as any).email)}</p> : null}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <button
+                onClick={() => navigator.clipboard.writeText(String((selected as any)?.contact || ''))}
+                className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                disabled={!String((selected as any)?.contact || '').trim()}
+              >
+                Копировать
+              </button>
+              {String((selected as any)?.contact || '').startsWith('@') ? (
+                <a
+                  href={`https://t.me/${String((selected as any)?.contact || '').slice(1)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                >
+                  Telegram
+                </a>
+              ) : /\S+@\S+\.\S+/.test(String((selected as any)?.contact || '')) ? (
+                <a href={`mailto:${String((selected as any)?.contact || '')}`} className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm">
+                  Email
+                </a>
+              ) : /^[+\d][\d\s().-]{6,}$/.test(String((selected as any)?.contact || '')) ? (
+                <a
+                  href={`tel:${String((selected as any)?.contact || '').replace(/[^\d+]/g, '')}`}
+                  className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+                >
+                  Позвонить
+                </a>
+              ) : null}
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">{fmtDate(selected.createdAt)}</p>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2 text-sm text-slate-200">
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-400">Источник</span>
+            <span>
+              {selected.source || '—'}
+              {selected.lang ? ` (${selected.lang})` : ''}
+            </span>
+          </div>
+          {selected.aiReadiness ? (
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-400">Готовность</span>
+              <span className="text-right">{readinessUi(selected.aiReadiness).text}</span>
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-400">Бизнес</span>
+            <span className="text-right">{selected.businessType || '—'}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-400">Каналы</span>
+            <span className="text-right">{selected.channel || '—'}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-400">Боль</span>
+            <span className="text-right">{selected.pain || '—'}</span>
+          </div>
+        </div>
+
+        {selected.aiSummary ? (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs text-slate-400 mb-2">AI‑итог</p>
+            <p className="text-sm text-slate-100 whitespace-pre-wrap">{selected.aiSummary}</p>
+          </div>
+        ) : null}
+
+        {Array.isArray(selected.clientMessages) && selected.clientMessages.length ? (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <p className="text-xs text-slate-400">Сообщения клиента</p>
+              {selected.aiReadiness ? (
+                <span className={`text-[11px] px-2 py-1 rounded-full border ${readinessUi(selected.aiReadiness).tone}`}>{readinessUi(selected.aiReadiness).text}</span>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              {selected.clientMessages.slice(0, 20).map((m, i) => (
+                <div key={i} className="text-sm text-slate-100 whitespace-pre-wrap border-l-2 border-indigo-400/40 pl-3">
+                  {m}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => quickSetStatus('contacted')} className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm" disabled={loading}>
+              → Связались
+            </button>
+            <button onClick={() => quickSetStatus('qualified')} className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm" disabled={loading}>
+              → Квалиф.
+            </button>
+            <button onClick={() => quickSetStatus('won')} className="px-3 py-2 rounded-lg bg-emerald-600/70 hover:bg-emerald-600 text-white text-sm" disabled={loading}>
+              ✅ Сделка
+            </button>
+            <button onClick={() => quickSetStatus('lost')} className="px-3 py-2 rounded-lg bg-rose-600/70 hover:bg-rose-600 text-white text-sm" disabled={loading}>
+              ❌ Потеря
+            </button>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 mb-1">Статус</p>
+            <select
+              value={editStatus}
+              onChange={(e) => setEditStatus(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            >
+              {(['new', 'contacted', 'qualified', 'won', 'lost', 'junk'] as LeadStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 mb-1">Заметки</p>
+            <textarea
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              rows={variant === 'mobile' ? 6 : 4}
+              placeholder="Что важного? следующий шаг?"
+              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+          <button
+            onClick={saveSelected}
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
+            disabled={loading}
+          >
+            Сохранить
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -506,7 +658,18 @@ export default function AdminPage() {
 
           {/* Filters */}
           <div className="p-4 sm:p-6 border-b border-slate-700">
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="text-sm text-slate-300 font-semibold">Фильтры</div>
+              <button
+                onClick={() => setFiltersOpen((v) => !v)}
+                className="sm:hidden px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold"
+              >
+                {filtersOpen ? 'Свернуть' : 'Показать'}
+              </button>
+            </div>
+
+            <div className={`${filtersOpen ? '' : 'hidden'} sm:block`}>
+            <div className="flex sm:flex-wrap flex-nowrap items-center gap-2 mb-4 overflow-x-auto pb-2">
               {([
                 { id: 'inbox', label: `Inbox (${stats.byStatus.new})` },
                 { id: 'work', label: 'В работе' },
@@ -525,7 +688,7 @@ export default function AdminPage() {
                   {x.label}
                 </button>
               ))}
-              <div className="flex-1" />
+              <div className="sm:flex-1" />
               <button
                 onClick={() => {
                   const today = dateKeyLocal(new Date().toISOString())
@@ -660,13 +823,59 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Main */}
           <div className="grid md:grid-cols-3">
             {/* List */}
-            <div className="md:col-span-2 border-r border-slate-700">
-              <div className="overflow-x-auto">
+            <div className="md:col-span-2 md:border-r border-slate-700">
+              {/* Mobile list (cards) */}
+              <div className="md:hidden p-3 space-y-3">
+                {filtered.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-slate-500">Ничего не найдено</div>
+                ) : (
+                  grouped.keys.flatMap((dk) => {
+                    const dayLeads = grouped.map.get(dk) || []
+                    return [
+                      <div key={`mh-${dk}`} className="text-xs font-semibold text-slate-300 px-1">
+                        {dk === 'unknown' ? 'Без даты' : dk} <span className="text-slate-500 font-normal">• {dayLeads.length}</span>
+                      </div>,
+                      ...dayLeads.map((lead) => {
+                        const src = sourceBadge(lead.source)
+                        const selectedCls = selectedId === lead.id ? 'ring-2 ring-indigo-400/40' : ''
+                        return (
+                          <button
+                            key={lead.id}
+                            onClick={() => setSelectedId(lead.id)}
+                            className={`w-full text-left rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors p-4 ${selectedCls}`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold text-white break-all">{lead.contact}</div>
+                                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                  <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeClass(String(lead.status))}`}>
+                                    {STATUS_LABEL[String(lead.status) as LeadStatus] || String(lead.status)}
+                                  </span>
+                                  <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${src.cls}`}>{src.label}</span>
+                                  <span className="text-xs text-slate-400">{fmtTimeOnly(lead.createdAt)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 text-sm text-slate-200">
+                              <div className="font-semibold">{lead.businessType || '—'}</div>
+                              <div className="text-xs text-slate-400 line-clamp-3">{lead.aiSummary || lead.pain || lead.question || '—'}</div>
+                            </div>
+                          </button>
+                        )
+                      }),
+                    ]
+                  })
+                )}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-900">
                     <tr>
@@ -731,183 +940,39 @@ export default function AdminPage() {
             </div>
 
             {/* Detail */}
-            <div className="p-4 sm:p-6">
-              {!selected ? (
-                <div className="text-slate-400 text-sm">
-                  Выбери заявку слева — и тут будут детали, статусы и заметки.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-xs text-slate-400">Контакт</p>
-                        <p className="text-lg font-bold text-white break-all">{(selected as any)?.contact ? String((selected as any).contact) : '—'}</p>
-                        {(selected as any)?.email ? (
-                          <p className="text-xs text-slate-400 mt-1 break-all">{String((selected as any).email)}</p>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => navigator.clipboard.writeText(String((selected as any)?.contact || ''))}
-                          className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                          disabled={!String((selected as any)?.contact || '').trim()}
-                        >
-                          Копировать
-                        </button>
-                        {String((selected as any)?.contact || '').startsWith('@') ? (
-                          <a
-                            href={`https://t.me/${String((selected as any)?.contact || '').slice(1)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                          >
-                            Telegram
-                          </a>
-                        ) : /\S+@\S+\.\S+/.test(String((selected as any)?.contact || '')) ? (
-                          <a
-                            href={`mailto:${String((selected as any)?.contact || '')}`}
-                            className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                          >
-                            Email
-                          </a>
-                        ) : /^[+\d][\d\s().-]{6,}$/.test(String((selected as any)?.contact || '')) ? (
-                          <a
-                            href={`tel:${String((selected as any)?.contact || '').replace(/[^\d+]/g, '')}`}
-                            className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                          >
-                            Позвонить
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">{fmtDate(selected.createdAt)}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2 text-sm text-slate-200">
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-400">Источник</span>
-                      <span>{selected.source || '—'}{selected.lang ? ` (${selected.lang})` : ''}</span>
-                    </div>
-                    {selected.aiReadiness ? (
-                      <div className="flex justify-between gap-3">
-                        <span className="text-slate-400">Готовность</span>
-                        <span className="text-right">{readinessUi(selected.aiReadiness).text}</span>
-                      </div>
-                    ) : null}
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-400">Бизнес</span>
-                      <span className="text-right">{selected.businessType || '—'}</span>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-400">Каналы</span>
-                      <span className="text-right">{selected.channel || '—'}</span>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-400">Боль</span>
-                      <span className="text-right">{selected.pain || '—'}</span>
-                    </div>
-                  </div>
-
-                  {selected.aiSummary ? (
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-xs text-slate-400 mb-2">AI‑итог</p>
-                      <p className="text-sm text-slate-100 whitespace-pre-wrap">{selected.aiSummary}</p>
-                    </div>
-                  ) : null}
-
-                  {Array.isArray(selected.clientMessages) && selected.clientMessages.length ? (
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex items-center justify-between gap-3 mb-2">
-                        <p className="text-xs text-slate-400">Сообщения клиента</p>
-                        {selected.aiReadiness ? (
-                          <span className={`text-[11px] px-2 py-1 rounded-full border ${readinessUi(selected.aiReadiness).tone}`}>
-                            {readinessUi(selected.aiReadiness).text}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="space-y-2">
-                        {selected.clientMessages.slice(0, 20).map((m, i) => (
-                          <div key={i} className="text-sm text-slate-100 whitespace-pre-wrap border-l-2 border-indigo-400/40 pl-3">
-                            {m}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="grid gap-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => quickSetStatus('contacted')}
-                        className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                        disabled={loading}
-                      >
-                        → Связались
-                      </button>
-                      <button
-                        onClick={() => quickSetStatus('qualified')}
-                        className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
-                        disabled={loading}
-                      >
-                        → Квалиф.
-                      </button>
-                      <button
-                        onClick={() => quickSetStatus('won')}
-                        className="px-3 py-2 rounded-lg bg-emerald-600/70 hover:bg-emerald-600 text-white text-sm"
-                        disabled={loading}
-                      >
-                        ✅ Сделка
-                      </button>
-                      <button
-                        onClick={() => quickSetStatus('lost')}
-                        className="px-3 py-2 rounded-lg bg-rose-600/70 hover:bg-rose-600 text-white text-sm"
-                        disabled={loading}
-                      >
-                        ❌ Потеря
-                      </button>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400 mb-1">Статус</p>
-                      <select
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                      >
-                        {(['new', 'contacted', 'qualified', 'won', 'lost', 'junk'] as LeadStatus[]).map((s) => (
-                          <option key={s} value={s}>
-                            {STATUS_LABEL[s]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400 mb-1">Заметки</p>
-                      <textarea
-                        value={editNotes}
-                        onChange={(e) => setEditNotes(e.target.value)}
-                        rows={4}
-                        placeholder="Что важного? следующий шаг?"
-                        className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                      />
-                    </div>
-                    <button
-                      onClick={saveSelected}
-                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
-                      disabled={loading}
-                    >
-                      Сохранить
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div className="hidden md:block p-4 sm:p-6">
+              <LeadDetail variant="desktop" />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile bottom sheet (lead detail) */}
+      {selected ? (
+        <div className="md:hidden">
+          <button
+            className="fixed inset-0 bg-black/60"
+            onClick={() => setSelectedId(null)}
+            aria-label="Close lead details"
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-slate-900 p-4 pb-10">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="h-1.5 w-12 rounded-full bg-white/20 mx-auto" />
+              <button
+                onClick={() => setSelectedId(null)}
+                className="absolute right-3 top-3 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold"
+              >
+                Закрыть
+              </button>
+            </div>
+            <LeadDetail variant="mobile" />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
+
 
 
 

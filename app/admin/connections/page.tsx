@@ -257,7 +257,40 @@ export default function AdminConnectionsPage() {
               Подключений: <span className="font-bold">{connections.length}</span>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden p-4 space-y-3">
+            {connections.length === 0 ? (
+              <div className="px-6 py-10 text-center text-slate-500">Пока нет подключений. Создай первое сверху.</div>
+            ) : (
+              connections.map((c) => (
+                <div key={c.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs text-slate-400">tenant</div>
+                      <div className="text-sm text-white font-mono break-all">{c.tenantId}</div>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                          {c.channel}
+                        </span>
+                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                          {c.status}
+                        </span>
+                        <span className="text-xs text-slate-500">updated: {fmt(c.updatedAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <div className="text-xs text-slate-400">externalId</div>
+                    <div className="text-sm text-slate-100 font-mono break-all">{c.externalId || '—'}</div>
+                  </div>
+                  {c.notes ? <div className="mt-3 text-sm text-slate-200 whitespace-pre-wrap">{c.notes}</div> : null}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>

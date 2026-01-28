@@ -208,7 +208,31 @@ export default function AdminTenantsPage() {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden p-4 space-y-3">
+            {tenants.length === 0 ? (
+              <div className="px-6 py-10 text-center text-slate-500">Пока нет клиентов. Создай первого tenant сверху.</div>
+            ) : (
+              tenants.map((t) => (
+                <div key={t.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-white font-semibold">{t.name}</div>
+                      <div className="text-xs text-slate-400 mt-1 break-all font-mono">{t.id}</div>
+                      <div className="text-xs text-slate-500 mt-1">created: {fmt(t.createdAt)} • updated: {fmt(t.updatedAt)}</div>
+                    </div>
+                    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                      {t.plan}
+                    </span>
+                  </div>
+                  {t.notes ? <div className="mt-3 text-sm text-slate-200 whitespace-pre-wrap">{t.notes}</div> : null}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>
