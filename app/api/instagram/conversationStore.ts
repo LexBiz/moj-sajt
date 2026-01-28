@@ -23,6 +23,8 @@ export type ConversationState = {
   history: ConversationMessage[]
   leadId: number | null
   contactDraft: ConversationContactDraft | null
+  // If true, we allow resending contact and creating/sending a lead again (explicitly requested/agreed).
+  resendArmed?: boolean
   lastUserAt: string | null
   lastAssistantAt: string | null
   followUpSentAt: string | null
@@ -51,6 +53,7 @@ function loadAll(): Record<string, ConversationState> {
       if (typeof c.followUpSentAt === 'undefined') c.followUpSentAt = null
       if (typeof c.contactDraft === 'undefined') c.contactDraft = null
       if (typeof c.lastPlusDmAt === 'undefined') c.lastPlusDmAt = null
+      if (typeof c.resendArmed === 'undefined') c.resendArmed = false
       parsed[k] = c
     }
     return parsed as Record<string, ConversationState>
@@ -77,6 +80,7 @@ export function getConversation(senderId: string): ConversationState {
     history: [],
     leadId: null,
     contactDraft: null,
+    resendArmed: false,
     lastUserAt: null,
     lastAssistantAt: null,
     followUpSentAt: null,

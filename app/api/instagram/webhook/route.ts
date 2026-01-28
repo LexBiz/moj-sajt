@@ -684,6 +684,15 @@ function detectReadyToProceed(text: string) {
   return /(ок|okay|давай|погнали|готов|підключ|подключ|консультац|созвон|дзвінок|звонок|почнемо|почати)/i.test(text)
 }
 
+function detectResendContactIntent(text: string) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return false
+  // Explicit resend-only intent (we'll re-capture and re-send ONLY after this agreement).
+  return /(ще\s+раз|еще\s+раз|знову|повтор(но|и)?|дубл(ю|юю|иру)|перешлю|перекину|скину\s+снова|отправлю\s+снова|надішлю\s+ще\s+раз|відправлю\s+ще\s+раз|send\s+again)/i.test(
+    t,
+  )
+}
+
 function detectResetIntent(text: string) {
   const t = String(text || '').trim().toLowerCase()
   if (!t) return false
@@ -927,7 +936,7 @@ async function generateLeadAiSummary(input: {
 
   const payload = {
     readiness: input.readiness,
-    transcript: input.history.slice(-12).map((m) => ({ role: m.role, content: clip(m.content, 240) })),
+    transcript: input.history.slice(-20).map((m) => ({ role: m.role, content: clip(m.content, 320) })),
   }
 
   const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
@@ -942,17 +951,23 @@ async function generateLeadAiSummary(input: {
       body: JSON.stringify({
         model: OPENAI_MODEL,
         temperature: 0.2,
-        max_tokens: 240,
+        max_tokens: 420,
         messages: [
           {
             role: 'system',
             content: [
               langLine,
-              'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM TemoWeb.',
+              'Сделай сильное, ПРАВДИВОЕ резюме лида для CRM TemoWeb — как опытный менеджер, который будет продолжать общение.',
               'Можно использовать только данные из JSON (ничего не выдумывать).',
-              'Формат: 5–8 строк, каждая начинается с эмодзи.',
+              'Формат: 7–10 строк, каждая начинается с эмодзи. Коротко, но максимально информативно.',
               'Первая строка — готовность покупки: 🟢/🟡/🟠/🔴 + label + score.',
-              'Дальше: 🏷 ниша/бизнес (если есть), 😤 боль, 💬 что хочет, 🧩 следующий шаг.',
+              'Дальше ОБЯЗАТЕЛЬНО:',
+              '🏷 бізнес/ніша (якщо є)',
+              '🎯 що хоче (1 речення)',
+              '🧩 що обговорили / до чого дійшли (якщо є рішення)',
+              '⛔️ обмеження/умови (канали, бюджет, “1 канал”, сроки, оплата/запис тощо)',
+              '➡️ наступний крок (дзвінок/демо/доступи/оплата/інтеграції)',
+              'Если клиент “сам не знает” — так и напиши: "не до кінця сформулював потребу" + что нужно уточнить одним вопросом.',
               'Без markdown (#, **). Обращайся на "Вы/Ви".',
             ].join(' '),
           },
@@ -1110,10 +1125,14 @@ async function sendTelegramLead({
   senderId,
   messageText,
   contactHint,
+  aiSummary,
+  leadId,
 }: {
   senderId: string
   messageText: string
   contactHint: string | null
+  aiSummary: string | null
+  leadId: number | null
 }) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.warn('Telegram is not configured for IG leads')
@@ -1123,14 +1142,17 @@ async function sendTelegramLead({
   const parts = [
     '📥 НОВА ЗАЯВКА З INSTAGRAM',
     '',
+    leadId != null ? `🆔 Lead ID: ${leadId}` : null,
     `🧾 Контакт (IG): ${senderId}`,
     contactHint ? `☎️ Контакт клієнта: ${contactHint}` : '☎️ Контакт клієнта: —',
     '',
+    aiSummary ? ['🧠 Резюме (AI):', clip(aiSummary, 1200), ''].join('\n') : null,
     '🗣 Повідомлення клієнта:',
     `— ${clip(messageText, 800)}`,
     '',
     `🕒 Час: ${new Date().toISOString()}`,
   ]
+    .filter(Boolean)
 
   const text = parts.join('\n')
   const retryMs = [0, 350, 1200]
@@ -1249,6 +1271,60 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
+  // Resend mode: if lead already created, we resend ONLY after explicit agreement.
+  // 1) User asks to resend -> arm mode, ask for contact again.
+  // 2) Next message contains contact -> create & send NEW lead + notify Telegram, then disarm.
+  if (conversation.leadId != null) {
+    const resendArmed = Boolean((conversation as any).resendArmed)
+    if (detectResendContactIntent(text) && !resendArmed) {
+      updateConversation(senderId, { resendArmed: true, stage: 'ask_contact' } as any)
+      await sendInstagramMessage(
+        senderId,
+        lang === 'ua'
+          ? 'Ок ✅ Домовились. Надішліть, будь ласка, контакт ще раз (телефон або email) — і я зафіксую повторно.'
+          : 'Ок ✅ Договорились. Пришлите, пожалуйста, контакт ещё раз (телефон или email) — и я зафиксирую повторно.',
+      )
+      updateConversation(senderId, { lastAssistantAt: nowIso() })
+      return
+    }
+    if (resendArmed && draftFromText) {
+      const mergedDraft = { phone: draftFromText.phone || null, email: draftFromText.email || null }
+      const hasAny = Boolean(mergedDraft.phone || mergedDraft.email)
+      if (hasAny) {
+        const readiness = { score: readinessScore, label: readinessLabel(readinessScore), stage: computeStageHeuristic(text, readinessScore) }
+        const aiSummary =
+          (await generateLeadAiSummary({
+            lang,
+            readiness,
+            history,
+          })) || null
+        let leadId: number | null = null
+        try {
+          leadId = await saveLeadFromInstagram({
+            senderId,
+            phone: mergedDraft.phone,
+            email: mergedDraft.email,
+            clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
+            lastMessage: text,
+            lang,
+            aiSummary,
+            aiReadiness: readiness,
+          })
+          console.log('IG lead saved (resend)', { leadId, senderIdLast4: senderId.slice(-4) })
+        } catch (e) {
+          console.error('IG lead resend save failed', { senderIdLast4: senderId.slice(-4), error: String(e) })
+        }
+        // Always disarm after one attempt (prevents spam loops)
+        updateConversation(senderId, { resendArmed: false, leadId: leadId ?? conversation.leadId } as any)
+        const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
+        await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null, aiSummary, leadId })
+        await sendInstagramMessage(senderId, lang === 'ua' ? 'Готово ✅ Зафіксував повторно. Дякую!' : 'Готово ✅ Зафиксировал повторно. Спасибо!')
+        updateConversation(senderId, { lastAssistantAt: nowIso() })
+        return
+      }
+    }
+  }
+
   // Contact capture: ONE of (phone/email) is enough to create a lead.
   if (conversation.leadId == null) {
     const existingDraft = conversation.contactDraft || { phone: null, email: null }
@@ -1293,7 +1369,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       }
       updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
       const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
-      const tgOk = await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null })
+      const tgOk = await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null, aiSummary, leadId })
       console.log('IG lead telegram status', { leadId, ok: Boolean(tgOk) })
       const ai = await generateAiReply({
         userText:
