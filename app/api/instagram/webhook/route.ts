@@ -153,10 +153,32 @@ function isExplicitInterestComment(text: string) {
     /(хочу|интересно|цікав|подключ|підключ|как\s+подключ|як\s+підключ|подробн|детал|услов|пакет|тариф|срок|скільки\s+днів|коли\s+можна|запис|брон|buy|order|connect|details)/i.test(
       t,
     ) ||
+    // "How it works / how to order" explicit intent (RU/UA)
+    /(як\s+це\s+працю(є|е)|як\s+працю(є|е)|як\s+замов(ити|ляти)|як\s+оформ(ити|ляти)|як\s+підключ(ити|ається)|як\s+під'єдн(ати|ати|яється)|що\s+вход(ить|ить)|що\s+в\s+пакет(і|е)|які\s+умови|які\s+термін(и|и)|термін(и|и)\s+запуск|коли\s+запуск|як\s+почат(и|и)|що\s+потрібно\s+щоб\s+почати)/i.test(
+      t,
+    ) ||
+    /(как\s+это\s+работает|как\s+работает|как\s+заказать|как\s+оформить|как\s+подключить|что\s+входит|что\s+в\s+пакете|какие\s+условия|какие\s+сроки|сроки\s+запуска|что\s+нужно\s+чтобы\s+начать)/i.test(t) ||
     /(в\s*(директ|direct|dm)|в\s*(личк|лс)|напиши(те)?\s*(мне)?|скинь(те)?\s*(мне)?|можно\s+связ|можна\s+зв'яз|давайте\s+контакт)/i.test(
       t,
     )
   )
+}
+
+function isLowEffortOrLightComment(text: string) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return true
+  if (isEmojiOrLikeOnly(t)) return true
+  // Common "nice" / reaction-only comments (RU/UA)
+  if (
+    /^(класс|круто|супер|топ|огонь|🔥+|👍+|дякую|дякую!|дякую❤️|спасиб|клас|супер|топчик|гарно|круто|вау|wow|nice|cool)[!. ]*$/i.test(
+      t,
+    )
+  )
+    return true
+  // Very short generic questions without intent keywords should stay public
+  const wordCount = t.split(/\s+/).filter(Boolean).length
+  if (wordCount <= 2 && !isPriceIntent(t) && !isPlusSignal(t) && !isExplicitInterestComment(t)) return true
+  return false
 }
 
 async function sendInstagramCommentReply(commentId: string, message: string) {
@@ -363,9 +385,11 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   const price = isPriceIntent(text)
   const toxic = isToxicOrHateComment(text)
   const explicitInterest = plus || price || isExplicitInterestComment(text)
+  const light = isLowEffortOrLightComment(text)
   const shouldDm =
     Boolean(fromId) &&
     !toxic &&
+    !light &&
     ((price && IG_COMMENT_DM_ON_PRICE) || (plus && IG_COMMENT_DM_ON_PLUS) || (explicitInterest && IG_COMMENT_DM_ON_INTEREST))
 
   if (shouldDm && explicitInterest) {
