@@ -38,6 +38,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <NavLink href="/admin" label="CRM" />
             <NavLink href="/admin/tenants" label="Клиенты" />
+            <NavLink href="/admin/profiles" label="Профили" />
+            <NavLink href="/admin/connections" label="Подключения" />
             <NavLink href="/admin/integrations" label="Интеграции" />
             <NavLink href="/admin/netlify" label="Мой нетифай" />
           </div>

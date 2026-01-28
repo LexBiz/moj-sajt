@@ -82,6 +82,8 @@ const COMMENTS_PROCESSED_FILE = path.join(process.cwd(), 'data', 'instagram-comm
 const IG_COMMENT_REPLY_ENABLED = (process.env.INSTAGRAM_COMMENT_REPLY_ENABLED || '').trim() === 'true'
 const IG_COMMENT_DM_ON_PRICE = (process.env.INSTAGRAM_COMMENT_DM_ON_PRICE || '').trim() !== 'false'
 const IG_COMMENT_DM_ON_PLUS = (process.env.INSTAGRAM_COMMENT_DM_ON_PLUS || '').trim() !== 'false'
+// Default ON: if user shows explicit interest (not only "price" and not only "+") we DM first.
+const IG_COMMENT_DM_ON_INTEREST = (process.env.INSTAGRAM_COMMENT_DM_ON_INTEREST || '').trim() !== 'false'
 
 function ensureCommentsFile() {
   const dir = path.dirname(COMMENTS_PROCESSED_FILE)
@@ -129,6 +131,32 @@ function isPriceIntent(text: string) {
   const t = String(text || '').toLowerCase()
   if (!t) return false
   return /(цена|стоим|сколько|прайс|price|варт|скільки|пакет|тариф)/i.test(t)
+}
+
+function isToxicOrHateComment(text: string) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return false
+  // Keep it conservative: if we flag as toxic, we will NOT DM.
+  return (
+    /(лох|лохотрон|скам|scam|мошен|обман|развод|кидал|наеб|нахуй|хуй|пизд|еба|ебан|сука|бляд|идиот|дебил|туп(ой|ая)|говн)/i.test(t) ||
+    /(иди\s+на|пош(ёл|ел|ли)\s+на)/i.test(t)
+  )
+}
+
+function isExplicitInterestComment(text: string) {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return false
+  // Anything that looks like a buying intent / "write me details" / "how to connect" => DM.
+  // Price is handled separately but we include it here for completeness.
+  return (
+    isPriceIntent(t) ||
+    /(хочу|интересно|цікав|подключ|підключ|как\s+подключ|як\s+підключ|подробн|детал|услов|пакет|тариф|срок|скільки\s+днів|коли\s+можна|запис|брон|buy|order|connect|details)/i.test(
+      t,
+    ) ||
+    /(в\s*(директ|direct|dm)|в\s*(личк|лс)|напиши(те)?\s*(мне)?|скинь(те)?\s*(мне)?|можно\s+связ|можна\s+зв'яз|давайте\s+контакт)/i.test(
+      t,
+    )
+  )
 }
 
 async function sendInstagramCommentReply(commentId: string, message: string) {
@@ -332,22 +360,22 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
 
   let reply: string | null = null
   const plus = isPlusSignal(text)
+  const price = isPriceIntent(text)
+  const toxic = isToxicOrHateComment(text)
+  const explicitInterest = plus || price || isExplicitInterestComment(text)
+  const shouldDm =
+    Boolean(fromId) &&
+    !toxic &&
+    ((price && IG_COMMENT_DM_ON_PRICE) || (plus && IG_COMMENT_DM_ON_PLUS) || (explicitInterest && IG_COMMENT_DM_ON_INTEREST))
 
-  if (plus) {
-    // Public acknowledgement + DM (first message template).
+  if (shouldDm && explicitInterest) {
+    // Public acknowledgement + DM (continue in private).
     reply =
       lang === 'ua'
         ? 'Супер ✅ Уже написав Вам у Direct 😉'
         : lang === 'en'
         ? 'Great ✅ Messaged you in Direct 😉'
         : 'Супер ✅ Уже написал Вам в Direct 😉'
-  } else if (isPriceIntent(text)) {
-    reply =
-      lang === 'ua'
-        ? 'Дякую! Написав Вам у Direct ✅😉'
-        : lang === 'en'
-        ? 'Thanks! Messaged you in Direct ✅😉'
-        : 'Спасибо! Написал Вам в Direct ✅😉'
   } else if (isEmojiOrLikeOnly(text)) {
     reply = lang === 'ua' ? 'Дякуємо! ❤️' : lang === 'en' ? 'Thank you! ❤️' : 'Спасибо! ❤️'
   } else {
@@ -375,9 +403,10 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   if (sentOk && dedupeKey) markCommentProcessed(dedupeKey)
 
   // DM rules:
-  // - price intent: DM is allowed (to continue in private)
+  // - price / explicit interest: DM is allowed (continue in private)
   // - plus signal: DM using fixed template (lead conversion assistant)
-  if (((isPriceIntent(text) && IG_COMMENT_DM_ON_PRICE) || (plus && IG_COMMENT_DM_ON_PLUS)) && fromId) {
+  // - toxic/haters: NEVER DM
+  if (shouldDm) {
     // Try to DM; if IG blocks (no open window), it's fine — public reply already sent.
     const dmText = plus
       ? buildPlusFirstDm(lang)
