@@ -1117,7 +1117,7 @@ async function sendTelegramLead({
 }) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.warn('Telegram is not configured for IG leads')
-    return
+    return false
   }
 
   const parts = [
@@ -1133,18 +1133,30 @@ async function sendTelegramLead({
   ]
 
   const text = parts.join('\n')
-  const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text,
-      disable_web_page_preview: true,
-    }),
-  })
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '')
-    console.error('Telegram send error (IG lead)', resp.status, body.slice(0, 400))
+  const retryMs = [0, 350, 1200]
+  try {
+    for (let i = 0; i < retryMs.length; i += 1) {
+      if (retryMs[i]) await sleep(retryMs[i])
+      const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text,
+          disable_web_page_preview: true,
+        }),
+      })
+      if (resp.ok) {
+        console.log('Telegram lead sent (IG)', { senderIdLast4: senderId.slice(-4) })
+        return true
+      }
+      const body = await resp.text().catch(() => '')
+      console.error('Telegram send error (IG lead)', { attempt: i + 1, status: resp.status, body: body.slice(0, 300) })
+    }
+    return false
+  } catch (e) {
+    console.error('Telegram send exception (IG lead)', e)
+    return false
   }
 }
 
@@ -1256,19 +1268,33 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
           readiness,
           history,
         })) || null
-      const leadId = await saveLeadFromInstagram({
-        senderId,
-        phone: mergedDraft.phone || null,
-        email: mergedDraft.email || null,
-        clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
-        lastMessage: text,
-        lang,
-        aiSummary,
-        aiReadiness: readiness,
-      })
+      let leadId: number | null = null
+      try {
+        leadId = await saveLeadFromInstagram({
+          senderId,
+          phone: mergedDraft.phone || null,
+          email: mergedDraft.email || null,
+          clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
+          lastMessage: text,
+          lang,
+          aiSummary,
+          aiReadiness: readiness,
+        })
+        console.log('IG lead saved', { leadId, senderIdLast4: senderId.slice(-4), hasPhone: Boolean(mergedDraft.phone), hasEmail: Boolean(mergedDraft.email) })
+      } catch (e) {
+        console.error('IG lead save failed', { senderIdLast4: senderId.slice(-4), error: String(e) })
+      }
+
+      if (leadId == null) {
+        updateConversation(senderId, { stage: 'ask_contact', history })
+        await sendInstagramMessage(senderId, t(lang, 'askContact'))
+        updateConversation(senderId, { lastAssistantAt: nowIso() })
+        return
+      }
       updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
       const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
-      await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null })
+      const tgOk = await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null })
+      console.log('IG lead telegram status', { leadId, ok: Boolean(tgOk) })
       const ai = await generateAiReply({
         userText:
           'Client provided contact details (phone and/or email). Thank them, confirm that the request is saved, and say we will contact them to arrange the next step. Keep it short. Do NOT demand the missing contact.',
