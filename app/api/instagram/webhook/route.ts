@@ -191,26 +191,50 @@ async function sendInstagramCommentReply(commentId: string, message: string) {
   if (IG_API_HOST !== 'graph.instagram.com') {
     urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
   }
-  const resp = await fetch(urlObj.toString(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${IG_ACCESS_TOKEN}` },
-    body: JSON.stringify({ message: clip(message, 900) }),
-  })
-  if (!resp.ok) {
-    const t = await resp.text().catch(() => '')
-    console.error('IG comment reply error', resp.status, t.slice(0, 300))
-    return { ok: false as const, error: `http_${resp.status}` as const }
-  }
-  const text = await resp.text().catch(() => '')
-  const json = (() => {
-    try {
-      return JSON.parse(text) as any
-    } catch {
-      return null
+  const retryMs = [0, 350, 1200]
+  let lastStatus: number | null = null
+  let lastText: string = ''
+  for (let attempt = 0; attempt < retryMs.length; attempt += 1) {
+    if (retryMs[attempt]) await sleep(retryMs[attempt])
+    const resp = await fetch(urlObj.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${IG_ACCESS_TOKEN}` },
+      body: JSON.stringify({ message: clip(message, 900) }),
+    })
+    lastStatus = resp.status
+    const text = await resp.text().catch(() => '')
+    lastText = text
+    if (resp.ok) {
+      const json = (() => {
+        try {
+          return JSON.parse(text) as any
+        } catch {
+          return null
+        }
+      })()
+      const replyId = typeof json?.id === 'string' ? json.id : null
+      return { ok: true as const, replyId }
     }
-  })()
-  const replyId = typeof json?.id === 'string' ? json.id : null
-  return { ok: true as const, replyId }
+    // Detect transient Meta errors (code=2 / is_transient=true) to retry.
+    let isTransient = false
+    try {
+      const parsed = JSON.parse(text) as any
+      const code = parsed?.error?.code
+      const transient = parsed?.error?.is_transient
+      if (transient === true) isTransient = true
+      if (code === 2) isTransient = true
+    } catch {
+      // ignore
+    }
+    console.error('IG comment reply error', {
+      attempt: attempt + 1,
+      status: resp.status,
+      transient: isTransient,
+      body: text.slice(0, 300),
+    })
+    if (!isTransient) break
+  }
+  return { ok: false as const, error: `http_${lastStatus || 500}` as const }
 }
 
 function isPlusSignal(text: string) {
