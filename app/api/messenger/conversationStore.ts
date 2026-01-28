@@ -15,6 +15,7 @@ export type MessengerConversation = {
   senderId: string
   createdAt: string
   updatedAt: string
+  // language preference for this conversation (default: ua)
   lang: 'ru' | 'ua' | null
   messages: MessengerMessage[]
 }
@@ -84,6 +85,22 @@ export function appendMessage(pageId: string, senderId: string, msg: { role: Mes
       .filter((m) => m.content && m.content.trim())
       .slice(-Math.max(6, Math.min(60, MAX_MESSAGES))),
   }
+  if (idx >= 0) all[idx] = next
+  else all.unshift(next)
+  writeAll(all.slice(0, 5000))
+  return next
+}
+
+export function setConversationLang(pageId: string, senderId: string, lang: 'ru' | 'ua' | null) {
+  const pid = String(pageId || '').trim()
+  const sid = String(senderId || '').trim()
+  if (!pid || !sid) return
+  const id = `${pid}:${sid}`
+  const all = readAll()
+  const now = new Date().toISOString()
+  const idx = all.findIndex((c) => c.id === id)
+  const base = idx >= 0 ? all[idx] : getConversation(pid, sid)
+  const next: MessengerConversation = { ...base, updatedAt: now, lang }
   if (idx >= 0) all[idx] = next
   else all.unshift(next)
   writeAll(all.slice(0, 5000))

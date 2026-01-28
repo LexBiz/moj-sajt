@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
-import { appendMessage, getConversation } from '../conversationStore'
+import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 
 export const dynamic = 'force-dynamic'
@@ -77,6 +77,16 @@ function enforceSingleQuestion(text: string) {
   return chars.join('')
 }
 
+function parseLangSwitch(text: string): 'ru' | 'ua' | null {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return null
+  if (/(говори|говорите|разговаривай|пиши|пишіть|пиши)\s+.*(рус|рос|russian)/i.test(t)) return 'ru'
+  if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(укр|укра|ukrain)/i.test(t)) return 'ua'
+  if (/\bрус(ский|ском)\b/i.test(t)) return 'ru'
+  if (/\bукра(їнськ|инск|їнською)\b/i.test(t)) return 'ua'
+  return null
+}
+
 function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   if (SIGNATURE_BYPASS) {
     console.warn('MESSENGER_SIGNATURE_BYPASS=true; signature verification skipped')
@@ -100,15 +110,15 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   }
 }
 
-async function generateAiReply(userText: string) {
+async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) {
   if (!OPENAI_API_KEY) {
     return 'Принято. Напишите нишу и где приходят заявки — покажу схему и следующие шаги.'
   }
-  const isUa = /[іїєґ]/i.test(String(userText || ''))
+  const lang = opts?.lang === 'ru' ? 'ru' : 'ua'
   const userTurns = 1
   const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
   const system = buildTemoWebSystemPrompt({
-    lang: isUa ? 'ua' : 'ru',
+    lang,
     channel: 'messenger',
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
@@ -141,19 +151,23 @@ async function generateAiReply(userText: string) {
   return guarded ? clip(guarded, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
 }
 
-async function generateAiReplyWithHistory(input: { userText: string; history: Array<{ role: 'user' | 'assistant'; content: string }> }) {
+async function generateAiReplyWithHistory(input: {
+  userText: string
+  history: Array<{ role: 'user' | 'assistant'; content: string }>
+  lang: 'ru' | 'ua'
+}) {
   const userText = input.userText
-  if (!OPENAI_API_KEY) return generateAiReply(userText)
+  if (!OPENAI_API_KEY) return generateAiReply(userText, { lang: input.lang })
   const hist = Array.isArray(input.history) ? input.history : []
   const lastUser = userText
-  const isUa = /[іїєґ]/i.test(String(lastUser || ''))
+  const lang = input.lang
   const userTurns = hist.filter((m) => m.role === 'user').length || 1
   const readinessScore = computeReadinessScoreHeuristic(lastUser, userTurns)
   const stage = computeStageHeuristic(lastUser, readinessScore)
-  const system = buildTemoWebSystemPrompt({ lang: isUa ? 'ua' : 'ru', channel: 'messenger', stage, readinessScore })
+  const system = buildTemoWebSystemPrompt({ lang, channel: 'messenger', stage, readinessScore })
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   const firstMsgRule = isFirstAssistant
-    ? isUa
+    ? lang === 'ua'
       ? 'Це перше повідомлення: представтесь як "персональний AI‑асистент TemoWeb". Питай максимум 1 питання.'
       : 'Это первое сообщение: представьтесь как "персональный AI‑ассистент TemoWeb". Задай максимум 1 вопрос.'
     : null
@@ -176,7 +190,7 @@ async function generateAiReplyWithHistory(input: { userText: string; history: Ar
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
     console.error('OpenAI error (Messenger/history)', resp.status, t.slice(0, 300))
-    return generateAiReply(userText)
+    return generateAiReply(userText, { lang })
   }
   const j = (await resp.json().catch(() => ({}))) as any
   const content = j?.choices?.[0]?.message?.content
@@ -303,9 +317,12 @@ export async function POST(request: NextRequest) {
 
       console.log('Messenger webhook: incoming text', { pageId, senderIdLast4: senderId.slice(-4), text: clip(msgText, 200) })
       const conv = getConversation(pageId, senderId)
+      const explicitLang = parseLangSwitch(msgText)
+      if (explicitLang) setConversationLang(pageId, senderId, explicitLang)
+      const preferredLang = explicitLang || conv.lang || 'ua'
       appendMessage(pageId, senderId, { role: 'user', content: msgText })
       const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
-      const reply = await generateAiReplyWithHistory({ userText: msgText, history })
+      const reply = await generateAiReplyWithHistory({ userText: msgText, history, lang: preferredLang })
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
       appendMessage(pageId, senderId, { role: 'assistant', content: reply })
       recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })
