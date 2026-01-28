@@ -384,13 +384,33 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   const plus = isPlusSignal(text)
   const price = isPriceIntent(text)
   const toxic = isToxicOrHateComment(text)
-  const explicitInterest = plus || price || isExplicitInterestComment(text)
+  const explicitInterestSignal = isExplicitInterestComment(text)
+  // Extra safety against false positives: interest DM should look like a real question/intent, not 1–2 words.
+  const wordCount = text.split(/\s+/).filter(Boolean).length
+  const explicitInterest = plus || price || (explicitInterestSignal && (wordCount >= 3 || /\?/.test(text)))
   const light = isLowEffortOrLightComment(text)
   const shouldDm =
     Boolean(fromId) &&
     !toxic &&
     !light &&
     ((price && IG_COMMENT_DM_ON_PRICE) || (plus && IG_COMMENT_DM_ON_PLUS) || (explicitInterest && IG_COMMENT_DM_ON_INTEREST))
+
+  const dmReason = shouldDm
+    ? price
+      ? 'price'
+      : plus
+        ? 'plus'
+        : explicitInterestSignal
+          ? 'interest'
+          : 'unknown'
+    : toxic
+      ? 'blocked_toxic'
+      : light
+        ? 'blocked_light'
+        : 'no_dm'
+  if (shouldDm) {
+    console.log('IG comment: DM trigger', { dmReason, fromIdLast4: fromId ? fromId.slice(-4) : null, wordCount, textPreview: clip(text, 120) })
+  }
 
   if (shouldDm && explicitInterest) {
     // Public acknowledgement + DM (continue in private).
@@ -471,7 +491,7 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
   recordInstagramWebhook({
     senderId: fromId || null,
     textPreview: clip(
-      `comment:${fromUsername ? `${fromUsername}: ` : ''}${text}${sentOk ? ' ✅replied' : lastErr ? ` ❌${lastErr}` : ''}`,
+      `comment:${fromUsername ? `${fromUsername}: ` : ''}${text}${sentOk ? ' ✅replied' : lastErr ? ` ❌${lastErr}` : ''} [dm:${dmReason}]`,
       120
     ),
     commentId: usedCommentId || (commentIdPrimary || commentIdFallback) || null,
@@ -770,6 +790,82 @@ function stripContactAskBlock(text: string) {
   }
   const kept = lines.slice(0, cut).join('\n').trim()
   return kept || text.trim()
+}
+
+const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 650)
+const IG_DM_SOFT_CTA_MIN_SCORE = Number(process.env.INSTAGRAM_DM_SOFT_CTA_MIN_SCORE || 60)
+
+function countQuestionMarks(text: string) {
+  return (String(text || '').match(/\?/g) || []).length
+}
+
+function keepSingleQuestion(text: string) {
+  // Keep only the first "?" and neutralize the rest to avoid multi-question "резина".
+  const s = String(text || '')
+  let seen = false
+  let out = ''
+  for (const ch of s) {
+    if (ch === '?') {
+      if (seen) out += '.'
+      else {
+        out += '?'
+        seen = true
+      }
+    } else out += ch
+  }
+  return out
+}
+
+function limitParagraphs(text: string, maxParas: number) {
+  const paras = String(text || '').split(/\n{2,}/).filter((p) => p.trim().length > 0)
+  if (paras.length <= maxParas) return String(text || '').trim()
+  return paras.slice(0, maxParas).join('\n\n').trim()
+}
+
+function truncatePreservingLastLine(text: string, maxChars: number) {
+  const t = String(text || '').trim()
+  if (t.length <= maxChars) return t
+  const lines = t.split(/\r?\n/).filter((l) => l.trim().length > 0)
+  const last = lines.length ? lines[lines.length - 1] : ''
+  const keepLast = containsContactAsk(last) || /наступн|далі|дальше|щоб\s+продовж|чтобы\s+продолж/i.test(last)
+  if (!keepLast) return clip(t, maxChars)
+
+  const reserved = Math.min(last.length + 2, Math.floor(maxChars * 0.6))
+  const headMax = Math.max(80, maxChars - reserved)
+  const head = clip(lines.slice(0, -1).join('\n').trim(), headMax).trim()
+  return `${head}\n${last}`.trim()
+}
+
+function softCtaLine(lang: ConversationLang) {
+  return lang === 'ua'
+    ? 'Щоб продовжити — надішліть, будь ласка, телефон або email.'
+    : 'Чтобы продолжить — пришлите, пожалуйста, телефон или email.'
+}
+
+function enforceIgDirectGuardrails(input: {
+  reply: string
+  lang: ConversationLang
+  nextStage: string
+  readinessScore: number
+  recentContactAsk: boolean
+}) {
+  let out = String(input.reply || '').trim()
+  out = out.replace(/\n{3,}/g, '\n\n')
+
+  // Hard: max 1 question per message
+  if (countQuestionMarks(out) > 1) out = keepSingleQuestion(out)
+
+  // Keep it short: fewer paragraphs unless it's OFFER
+  const maxParas = input.nextStage === 'offer' ? 5 : 3
+  out = limitParagraphs(out, maxParas)
+
+  // Stronger funnel: add a soft CTA when user is warm/hot and we haven't asked recently
+  if (input.nextStage !== 'ask_contact' && input.readinessScore >= IG_DM_SOFT_CTA_MIN_SCORE && !input.recentContactAsk) {
+    out = `${out}\n\n${softCtaLine(input.lang)}`
+  }
+
+  out = truncatePreservingLastLine(out, IG_DM_MAX_CHARS)
+  return out.trim()
 }
 
 // readiness scoring + stage heuristic live in ../../temowebPrompt
@@ -1422,18 +1518,22 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
   const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram' })
-  // Guardrail: if model tries to paste "send contact" too often, strip it unless we really are in ask_contact.
+  // Guardrails for IG Direct:
+  // - Avoid nagging: don't repeat contact ask every turn.
+  // - But also avoid "резина": keep replies short and lead to next step when warm/hot.
   const recentAsks = history
     .filter((m) => m.role === 'assistant')
-    .slice(-3)
+    .slice(-4)
     .some((m) => containsContactAsk(m.content))
   let reply = ai.reply
   if (nextStage !== 'ask_contact') {
+    // Allow a soft CTA via enforceIgDirectGuardrails, but strip big contact blocks.
     reply = stripContactAskBlock(reply)
   } else if (recentAsks && containsContactAsk(reply)) {
     // Don't repeat contact request every turn.
     reply = stripContactAskBlock(reply)
   }
+  reply = enforceIgDirectGuardrails({ reply, lang, nextStage, readinessScore, recentContactAsk: recentAsks })
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
   updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
   await sendInstagramMessage(senderId, reply)
