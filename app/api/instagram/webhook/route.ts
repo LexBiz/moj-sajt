@@ -582,21 +582,45 @@ function t(lang: ConversationLang, key: string) {
     askRepeating: 'Отлично ✅ Напишите, пожалуйста, одним сообщением, что нужно — я отвечу. 🙂',
     contactOk: ['Спасибо! ✅ Контакт получил.', '—', 'Я посмотрю детали и вернусь с конкретным планом.', 'Для точности: ниша + средний чек + источник заявок. 💬'].join('\n'),
     contactFix: ['Похоже, контакт указан не полностью. 🙌', 'Отправьте, пожалуйста, корректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— или Telegram @username'].join('\n'),
-    askContact: ['Отлично, задачу понял ✅', '—', 'Чтобы зафиксировать заявку, пришлите, пожалуйста:', '1) телефон (обязательно) 📞', '2) email (обязательно) ✉️'].join('\n'),
+    askContact: [
+      'Отлично, задачу понял ✅',
+      '—',
+      'Чтобы зафиксировать заявку, пришлите, пожалуйста ЛЮБОЙ один контакт:',
+      '— телефон 📞',
+      '— или email ✉️',
+      '',
+      'Если дадите оба — супер, но это НЕ обязательно.',
+    ].join('\n'),
   }
   const UA: Record<string, string> = {
     chooseLang: ['Вітаю! 👋 Я персональний AI‑асистент TemoWeb.', 'Оберіть зручну мову:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
     askRepeating: 'Чудово ✅ Напишіть, будь ласка, одним повідомленням, що потрібно — я відповім. 🙂',
     contactOk: ['Дякую! ✅ Контакт отримав.', '—', 'Перегляну деталі й повернусь з конкретним планом.', 'Для точності: ніша + середній чек + джерело заявок. 💬'].join('\n'),
     contactFix: ['Схоже, контакт вказаний не повністю. 🙌', 'Надішліть, будь ласка, коректно:', '— email (name@domain.com)', '— телефон (+380..., +49..., +7...)', '— або Telegram @username'].join('\n'),
-    askContact: ['Чудово, задачу зрозумів ✅', '—', 'Щоб зафіксувати заявку, надішліть, будь ласка:', '1) телефон (обовʼязково) 📞', '2) email (обовʼязково) ✉️'].join('\n'),
+    askContact: [
+      'Чудово, задачу зрозумів ✅',
+      '—',
+      'Щоб зафіксувати заявку, надішліть, будь ласка БУДЬ‑ЯКИЙ один контакт:',
+      '— телефон 📞',
+      '— або email ✉️',
+      '',
+      'Якщо надішлете і телефон, і email — класно, але це НЕ обовʼязково.',
+    ].join('\n'),
   }
   const EN: Record<string, string> = {
     chooseLang: ['Hi! 👋 I’m your personal AI assistant of TemoWeb.', 'Choose a language:', '1) Русский 🇷🇺', '2) Українська 🇺🇦'].join('\n'),
     askRepeating: 'Great ✅ Please write in one message what you need — I’ll reply. 🙂',
     contactOk: ['Thanks! ✅ I got your contact.', '—', 'I’ll review details and come back with a clear plan.', 'To be precise: niche + avg ticket + lead source. 💬'].join('\n'),
     contactFix: ['Looks like the contact is incomplete. 🙌', 'Please send correctly:', '— email (name@domain.com)', '— phone (+... )'].join('\n'),
-    askContact: ['Got it ✅', '—', 'To lock the request, please send:', '1) phone (required) 📞', '2) email (required) ✉️'].join('\n'),
+    askContact: [
+      'Got it ✅',
+      '—',
+      'To lock the request, please send ANY ONE contact:',
+      '— phone 📞',
+      '— or email ✉️',
+      '',
+      'Both is nice, but NOT required.',
+    ].join('\n'),
   }
   return (lang === 'ua' ? UA : lang === 'en' ? EN : RU)[key] || key
 }
@@ -948,8 +972,8 @@ async function generateLeadAiSummary(input: {
 
 async function saveLeadFromInstagram(input: {
   senderId: string
-  phone: string
-  email: string
+  phone: string | null
+  email: string | null
   clientMessages: string[]
   lastMessage: string
   lang: ConversationLang
@@ -958,10 +982,12 @@ async function saveLeadFromInstagram(input: {
 }) {
   ensureLeadsFile()
   const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
+  const contact = (input.phone || input.email || '').trim()
+  if (!contact) throw new Error('missing_contact')
   const newLead = {
     id: Date.now(),
     name: null,
-    contact: input.phone,
+    contact,
     email: input.email,
     businessType: null,
     channel: 'Instagram',
@@ -1211,7 +1237,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
-  // Contact capture: require BOTH phone + email before creating a lead.
+  // Contact capture: ONE of (phone/email) is enough to create a lead.
   if (conversation.leadId == null) {
     const existingDraft = conversation.contactDraft || { phone: null, email: null }
     const mergedDraft = {
@@ -1219,11 +1245,10 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       email: draftFromText?.email || existingDraft.email,
     }
     const hasAny = Boolean(mergedDraft.phone || mergedDraft.email)
-    const hasBoth = Boolean(mergedDraft.phone && mergedDraft.email)
 
     if (hasAny) updateConversation(senderId, { contactDraft: mergedDraft })
 
-    if (hasBoth) {
+    if (hasAny) {
       const readiness = { score: readinessScore, label: readinessLabel(readinessScore), stage: computeStageHeuristic(text, readinessScore) }
       const aiSummary =
         (await generateLeadAiSummary({
@@ -1233,8 +1258,8 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         })) || null
       const leadId = await saveLeadFromInstagram({
         senderId,
-        phone: mergedDraft.phone!,
-        email: mergedDraft.email!,
+        phone: mergedDraft.phone || null,
+        email: mergedDraft.email || null,
         clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
         lastMessage: text,
         lang,
@@ -1242,9 +1267,11 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         aiReadiness: readiness,
       })
       updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
-      await sendTelegramLead({ senderId, messageText: text, contactHint: `${mergedDraft.phone} | ${mergedDraft.email}` })
+      const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
+      await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null })
       const ai = await generateAiReply({
-        userText: `Client provided phone: ${mergedDraft.phone} and email: ${mergedDraft.email}. Thank them and confirm next steps. Keep it short.`,
+        userText:
+          'Client provided contact details (phone and/or email). Thank them, confirm that the request is saved, and say we will contact them to arrange the next step. Keep it short. Do NOT demand the missing contact.',
         lang,
         stage: 'collected',
         history,
@@ -1258,29 +1285,6 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       return
     }
 
-    // If user provided only one piece, ask for the missing one (AI preferred).
-    if (hasAny) {
-      const missing = mergedDraft.phone ? 'email' : 'phone'
-      updateConversation(senderId, { stage: 'ask_contact', history })
-      const ai = await generateAiReply({
-        userText:
-          missing === 'email'
-            ? 'Client shared phone number. Thank them and ask ONLY for email (mandatory) to finalize the request.'
-            : 'Client shared email. Thank them and ask ONLY for phone number (mandatory) to finalize the request.',
-        lang,
-        stage: 'ask_contact',
-        history,
-        images: [],
-        readinessScore,
-        channel: 'instagram',
-      })
-      recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-      const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'askContact')
-      updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
-      await sendInstagramMessage(senderId, reply)
-      updateConversation(senderId, { lastAssistantAt: nowIso() })
-      return
-    }
   }
 
   if (hasInvalidContactHint(text)) {
