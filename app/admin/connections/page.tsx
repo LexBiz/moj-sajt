@@ -9,6 +9,7 @@ type Connection = {
   tenantId: string
   channel: ChannelType
   externalId: string | null
+  meta?: Record<string, any> | null
   status: 'draft' | 'connected' | 'disabled'
   updatedAt: string | null
   notes: string | null
@@ -18,6 +19,26 @@ function fmt(iso: string | null | undefined) {
   if (!iso) return '—'
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleString('ru-RU')
+}
+
+function tokenMeta(token: string) {
+  const t = String(token || '')
+  if (!t) return null
+  return { len: t.length, prefix: t.slice(0, 4), suffix: t.slice(-4) }
+}
+
+function renderMetaHint(c: Connection) {
+  const meta = (c.meta || {}) as any
+  if (c.channel === 'messenger') {
+    const tok = String(meta.pageAccessToken || '')
+    const m = tokenMeta(tok)
+    return m ? `token: set (${m.prefix}…${m.suffix})` : 'token: missing'
+  }
+  if (c.channel === 'whatsapp') {
+    const phoneId = String(meta.phoneNumberId || meta.phone_number_id || '')
+    return phoneId ? `phone_number_id: …${phoneId.slice(-6)}` : ''
+  }
+  return ''
 }
 
 export default function AdminConnectionsPage() {
@@ -307,6 +328,11 @@ export default function AdminConnectionsPage() {
                     <div className="text-xs text-slate-400">externalId</div>
                     <div className="text-sm text-slate-100 font-mono break-all">{c.externalId || '—'}</div>
                   </div>
+                  {renderMetaHint(c) ? (
+                    <div className="mt-2 text-xs text-slate-300">
+                      <span className="text-slate-400">meta:</span> {renderMetaHint(c)}
+                    </div>
+                  ) : null}
                   {c.notes ? <div className="mt-3 text-sm text-slate-200 whitespace-pre-wrap">{c.notes}</div> : null}
                 </div>
               ))
@@ -341,7 +367,10 @@ export default function AdminConnectionsPage() {
                       <td className="px-4 py-3 text-sm text-slate-200 font-mono">{c.externalId || '—'}</td>
                       <td className="px-4 py-3 text-sm text-slate-200">{c.status}</td>
                       <td className="px-4 py-3 text-sm text-slate-300">{fmt(c.updatedAt)}</td>
-                      <td className="px-4 py-3 text-sm text-slate-200">{c.notes || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-slate-200">
+                        {c.notes || '—'}
+                        {renderMetaHint(c) ? <div className="mt-1 text-xs text-slate-400">meta: {renderMetaHint(c)}</div> : null}
+                      </td>
                     </tr>
                   ))
                 )}
