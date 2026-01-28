@@ -11,6 +11,7 @@ type AiRequest = {
   lang?: 'ua' | 'ru' | 'en' | 'cz'
   mode?: 'show' | 'post'
   aiSummary?: string | null
+  fast?: boolean
 }
 
 function getLang(lang?: AiRequest['lang']) {
@@ -218,6 +219,34 @@ async function callOpenAI(
           role: 'system',
           content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
         },
+        // Optional "fast mode" (used by Flow): shorter answers + stronger next-step.
+        ...(context.includes('FAST_MODE: true')
+          ? [
+              {
+                role: 'system',
+                content:
+                  lng === 'ru'
+                    ? [
+                        'FAST MODE.',
+                        'Отвечай очень коротко и по делу.',
+                        'Максимум: 4 короткие строки или 2–3 предложения.',
+                        'Без воды и без повторов.',
+                        'Снимай возражения 1 фактом/примером.',
+                        'Завершай конкретным следующим шагом (контакт/демо/что нужно от клиента).',
+                        'Максимум 1 вопрос.',
+                      ].join(' ')
+                    : [
+                        'FAST MODE.',
+                        'Відповідай дуже коротко і по суті.',
+                        'Максимум: 4 короткі рядки або 2–3 речення.',
+                        'Без води та без повторів.',
+                        'Знімай заперечення 1 фактом/прикладом.',
+                        'Завершуй конкретним наступним кроком (контакт/демо/що треба від клієнта).',
+                        'Максимум 1 питання.',
+                      ].join(' '),
+              },
+            ]
+          : []),
         { role: 'system', content: context },
         ...(isFirstAssistant && firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
         ...(history || []),
@@ -250,7 +279,7 @@ async function callOpenAI(
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AiRequest
-    const context = buildContext(body)
+    const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
 
     const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel)
     const answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))

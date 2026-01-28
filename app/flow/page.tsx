@@ -346,6 +346,7 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [aiProvider, setAiProvider] = useState<'openai' | 'fallback' | ''>('')
+  const [fastMode, setFastMode] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [stepError, setStepError] = useState<{ business?: string; channel?: string; pain?: string }>({})
@@ -478,6 +479,8 @@ export default function Home() {
           history: newHistory,
           lang,
           mode: nextMode,
+          currentChannel: 'website',
+          fast: fastMode,
         }),
       })
 
@@ -760,8 +763,21 @@ export default function Home() {
         return (
           <div className="flex flex-col h-[85vh] sm:h-[600px] space-y-0">
             <div className="flex-shrink-0 pb-4 border-b border-white/10">
-              <h2 className="text-lg sm:text-2xl font-bold text-white">{t.aiTitle}</h2>
-              <p className="text-slate-300 text-xs sm:text-sm mt-1">{t.aiDesc}</p>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-2xl font-bold text-white">{t.aiTitle}</h2>
+                  <p className="text-slate-300 text-xs sm:text-sm mt-1">{t.aiDesc}</p>
+                </div>
+                <label className="flex items-center gap-2 text-xs sm:text-sm text-slate-200 select-none">
+                  <input
+                    type="checkbox"
+                    checked={fastMode}
+                    onChange={(e) => setFastMode(e.target.checked)}
+                    className="h-4 w-4 accent-indigo-500"
+                  />
+                  <span>Швидкий режим ⚡</span>
+                </label>
+              </div>
             </div>
 
             {form.history.length === 0 && (
