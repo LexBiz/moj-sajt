@@ -3,6 +3,14 @@ import fs from 'fs'
 import path from 'path'
 
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+const DEFAULT_TENANT_ID = 'temoweb'
+
+function normalizeTenantId(input: unknown) {
+  const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
+  if (!raw) return DEFAULT_TENANT_ID
+  const safe = raw.replace(/[^a-z0-9_-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+  return safe || DEFAULT_TENANT_ID
+}
 
 function ensureDataDir() {
   const dir = path.join(process.cwd(), 'data')
@@ -11,6 +19,7 @@ function ensureDataDir() {
 }
 
 type TelegramLeadPayload = {
+  tenantId?: string | null
   contact: string
   name?: string | null
   businessType?: string | null
@@ -122,6 +131,7 @@ export async function POST(request: NextRequest) {
 
     const newLead = {
       id: Date.now(),
+      tenantId: normalizeTenantId(body.tenantId),
       name: body.name || null,
       contact: String(body.contact).trim(),
       businessType: body.businessType || null,

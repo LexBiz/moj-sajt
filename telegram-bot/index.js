@@ -18,6 +18,7 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 const TEMOWEB_AI_URL = String(process.env.TEMOWEB_AI_URL || 'http://127.0.0.1:3013/api/ai').trim()
 const TEMOWEB_LEADS_INGEST_URL = String(process.env.TEMOWEB_LEADS_INGEST_URL || '').trim()
 const TEMOWEB_LEADS_INGEST_SECRET = String(process.env.TEMOWEB_LEADS_INGEST_SECRET || '').trim()
+const TENANT_ID = String(process.env.TENANT_ID || 'temoweb').trim() || 'temoweb'
 
 const DATA_DIR = path.join(__dirname, 'data')
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json')
@@ -82,6 +83,10 @@ function normalizeAnswer(text) {
     .replace(/(^|\n)\s*#{1,6}\s+/g, '$1')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+function t(lang, ru, ua) {
+  return (lang || 'ua') === 'ru' ? ru : ua
 }
 
 function safeJsonParse(text) {
@@ -601,6 +606,7 @@ async function createAndSendLead({ ctx, session, history, contact, reason }) {
   const notify = await sendLeadToOwner(leadText)
   // 2) store in CRM (optional)
   await ingestLeadToCrm({
+    tenantId: TENANT_ID,
     contact: payload.contact,
     name: payload.name,
     businessType: payload.business,
@@ -668,7 +674,13 @@ bot.command('lead', async (ctx) => {
   ].join('\n')
   await sendLeadToOwner(leadText)
   setSession(chatId, { ...session, leadSentAt: nowIso(), updatedAt: nowIso() })
-  await ctx.reply('Готово ✅ Я отправил резюме владельцу. Если хочешь — кинь контакт (email/@username/телефон), чтобы мы сразу стартанули.')
+  await ctx.reply(
+    t(
+      session.lang,
+      'Готово ✅ Я отправил резюме владельцу. Если хочешь — скинь контакт (email/@username/телефон), чтобы мы сразу стартанули.',
+      'Готово ✅ Я надіслав резюме власнику. Якщо хочеш — скинь контакт (email/@username/телефон), щоб ми одразу стартували.',
+    ),
+  )
 })
 
 bot.command('id', async (ctx) => {
@@ -678,21 +690,35 @@ bot.command('id', async (ctx) => {
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data || ''
   if (data === 'lead:skip') {
-    await ctx.answerCbQuery('Ок, продолжаем.')
-    await ctx.reply('Пиши дальше — я держу контекст и веду к решению 🙂')
+    await ctx.answerCbQuery('Ок')
+    const chatId = String(ctx.chat.id)
+    const { session } = getSession(chatId)
+    await ctx.reply(t(session.lang, 'Пиши дальше — я держу контекст и веду к решению 🙂', 'Пиши далі — я тримаю контекст і веду до рішення 🙂'))
     return
   }
   if (data === 'lead:send') {
     await ctx.answerCbQuery('Оформляю…')
-    await ctx.reply('Собираю резюме и отправляю владельцу. Если у тебя есть контакт — кинь его в ответ (email/@username/телефон).')
-    // run lead generation inline
     const chatId = String(ctx.chat.id)
     const { session } = getSession(chatId)
+    await ctx.reply(
+      t(
+        session.lang,
+        'Собираю резюме и отправляю владельцу. Если есть контакт — пришли в ответ (email/@username/телефон).',
+        'Збираю резюме і надсилаю власнику. Якщо є контакт — надішли у відповідь (email/@username/телефон).',
+      ),
+    )
+    // run lead generation inline
     const history = Array.isArray(session.history) ? session.history : []
     const contact = session.contact || (ctx.from?.username ? `@${ctx.from.username}` : null)
     await createAndSendLead({ ctx, session, history, contact, reason: 'lead_button' })
     setSession(chatId, { ...session, leadSentAt: nowIso(), updatedAt: nowIso() })
-    await ctx.reply('Готово ✅ Резюме отправлено владельцу. Добавь контакт (email/@username/телефон) — чтобы мы сразу стартанули.')
+    await ctx.reply(
+      t(
+        session.lang,
+        'Готово ✅ Резюме отправлено владельцу. Добавь контакт (email/@username/телефон) — чтобы мы сразу стартанули.',
+        'Готово ✅ Резюме надіслано власнику. Додай контакт (email/@username/телефон) — щоб ми одразу стартували.',
+      ),
+    )
     return
   }
   await ctx.answerCbQuery('Ок')
