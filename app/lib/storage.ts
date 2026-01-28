@@ -1,5 +1,5 @@
 import { hasDatabase, db } from './db'
-import { readJson, writeJson } from './jsonStore'
+import { readJsonFile, writeJsonFile } from './jsonStore'
 import path from 'path'
 
 export type Tenant = { id: string; name: string; plan: string; notes?: string | null; createdAt?: string; updatedAt?: string }
@@ -24,7 +24,7 @@ export function isPostgresEnabled() {
 
 // TENANTS
 export async function listTenants(): Promise<Tenant[]> {
-  if (!isPostgresEnabled()) return (readJson(TENANTS_FILE, []) as any[]).map((t) => ({ ...t }))
+  if (!isPostgresEnabled()) return (readJsonFile(TENANTS_FILE, []) as any[]).map((t) => ({ ...t }))
   const res = await db().query(
     'SELECT id, name, plan, notes, created_at as "createdAt", updated_at as "updatedAt" FROM tenants ORDER BY created_at DESC',
   )
@@ -33,13 +33,13 @@ export async function listTenants(): Promise<Tenant[]> {
 
 export async function upsertTenant(t: Tenant) {
   if (!isPostgresEnabled()) {
-    const all = readJson(TENANTS_FILE, []) as any[]
+    const all = readJsonFile(TENANTS_FILE, []) as any[]
     const idx = all.findIndex((x) => x.id === t.id)
     const now = new Date().toISOString()
     const next = { ...t, updatedAt: now, createdAt: all[idx]?.createdAt || now }
     if (idx >= 0) all[idx] = next
     else all.unshift(next)
-    writeJson(TENANTS_FILE, all)
+    writeJsonFile(TENANTS_FILE, all)
     return next
   }
   const res = await db().query(
@@ -59,7 +59,7 @@ export async function upsertTenant(t: Tenant) {
 // PROFILES
 export async function getTenantProfile(tenantId: string): Promise<TenantProfile | null> {
   if (!isPostgresEnabled()) {
-    const all = readJson(PROFILES_FILE, []) as any[]
+    const all = readJsonFile(PROFILES_FILE, []) as any[]
     return (all.find((p) => p.tenantId === tenantId) as any) || null
   }
   const res = await db().query(
@@ -80,11 +80,11 @@ export async function getTenantProfile(tenantId: string): Promise<TenantProfile 
 
 export async function upsertTenantProfile(p: TenantProfile) {
   if (!isPostgresEnabled()) {
-    const all = readJson(PROFILES_FILE, []) as any[]
+    const all = readJsonFile(PROFILES_FILE, []) as any[]
     const idx = all.findIndex((x) => x.tenantId === p.tenantId)
     if (idx >= 0) all[idx] = { ...all[idx], ...p }
     else all.unshift(p)
-    writeJson(PROFILES_FILE, all)
+    writeJsonFile(PROFILES_FILE, all)
     return p
   }
   const tenantId = String(p?.tenantId || '').trim()
@@ -126,7 +126,7 @@ export async function upsertTenantProfile(p: TenantProfile) {
 
 // CONNECTIONS
 export async function listChannelConnections(): Promise<ChannelConnection[]> {
-  if (!isPostgresEnabled()) return readJson(CONNECTIONS_FILE, []) as any
+  if (!isPostgresEnabled()) return readJsonFile(CONNECTIONS_FILE, []) as any
   const res = await db().query(
     `SELECT COALESCE(data, jsonb_build_object(
         'id', id,
@@ -142,11 +142,11 @@ export async function listChannelConnections(): Promise<ChannelConnection[]> {
 
 export async function upsertChannelConnection(c: ChannelConnection) {
   if (!isPostgresEnabled()) {
-    const all = readJson(CONNECTIONS_FILE, []) as any[]
+    const all = readJsonFile(CONNECTIONS_FILE, []) as any[]
     const idx = all.findIndex((x) => x.id === c.id)
     if (idx >= 0) all[idx] = { ...all[idx], ...c }
     else all.unshift(c)
-    writeJson(CONNECTIONS_FILE, all)
+    writeJsonFile(CONNECTIONS_FILE, all)
     return c
   }
   const id = String(c?.id || '').trim()
@@ -174,7 +174,7 @@ export async function upsertChannelConnection(c: ChannelConnection) {
 
 export async function resolveTenantIdByConnection(channel: string, externalId: string): Promise<string | null> {
   if (!isPostgresEnabled()) {
-    const all = readJson(CONNECTIONS_FILE, []) as any[]
+    const all = readJsonFile(CONNECTIONS_FILE, []) as any[]
     const found = all.find((x) => String(x.channel) === channel && String(x.externalId) === externalId)
     return found?.tenantId || null
   }
@@ -187,7 +187,7 @@ export async function resolveTenantIdByConnection(channel: string, externalId: s
 
 // LEADS (kept minimal for now; we’ll switch API gradually)
 export async function listLeads(): Promise<Lead[]> {
-  if (!isPostgresEnabled()) return readJson(LEADS_FILE, []) as any
+  if (!isPostgresEnabled()) return readJsonFile(LEADS_FILE, []) as any
   const res = await db().query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 500')
   return res.rows
 }
