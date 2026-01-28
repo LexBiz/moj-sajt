@@ -4,6 +4,8 @@ import { listChannelConnections } from '@/app/lib/storage'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
+import fs from 'fs'
+import path from 'path'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -44,12 +46,170 @@ const API_VERSION = (process.env.MESSENGER_API_VERSION || 'v22.0').trim()
 const DEFAULT_PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN || '').trim()
 const IGNORE_ECHO = (process.env.MESSENGER_IGNORE_ECHO || 'true').trim() !== 'false'
 
+const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim()
+const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_CHAT_ID || '').trim()
+
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+
+const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+function ensureLeadsFile() {
+  const dir = path.dirname(LEADS_FILE)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]), 'utf8')
+}
+
+function extractContact(text: string): { phone: string | null; email: string | null } {
+  const t = String(text || '').trim()
+  if (!t) return { phone: null, email: null }
+  const email = (() => {
+    const m = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)
+    return m ? m[0].trim() : null
+  })()
+  const phone = (() => {
+    const m = t.match(/(\+?\d[\d\s().-]{7,}\d)/)
+    if (!m) return null
+    const raw = m[1]
+    const digits = raw.replace(/[^\d+]/g, '')
+    const normalized = digits.startsWith('+') ? digits : `+${digits.replace(/^\+/, '')}`
+    // minimal sanity
+    const len = normalized.replace(/[^\d]/g, '').length
+    if (len < 9) return null
+    return normalized
+  })()
+  return { phone, email }
+}
+
+async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string; clientMessages: string[] }) {
+  if (!OPENAI_API_KEY) return null
+  const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
+  const payload = {
+    source: 'messenger',
+    contact: input.contact,
+    channel: 'Messenger',
+    clientMessages: input.clientMessages.slice(0, 20),
+  }
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0.2,
+        max_tokens: 260,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              langLine,
+              'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM (ничего не выдумывать).',
+              'Формат: 5–8 строк, каждая начинается с эмодзи: 🏷 🎯 🧩 ⛔️ ➡️ 💬',
+              'Если данных нет — пиши “не уточнили”. Без markdown (#, **).',
+            ].join(' '),
+          },
+          { role: 'user', content: JSON.stringify(payload) },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const json = (await resp.json().catch(() => ({}))) as any
+    const content = json?.choices?.[0]?.message?.content
+    const s = typeof content === 'string' ? content.trim() : ''
+    return s ? s.slice(0, 1200) : null
+  } catch {
+    return null
+  }
+}
+
+async function saveLeadFromMessenger(input: {
+  tenantId: string
+  pageId: string
+  senderId: string
+  contact: string
+  lang: 'ru' | 'ua'
+  lastMessage: string
+  clientMessages: string[]
+  aiSummary: string | null
+}) {
+  ensureLeadsFile()
+  const raw = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
+  const leads = Array.isArray(raw) ? raw : []
+  // de-dupe: same sender + same contact within last 24h
+  const now = Date.now()
+  const exists = leads.slice(0, 200).some((l: any) => {
+    if (String(l?.source || '').toLowerCase() !== 'messenger') return false
+    if (String(l?.contact || '') !== input.contact) return false
+    const notes = String(l?.notes || '')
+    if (!notes.includes(`senderId: ${input.senderId}`)) return false
+    const t = Date.parse(String(l?.createdAt || ''))
+    if (!Number.isFinite(t)) return false
+    return now - t < 24 * 60 * 60 * 1000
+  })
+  if (exists) return null
+
+  const newLead = {
+    id: Date.now(),
+    tenantId: input.tenantId,
+    name: null,
+    contact: input.contact,
+    email: input.contact.includes('@') ? input.contact : null,
+    businessType: null,
+    channel: 'Messenger',
+    pain: null,
+    question: input.lastMessage || null,
+    clientMessages: input.clientMessages.slice(0, 20),
+    aiRecommendation: null,
+    aiSummary: input.aiSummary,
+    source: 'messenger',
+    lang: input.lang,
+    notes: `pageId: ${input.pageId}; senderId: ${input.senderId}`,
+    createdAt: new Date().toISOString(),
+    status: 'new',
+  }
+  leads.unshift(newLead)
+  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
+  return newLead.id as number
+}
+
+async function sendTelegramLeadMessenger(input: { leadId: number | null; tenantId: string; pageId: string; senderId: string; contact: string; aiSummary: string | null; lastMessage: string }) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return false
+  const parts = [
+    '📥 НОВА ЗАЯВКА З MESSENGER',
+    '',
+    input.leadId != null ? `🆔 Lead ID: ${input.leadId}` : null,
+    `🏢 tenant: ${input.tenantId}`,
+    `📄 pageId: ${input.pageId}`,
+    `🧾 senderId: ${input.senderId}`,
+    `☎️ контакт: ${input.contact || '—'}`,
+    '',
+    input.aiSummary ? ['🧠 Резюме (AI):', clip(input.aiSummary, 1200), ''].join('\n') : null,
+    '🗣 Повідомлення клієнта:',
+    `— ${clip(input.lastMessage, 800)}`,
+    '',
+    `🕒 Час: ${new Date().toISOString()}`,
+  ].filter(Boolean)
+  const text = parts.join('\n')
+  const retryMs = [0, 350, 1200]
+  try {
+    for (let i = 0; i < retryMs.length; i += 1) {
+      if (retryMs[i]) await new Promise((r) => setTimeout(r, retryMs[i]))
+      const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }),
+      })
+      if (resp.ok) return true
+    }
+    return false
+  } catch {
+    return false
+  }
 }
 
 function normalizeAnswer(text: string) {
@@ -322,6 +482,34 @@ export async function POST(request: NextRequest) {
       const preferredLang = explicitLang || conv.lang || 'ua'
       appendMessage(pageId, senderId, { role: 'user', content: msgText })
       const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
+
+      // Lead capture: if user sent phone/email -> save lead to CRM and notify Telegram.
+      const contactDraft = extractContact(msgText)
+      const contact = (contactDraft.email || contactDraft.phone || '').trim()
+      if (contact && conn?.tenantId) {
+        const clientMessages = [msgText, ...history.filter((m) => m.role === 'user').map((m) => m.content)].slice(0, 20)
+        const aiSummary = await generateLeadAiSummary({ lang: preferredLang, contact, clientMessages })
+        const leadId = await saveLeadFromMessenger({
+          tenantId: String(conn.tenantId),
+          pageId,
+          senderId,
+          contact,
+          lang: preferredLang,
+          lastMessage: msgText,
+          clientMessages,
+          aiSummary,
+        })
+        await sendTelegramLeadMessenger({ leadId, tenantId: String(conn.tenantId), pageId, senderId, contact, aiSummary, lastMessage: msgText })
+        const okMsg =
+          preferredLang === 'ua'
+            ? 'Готово ✅ Зафіксував заявку. Напишемо/зателефонуємо для наступного кроку.'
+            : 'Готово ✅ Зафиксировал заявку. Напишем/созвонимся для следующего шага.'
+        await sendMessengerText({ pageAccessToken, recipientId: senderId, text: okMsg })
+        appendMessage(pageId, senderId, { role: 'assistant', content: okMsg })
+        recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `lead_saved tenant=${String(conn.tenantId)} leadId=${leadId ?? 'dup'}` })
+        continue
+      }
+
       const reply = await generateAiReplyWithHistory({ userText: msgText, history, lang: preferredLang })
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
       appendMessage(pageId, senderId, { role: 'assistant', content: reply })
