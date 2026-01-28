@@ -35,6 +35,7 @@ export default function AdminConnectionsPage() {
   const [externalId, setExternalId] = useState('')
   const [status, setStatus] = useState<Connection['status']>('draft')
   const [notes, setNotes] = useState('')
+  const [metaJson, setMetaJson] = useState('')
 
   const loadTenants = async () => {
     const res = await fetch('/api/tenants', { headers: authHeader })
@@ -72,6 +73,16 @@ export default function AdminConnectionsPage() {
     setLoading(true)
     setError('')
     try {
+      const metaTrim = metaJson.trim()
+      let meta: Record<string, any> | null = null
+      if (metaTrim) {
+        try {
+          const parsed = JSON.parse(metaTrim)
+          meta = parsed && typeof parsed === 'object' ? (parsed as any) : null
+        } catch {
+          throw new Error('meta JSON: неверный JSON (пример: {"pageAccessToken":"EAAB..."} )')
+        }
+      }
       const res = await fetch('/api/channelConnections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
@@ -80,6 +91,7 @@ export default function AdminConnectionsPage() {
           channel,
           externalId: externalId.trim() || null,
           status,
+          meta,
           notes: notes.trim() || null,
         }),
       })
@@ -87,6 +99,7 @@ export default function AdminConnectionsPage() {
       if (!res.ok) throw new Error(json?.error || 'Save failed')
       setExternalId('')
       setNotes('')
+      setMetaJson('')
       await loadConnections()
     } catch (e: any) {
       setError(String(e?.message || e || 'Save failed'))
@@ -200,7 +213,7 @@ export default function AdminConnectionsPage() {
             <input
               value={externalId}
               onChange={(e) => setExternalId(e.target.value)}
-              placeholder="externalId (igUserId / phone_number_id / bot...)"
+              placeholder="externalId (IG igUserId / WA phone_number_id / Messenger page_id / TG bot / Website key)"
               className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 md:col-span-2"
               disabled={loading}
             />
@@ -224,6 +237,17 @@ export default function AdminConnectionsPage() {
               rows={2}
               placeholder="Заметки: чей канал, что подключили, где лежат токены..."
               className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="mt-3">
+            <textarea
+              value={metaJson}
+              onChange={(e) => setMetaJson(e.target.value)}
+              rows={2}
+              placeholder='meta JSON (пример для Messenger: {"pageAccessToken":"EAAB..."}; для WhatsApp: {"phoneNumberId":"..."} )'
+              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-mono text-sm"
               disabled={loading}
             />
           </div>
