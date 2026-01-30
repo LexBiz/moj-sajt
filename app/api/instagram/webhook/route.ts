@@ -851,7 +851,7 @@ function stripContactAskBlock(text: string) {
 
 // We avoid hard-truncation; long answers are split into multiple messages.
 // This is a soft cap only (guardrails), NOT a hard-cut for sending.
-const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 6000)
+const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 0)
 const IG_DM_SOFT_CTA_MIN_SCORE = Number(process.env.INSTAGRAM_DM_SOFT_CTA_MIN_SCORE || 60)
 
 function countQuestionMarks(text: string) {
@@ -980,9 +980,7 @@ function enforceIgDirectGuardrails(input: {
   // Hard: max 1 question per message
   if (countQuestionMarks(out) > 1) out = keepSingleQuestion(out)
 
-  // Keep it short: fewer paragraphs unless it's OFFER
-  const maxParas = input.nextStage === 'offer' ? 5 : 3
-  out = limitParagraphs(out, maxParas)
+  // Do not force paragraph limits; we split into multiple parts when sending.
 
   // Stronger funnel: add a soft CTA when user is warm/hot and we haven't asked recently
   if (input.nextStage !== 'ask_contact' && input.readinessScore >= IG_DM_SOFT_CTA_MIN_SCORE && !input.recentContactAsk) {
@@ -991,7 +989,7 @@ function enforceIgDirectGuardrails(input: {
 
   // Soft cap only: we will split into multiple messages when sending.
   // Keep it high enough to never cut package comparisons.
-  if (out.length > IG_DM_MAX_CHARS) out = out.slice(0, IG_DM_MAX_CHARS).trim()
+  if (IG_DM_MAX_CHARS > 0 && out.length > IG_DM_MAX_CHARS) out = out.slice(0, IG_DM_MAX_CHARS).trim()
   return out.trim()
 }
 
@@ -1106,7 +1104,7 @@ async function generateAiReply(params: {
   if (finishReason === 'length') out = trimToLastCompleteSentence(out)
   out = sanitizeInstagramText(out)
   return {
-    reply: clip(out.trim(), 1000),
+    reply: out.trim(),
     provider: 'openai' as const,
     detail: finishReason === 'length' ? 'openai_truncated_length' : null,
   }
@@ -1290,7 +1288,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
   }
   const url = urlObj.toString()
-  const parts = splitTextIntoParts(text, 900, 8)
+  const parts = splitTextIntoParts(text, 900, 24)
   if (!parts.length) return
 
   const retryDelaysMs = [0, 300, 1200, 2500]

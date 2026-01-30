@@ -128,6 +128,7 @@ export function ensureCta(text: string, lang: AiLang, stage: TemoWebStage, readi
 }
 
 export function applyChannelLimits(text: string, channel: AiChannel) {
+  if (channel === 'instagram' || channel === 'messenger') return String(text || '').trim()
   const limits: Record<AiChannel, { maxChars: number; maxLines: number }> = {
     website: { maxChars: 1200, maxLines: 10 },
     flow: { maxChars: 1000, maxLines: 8 },
