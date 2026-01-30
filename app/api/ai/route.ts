@@ -5,6 +5,7 @@ type AiRequest = {
   businessType?: string
   channel?: string
   currentChannel?: 'website' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger'
+  sourceHint?: string
   pain?: string
   question?: string | null
   history?: { role: 'user' | 'assistant'; content: string }[]
@@ -166,7 +167,8 @@ async function callOpenAI(
   context: string,
   history?: { role: 'user' | 'assistant'; content: string }[],
   lang?: AiRequest['lang'],
-  currentChannel?: AiRequest['currentChannel']
+  currentChannel?: AiRequest['currentChannel'],
+  sourceHint?: AiRequest['sourceHint']
 ): Promise<OpenAiResult | null> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -219,6 +221,17 @@ async function callOpenAI(
           role: 'system',
           content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
         },
+        ...(String(sourceHint || '').trim().toLowerCase() === 'pilot'
+          ? [
+              {
+                role: 'system',
+                content:
+                  lng === 'ru'
+                    ? 'SOURCE HINT: User came from PILOT landing. Prioritize PILOT PROGRAM: answer clearly what is included/not included; confirm add-ons can be added; do NOT suggest START unless user asks for packages.'
+                    : 'SOURCE HINT: Користувач прийшов із PILOT landing. Пріоритет — PILOT PROGRAM: чітко що входить/не входить; підтвердити, що модулі можна додати; не пропонувати START, якщо не питають про пакети.',
+              },
+            ]
+          : []),
         // Optional "fast mode" (used by Flow): shorter answers + stronger next-step.
         ...(context.includes('FAST_MODE: true')
           ? [
@@ -281,7 +294,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as AiRequest
     const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
 
-    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel)
+    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint)
     const answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
     const summary = aiResult?.summary || null
 

@@ -35,7 +35,7 @@ export function computeStageHeuristic(text: string, readinessScore: number): Tem
   const t = String(text || '').trim()
   if (!t) return 'DISCOVERY'
   if (readinessScore >= 55 && /(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) return 'ASK_CONTACT'
-  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|поддержк|setup|внедрен)/i.test(t)) return 'OFFER'
+  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|пілот|пилот|pilot|поддержк|setup|внедрен|оплат|stripe|календар|calendar|модул)/i.test(t)) return 'OFFER'
   if (/(интеграц|integration|процесс|срок|сроки|гарант|надеж|безопас)/i.test(t)) return 'TRUST'
   if (/(интерес|цікав|покажи|пример|як\s+це\s+допоможе|how\s+it\s+helps)/i.test(t)) return 'VALUE'
   return 'DISCOVERY'
@@ -85,16 +85,16 @@ function renderPricing(lang: 'ru' | 'ua') {
 
 function renderPilot(lang: 'ru' | 'ua') {
   const p = TEMOWEB_PROFILE.pilot
-  const months = p.durationMonths
   const money = (n: number) => fmtMoneyEur(n)
   if (lang === 'ua') {
     return [
       'PILOT PROGRAM (2 місяці):',
       `— Запуск: ${p.launchTime}`,
       `— Вартість: впровадження ${money(p.setupEur)} + підтримка ${money(p.supportEurPerMonth)}/міс (2 місяці)`,
-      `— Канали (1–${p.includedChannelsUpTo} на вибір): ${p.channelsUa.join(' / ')}`,
+      `— Канали: включено 1–${p.includedChannelsUpTo} (можна 1 або 2) на вибір: ${p.channelsUa.join(' / ')}`,
       'Що входить (коротко):',
       ...p.includedUa.slice(0, 6).map((x) => `— ${x}`),
+      'Додатково (за бажанням): можна підключити будь‑який модуль із сайту (оплати/календар/аналітика/зовнішня CRM тощо) — це НЕ входить у “голий” пілот.',
       'Не входить у пілот:',
       ...p.notIncludedUa.slice(0, 5).map((x) => `— ${x}`),
     ].join('\n')
@@ -103,9 +103,10 @@ function renderPilot(lang: 'ru' | 'ua') {
     'PILOT PROGRAM (2 месяца):',
     `— Запуск: ${p.launchTime}`,
     `— Цена: внедрение ${money(p.setupEur)} + поддержка ${money(p.supportEurPerMonth)}/мес (2 месяца)`,
-    `— Каналы (1–${p.includedChannelsUpTo} на выбор): ${p.channelsRu.join(' / ')}`,
+    `— Каналы: включено 1–${p.includedChannelsUpTo} (можно 1 или 2) на выбор: ${p.channelsRu.join(' / ')}`,
     'Что входит (коротко):',
     ...p.includedRu.slice(0, 6).map((x) => `— ${x}`),
+    'Дополнительно (по желанию): можно подключить любой модуль с сайта (оплаты/календарь/аналитика/внешняя CRM и т.д.) — это НЕ входит в “голый” пилот.',
     'Не входит в пилот:',
     ...p.notIncludedRu.slice(0, 5).map((x) => `— ${x}`),
   ].join('\n')
@@ -171,6 +172,12 @@ export function buildTemoWebSystemPrompt(params: {
     'Do NOT mention contracts/documents/legal steps unless the client explicitly asks.',
     'PRICE RULE: never drop the biggest number by default. If user did NOT ask price — do not list prices; just say you will recommend after 1 clarifying question.',
     'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
+    'PILOT FACTS (never change): duration=2 months; launch=48–72 hours; included channels=1–2 (NOT 1 fixed); price=490€ setup + 99€/month ×2. Base pilot does NOT include: custom dev, complex integrations, ecommerce/autosales, multilingual, advanced analytics. BUT: any extra module from the website can be added as a paid add-on.',
+    'PILOT ANSWER TEMPLATE (when asked about pilot / what is included / can we add payment/calendar/etc):',
+    '— Confirm: yes, modules can be added as add-ons (paid separately).',
+    '— Base pilot includes: 4–6 bullets.',
+    '— Base pilot does NOT include: 3–5 bullets.',
+    '— Next step: ask ONE question: which 1–2 channels to start with?',
     '',
     `You are the senior sales manager and business consultant of ${TEMOWEB_PROFILE.brandName}.`,
     '',

@@ -393,7 +393,7 @@ function buildSystemPrompt(lang) {
     'Company context:',
     `${BRAND_NAME} builds AI assistants and automation systems for businesses (Instagram/WhatsApp/Telegram/Website) + CRM & lead automation + custom integrations.`,
     'Packages: START / BUSINESS / PRO (подбираем под задачу).',
-    'Pilot program: 2 months — setup 490€ + 99€/month (2 months).',
+    'Pilot program: 2 months — setup 490€ + 99€/month ×2. Includes 1–2 channels (choose). Add-ons can be added separately (payments/calendar/etc).',
     '',
     'Style:',
     '- Calm, confident, friendly, respectful, professional.',

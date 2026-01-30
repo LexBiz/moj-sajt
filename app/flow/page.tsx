@@ -324,6 +324,7 @@ type FormState = {
 
 export default function Home() {
   const [lang, setLang] = useState<Lang>('ua')
+  const [sourceHint, setSourceHint] = useState<string>('')
   const t = translations[lang]
   const steps = useMemo(() => stepLabels[lang], [lang])
   const [step, setStep] = useState<StepId>('intro')
@@ -363,6 +364,14 @@ export default function Home() {
       })
     }
   }, [form.history.length])
+
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      const src = (sp.get('src') || '').trim().toLowerCase()
+      setSourceHint(src)
+    } catch {}
+  }, [])
 
   const setField = (key: keyof FormState, value: string | string[]) => {
     setForm((prev) => ({ ...prev, [key]: value as any }))
@@ -480,6 +489,7 @@ export default function Home() {
           lang,
           mode: nextMode,
           currentChannel: 'website',
+          sourceHint: sourceHint || undefined,
           fast: fastMode,
         }),
       })
