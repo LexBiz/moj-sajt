@@ -7,6 +7,13 @@ import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
+import {
+  applyChannelLimits,
+  applyPilotNudge,
+  applyServicesRouter,
+  detectAiIntent,
+  evaluateQuality,
+} from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
 // Start follow-up scheduler once per server process (enabled via env).
@@ -1012,11 +1019,20 @@ async function generateAiReply(params: {
     }
   }
 
+  const intent = detectAiIntent(userText || '')
+  const supportRules = intent.isSupport
+    ? [
+        lang === 'ua'
+          ? 'SUPPORT MODE: користувач має проблему або вже налаштовану систему. Перейдіть у режим підтримки. Питайте: канал, що саме зламалось, коли почалось. Не продавайте пакети.'
+          : 'SUPPORT MODE: клиент сообщает о проблеме или уже подключенной системе. Перейдите в режим поддержки. Спросите: канал, что сломалось, когда началось. Не продавайте пакеты.',
+      ]
+    : []
   const system = buildTemoWebSystemPrompt({
     lang,
     channel: 'instagram',
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
+    extraRules: supportRules,
   })
   const historyMsgs = history.slice(-16).map((m) => ({ role: m.role, content: m.content }))
   const isFirstAssistantMsg = history.filter((m) => m.role === 'assistant').length === 0
@@ -1653,6 +1669,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     transcript && transcript.length > 0
       ? `${text}\n\n[Voice message transcript]: ${transcript}`
       : text || (images.length > 0 ? '[Image sent]' : '')
+  const intent = detectAiIntent(composedUserText || '')
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
   const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram' })
@@ -1674,6 +1691,17 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   reply = enforceIgDirectGuardrails({ reply, lang, nextStage, readinessScore, recentContactAsk: recentAsks })
   if (isPackageCompareRequest(text)) {
     reply = ensureAllPackagesMentioned(reply, lang === 'ru' ? 'ru' : 'ua')
+  }
+  if (lang === 'ru' || lang === 'ua') {
+    if (!intent.isSupport) {
+      reply = applyServicesRouter(reply, lang, intent)
+      reply = applyPilotNudge(reply, lang, intent)
+    }
+    reply = applyChannelLimits(reply, 'instagram')
+    const quality = evaluateQuality(reply, lang, intent, 'instagram')
+    if (quality.missingPackages || quality.missingAddons || quality.tooLong || quality.noCta) {
+      console.warn('IG AI quality flags', { quality, lang })
+    }
   }
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
   updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })

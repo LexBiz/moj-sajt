@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
+import {
+  applyChannelLimits,
+  applyPilotNudge,
+  applyServicesRouter,
+  detectAiIntent,
+  ensureCta,
+  evaluateQuality,
+} from '@/app/lib/aiPostProcess'
 
 type AiRequest = {
   businessType?: string
@@ -169,7 +177,8 @@ async function callOpenAI(
   history?: { role: 'user' | 'assistant'; content: string }[],
   lang?: AiRequest['lang'],
   currentChannel?: AiRequest['currentChannel'],
-  sourceHint?: AiRequest['sourceHint']
+  sourceHint?: AiRequest['sourceHint'],
+  extraRules?: string[]
 ): Promise<OpenAiResult | null> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -197,7 +206,13 @@ async function callOpenAI(
           const readinessScore = computeReadinessScoreHeuristic(lastUser, userTurns)
           const stage = computeStageHeuristic(lastUser, readinessScore)
           const ch = (currentChannel || 'website') as any
-          return buildTemoWebSystemPrompt({ lang: lng === 'ru' ? 'ru' : 'ua', channel: ch, stage, readinessScore })
+          return buildTemoWebSystemPrompt({
+            lang: lng === 'ru' ? 'ru' : 'ua',
+            channel: ch,
+            stage,
+            readinessScore,
+            extraRules,
+          })
         })()
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   const firstMsgRule =
@@ -295,16 +310,44 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as AiRequest
     const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
 
-    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint)
-    let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
     const lastUser =
       body.question ||
       body.history?.slice().reverse().find((m) => m.role === 'user')?.content ||
       ''
+    const lng = getLang(body.lang)
+    const lang = lng === 'ru' ? 'ru' : 'ua'
+    const channel = (body.currentChannel || 'website') as any
+    const intent = detectAiIntent(lastUser || '')
+    const readinessScore = computeReadinessScoreHeuristic(lastUser || '', Array.isArray(body.history) ? body.history.filter((m) => m.role === 'user').length || 1 : 1)
+    const stage = computeStageHeuristic(lastUser || '', readinessScore)
+    const supportRules = intent.isSupport
+      ? [
+          lang === 'ua'
+            ? 'SUPPORT MODE: користувач має проблему або вже налаштовану систему. Перейдіть у режим підтримки. Питайте: канал, що саме зламалось, коли почалось. Не продавайте пакети.'
+            : 'SUPPORT MODE: клиент сообщает о проблеме или уже подключенной системе. Перейдите в режим поддержки. Спросите: канал, что сломалось, когда началось. Не продавайте пакеты.',
+        ]
+      : []
+
+    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint, supportRules)
+    let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
+
     if (isPackageCompareRequest(lastUser || '')) {
-      const lng = getLang(body.lang)
       if (lng === 'ru' || lng === 'ua') {
-        answer = ensureAllPackagesMentioned(answer, lng)
+        answer = ensureAllPackagesMentioned(answer, lang)
+      }
+    }
+
+    if (lng === 'ru' || lng === 'ua') {
+      const channelForLimits = (channel === 'website' ? 'website' : channel) as any
+      if (!intent.isSupport) {
+        answer = applyServicesRouter(answer, lang, intent)
+        answer = applyPilotNudge(answer, lang, intent)
+        answer = ensureCta(answer, lang, stage, readinessScore, intent)
+      }
+      answer = applyChannelLimits(answer, channelForLimits)
+      const quality = evaluateQuality(answer, lang, intent, channelForLimits)
+      if (quality.missingPackages || quality.missingAddons || quality.tooLong || quality.noCta) {
+        console.warn('AI quality flags', { quality, channel, lang })
       }
     }
     const summary = aiResult?.summary || null

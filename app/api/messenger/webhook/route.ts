@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
+import {
+  applyChannelLimits,
+  applyPilotNudge,
+  applyServicesRouter,
+  detectAiIntent,
+  ensureCta,
+  evaluateQuality,
+} from '@/app/lib/aiPostProcess'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
@@ -445,7 +453,15 @@ async function generateAiReplyWithHistory(input: {
   const userTurns = hist.filter((m) => m.role === 'user').length || 1
   const readinessScore = computeReadinessScoreHeuristic(lastUser, userTurns)
   const stage = computeStageHeuristic(lastUser, readinessScore)
-  const system = buildTemoWebSystemPrompt({ lang, channel: 'messenger', stage, readinessScore })
+  const intent = detectAiIntent(lastUser || '')
+  const supportRules = intent.isSupport
+    ? [
+        lang === 'ua'
+          ? 'SUPPORT MODE: користувач має проблему або вже налаштовану систему. Перейдіть у режим підтримки. Питайте: канал, що саме зламалось, коли почалось. Не продавайте пакети.'
+          : 'SUPPORT MODE: клиент сообщает о проблеме или уже подключенной системе. Перейдите в режим поддержки. Спросите: канал, что сломалось, когда началось. Не продавайте пакеты.',
+      ]
+    : []
+  const system = buildTemoWebSystemPrompt({ lang, channel: 'messenger', stage, readinessScore, extraRules: supportRules })
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   const firstMsgRule = isFirstAssistant
     ? lang === 'ua'
@@ -683,8 +699,24 @@ export async function POST(request: NextRequest) {
       }
 
       let reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls })
+      const intent = detectAiIntent(msgText || '')
+      const userTurns = history.filter((m) => m.role === 'user').length || 1
+      const readinessScore = computeReadinessScoreHeuristic(msgText || '', userTurns)
+      const stage = computeStageHeuristic(msgText || '', readinessScore)
       if (isPackageCompareRequest(msgText || '')) {
         reply = ensureAllPackagesMentioned(reply, preferredLang === 'ru' ? 'ru' : 'ua')
+      }
+      if (preferredLang === 'ru' || preferredLang === 'ua') {
+        if (!intent.isSupport) {
+          reply = applyServicesRouter(reply, preferredLang, intent)
+          reply = applyPilotNudge(reply, preferredLang, intent)
+          reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
+        }
+        reply = applyChannelLimits(reply, 'messenger')
+        const quality = evaluateQuality(reply, preferredLang, intent, 'messenger')
+        if (quality.missingPackages || quality.missingAddons || quality.tooLong || quality.noCta) {
+          console.warn('Messenger AI quality flags', { quality, lang: preferredLang })
+        }
       }
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
       appendMessage(pageId, senderId, { role: 'assistant', content: reply })

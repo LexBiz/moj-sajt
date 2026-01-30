@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
+import {
+  applyChannelLimits,
+  applyPilotNudge,
+  applyServicesRouter,
+  detectAiIntent,
+  ensureCta,
+  evaluateQuality,
+} from '@/app/lib/aiPostProcess'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -77,11 +85,20 @@ async function generateAiReply(userText: string) {
   const isUa = /[іїєґ]/i.test(String(userText || ''))
   const userTurns = 1
   const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
+  const intent = detectAiIntent(userText || '')
+  const supportRules = intent.isSupport
+    ? [
+        isUa
+          ? 'SUPPORT MODE: користувач має проблему або вже налаштовану систему. Перейдіть у режим підтримки. Питайте: канал, що саме зламалось, коли почалось. Не продавайте пакети.'
+          : 'SUPPORT MODE: клиент сообщает о проблеме или уже подключенной системе. Перейдите в режим поддержки. Спросите: канал, что сломалось, когда началось. Не продавайте пакеты.',
+      ]
+    : []
   const system = buildTemoWebSystemPrompt({
     lang: isUa ? 'ua' : 'ru',
     channel: 'whatsapp',
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
+    extraRules: supportRules,
   })
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -106,7 +123,20 @@ async function generateAiReply(userText: string) {
   }
   const j = (await resp.json().catch(() => ({}))) as any
   const content = j?.choices?.[0]?.message?.content
-  return typeof content === 'string' && content.trim() ? clip(content.trim(), 900) : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
+  let out = typeof content === 'string' && content.trim() ? content.trim() : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
+  const lang = isUa ? 'ua' : 'ru'
+  const stage = computeStageHeuristic(userText, readinessScore)
+  if (!intent.isSupport) {
+    out = applyServicesRouter(out, lang, intent)
+    out = applyPilotNudge(out, lang, intent)
+    out = ensureCta(out, lang, stage, readinessScore, intent)
+  }
+  out = applyChannelLimits(out, 'whatsapp')
+  const quality = evaluateQuality(out, lang, intent, 'whatsapp')
+  if (quality.missingPackages || quality.missingAddons || quality.tooLong || quality.noCta) {
+    console.warn('WhatsApp AI quality flags', { quality, lang })
+  }
+  return out
 }
 
 async function sendWhatsAppText(to: string, text: string, opts?: { phoneNumberId?: string | null }) {

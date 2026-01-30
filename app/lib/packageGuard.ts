@@ -11,7 +11,7 @@ function fmtMoneyEur(n: number) {
 export function isPackageCompareRequest(text: string) {
   const t = String(text || '').toLowerCase()
   if (!t) return false
-  return /(сравн|порівн|compare|пакет|тариф|прайс|цена|ціна|стоим|сколько|вартість|скільки|choose|выбрат|обрат|определ|help\s+choose|що\s+краще|что\s+лучше)/i.test(
+  return /(сравн|порівн|compare|пакет|тариф|прайс|цена|ціна|стоим|сколько|вартість|скільки|услуг|услуги|послуг|послуги|service|services|offerings|what\s+do\s+you\s+offer|choose|выбрат|обрат|определ|help\s+choose|що\s+краще|что\s+лучше)/i.test(
     t,
   )
 }
