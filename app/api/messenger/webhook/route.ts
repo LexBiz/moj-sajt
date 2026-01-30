@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
-import { buildOfferCompareText, isOfferCompareIntent } from '@/app/lib/offerText'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
@@ -35,11 +34,6 @@ function wasMidSeen(key: string) {
   const ts = seenMids.get(key)
   if (!ts) return false
   return Date.now() - ts <= SEEN_MIDS_TTL_MS
-}
-
-function includesPilot(text: string) {
-  const t = String(text || '').toLowerCase()
-  return /(pilot|пилот|тест|пробн|2\s*мес|2\s*місяц)/i.test(t)
 }
 
 type MsgrMessagingEvent = {
@@ -391,10 +385,6 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
 }
 
 async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) {
-  if (isOfferCompareIntent(userText)) {
-    const lang = opts?.lang === 'ru' ? 'ru' : 'ua'
-    return buildOfferCompareText({ lang, includePilot: includesPilot(userText) })
-  }
   if (!OPENAI_API_KEY) {
     return 'Принято. Напишите нишу и где приходят заявки — покажу схему и следующие шаги.'
   }
@@ -447,9 +437,6 @@ async function generateAiReplyWithHistory(input: {
   images?: string[]
 }) {
   const userText = input.userText
-  if (isOfferCompareIntent(userText)) {
-    return buildOfferCompareText({ lang: input.lang, includePilot: includesPilot(userText) })
-  }
   if (!OPENAI_API_KEY) return generateAiReply(userText, { lang: input.lang })
   const hist = Array.isArray(input.history) ? input.history : []
   const lastUser = userText

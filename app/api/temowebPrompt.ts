@@ -127,6 +127,26 @@ function renderAddons(lang: 'ru' | 'ua') {
   return [title, ...rows].join('\n')
 }
 
+function renderPackageFacts(lang: 'ru' | 'ua') {
+  const p = TEMOWEB_PROFILE.packages
+  if (lang === 'ua') {
+    return [
+      'PACKAGE FACTS (never change):',
+      `START: ${fmtMoneyEur(p.start.setupEur)} + ${fmtMoneyEur(p.start.supportEurPerMonth)}/міс, мін. ${p.start.supportMinMonths} міс, до ${p.start.channelsUpTo} каналів.`,
+      `BUSINESS: ${fmtMoneyEur(p.business.setupEur)} + ${fmtMoneyEur(p.business.supportEurPerMonth)}/міс, мін. ${p.business.supportMinMonths} міс, до ${p.business.channelsUpTo} каналів.`,
+      `PRO: ${fmtMoneyEur(p.pro.setupEur)} + ${fmtMoneyEur(p.pro.supportEurPerMonth)}/міс, мін. ${p.pro.supportMinMonths} міс, до ${p.pro.channelsUpTo} каналів.`,
+      `Запуск: START ${p.launchTime.start}, BUSINESS ${p.launchTime.business}, PRO ${p.launchTime.pro}.`,
+    ].join('\n')
+  }
+  return [
+    'PACKAGE FACTS (never change):',
+    `START: ${fmtMoneyEur(p.start.setupEur)} + ${fmtMoneyEur(p.start.supportEurPerMonth)}/мес, мин. ${p.start.supportMinMonths} мес, до ${p.start.channelsUpTo} каналов.`,
+    `BUSINESS: ${fmtMoneyEur(p.business.setupEur)} + ${fmtMoneyEur(p.business.supportEurPerMonth)}/мес, мин. ${p.business.supportMinMonths} мес, до ${p.business.channelsUpTo} каналов.`,
+    `PRO: ${fmtMoneyEur(p.pro.setupEur)} + ${fmtMoneyEur(p.pro.supportEurPerMonth)}/мес, мин. ${p.pro.supportMinMonths} мес, до ${p.pro.channelsUpTo} каналов.`,
+    `Запуск: START ${p.launchTime.start}, BUSINESS ${p.launchTime.business}, PRO ${p.launchTime.pro}.`,
+  ].join('\n')
+}
+
 function renderFaq(lang: 'ru' | 'ua') {
   const title = lang === 'ua' ? 'FAQ (коротко):' : 'FAQ (коротко):'
   const items = TEMOWEB_PROFILE.faq.slice(0, 6).map((x) => (lang === 'ua' ? `— ${x.qUa}: ${x.aUa}` : `— ${x.qRu}: ${x.aRu}`))
@@ -176,6 +196,7 @@ export function buildTemoWebSystemPrompt(params: {
     'PRICE RULE: never drop the biggest number by default. If user did NOT ask price — do not list prices; just say you will recommend after 1 clarifying question.',
     'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
     'PILOT FACTS (never change): duration=2 months; launch=48–72 hours; included channels=1–2 (NOT 1 fixed); price=490€ setup + 99€/month ×2. Base pilot does NOT include: custom dev, complex integrations, ecommerce/autosales, multilingual, advanced analytics. BUT: any extra module from the website can be added as a paid add-on.',
+    lang === 'ua' || lang === 'ru' ? renderPackageFacts(lang === 'ua' ? 'ua' : 'ru') : '',
     'PILOT ANSWER TEMPLATE (when asked about pilot / what is included / can we add payment/calendar/etc):',
     '— Confirm: yes, modules can be added as add-ons (paid separately).',
     '— Base pilot includes: 4–6 bullets.',

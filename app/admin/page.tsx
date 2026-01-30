@@ -820,9 +820,9 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-400">30 дней</p>
                     <p className="font-semibold">Flow {stats.last30.flow} • Telegram {stats.last30.telegram} • Другое {stats.last30.other}</p>
                   </div>
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
           </div>
 
@@ -942,15 +942,15 @@ export default function AdminPage() {
             {/* Detail */}
             <div className="hidden md:block p-4 sm:p-6">
               <LeadDetail variant="desktop" />
-            </div>
-          </div>
-        </div>
-      </div>
+                </div>
+                      </div>
+                      </div>
+                  </div>
 
       {/* Mobile bottom sheet (lead detail) */}
       {selected ? (
         <div className="md:hidden">
-          <button
+                      <button
             className="fixed inset-0 z-40 bg-black/60"
             onClick={() => setSelectedId(null)}
             aria-label="Close lead details"
@@ -958,16 +958,16 @@ export default function AdminPage() {
           <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-slate-900 p-4 pb-10">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="h-1.5 w-12 rounded-full bg-white/20" />
-              <button
+                    <button
                 onClick={() => setSelectedId(null)}
                 className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold"
-              >
+                    >
                 Закрыть
-              </button>
-            </div>
+                    </button>
+                  </div>
             <LeadDetail variant="mobile" />
-          </div>
-        </div>
+                </div>
+            </div>
       ) : null}
     </div>
   )
