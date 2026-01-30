@@ -400,7 +400,8 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
   let out = guarded || ''
   if (finishReason === 'length') out = trimToLastCompleteSentence(out)
   out = sanitizeMessengerText(out)
-  return out ? clip(out, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
+  // Do NOT clip here; sending layer will split into multiple messages.
+  return out ? clip(out, 6000) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
 }
 
 async function generateAiReplyWithHistory(input: {
@@ -462,7 +463,8 @@ async function generateAiReplyWithHistory(input: {
   let out = guarded || ''
   if (finishReason === 'length') out = trimToLastCompleteSentence(out)
   out = sanitizeMessengerText(out)
-  return out ? clip(out, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
+  // Do NOT clip here; sending layer will split into multiple messages.
+  return out ? clip(out, 6000) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
 }
 
 async function sendMessengerText(opts: { pageAccessToken: string; recipientId: string; text: string }) {
@@ -472,7 +474,7 @@ async function sendMessengerText(opts: { pageAccessToken: string; recipientId: s
     return
   }
   const url = `https://${API_HOST}/${API_VERSION}/me/messages?access_token=${encodeURIComponent(token)}`
-  const parts = splitTextIntoParts(opts.text, 1550, 5)
+  const parts = splitTextIntoParts(opts.text, 1650, 8)
   if (!parts.length) return
 
   for (let i = 0; i < parts.length; i += 1) {

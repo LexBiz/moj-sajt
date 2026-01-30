@@ -843,7 +843,7 @@ function stripContactAskBlock(text: string) {
 
 // We avoid hard-truncation; long answers are split into multiple messages.
 // This is a soft cap only (guardrails), NOT a hard-cut for sending.
-const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 1800)
+const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 6000)
 const IG_DM_SOFT_CTA_MIN_SCORE = Number(process.env.INSTAGRAM_DM_SOFT_CTA_MIN_SCORE || 60)
 
 function countQuestionMarks(text: string) {
@@ -982,6 +982,7 @@ function enforceIgDirectGuardrails(input: {
   }
 
   // Soft cap only: we will split into multiple messages when sending.
+  // Keep it high enough to never cut package comparisons.
   if (out.length > IG_DM_MAX_CHARS) out = out.slice(0, IG_DM_MAX_CHARS).trim()
   return out.trim()
 }
@@ -1272,7 +1273,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
   }
   const url = urlObj.toString()
-  const parts = splitTextIntoParts(text, 640, 4)
+  const parts = splitTextIntoParts(text, 900, 8)
   if (!parts.length) return
 
   const retryDelaysMs = [0, 300, 1200, 2500]
