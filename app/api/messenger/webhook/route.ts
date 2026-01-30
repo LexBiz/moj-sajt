@@ -7,6 +7,8 @@ import {
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
+  detectChosenPackageFromHistory,
+  detectChosenPackage,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -703,12 +705,13 @@ export async function POST(request: NextRequest) {
       const userTurns = history.filter((m) => m.role === 'user').length || 1
       const readinessScore = computeReadinessScoreHeuristic(msgText || '', userTurns)
       const stage = computeStageHeuristic(msgText || '', readinessScore)
-      if (isPackageCompareRequest(msgText || '')) {
+      const hasChosenPackage = Boolean(detectChosenPackage(msgText || '') || detectChosenPackageFromHistory(history))
+      if (!hasChosenPackage && isPackageCompareRequest(msgText || '')) {
         reply = ensureAllPackagesMentioned(reply, preferredLang === 'ru' ? 'ru' : 'ua')
       }
       if (preferredLang === 'ru' || preferredLang === 'ua') {
         if (!intent.isSupport) {
-          reply = applyServicesRouter(reply, preferredLang, intent)
+          reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
         }

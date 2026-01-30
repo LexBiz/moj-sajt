@@ -22,6 +22,8 @@ const SERVICES_RE =
   /(услуг|услуги|послуг|послуги|service|services|offerings|what\s+do\s+you\s+offer|что\s+вы\s+предлагаете|що\s+ви\s+пропонуєте|прайс|каталог)/i
 const PRICING_RE = /(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|pricing|price)/i
 const PILOT_RE = /(пілот|пилот|pilot|попробовать|спробуват|тест|быстро|швидко|дешевле|дешевш|дорого|дорога|дороговато|малый\s+бюджет|малий\s+бюджет)/i
+const PACKAGE_CHOICE_RE =
+  /\b(беру|берем|выбираю|обираю|хочу|хочемо|хотим|нужен|потрібен|потрібна|нужно|надо|мой|мій|нам|для\s+нас|для\s+меня|ок|окей)\b[\s\S]*\b(START|BUSINESS|PRO)\b/i
 
 function fmtMoneyEur(n: number) {
   try {
@@ -41,6 +43,27 @@ export function detectAiIntent(text: string): AiIntent {
     isContactIntent: CONTACT_HINT_RE.test(t),
     isSupport: SUPPORT_RE.test(t),
   }
+}
+
+export function detectChosenPackage(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return null
+  if (!/\b(START|BUSINESS|PRO)\b/i.test(t)) return null
+  return PACKAGE_CHOICE_RE.test(t) ? (t.match(/\b(START|BUSINESS|PRO)\b/i)?.[1]?.toUpperCase() || null) : null
+}
+
+export function detectChosenPackageFromHistory(history?: Array<{ role: 'user' | 'assistant'; content: string }>) {
+  const list = Array.isArray(history) ? history : []
+  const lastUser = [...list].reverse().find((m) => m.role === 'user')?.content || ''
+  const direct = detectChosenPackage(lastUser)
+  if (direct) return direct
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const m = list[i]
+    if (m.role !== 'user') continue
+    const choice = detectChosenPackage(m.content)
+    if (choice) return choice
+  }
+  return null
 }
 
 export function buildAddonsList(lang: AiLang) {
@@ -68,12 +91,12 @@ export function buildAddonsList(lang: AiLang) {
   return [title, ...rows].join('\n')
 }
 
-export function applyServicesRouter(text: string, lang: AiLang, intent: AiIntent) {
+export function applyServicesRouter(text: string, lang: AiLang, intent: AiIntent, hasChosenPackage: boolean) {
   let out = text
-  if (intent.isCompare || intent.isPricing || intent.isServices) {
+  if (!hasChosenPackage && (intent.isCompare || intent.isPricing || intent.isServices)) {
     out = ensureAllPackagesMentioned(out, lang)
   }
-  if (intent.isServices) {
+  if (!hasChosenPackage && intent.isServices) {
     const addons = buildAddonsList(lang)
     if (!out.includes(addons.split('\n')[0])) {
       out = `${out}\n\n${addons}`.trim()

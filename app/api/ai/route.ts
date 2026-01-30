@@ -6,6 +6,8 @@ import {
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
+  detectChosenPackageFromHistory,
+  detectChosenPackage,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -331,7 +333,8 @@ export async function POST(request: NextRequest) {
     const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint, supportRules)
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
 
-    if (isPackageCompareRequest(lastUser || '')) {
+    const hasChosenPackage = Boolean(detectChosenPackage(lastUser || '') || detectChosenPackageFromHistory(body.history))
+    if (!hasChosenPackage && isPackageCompareRequest(lastUser || '')) {
       if (lng === 'ru' || lng === 'ua') {
         answer = ensureAllPackagesMentioned(answer, lang)
       }
@@ -340,7 +343,7 @@ export async function POST(request: NextRequest) {
     if (lng === 'ru' || lng === 'ua') {
       const channelForLimits = (channel === 'website' ? 'website' : channel) as any
       if (!intent.isSupport) {
-        answer = applyServicesRouter(answer, lang, intent)
+        answer = applyServicesRouter(answer, lang, intent, hasChosenPackage)
         answer = applyPilotNudge(answer, lang, intent)
         answer = ensureCta(answer, lang, stage, readinessScore, intent)
       }

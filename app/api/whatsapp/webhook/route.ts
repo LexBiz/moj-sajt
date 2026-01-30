@@ -7,6 +7,8 @@ import {
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
+  detectChosenPackageFromHistory,
+  detectChosenPackage,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -126,8 +128,9 @@ async function generateAiReply(userText: string) {
   let out = typeof content === 'string' && content.trim() ? content.trim() : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
   const lang = isUa ? 'ua' : 'ru'
   const stage = computeStageHeuristic(userText, readinessScore)
+  const hasChosenPackage = Boolean(detectChosenPackage(userText || '') || detectChosenPackageFromHistory([{ role: 'user', content: userText || '' }]))
   if (!intent.isSupport) {
-    out = applyServicesRouter(out, lang, intent)
+    out = applyServicesRouter(out, lang, intent, hasChosenPackage)
     out = applyPilotNudge(out, lang, intent)
     out = ensureCta(out, lang, stage, readinessScore, intent)
   }

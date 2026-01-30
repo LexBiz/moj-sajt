@@ -12,6 +12,8 @@ import {
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
+  detectChosenPackageFromHistory,
+  detectChosenPackage,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
@@ -1687,12 +1689,13 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     reply = stripContactAskBlock(reply)
   }
   reply = enforceIgDirectGuardrails({ reply, lang, nextStage, readinessScore, recentContactAsk: recentAsks })
-  if (isPackageCompareRequest(text)) {
+  const hasChosenPackage = Boolean(detectChosenPackage(text || '') || detectChosenPackageFromHistory(history))
+  if (!hasChosenPackage && isPackageCompareRequest(text)) {
     reply = ensureAllPackagesMentioned(reply, lang === 'ru' ? 'ru' : 'ua')
   }
   if (lang === 'ru' || lang === 'ua') {
     if (!intent.isSupport) {
-      reply = applyServicesRouter(reply, lang, intent)
+      reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
       reply = applyPilotNudge(reply, lang, intent)
     }
     reply = applyChannelLimits(reply, 'instagram')

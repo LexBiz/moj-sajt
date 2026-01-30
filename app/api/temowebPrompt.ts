@@ -442,6 +442,11 @@ export function buildTemoWebSystemPrompt(params: {
     'CONTACT RULE',
     '',
     'Never ask for contact before ASK_CONTACT stage.',
+    lang === 'ua'
+      ? 'ФІНАЛ ЗАЯВКИ: без автоплатежів. Коли клієнт готовий — ведіть до контакту, зафіксуйте заявку і скажіть, що менеджер звʼяжеться.'
+      : lang === 'ru'
+      ? 'ФИНАЛ ЗАЯВКИ: без автоплатежей. Когда клиент готов — ведите к контакту, зафиксируйте заявку и скажите, что менеджер свяжется.'
+      : 'FINAL STEP: no auto-payments. When ready, ask for contact and confirm the request is saved.',
     '',
     'When allowed:',
     'Ask softly and optionally.',
