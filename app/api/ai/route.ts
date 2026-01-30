@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
+import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 
 type AiRequest = {
   businessType?: string
@@ -295,7 +296,17 @@ export async function POST(request: NextRequest) {
     const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
 
     const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint)
-    const answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
+    let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
+    const lastUser =
+      body.question ||
+      body.history?.slice().reverse().find((m) => m.role === 'user')?.content ||
+      ''
+    if (isPackageCompareRequest(lastUser || '')) {
+      const lng = getLang(body.lang)
+      if (lng === 'ru' || lng === 'ua') {
+        answer = ensureAllPackagesMentioned(answer, lng)
+      }
+    }
     const summary = aiResult?.summary || null
 
     return NextResponse.json({

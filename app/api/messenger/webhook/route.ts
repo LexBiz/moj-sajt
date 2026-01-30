@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
+import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
@@ -681,7 +682,10 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls })
+      let reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls })
+      if (isPackageCompareRequest(msgText || '')) {
+        reply = ensureAllPackagesMentioned(reply, preferredLang === 'ru' ? 'ru' : 'ua')
+      }
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
       appendMessage(pageId, senderId, { role: 'assistant', content: reply })
       recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })

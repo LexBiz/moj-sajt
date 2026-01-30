@@ -6,6 +6,7 @@ import { getConversation, updateConversation, type ConversationLang, type Conver
 import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
+import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
 // Start follow-up scheduler once per server process (enabled via env).
@@ -1671,6 +1672,9 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     reply = stripContactAskBlock(reply)
   }
   reply = enforceIgDirectGuardrails({ reply, lang, nextStage, readinessScore, recentContactAsk: recentAsks })
+  if (isPackageCompareRequest(text)) {
+    reply = ensureAllPackagesMentioned(reply, lang === 'ru' ? 'ru' : 'ua')
+  }
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
   updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
   await sendInstagramMessage(senderId, reply)
