@@ -79,6 +79,66 @@ function trimToLastCompleteSentence(text: string) {
   return t
 }
 
+function splitTextIntoParts(input: string, partMaxChars: number, maxParts: number) {
+  const raw = sanitizeMessengerText(input || '')
+  if (!raw) return []
+  if (raw.length <= partMaxChars) return [raw]
+
+  const parts: string[] = []
+  let remaining = raw
+
+  const pushPart = (p: string) => {
+    const s = sanitizeMessengerText(p)
+    if (s) parts.push(s)
+  }
+
+  const trySplitByParagraph = (text: string, max: number) => {
+    const blocks = text.split(/\n{2,}/).map((x) => x.trim()).filter(Boolean)
+    if (blocks.length <= 1) return null
+    const out: string[] = []
+    let buf = ''
+    for (const b of blocks) {
+      const next = buf ? `${buf}\n\n${b}` : b
+      if (next.length <= max) buf = next
+      else {
+        if (buf) out.push(buf)
+        buf = b
+      }
+    }
+    if (buf) out.push(buf)
+    return out
+  }
+
+  while (remaining.length > 0 && parts.length < maxParts) {
+    if (remaining.length <= partMaxChars) {
+      pushPart(remaining)
+      break
+    }
+    const chunks = trySplitByParagraph(remaining, partMaxChars)
+    if (chunks && chunks.length > 0) {
+      pushPart(chunks[0])
+      remaining = chunks.slice(1).join('\n\n').trim()
+      continue
+    }
+    const slice = remaining.slice(0, partMaxChars)
+    const m = slice.match(/[\s\S]*[.!?…]\s/)
+    if (m && m[0] && m[0].trim().length >= Math.min(120, Math.floor(partMaxChars * 0.35))) {
+      pushPart(m[0].trim())
+      remaining = remaining.slice(m[0].length).trim()
+      continue
+    }
+    pushPart(slice.trim())
+    remaining = remaining.slice(slice.length).trim()
+  }
+
+  if (remaining.length > 0 && parts.length >= maxParts) {
+    const last = parts[parts.length - 1] || ''
+    parts[parts.length - 1] = clip(last, Math.max(120, partMaxChars - 1))
+  }
+
+  return parts.filter(Boolean)
+}
+
 function ensureLeadsFile() {
   const dir = path.dirname(LEADS_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
@@ -394,22 +454,28 @@ async function sendMessengerText(opts: { pageAccessToken: string; recipientId: s
     return
   }
   const url = `https://${API_HOST}/${API_VERSION}/me/messages?access_token=${encodeURIComponent(token)}`
-  const body = {
-    messaging_type: 'RESPONSE',
-    recipient: { id: opts.recipientId },
-    message: { text: clip(sanitizeMessengerText(opts.text) || 'Ок.', 1800) },
+  const parts = splitTextIntoParts(opts.text, 1550, 5)
+  if (!parts.length) return
+
+  for (let i = 0; i < parts.length; i += 1) {
+    const body = {
+      messaging_type: 'RESPONSE',
+      recipient: { id: opts.recipientId },
+      message: { text: clip(parts[i], 1800) },
+    }
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      console.error('Messenger send error', resp.status, t.slice(0, 500))
+      break
+    }
+    if (i < parts.length - 1) await new Promise((r) => setTimeout(r, 160))
   }
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!resp.ok) {
-    const t = await resp.text().catch(() => '')
-    console.error('Messenger send error', resp.status, t.slice(0, 500))
-  } else {
-    console.log('Messenger send ok', { recipientIdLast4: opts.recipientId.slice(-4), api: `${API_HOST}/${API_VERSION}` })
-  }
+  console.log('Messenger send ok', { recipientIdLast4: opts.recipientId.slice(-4), api: `${API_HOST}/${API_VERSION}`, parts: parts.length })
 }
 
 async function findMessengerConnection(pageId: string): Promise<ChannelConnection | null> {

@@ -841,7 +841,9 @@ function stripContactAskBlock(text: string) {
   return kept || text.trim()
 }
 
-const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 650)
+// We avoid hard-truncation; long answers are split into multiple messages.
+// This is a soft cap only (guardrails), NOT a hard-cut for sending.
+const IG_DM_MAX_CHARS = Number(process.env.INSTAGRAM_DM_MAX_CHARS || 1800)
 const IG_DM_SOFT_CTA_MIN_SCORE = Number(process.env.INSTAGRAM_DM_SOFT_CTA_MIN_SCORE || 60)
 
 function countQuestionMarks(text: string) {
@@ -885,6 +887,72 @@ function truncatePreservingLastLine(text: string, maxChars: number) {
   return `${head}\n${last}`.trim()
 }
 
+function splitTextIntoParts(input: string, partMaxChars: number, maxParts: number) {
+  const raw = sanitizeInstagramText(input || '')
+  if (!raw) return []
+  if (raw.length <= partMaxChars) return [raw]
+
+  const parts: string[] = []
+  let remaining = raw
+
+  const pushPart = (p: string) => {
+    const s = sanitizeInstagramText(p)
+    if (s) parts.push(s)
+  }
+
+  const trySplitByParagraph = (text: string, max: number) => {
+    const blocks = text.split(/\n{2,}/).map((x) => x.trim()).filter(Boolean)
+    if (blocks.length <= 1) return null
+    const out: string[] = []
+    let buf = ''
+    for (const b of blocks) {
+      const next = buf ? `${buf}\n\n${b}` : b
+      if (next.length <= max) buf = next
+      else {
+        if (buf) out.push(buf)
+        buf = b
+      }
+    }
+    if (buf) out.push(buf)
+    return out
+  }
+
+  while (remaining.length > 0 && parts.length < maxParts) {
+    if (remaining.length <= partMaxChars) {
+      pushPart(remaining)
+      break
+    }
+
+    // Prefer paragraph boundaries.
+    const chunks = trySplitByParagraph(remaining, partMaxChars)
+    if (chunks && chunks.length > 0) {
+      pushPart(chunks[0])
+      remaining = chunks.slice(1).join('\n\n').trim()
+      continue
+    }
+
+    // Next: sentence boundary.
+    const slice = remaining.slice(0, partMaxChars)
+    const m = slice.match(/[\s\S]*[.!?…]\s/)
+    if (m && m[0] && m[0].trim().length >= Math.min(120, Math.floor(partMaxChars * 0.35))) {
+      pushPart(m[0].trim())
+      remaining = remaining.slice(m[0].length).trim()
+      continue
+    }
+
+    // Fallback: hard cut without ellipsis (we will send next part).
+    pushPart(slice.trim())
+    remaining = remaining.slice(slice.length).trim()
+  }
+
+  if (remaining.length > 0 && parts.length >= maxParts) {
+    const last = parts[parts.length - 1] || ''
+    parts[parts.length - 1] = clip(last, Math.max(120, partMaxChars - 1))
+  }
+
+  return parts.filter(Boolean)
+}
+
 function softCtaLine(lang: ConversationLang) {
   return lang === 'ua'
     ? 'Щоб продовжити — надішліть, будь ласка, телефон або email.'
@@ -913,7 +981,8 @@ function enforceIgDirectGuardrails(input: {
     out = `${out}\n\n${softCtaLine(input.lang)}`
   }
 
-  out = truncatePreservingLastLine(out, IG_DM_MAX_CHARS)
+  // Soft cap only: we will split into multiple messages when sending.
+  if (out.length > IG_DM_MAX_CHARS) out = out.slice(0, IG_DM_MAX_CHARS).trim()
   return out.trim()
 }
 
@@ -1203,11 +1272,8 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
   }
   const url = urlObj.toString()
-  const body = {
-    recipient: { id: recipientId },
-    messaging_type: 'RESPONSE',
-    message: { text: clip(sanitizeInstagramText(text) || 'Ок.', 1000) },
-  }
+  const parts = splitTextIntoParts(text, 640, 4)
+  if (!parts.length) return
 
   const retryDelaysMs = [0, 300, 1200, 2500]
   let lastStatus: number | null = null
@@ -1223,29 +1289,43 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     const delay = retryDelaysMs[attempt]
     if (delay) await sleep(delay)
 
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Both hosts accept Authorization header; it's REQUIRED for graph.instagram.com per docs.
-        Authorization: `Bearer ${IG_ACCESS_TOKEN}`,
-      },
-      body: JSON.stringify(body),
-    })
+    let allOk = true
+    for (let i = 0; i < parts.length; i += 1) {
+      const part = parts[i]
+      const body = {
+        recipient: { id: recipientId },
+        messaging_type: 'RESPONSE',
+        message: { text: clip(part, 1000) },
+      }
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Both hosts accept Authorization header; it's REQUIRED for graph.instagram.com per docs.
+          Authorization: `Bearer ${IG_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify(body),
+      })
+      lastStatus = resp.status
+      if (resp.ok) {
+        if (i < parts.length - 1) await sleep(180)
+        continue
+      }
+      const respText = await resp.text().catch(() => '')
+      lastBodyPreview = respText.slice(0, 400)
+      allOk = false
+      break
+    }
 
-    if (resp.ok) {
-      console.log('Instagram send ok', { recipientId })
+    if (allOk) {
+      console.log('Instagram send ok', { recipientId, parts: parts.length })
       return
     }
 
-    const respText = await resp.text().catch(() => '')
-    lastStatus = resp.status
-    lastBodyPreview = respText.slice(0, 400)
-
     // Retry only for transient/server-side errors or known transient OAuth error.
-    let isTransient = resp.status >= 500
+    let isTransient = (lastStatus || 500) >= 500
     try {
-      const parsed = JSON.parse(respText) as any
+      const parsed = JSON.parse(lastBodyPreview) as any
       const code = parsed?.error?.code
       const transient = parsed?.error?.is_transient
       if (transient === true) isTransient = true
@@ -1256,7 +1336,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
 
     console.error('Instagram send error', {
       attempt: attempt + 1,
-      status: resp.status,
+      status: lastStatus,
       transient: isTransient,
       body: lastBodyPreview,
       tokenMeta,
