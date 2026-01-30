@@ -72,6 +72,7 @@ function openAiKeyMeta(k: string) {
 }
 
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_MODEL_INSTAGRAM = (process.env.OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
@@ -498,7 +499,7 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
         // Seed conversation so next DM continues with main system (and avoid re-sending).
         const c = getConversation(fromId)
         const seededHistory = Array.isArray(c.history) ? c.history : []
-        const nextHistory: ConversationMessage[] = [...seededHistory, { role: 'assistant' as const, content: dmText }].slice(-12) as any
+        const nextHistory: ConversationMessage[] = [...seededHistory, { role: 'assistant' as const, content: dmText }].slice(-24) as any
         updateConversation(fromId, {
           lang,
           stage: 'qualify',
@@ -572,6 +573,30 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+function sanitizeInstagramText(input: string) {
+  let t = String(input || '')
+  // Remove control characters that can truncate rendering on some clients/APIs.
+  t = t.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+  // Remove line separators / zero-width chars that sometimes break Meta rendering.
+  t = t.replace(/[\u2028\u2029\u200B-\u200F\uFEFF]/g, '')
+  // Normalize whitespace
+  t = t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+  // Avoid weird endings like ".." (happens after guardrails neutralize extra "?")
+  t = t.replace(/\.{2,}$/g, '.')
+  return t
+}
+
+function trimToLastCompleteSentence(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return t
+  // If it already ends cleanly, keep as-is (but normalize trailing dots).
+  if (/[.!?…]$/.test(t)) return t.replace(/\.{2,}$/g, '.')
+  // Try cut to last sentence end.
+  const m = t.match(/[\s\S]*[.!?…]/)
+  if (m && typeof m[0] === 'string' && m[0].trim().length >= 40) return m[0].trim().replace(/\.{2,}$/g, '.')
+  return t
 }
 
 type IncomingMedia = { kind: 'image' | 'audio' | 'video' | 'file'; url: string }
@@ -922,7 +947,7 @@ async function generateAiReply(params: {
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
   })
-  const historyMsgs = history.slice(-8).map((m) => ({ role: m.role, content: m.content }))
+  const historyMsgs = history.slice(-16).map((m) => ({ role: m.role, content: m.content }))
   const isFirstAssistantMsg = history.filter((m) => m.role === 'assistant').length === 0
   const firstMsgRule =
     lang === 'ua'
@@ -947,17 +972,17 @@ async function generateAiReply(params: {
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model: OPENAI_MODEL_INSTAGRAM,
       messages: [
         { role: 'system', content: system },
         ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
         ...historyMsgs,
         { role: 'user', content: userContent },
       ],
-      temperature: 0.75,
+      temperature: 0.65,
       presence_penalty: 0.2,
       frequency_penalty: 0.2,
-      max_tokens: 350,
+      max_tokens: 520,
     }),
   })
 
@@ -976,6 +1001,7 @@ async function generateAiReply(params: {
 
   const json = (await response.json()) as any
   const content = json?.choices?.[0]?.message?.content
+  const finishReason = json?.choices?.[0]?.finish_reason
   if (typeof content !== 'string') {
     return {
       reply: lang === 'ua' ? 'Дай 1–2 деталі по бізнесу — і я зберу рішення. 💡' : 'Дай 1–2 детали по бизнесу — и я соберу решение. 💡',
@@ -990,7 +1016,13 @@ async function generateAiReply(params: {
   out = out.replace(/\*(?=\S)/g, '')
   out = out.replace(/(^|\n)\s*\*\s+/g, '$1— ')
   out = out.replace(/\n{3,}/g, '\n\n')
-  return { reply: clip(out.trim(), 1000), provider: 'openai' as const, detail: null }
+  if (finishReason === 'length') out = trimToLastCompleteSentence(out)
+  out = sanitizeInstagramText(out)
+  return {
+    reply: clip(out.trim(), 1000),
+    provider: 'openai' as const,
+    detail: finishReason === 'length' ? 'openai_truncated_length' : null,
+  }
 }
 
 async function fetchBinary(url: string) {
@@ -1174,7 +1206,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
   const body = {
     recipient: { id: recipientId },
     messaging_type: 'RESPONSE',
-    message: { text: clip(text, 1000) },
+    message: { text: clip(sanitizeInstagramText(text) || 'Ок.', 1000) },
   }
 
   const retryDelaysMs = [0, 300, 1200, 2500]
@@ -1348,7 +1380,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       channel: 'instagram',
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-    const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: ai.reply }].slice(-12) as any
+    const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: ai.reply }].slice(-24) as any
     updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso() })
     await sendInstagramMessage(senderId, ai.reply)
     return
@@ -1371,14 +1403,14 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
             'Чтобы подсказать точнее: какая у тебя ниша и откуда сейчас приходят клиенты?',
           ].join('\n')
 
-    const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-12) as ConversationMessage[]
+    const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-24) as ConversationMessage[]
     updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history })
     await sendInstagramMessage(senderId, reply)
     updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
-  const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-12) as ConversationMessage[]
+  const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-24) as ConversationMessage[]
   const userTurns = history.filter((m) => m.role === 'user').length
   const draftFromText = extractContactDraft(text)
   const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
@@ -1501,7 +1533,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       })
       recordInstagramAi({ provider: ai.provider, detail: ai.detail })
       const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
-      updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
+      updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
       await sendInstagramMessage(senderId, reply)
       updateConversation(senderId, { lastAssistantAt: nowIso() })
       return
@@ -1523,7 +1555,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
     const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactFix')
-    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
+    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
     await sendInstagramMessage(senderId, reply)
     updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
@@ -1559,7 +1591,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   }
   reply = enforceIgDirectGuardrails({ reply, lang, nextStage, readinessScore, recentContactAsk: recentAsks })
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-12) })
+  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
   await sendInstagramMessage(senderId, reply)
   updateConversation(senderId, { lastAssistantAt: nowIso() })
 }
@@ -1593,7 +1625,7 @@ export async function POST(request: NextRequest) {
     igUserIdLast4: IG_USER_ID ? IG_USER_ID.slice(-4) : null,
     openai: {
       hasKey: Boolean(OPENAI_API_KEY),
-      model: OPENAI_MODEL,
+      model: OPENAI_MODEL_INSTAGRAM,
       keyMeta: Boolean(OPENAI_API_KEY) ? openAiKeyMeta(OPENAI_API_KEY) : null,
     },
   })
