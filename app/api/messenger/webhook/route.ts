@@ -14,7 +14,15 @@ type MsgrMessagingEvent = {
   sender?: { id?: string }
   recipient?: { id?: string } // page id
   timestamp?: number
-  message?: { mid?: string; text?: string; is_echo?: boolean }
+  message?: {
+    mid?: string
+    text?: string
+    is_echo?: boolean
+    attachments?: Array<{
+      type?: string
+      payload?: { url?: string }
+    }>
+  }
   postback?: { title?: string; payload?: string }
 }
 
@@ -399,6 +407,7 @@ async function generateAiReplyWithHistory(input: {
   userText: string
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   lang: 'ru' | 'ua'
+  images?: string[]
 }) {
   const userText = input.userText
   if (!OPENAI_API_KEY) return generateAiReply(userText, { lang: input.lang })
@@ -416,6 +425,15 @@ async function generateAiReplyWithHistory(input: {
       : 'Это первое сообщение: представьтесь как "персональный AI‑ассистент TemoWeb". Задай максимум 1 вопрос.'
     : null
 
+  const images = Array.isArray(input.images) ? input.images.filter(Boolean).slice(0, 2) : []
+  const userContent =
+    images.length > 0
+      ? ([
+          { type: 'text', text: userText || (lang === 'ua' ? '[Надіслано зображення]' : '[Отправлено изображение]') },
+          ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
+        ] as any)
+      : userText
+
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
@@ -425,7 +443,7 @@ async function generateAiReplyWithHistory(input: {
         { role: 'system', content: system },
         ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
         ...hist.slice(-24),
-        { role: 'user', content: userText },
+        { role: 'user', content: userContent },
       ],
       temperature: 0.7,
       max_tokens: 520,
@@ -547,13 +565,19 @@ export async function POST(request: NextRequest) {
     for (const ev of events) {
       const senderId = String(ev?.sender?.id || '').trim()
       const msgText = ev?.message?.text?.trim() || null
+      const attachments = Array.isArray(ev?.message?.attachments) ? ev.message!.attachments : []
+      const imageUrls = attachments
+        .filter((a) => (a?.type || '').toLowerCase() === 'image')
+        .map((a) => String(a?.payload?.url || '').trim())
+        .filter(Boolean)
       const isEcho = Boolean(ev?.message?.is_echo)
 
-      recordMessengerWebhook({ pageId: pageId || null, senderId: senderId || null, textPreview: msgText ? clip(msgText, 120) : null })
+      const preview = msgText ? clip(msgText, 120) : imageUrls.length ? '[image]' : null
+      recordMessengerWebhook({ pageId: pageId || null, senderId: senderId || null, textPreview: preview })
 
       if (!senderId) continue
       if (IGNORE_ECHO && isEcho) continue
-      if (!msgText) continue
+      if (!msgText && !imageUrls.length) continue
 
       const conn = pageId ? await findMessengerConnection(pageId) : null
       const status = conn?.status || 'draft'
@@ -569,19 +593,26 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      console.log('Messenger webhook: incoming text', { pageId, senderIdLast4: senderId.slice(-4), text: clip(msgText, 200) })
+      console.log('Messenger webhook: incoming', {
+        pageId,
+        senderIdLast4: senderId.slice(-4),
+        text: msgText ? clip(msgText, 200) : null,
+        imageCount: imageUrls.length,
+      })
       const conv = getConversation(pageId, senderId)
-      const explicitLang = parseLangSwitch(msgText)
+      const explicitLang = parseLangSwitch(msgText || '')
       if (explicitLang) setConversationLang(pageId, senderId, explicitLang)
       const preferredLang = explicitLang || conv.lang || 'ua'
-      appendMessage(pageId, senderId, { role: 'user', content: msgText })
+      appendMessage(pageId, senderId, { role: 'user', content: msgText || (preferredLang === 'ua' ? '[Надіслано зображення]' : '[Отправлено изображение]') })
       const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
 
       // Lead capture: if user sent phone/email -> save lead to CRM and notify Telegram.
-      const contactDraft = extractContact(msgText)
+      const contactDraft = extractContact(msgText || '')
       const contact = (contactDraft.email || contactDraft.phone || '').trim()
       if (contact && conn?.tenantId) {
-        const clientMessages = [msgText, ...history.filter((m) => m.role === 'user').map((m) => m.content)].slice(0, 20)
+        const clientMessages = [msgText, ...history.filter((m) => m.role === 'user').map((m) => m.content)]
+          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+          .slice(0, 20)
         const aiSummary = await generateLeadAiSummary({ lang: preferredLang, contact, clientMessages })
         const leadId = await saveLeadFromMessenger({
           tenantId: String(conn.tenantId),
@@ -589,11 +620,19 @@ export async function POST(request: NextRequest) {
           senderId,
           contact,
           lang: preferredLang,
-          lastMessage: msgText,
+          lastMessage: msgText || '[image]',
           clientMessages,
           aiSummary,
         })
-        await sendTelegramLeadMessenger({ leadId, tenantId: String(conn.tenantId), pageId, senderId, contact, aiSummary, lastMessage: msgText })
+        await sendTelegramLeadMessenger({
+          leadId,
+          tenantId: String(conn.tenantId),
+          pageId,
+          senderId,
+          contact,
+          aiSummary,
+          lastMessage: msgText || '[image]',
+        })
         const okMsg =
           preferredLang === 'ua'
             ? 'Готово ✅ Зафіксував заявку. Напишемо/зателефонуємо для наступного кроку.'
@@ -604,7 +643,7 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const reply = await generateAiReplyWithHistory({ userText: msgText, history, lang: preferredLang })
+      const reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls })
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
       appendMessage(pageId, senderId, { role: 'assistant', content: reply })
       recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })

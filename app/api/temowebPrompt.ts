@@ -86,11 +86,13 @@ function renderPricing(lang: 'ru' | 'ua') {
 function renderPilot(lang: 'ru' | 'ua') {
   const p = TEMOWEB_PROFILE.pilot
   const money = (n: number) => fmtMoneyEur(n)
+  const total = p.setupEur + p.supportEurPerMonth * p.durationMonths
   if (lang === 'ua') {
     return [
       'PILOT PROGRAM (2 місяці):',
       `— Запуск: ${p.launchTime}`,
       `— Вартість: впровадження ${money(p.setupEur)} + підтримка ${money(p.supportEurPerMonth)}/міс (2 місяці)`,
+      `— Разом за 2 місяці: ${money(total)}`,
       `— Канали: включено 1–${p.includedChannelsUpTo} (можна 1 або 2) на вибір: ${p.channelsUa.join(' / ')}`,
       'Що входить (коротко):',
       ...p.includedUa.slice(0, 6).map((x) => `— ${x}`),
@@ -103,6 +105,7 @@ function renderPilot(lang: 'ru' | 'ua') {
     'PILOT PROGRAM (2 месяца):',
     `— Запуск: ${p.launchTime}`,
     `— Цена: внедрение ${money(p.setupEur)} + поддержка ${money(p.supportEurPerMonth)}/мес (2 месяца)`,
+    `— Итого за 2 месяца: ${money(total)}`,
     `— Каналы: включено 1–${p.includedChannelsUpTo} (можно 1 или 2) на выбор: ${p.channelsRu.join(' / ')}`,
     'Что входит (коротко):',
     ...p.includedRu.slice(0, 6).map((x) => `— ${x}`),
@@ -178,6 +181,7 @@ export function buildTemoWebSystemPrompt(params: {
     '— Base pilot includes: 4–6 bullets.',
     '— Base pilot does NOT include: 3–5 bullets.',
     '— Next step: ask ONE question: which 1–2 channels to start with?',
+    'PACKAGE COMPARISON RULE: if user asks to compare/choose packages (например: "сравни пакеты", "что лучше", "помоги определиться") — you MUST compare ALL 3: START, BUSINESS, PRO (не 2). Give 1–2 lines per package (who fits + key difference) + your recommendation for the client + ask ONE question to finalize.',
     '',
     `You are the senior sales manager and business consultant of ${TEMOWEB_PROFILE.brandName}.`,
     '',
