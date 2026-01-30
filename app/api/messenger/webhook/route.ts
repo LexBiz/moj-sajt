@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { listChannelConnections } from '@/app/lib/storage'
+import { buildOfferCompareText, isOfferCompareIntent } from '@/app/lib/offerText'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
@@ -9,6 +10,37 @@ import path from 'path'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+// Deduplicate incoming messages: Meta can deliver the same event multiple times.
+const SEEN_MIDS_TTL_MS = 6 * 60 * 60 * 1000
+const seenMids = new Map<string, number>() // key -> firstSeenAt
+
+function markMidSeen(key: string) {
+  const now = Date.now()
+  seenMids.set(key, now)
+  // Simple cleanup
+  if (seenMids.size > 12000) {
+    for (const [k, ts] of seenMids) {
+      if (now - ts > SEEN_MIDS_TTL_MS) seenMids.delete(k)
+    }
+    // Still too big: drop oldest-ish
+    if (seenMids.size > 12000) {
+      const items = Array.from(seenMids.entries()).sort((a, b) => a[1] - b[1]).slice(0, 3000)
+      for (const [k] of items) seenMids.delete(k)
+    }
+  }
+}
+
+function wasMidSeen(key: string) {
+  const ts = seenMids.get(key)
+  if (!ts) return false
+  return Date.now() - ts <= SEEN_MIDS_TTL_MS
+}
+
+function includesPilot(text: string) {
+  const t = String(text || '').toLowerCase()
+  return /(pilot|пилот|тест|пробн|2\s*мес|2\s*місяц)/i.test(t)
+}
 
 type MsgrMessagingEvent = {
   sender?: { id?: string }
@@ -359,6 +391,10 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
 }
 
 async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) {
+  if (isOfferCompareIntent(userText)) {
+    const lang = opts?.lang === 'ru' ? 'ru' : 'ua'
+    return buildOfferCompareText({ lang, includePilot: includesPilot(userText) })
+  }
   if (!OPENAI_API_KEY) {
     return 'Принято. Напишите нишу и где приходят заявки — покажу схему и следующие шаги.'
   }
@@ -411,6 +447,9 @@ async function generateAiReplyWithHistory(input: {
   images?: string[]
 }) {
   const userText = input.userText
+  if (isOfferCompareIntent(userText)) {
+    return buildOfferCompareText({ lang: input.lang, includePilot: includesPilot(userText) })
+  }
   if (!OPENAI_API_KEY) return generateAiReply(userText, { lang: input.lang })
   const hist = Array.isArray(input.history) ? input.history : []
   const lastUser = userText
@@ -567,6 +606,7 @@ export async function POST(request: NextRequest) {
     for (const ev of events) {
       const senderId = String(ev?.sender?.id || '').trim()
       const msgText = ev?.message?.text?.trim() || null
+      const mid = String(ev?.message?.mid || '').trim()
       const attachments = Array.isArray(ev?.message?.attachments) ? ev.message!.attachments : []
       const imageUrls = attachments
         .filter((a) => (a?.type || '').toLowerCase() === 'image')
@@ -580,6 +620,15 @@ export async function POST(request: NextRequest) {
       if (!senderId) continue
       if (IGNORE_ECHO && isEcho) continue
       if (!msgText && !imageUrls.length) continue
+
+      if (mid) {
+        const dedupeKey = `${pageId}:${senderId}:${mid}`
+        if (wasMidSeen(dedupeKey)) {
+          console.log('Messenger webhook: duplicate mid ignored', { pageId, senderIdLast4: senderId.slice(-4), mid })
+          continue
+        }
+        markMidSeen(dedupeKey)
+      }
 
       const conn = pageId ? await findMessengerConnection(pageId) : null
       const status = conn?.status || 'draft'

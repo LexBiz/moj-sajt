@@ -6,6 +6,7 @@ import { getConversation, updateConversation, type ConversationLang, type Conver
 import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
+import { buildOfferCompareText, isOfferCompareIntent } from '@/app/lib/offerText'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
 // Start follow-up scheduler once per server process (enabled via env).
@@ -1443,6 +1444,17 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
   if (maybeLang && maybeLang === lang && text.trim().length <= 3) return
+
+  if (isOfferCompareIntent(text)) {
+    const reply = buildOfferCompareText({
+      lang: lang === 'ru' ? 'ru' : 'ua',
+      includePilot: /(pilot|пилот|тест|пробн|2\s*мес|2\s*місяц)/i.test(text),
+    })
+    const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-24) as ConversationMessage[]
+    updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history, lastAssistantAt: nowIso() })
+    await sendInstagramMessage(senderId, reply)
+    return
+  }
 
   // Allow switching language at any time.
   const switchLang = parseLangSwitch(text)
