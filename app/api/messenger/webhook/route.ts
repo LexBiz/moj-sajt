@@ -51,12 +51,32 @@ const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_CHAT_ID || '').trim()
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_MODEL_MESSENGER = (process.env.OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+function sanitizeMessengerText(input: string) {
+  let t = String(input || '')
+  // Remove control characters / zero-width / line separators that can break Meta rendering.
+  t = t.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+  t = t.replace(/[\u2028\u2029\u200B-\u200F\uFEFF]/g, '')
+  t = t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+  t = t.replace(/\.{2,}$/g, '.')
+  return t
+}
+
+function trimToLastCompleteSentence(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return t
+  if (/[.!?…]$/.test(t)) return t.replace(/\.{2,}$/g, '.')
+  const m = t.match(/[\s\S]*[.!?…]/)
+  if (m && typeof m[0] === 'string' && m[0].trim().length >= 40) return m[0].trim().replace(/\.{2,}$/g, '.')
+  return t
 }
 
 function ensureLeadsFile() {
@@ -100,7 +120,7 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: OPENAI_MODEL_MESSENGER,
         temperature: 0.2,
         max_tokens: 260,
         messages: [
@@ -290,13 +310,13 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model: OPENAI_MODEL_MESSENGER,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: userText },
       ],
-      temperature: 0.8,
-      max_tokens: 360,
+      temperature: 0.7,
+      max_tokens: 520,
     }),
   })
   if (!resp.ok) {
@@ -306,9 +326,13 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
   }
   const j = (await resp.json().catch(() => ({}))) as any
   const content = j?.choices?.[0]?.message?.content
+  const finishReason = j?.choices?.[0]?.finish_reason
   const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
   const guarded = enforceSingleQuestion(cleaned)
-  return guarded ? clip(guarded, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
+  let out = guarded || ''
+  if (finishReason === 'length') out = trimToLastCompleteSentence(out)
+  out = sanitizeMessengerText(out)
+  return out ? clip(out, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
 }
 
 async function generateAiReplyWithHistory(input: {
@@ -336,15 +360,15 @@ async function generateAiReplyWithHistory(input: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model: OPENAI_MODEL_MESSENGER,
       messages: [
         { role: 'system', content: system },
         ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
-        ...hist.slice(-16),
+        ...hist.slice(-24),
         { role: 'user', content: userText },
       ],
-      temperature: 0.85,
-      max_tokens: 420,
+      temperature: 0.7,
+      max_tokens: 520,
     }),
   })
   if (!resp.ok) {
@@ -354,9 +378,13 @@ async function generateAiReplyWithHistory(input: {
   }
   const j = (await resp.json().catch(() => ({}))) as any
   const content = j?.choices?.[0]?.message?.content
+  const finishReason = j?.choices?.[0]?.finish_reason
   const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
   const guarded = enforceSingleQuestion(cleaned)
-  return guarded ? clip(guarded, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
+  let out = guarded || ''
+  if (finishReason === 'length') out = trimToLastCompleteSentence(out)
+  out = sanitizeMessengerText(out)
+  return out ? clip(out, 900) : 'Ок. Напишите нишу и боль — я предложу схему и цену.'
 }
 
 async function sendMessengerText(opts: { pageAccessToken: string; recipientId: string; text: string }) {
@@ -369,7 +397,7 @@ async function sendMessengerText(opts: { pageAccessToken: string; recipientId: s
   const body = {
     messaging_type: 'RESPONSE',
     recipient: { id: opts.recipientId },
-    message: { text: clip(opts.text, 1800) },
+    message: { text: clip(sanitizeMessengerText(opts.text) || 'Ок.', 1800) },
   }
   const resp = await fetch(url, {
     method: 'POST',

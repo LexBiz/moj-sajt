@@ -21,7 +21,7 @@ export type MessengerConversation = {
 }
 
 const FILE = path.join(process.cwd(), 'data', 'messenger-conversations.json')
-const MAX_MESSAGES = Number(process.env.MESSENGER_MAX_MESSAGES || 20)
+const MAX_MESSAGES = Number(process.env.MESSENGER_MAX_MESSAGES || 30)
 
 function ensureFile() {
   const dir = path.dirname(FILE)
