@@ -11,6 +11,13 @@ type Dict = {
   headerSubtitle: string
   heroTitle: string
   heroSubtitle: string
+  pilotBadge: string
+  pilotTitle: string
+  pilotSubtitle: string
+  pilotPriceLine: string
+  pilotCta: string
+  pilotIncludesTitle: string
+  pilotNotIncludesTitle: string
   ctaPrimary: string
   ctaSecondary: string
   ctaNote: string
@@ -48,6 +55,13 @@ const dict: Record<Lang, Dict> = {
     heroTitle: 'Клієнт або записався — або пішов до конкурента',
     heroSubtitle:
       'Я будую системи, які автоматично приймають заявки, відповідають клієнтам і фіксують їх без менеджерів і дзвінків',
+    pilotBadge: 'PILOT PROGRAM • 2 місяці',
+    pilotTitle: 'Тестовий запуск системи на 2 місяці (без великого ризику)',
+    pilotSubtitle: 'Запускаємо за 48–72 години, підключаємо 1–2 канали, ведемо заявки в CRM + сповіщення в Telegram.',
+    pilotPriceLine: '490€ разово + 99€/міс (2 місяці). Канали: Instagram / Messenger / Telegram / сайт.',
+    pilotCta: 'Взяти PILOT (2 місяці)',
+    pilotIncludesTitle: 'Що входить у пілот',
+    pilotNotIncludesTitle: 'Що НЕ входить (щоб було швидко і стабільно)',
     ctaPrimary: 'Показати, як це працює',
     ctaSecondary: 'Демо для мого бізнесу',
     ctaNote: 'Просто подивись. Ніяких дзвінків. 30 секунд.',
@@ -93,6 +107,13 @@ const dict: Record<Lang, Dict> = {
     heroTitle: 'Клиент либо записался — либо ушёл к конкуренту',
     heroSubtitle:
       'Я строю системы, которые автоматически принимают заявки, отвечают клиентам и фиксируют их без менеджеров и звонков',
+    pilotBadge: 'PILOT PROGRAM • 2 месяца',
+    pilotTitle: 'Тестовый запуск системы на 2 месяца (без большого риска)',
+    pilotSubtitle: 'Запускаем за 48–72 часа, подключаем 1–2 канала, ведём заявки в CRM + уведомления в Telegram.',
+    pilotPriceLine: '490€ разово + 99€/мес (2 месяца). Каналы: Instagram / Messenger / Telegram / сайт.',
+    pilotCta: 'Взять PILOT (2 месяца)',
+    pilotIncludesTitle: 'Что входит в пилот',
+    pilotNotIncludesTitle: 'Что НЕ входит (чтобы было быстро и стабильно)',
     ctaPrimary: 'Показать, как это работает',
     ctaSecondary: 'Демо для моего бизнеса',
     ctaNote: 'Просто посмотри. Без звонков. 30 секунд.',
@@ -138,6 +159,13 @@ const dict: Record<Lang, Dict> = {
     heroTitle: 'Klient se buď objednal — nebo odešel ke konkurenci',
     heroSubtitle:
       'Stavím systémy, které automaticky přijímají poptávky, odpovídají klientům a ukládají je bez manažerů a hovorů',
+    pilotBadge: 'PILOT PROGRAM • 2 months',
+    pilotTitle: 'Pilot launch for 2 months (low risk)',
+    pilotSubtitle: 'We launch in 48–72 hours, connect 1–2 channels, and push leads to CRM + Telegram alerts.',
+    pilotPriceLine: '490€ setup + 99€/month (2 months). Channels: Instagram / Messenger / Telegram / website.',
+    pilotCta: 'Start PILOT (2 months)',
+    pilotIncludesTitle: 'What’s included',
+    pilotNotIncludesTitle: 'Not included (fast & stable)',
     ctaPrimary: 'Ukázat, jak to funguje',
     ctaSecondary: 'Demo pro můj byznys',
     ctaNote: 'Jen se podívej. Bez hovorů. 30 sekund.',
@@ -195,18 +223,24 @@ export default function Home() {
   const aboutHref = 'https://t.me/temoxa_1'
 
   const profileLang = lang === 'ru' ? ('ru' as const) : lang === 'ua' ? ('ua' as const) : ('ru' as const)
+  const fmtEur = (n: number) => `${n.toLocaleString('ru-RU')} €`
+  const pilot = TEMOWEB_PROFILE.pilot
+  const pilotChannels = profileLang === 'ua' ? pilot.channelsUa : pilot.channelsRu
+  const pilotIncluded = profileLang === 'ua' ? pilot.includedUa : pilot.includedRu
+  const pilotNotIncluded = profileLang === 'ua' ? pilot.notIncludedUa : pilot.notIncludedRu
+  const pilotLaunch =
+    lang === 'ua' ? '48–72 години' : lang === 'ru' ? '48–72 часа' : pilot.launchTime || '48–72 hours'
 
   const pricing = (() => {
     const p = TEMOWEB_PROFILE.packages
-    const fmt = (n: number) => `${n.toLocaleString('ru-RU')} €`
     const pack = (key: 'start' | 'business' | 'pro') => {
       const x = p[key]
       return {
         key,
         name: key.toUpperCase(),
         title: profileLang === 'ua' ? x.titleUa : x.titleRu,
-        setup: fmt(x.setupEur),
-        support: `${fmt(x.supportEurPerMonth)}/${profileLang === 'ua' ? 'міс' : 'мес'}`,
+        setup: fmtEur(x.setupEur),
+        support: `${fmtEur(x.supportEurPerMonth)}/${profileLang === 'ua' ? 'міс' : 'мес'}`,
         minMonths: x.supportMinMonths,
         channels: x.channelsUpTo,
         what: (profileLang === 'ua' ? x.whatYouGetUa : x.whatYouGetRu) as string[],
@@ -218,11 +252,10 @@ export default function Home() {
   })()
 
   const addons = TEMOWEB_PROFILE.addons.map((a) => {
-    const fmt = (n: number) => `${n.toLocaleString('ru-RU')} €`
     const title = profileLang === 'ua' ? a.titleUa : a.titleRu
     const includes = profileLang === 'ua' ? a.includesUa : a.includesRu
-    const setup = a.setupEur > 0 ? `+${fmt(a.setupEur)}` : '—'
-    const monthly = a.supportEurPerMonth > 0 ? `+${fmt(a.supportEurPerMonth)}/${profileLang === 'ua' ? 'міс' : 'мес'}` : '—'
+    const setup = a.setupEur > 0 ? `+${fmtEur(a.setupEur)}` : '—'
+    const monthly = a.supportEurPerMonth > 0 ? `+${fmtEur(a.supportEurPerMonth)}/${profileLang === 'ua' ? 'міс' : 'мес'}` : '—'
     return { key: a.key, title, setup, monthly, includes }
   })
 
@@ -259,8 +292,27 @@ export default function Home() {
     }
     setLoading(true)
     try {
-      // DEMO MODE: keep the form for video/visuals, but do NOT send anything anywhere.
-      await new Promise((r) => setTimeout(r, 350))
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: 'temoweb',
+          name: name.trim() || null,
+          contact: contact.trim(),
+          businessType: null,
+          channel: 'Website',
+          pain: null,
+          question: comment.trim() || null,
+          clientMessages: comment.trim() ? [comment.trim()] : [],
+          aiRecommendation: null,
+          aiSummary: null,
+          source: 'site',
+          lang,
+          notes: 'PILOT landing form',
+        }),
+      })
+      const json = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) throw new Error(json?.error || 'Submit error')
 
       setName('')
       setContact('')
@@ -345,6 +397,22 @@ export default function Home() {
                   <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/30 px-4 py-2 text-xs text-blue-400 uppercase tracking-[0.2em] font-bold">
                     ⚡ {t.badge}
                 </span>
+                  <div className="rounded-2xl border-2 border-yellow-400/40 bg-yellow-400/10 p-4 shadow-[0_15px_50px_rgba(250,204,21,0.12)]">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300">{t.pilotBadge}</div>
+                        <div className="mt-1 text-lg sm:text-xl font-black text-white">{t.pilotTitle}</div>
+                        <div className="mt-2 text-sm text-white/80 leading-relaxed">{t.pilotSubtitle}</div>
+                        <div className="mt-2 text-sm font-bold text-yellow-200">{t.pilotPriceLine}</div>
+                      </div>
+                      <a
+                        href="/flow?src=pilot"
+                        className="inline-flex items-center justify-center rounded-xl bg-yellow-400 text-slate-900 px-4 py-3 font-black hover:bg-yellow-300 transition-colors whitespace-nowrap"
+                      >
+                        {t.pilotCta}
+                      </a>
+                    </div>
+                  </div>
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.05] text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
                 {t.heroTitle}
               </h1>
@@ -520,6 +588,73 @@ export default function Home() {
                     {t.resultCta}
                   </a>
               </div>
+
+                {/* PILOT (2 months) */}
+                <div className="pt-10 border-t border-white/10">
+                  <div className="relative rounded-[32px] border-2 border-yellow-400/40 bg-gradient-to-br from-yellow-400/10 via-white/5 to-white/5 p-8 sm:p-10 shadow-[0_30px_110px_rgba(250,204,21,0.10)] overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-72 h-72 bg-yellow-400/15 blur-3xl rounded-full" />
+                    <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-500/10 blur-3xl rounded-full" />
+                    <div className="relative space-y-6">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="space-y-2 max-w-3xl">
+                          <div className="inline-flex items-center gap-2 rounded-full bg-yellow-400/15 border border-yellow-400/40 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-yellow-200">
+                            🚀 {t.pilotBadge}
+                          </div>
+                          <h3 className="text-2xl sm:text-4xl font-black text-white">{t.pilotTitle}</h3>
+                          <p className="text-sm sm:text-base text-white/80 leading-relaxed">{t.pilotSubtitle}</p>
+                          <div className="flex flex-wrap gap-2 pt-2 text-xs font-black">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-black/25 border border-white/10 px-3 py-1 text-white/85">
+                              ⚡ {lang === 'ua' ? 'Запуск' : lang === 'ru' ? 'Запуск' : 'Launch'}: {pilotLaunch}
+                            </span>
+                            <span className="inline-flex items-center gap-2 rounded-full bg-black/25 border border-white/10 px-3 py-1 text-white/85">
+                              💶 {fmtEur(pilot.setupEur)} + {fmtEur(pilot.supportEurPerMonth)}/{profileLang === 'ua' ? 'міс' : 'мес'} × {pilot.durationMonths}
+                            </span>
+                            <span className="inline-flex items-center gap-2 rounded-full bg-black/25 border border-white/10 px-3 py-1 text-white/85">
+                              📡 {lang === 'ua' ? 'Канали' : lang === 'ru' ? 'Каналы' : 'Channels'}: 1–{pilot.includedChannelsUpTo}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-yellow-200 pt-2">{t.pilotPriceLine}</p>
+                        </div>
+                        <a
+                          href="/flow?src=pilot"
+                          className="inline-flex items-center justify-center rounded-2xl bg-yellow-400 text-slate-900 px-8 py-4 text-base sm:text-lg font-black hover:bg-yellow-300 transition-colors shadow-[0_18px_60px_rgba(250,204,21,0.25)]"
+                        >
+                          {t.pilotCta} →
+                        </a>
+                      </div>
+
+                      <div className="grid lg:grid-cols-2 gap-6">
+                        <div className="rounded-3xl bg-black/20 border border-white/10 p-6">
+                          <p className="text-xs font-black text-white/70 uppercase tracking-[0.2em]">{t.pilotIncludesTitle}</p>
+                          <ul className="mt-4 space-y-2">
+                            {pilotIncluded.slice(0, 7).map((x) => (
+                              <li key={x} className="flex items-start gap-2 text-sm text-white/85 leading-relaxed">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                                <span>{x}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="pt-4 text-xs text-white/65">
+                            {lang === 'ua' ? 'Канали на вибір:' : lang === 'ru' ? 'Каналы на выбор:' : 'Choose channels:'} {pilotChannels.join(' / ')}
+                          </div>
+                        </div>
+                        <div className="rounded-3xl bg-black/20 border border-white/10 p-6">
+                          <p className="text-xs font-black text-white/70 uppercase tracking-[0.2em]">{t.pilotNotIncludesTitle}</p>
+                          <ul className="mt-4 space-y-2">
+                            {pilotNotIncluded.slice(0, 6).map((x) => (
+                              <li key={x} className="flex items-start gap-2 text-sm text-white/80 leading-relaxed">
+                                <span className="mt-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-white/70 flex-shrink-0">
+                                  !
+                                </span>
+                                <span>{x}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* PRICING */}
                 <div className="pt-10 border-t border-white/10 space-y-10">

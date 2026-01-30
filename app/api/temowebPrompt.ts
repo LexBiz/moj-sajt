@@ -83,6 +83,34 @@ function renderPricing(lang: 'ru' | 'ua') {
   ].join('\n')
 }
 
+function renderPilot(lang: 'ru' | 'ua') {
+  const p = TEMOWEB_PROFILE.pilot
+  const months = p.durationMonths
+  const money = (n: number) => fmtMoneyEur(n)
+  if (lang === 'ua') {
+    return [
+      'PILOT PROGRAM (2 місяці):',
+      `— Запуск: ${p.launchTime}`,
+      `— Вартість: впровадження ${money(p.setupEur)} + підтримка ${money(p.supportEurPerMonth)}/міс (2 місяці)`,
+      `— Канали (1–${p.includedChannelsUpTo} на вибір): ${p.channelsUa.join(' / ')}`,
+      'Що входить (коротко):',
+      ...p.includedUa.slice(0, 6).map((x) => `— ${x}`),
+      'Не входить у пілот:',
+      ...p.notIncludedUa.slice(0, 5).map((x) => `— ${x}`),
+    ].join('\n')
+  }
+  return [
+    'PILOT PROGRAM (2 месяца):',
+    `— Запуск: ${p.launchTime}`,
+    `— Цена: внедрение ${money(p.setupEur)} + поддержка ${money(p.supportEurPerMonth)}/мес (2 месяца)`,
+    `— Каналы (1–${p.includedChannelsUpTo} на выбор): ${p.channelsRu.join(' / ')}`,
+    'Что входит (коротко):',
+    ...p.includedRu.slice(0, 6).map((x) => `— ${x}`),
+    'Не входит в пилот:',
+    ...p.notIncludedRu.slice(0, 5).map((x) => `— ${x}`),
+  ].join('\n')
+}
+
 function renderAddons(lang: 'ru' | 'ua') {
   const list = TEMOWEB_PROFILE.addons
   const title = lang === 'ua' ? 'Додаткові модулі:' : 'Дополнительные модули:'
@@ -142,6 +170,7 @@ export function buildTemoWebSystemPrompt(params: {
     'If client clearly says: "нужен только 1 канал" — recommend START (and mention optional add-ons like payments/calendar as modules).',
     'Do NOT mention contracts/documents/legal steps unless the client explicitly asks.',
     'PRICE RULE: never drop the biggest number by default. If user did NOT ask price — do not list prices; just say you will recommend after 1 clarifying question.',
+    'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
     '',
     `You are the senior sales manager and business consultant of ${TEMOWEB_PROFILE.brandName}.`,
     '',
@@ -176,6 +205,8 @@ export function buildTemoWebSystemPrompt(params: {
     '— AI assistants (Instagram, WhatsApp, Telegram, Website)',
     '— CRM & lead automation',
     '— Custom integrations',
+    '',
+    lang === 'ua' || lang === 'ru' ? renderPilot(lang === 'ua' ? 'ua' : 'ru') : '',
     '',
     // Pricing is useful ONLY when the user is in OFFER stage (asking about price/packages).
     stage === 'OFFER'
@@ -378,8 +409,9 @@ export function buildTemoWebSystemPrompt(params: {
     '',
     'When allowed:',
     'Ask softly and optionally.',
-    'Collect BOTH: phone number (mandatory) + email (mandatory).',
-    'If user gave only one — thank them and ask ONLY for the missing one.',
+    'Collect ONE contact: phone OR email (either is enough).',
+    'You may offer both options: “скиньте телефон або email — як зручно”.',
+    'If user gave one — thank them; do NOT force the second.',
     'Never say you "only speak Ukrainian/Russian". You can switch language when the client asks.',
     '',
     '==================================================',
@@ -404,7 +436,7 @@ export function buildTemoWebSystemPrompt(params: {
     'PRICE & TIME RULE',
     '',
     'Launch:',
-    '— Pilot: 3–7 days',
+    '— Pilot: 48–72 hours (2 months program)',
     '— Complex: 10–14 days',
     '',
     'When asked:',

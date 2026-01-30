@@ -3,6 +3,19 @@ export type TemoWebProfile = {
   siteUrl: string
   taglineRu: string
   taglineUa: string
+  pilot: {
+    durationMonths: number
+    launchTime: string
+    setupEur: number
+    supportEurPerMonth: number
+    includedChannelsUpTo: number
+    channelsRu: string[]
+    channelsUa: string[]
+    includedRu: string[]
+    includedUa: string[]
+    notIncludedRu: string[]
+    notIncludedUa: string[]
+  }
   packages: {
     start: {
       titleRu: string
@@ -71,6 +84,47 @@ export const TEMOWEB_PROFILE: TemoWebProfile = {
   siteUrl: 'https://temoweb.eu',
   taglineRu: 'AI‑ассистенты, которые продают и записывают клиентов 24/7',
   taglineUa: 'AI‑асистенти, які продають і записують клієнтів 24/7',
+  pilot: {
+    durationMonths: 2,
+    launchTime: '48–72 hours',
+    setupEur: 490,
+    supportEurPerMonth: 99,
+    includedChannelsUpTo: 2,
+    channelsRu: ['Instagram Direct', 'Facebook Messenger', 'Telegram', 'Чат‑виджет на сайте'],
+    channelsUa: ['Instagram Direct', 'Facebook Messenger', 'Telegram', 'Чат‑віджет на сайті'],
+    includedRu: [
+      'AI‑ассистент в чатах (24/7) по правилам вашего бизнеса',
+      'Сбор заявок в CRM (контакт фиксируется, ничего не теряется)',
+      'Уведомления о новых обращениях в Telegram',
+      'Flow общения: приветствие → уточнение → заявка/контакт → CRM',
+      'Запуск “как часы”: тест на реальных сообщениях',
+      '1 итерация правок сценариев после запуска',
+      'Поддержка: контроль стабильности + фиксы + 1 пакет правок сценариев/мес',
+    ],
+    includedUa: [
+      'AI‑асистент у чатах (24/7) за правилами вашого бізнесу',
+      'Збір заявок у CRM (контакт фіксується, нічого не губиться)',
+      'Сповіщення про нові звернення в Telegram',
+      'Flow спілкування: привітання → уточнення → заявка/контакт → CRM',
+      'Запуск “як годинник”: тест на реальних повідомленнях',
+      '1 ітерація правок сценаріїв після запуску',
+      'Підтримка: контроль стабільності + фікси + 1 пакет правок сценаріїв/міс',
+    ],
+    notIncludedRu: [
+      'Кастомная разработка “как у конкурента, но иначе”',
+      'Сложные интеграции (оплаты, нестандартные CRM/ERP и т.п.)',
+      'Онлайн‑магазин / автопродажи',
+      'Мультиязычность',
+      'Продвинутая аналитика',
+    ],
+    notIncludedUa: [
+      'Кастомна розробка “як у конкурента, але інакше”',
+      'Складні інтеграції (оплати, нестандартні CRM/ERP тощо)',
+      'Онлайн‑магазин / автопродажі',
+      'Мультимовність',
+      'Просунута аналітика',
+    ],
+  },
   packages: {
     start: {
       titleRu: 'START — базовая автоматизация заявок',
