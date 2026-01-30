@@ -4,6 +4,7 @@ import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import {
   applyChannelLimits,
+  applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
@@ -132,6 +133,7 @@ async function generateAiReply(userText: string) {
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
     out = applyPilotNudge(out, lang, intent)
+    out = applyNoPaymentPolicy(out, lang)
     out = ensureCta(out, lang, stage, readinessScore, intent)
   }
   out = applyChannelLimits(out, 'whatsapp')

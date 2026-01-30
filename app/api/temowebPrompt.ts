@@ -443,10 +443,10 @@ export function buildTemoWebSystemPrompt(params: {
     '',
     'Never ask for contact before ASK_CONTACT stage.',
     lang === 'ua'
-      ? 'ФІНАЛ ЗАЯВКИ: без автоплатежів. Коли клієнт готовий — ведіть до контакту, зафіксуйте заявку і скажіть, що менеджер звʼяжеться.'
+      ? 'ФІНАЛ ЗАЯВКИ: без автоплатежів і без запиту оплатити. Коли клієнт готовий — ведіть до контакту, зафіксуйте заявку і скажіть, що менеджер звʼяжеться.'
       : lang === 'ru'
-      ? 'ФИНАЛ ЗАЯВКИ: без автоплатежей. Когда клиент готов — ведите к контакту, зафиксируйте заявку и скажите, что менеджер свяжется.'
-      : 'FINAL STEP: no auto-payments. When ready, ask for contact and confirm the request is saved.',
+      ? 'ФИНАЛ ЗАЯВКИ: без автоплатежей и без просьб оплатить. Когда клиент готов — ведите к контакту, зафиксируйте заявку и скажите, что менеджер свяжется.'
+      : 'FINAL STEP: no auto-payments and no requests to pay. When ready, ask for contact and confirm the request is saved.',
     '',
     'When allowed:',
     'Ask softly and optionally.',

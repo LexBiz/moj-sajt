@@ -4,6 +4,7 @@ import { listChannelConnections } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
+  applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
@@ -713,6 +714,7 @@ export async function POST(request: NextRequest) {
         if (!intent.isSupport) {
           reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
           reply = applyPilotNudge(reply, preferredLang, intent)
+          reply = applyNoPaymentPolicy(reply, preferredLang)
           reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
         }
         reply = applyChannelLimits(reply, 'messenger')

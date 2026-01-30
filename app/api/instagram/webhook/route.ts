@@ -9,6 +9,7 @@ import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageH
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
+  applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
@@ -1697,6 +1698,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     if (!intent.isSupport) {
       reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
       reply = applyPilotNudge(reply, lang, intent)
+      reply = applyNoPaymentPolicy(reply, lang)
     }
     reply = applyChannelLimits(reply, 'instagram')
     const quality = evaluateQuality(reply, lang, intent, 'instagram')

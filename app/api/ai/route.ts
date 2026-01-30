@@ -3,6 +3,7 @@ import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageH
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
+  applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
@@ -345,6 +346,7 @@ export async function POST(request: NextRequest) {
       if (!intent.isSupport) {
         answer = applyServicesRouter(answer, lang, intent, hasChosenPackage)
         answer = applyPilotNudge(answer, lang, intent)
+        answer = applyNoPaymentPolicy(answer, lang)
         answer = ensureCta(answer, lang, stage, readinessScore, intent)
       }
       answer = applyChannelLimits(answer, channelForLimits)

@@ -22,6 +22,8 @@ const SERVICES_RE =
   /(услуг|услуги|послуг|послуги|service|services|offerings|what\s+do\s+you\s+offer|что\s+вы\s+предлагаете|що\s+ви\s+пропонуєте|прайс|каталог)/i
 const PRICING_RE = /(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|pricing|price)/i
 const PILOT_RE = /(пілот|пилот|pilot|попробовать|спробуват|тест|быстро|швидко|дешевле|дешевш|дорого|дорога|дороговато|малый\s+бюджет|малий\s+бюджет)/i
+const PAYMENT_ASK_RE =
+  /(оплат|оплач|счет|рахунок|invoice|pay\s+now|payment\s+link|оплата\s+сейчас|оплатить|внести\s+оплат)/i
 const PACKAGE_CHOICE_RE =
   /\b(беру|берем|выбираю|обираю|хочу|хочемо|хотим|нужен|потрібен|потрібна|нужно|надо|мой|мій|нам|для\s+нас|для\s+меня|ок|окей)\b[\s\S]*\b(START|BUSINESS|PRO)\b/i
 
@@ -145,6 +147,33 @@ export function ensureCta(text: string, lang: AiLang, stage: TemoWebStage, readi
       lang === 'ua'
         ? 'Щоб порадити точніше, потрібні 2 речі: ніша і джерело заявок.'
         : 'Чтобы посоветовать точнее, нужны 2 вещи: ниша и источник заявок.'
+    if (!out.includes(line)) out = `${out}\n\n${line}`.trim()
+  }
+  return out
+}
+
+export function applyNoPaymentPolicy(text: string, lang: AiLang) {
+  const lines = String(text || '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+  if (!lines.length) return text
+  const kept: string[] = []
+  let removed = false
+  for (const line of lines) {
+    if (PAYMENT_ASK_RE.test(line)) {
+      removed = true
+      continue
+    }
+    kept.push(line)
+  }
+  let out = kept.join('\n').trim()
+  if (!out) out = text
+  if (removed) {
+    const line =
+      lang === 'ua'
+        ? 'Оплата обговорюється після погодження. Зараз фіксую заявку і підкажу наступний крок.'
+        : 'Оплата обсуждается после согласования. Сейчас фиксирую заявку и подскажу следующий шаг.'
     if (!out.includes(line)) out = `${out}\n\n${line}`.trim()
   }
   return out
