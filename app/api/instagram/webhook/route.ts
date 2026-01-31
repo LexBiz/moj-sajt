@@ -1704,6 +1704,10 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         .filter((m) => m.role === 'assistant')
         .slice(-3)
         .map((m) => String(m.content || ''))
+      const recentUserTexts = history
+        .filter((m) => m.role === 'user')
+        .slice(-3)
+        .map((m) => String(m.content || ''))
       reply = applyNextSteps({
         text: reply,
         lang,
@@ -1712,6 +1716,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         intent,
         hasChosenPackage,
         recentAssistantTexts,
+        recentUserTexts,
       })
     }
     reply = applyChannelLimits(reply, 'instagram')

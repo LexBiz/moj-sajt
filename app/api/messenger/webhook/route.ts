@@ -712,6 +712,10 @@ export async function POST(request: NextRequest) {
             .filter((m) => m.role === 'assistant')
             .slice(-3)
             .map((m) => String(m.content || ''))
+          const recentUserTexts = history
+            .filter((m) => m.role === 'user')
+            .slice(-3)
+            .map((m) => String(m.content || ''))
           reply = applyNextSteps({
             text: reply,
             lang: preferredLang,
@@ -720,6 +724,7 @@ export async function POST(request: NextRequest) {
             intent,
             hasChosenPackage,
             recentAssistantTexts,
+            recentUserTexts,
           })
         }
         reply = applyChannelLimits(reply, 'messenger')

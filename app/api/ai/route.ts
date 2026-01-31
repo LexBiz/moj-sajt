@@ -359,7 +359,11 @@ export async function POST(request: NextRequest) {
           .filter((m) => m.role === 'assistant')
           .slice(-3)
           .map((m) => String(m.content || ''))
-        answer = applyNextSteps({ text: answer, lang, stage, readinessScore, intent, hasChosenPackage, recentAssistantTexts })
+        const recentUserTexts = (Array.isArray(body.history) ? body.history : [])
+          .filter((m) => m.role === 'user')
+          .slice(-3)
+          .map((m) => String(m.content || ''))
+        answer = applyNextSteps({ text: answer, lang, stage, readinessScore, intent, hasChosenPackage, recentAssistantTexts, recentUserTexts })
       }
       answer = applyChannelLimits(answer, channelForLimits)
       const quality = evaluateQuality(answer, lang, intent, channelForLimits)

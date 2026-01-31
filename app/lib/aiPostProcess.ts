@@ -184,6 +184,40 @@ function hasRecentNextStepsBlock(recentAssistantTexts: string[]) {
   return joined.includes('если хотите') || joined.includes('якщо хочете') || joined.includes('если удобно') || joined.includes('якщо зручно')
 }
 
+function extractConversationSignals(params: {
+  lang: AiLang
+  stage: TemoWebStage
+  intent: AiIntent
+  hasChosenPackage: boolean
+  readinessScore: number
+  recentUserTexts?: string[]
+  recentAssistantTexts?: string[]
+}) {
+  const users = (Array.isArray(params.recentUserTexts) ? params.recentUserTexts : []).join('\n')
+  const asst = (Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts : []).join('\n')
+  const all = `${users}\n${asst}`
+
+  const hasContact = /\S+@\S+\.\S+/.test(users) || /(^|\s)@([a-zA-Z0-9_]{4,32})\b/.test(users) || /(\+?\d[\d\s().-]{7,}\d)/.test(users)
+  const contactAskedRecently = /\b(телефон|email|почт|контакт|скиньте|надішліть|залиште)\b/i.test(asst)
+
+  const discussedPackages = /\bSTART\b/i.test(all) || /\bBUSINESS\b/i.test(all) || /\bPRO\b/i.test(all)
+  const comparedPackages = /(сравн|порівн|что\s+лучше|що\s+краще|choose|help\s+choose)/i.test(all)
+  const discussedModules = /(модул|module|stripe|календар|calendar|аналітик|аналитик|crm|hubspot|pipedrive)/i.test(all)
+  const discussedPrice = /(цена|ціна|стоим|сколько|вартість|скільки|pricing|price|\d+\s?€)/i.test(all)
+
+  const needsContactNow = (params.stage === 'ASK_CONTACT' || params.readinessScore >= 55 || params.intent.isContactIntent) && !hasContact
+
+  return {
+    hasContact,
+    contactAskedRecently,
+    discussedPackages,
+    comparedPackages,
+    discussedModules,
+    discussedPrice,
+    needsContactNow,
+  }
+}
+
 export function applyNextSteps(params: {
   text: string
   lang: AiLang
@@ -192,44 +226,78 @@ export function applyNextSteps(params: {
   intent: AiIntent
   hasChosenPackage: boolean
   recentAssistantTexts?: string[]
+  recentUserTexts?: string[]
 }) {
   const { text, lang, stage, readinessScore, intent, hasChosenPackage } = params
   if (intent.isSupport) return text
   const out = String(text || '').trim()
   if (!out) return out
 
-  const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-3) : []
+  // Avoid showing this block twice in a row, but do not "skip every other" message.
+  const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-1) : []
   if (recent.length && hasRecentNextStepsBlock(recent)) return out
   if (hasRecentNextStepsBlock([out])) return out
 
-  const header = lang === 'ua' ? 'Якщо хочете —' : 'Если хотите —'
+  const sig = extractConversationSignals({
+    lang,
+    stage,
+    intent,
+    hasChosenPackage,
+    readinessScore,
+    recentUserTexts: params.recentUserTexts,
+    recentAssistantTexts: params.recentAssistantTexts,
+  })
+
+  const header = lang === 'ua' ? 'Якщо хочете — оберіть варіант:' : 'Если хотите — выберите вариант:'
   const lines: string[] = []
 
-  // Keep suggestions actionable and non-looping: no question marks here.
-  if (intent.isServices || intent.isPricing || intent.isCompare) {
-    if (!hasChosenPackage) {
-      lines.push(lang === 'ua' ? '1) Я коротко порівняю START / BUSINESS / PRO під вашу задачу.' : '1) Я коротко сравню START / BUSINESS / PRO под вашу задачу.')
+  // Priority 1: lead capture (only when warm/hot and not spammed recently)
+  if (sig.needsContactNow && !sig.contactAskedRecently) {
+    lines.push(
+      lang === 'ua'
+        ? '1) Залиште телефон або email — я зафіксую заявку і передам менеджеру.'
+        : '1) Оставьте телефон или email — я зафиксирую заявку и передам менеджеру.',
+    )
+  }
+
+  // Priority 2: offer/pricing guidance, but avoid repeating if already discussed
+  if ((intent.isPricing || intent.isCompare || intent.isServices) && !sig.comparedPackages && !hasChosenPackage) {
+    lines.push(
+      lang === 'ua'
+        ? '2) Я коротко порівняю START / BUSINESS / PRO під вашу задачу.'
+        : '2) Я коротко сравню START / BUSINESS / PRO под вашу задачу.',
+    )
+  }
+
+  // Priority 3: modules/add-ons (only if not already discussed)
+  if ((intent.isServices || intent.isPricing) && !sig.discussedModules) {
+    lines.push(
+      lang === 'ua'
+        ? '3) Підкажу, які модулі варто додати (оплати/календар/аналітика/CRM).'
+        : '3) Подскажу, какие модули стоит добавить (оплаты/календарь/аналитика/CRM).',
+    )
+  }
+
+  // General progression suggestions (stage-based), but avoid duplicating price/modules/topics.
+  if (lines.length < 2) {
+    if (stage === 'DISCOVERY') {
+      lines.push(lang === 'ua' ? '1) Я складу план запуску по кроках під ваш бізнес.' : '1) Составлю план запуска по шагам под ваш бизнес.')
+      lines.push(lang === 'ua' ? '2) Підкажу, який сценарій продажів потрібен саме вам.' : '2) Подскажу, какой сценарий продаж нужен именно вам.')
+    } else if (stage === 'TRUST') {
+      lines.push(lang === 'ua' ? '1) Поясню процес і терміни запуску дуже просто.' : '1) Объясню процесс и сроки запуска очень просто.')
+      lines.push(lang === 'ua' ? '2) Покажу, як ми не втрачаємо заявки і як це контролюється.' : '2) Покажу, как мы не теряем заявки и как это контролируется.')
     } else {
-      lines.push(lang === 'ua' ? '1) Я уточню 1 деталь і скажу, що саме входить у вибраний пакет.' : '1) Я уточню 1 деталь и скажу, что именно входит в выбранный пакет.')
+      lines.push(lang === 'ua' ? '1) Я підкажу оптимальний наступний крок для вашої ситуації.' : '1) Подскажу оптимальный следующий шаг для вашей ситуации.')
+      lines.push(lang === 'ua' ? '2) Дам короткий приклад, як виглядатиме діалог із клієнтом.' : '2) Дам короткий пример, как будет выглядеть диалог с клиентом.')
     }
-    lines.push(lang === 'ua' ? '2) Я підкажу, які модулі варто додати (оплати/календар/аналітика/CRM).' : '2) Подскажу, какие модули добавить (оплаты/календарь/аналитика/CRM).')
-  } else if (stage === 'DISCOVERY') {
-    lines.push(lang === 'ua' ? '1) Я підкажу, який сценарій продажів ідеальний для вас.' : '1) Подскажу, какой сценарий продаж идеален для вас.')
-    lines.push(lang === 'ua' ? '2) Я складу план запуску по кроках (без технічних деталей).' : '2) Составлю план запуска по шагам (без технических деталей).')
-  } else if (stage === 'TRUST') {
-    lines.push(lang === 'ua' ? '1) Я поясню процес і терміни запуску дуже просто.' : '1) Объясню процесс и сроки запуска очень просто.')
-    lines.push(lang === 'ua' ? '2) Я покажу, як ми не втрачаємо заявки і як це контролюється.' : '2) Покажу, как мы не теряем заявки и как это контролируется.')
-  } else {
-    lines.push(lang === 'ua' ? '1) Я підкажу оптимальний перший крок саме для вашої ситуації.' : '1) Подскажу оптимальный первый шаг именно для вашей ситуации.')
-    lines.push(lang === 'ua' ? '2) Я дам короткий приклад, як буде виглядати діалог із клієнтом.' : '2) Дам короткий пример, как будет выглядеть диалог с клиентом.')
   }
 
-  if ((stage === 'ASK_CONTACT' || readinessScore >= 55 || intent.isContactIntent) && !CONTACT_HINT_RE.test(out)) {
-    lines.push(lang === 'ua' ? '3) Залиште телефон або email — і я зафіксую заявку та передам менеджеру.' : '3) Оставьте телефон или email — и я зафиксирую заявку и передам менеджеру.')
-  }
-
-  if (!lines.length) return out
-  return `${out}\n\n${header}\n${lines.map((x) => `— ${x}`).join('\n')}`.trim()
+  // Trim to 3 items max, keep stable numbering and no question marks.
+  const uniq = Array.from(new Set(lines)).slice(0, 3)
+  if (!uniq.length) return out
+  const numbered = uniq.map((x, i) => `${i + 1}) ${x}`)
+  const footer = lang === 'ua' ? 'Можна відповісти цифрою.' : 'Можно ответить цифрой.'
+  return `${out}\n\n${header}\n${numbered.map((x) => `— ${x}`).join('\n')}\n${footer}`.trim()
 }
 
 export function applyChannelLimits(text: string, channel: AiChannel) {
