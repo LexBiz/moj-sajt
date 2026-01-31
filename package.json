@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:migrate": "node scripts/db_migrate.mjs",
-    "tenant:onboard": "node scripts/onboard_tenant.mjs"
+    "db:migrate": "node db/db_migrate.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.562.0",
