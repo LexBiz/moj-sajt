@@ -297,7 +297,7 @@ export async function deleteLeadById(id: number) {
     return true
   }
   const res = await db().query('DELETE FROM leads WHERE id=$1', [id])
-  return res.rowCount > 0
+  return (res.rowCount || 0) > 0
 }
 
 export async function deleteLeadsByTenant(tenantId: string) {

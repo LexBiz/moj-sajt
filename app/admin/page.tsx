@@ -230,6 +230,8 @@ export default function AdminPage() {
     }
   }
 
+  const authHeader = useMemo(() => ({ Authorization: `Bearer ${password}` }), [password])
+
   const refresh = async () => {
     const savedPassword = localStorage.getItem('adminPassword')
     if (!savedPassword) return
