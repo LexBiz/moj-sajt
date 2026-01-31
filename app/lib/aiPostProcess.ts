@@ -179,6 +179,59 @@ export function applyNoPaymentPolicy(text: string, lang: AiLang) {
   return out
 }
 
+function hasRecentNextStepsBlock(recentAssistantTexts: string[]) {
+  const joined = recentAssistantTexts.join('\n').toLowerCase()
+  return joined.includes('если хотите') || joined.includes('якщо хочете') || joined.includes('если удобно') || joined.includes('якщо зручно')
+}
+
+export function applyNextSteps(params: {
+  text: string
+  lang: AiLang
+  stage: TemoWebStage
+  readinessScore: number
+  intent: AiIntent
+  hasChosenPackage: boolean
+  recentAssistantTexts?: string[]
+}) {
+  const { text, lang, stage, readinessScore, intent, hasChosenPackage } = params
+  if (intent.isSupport) return text
+  const out = String(text || '').trim()
+  if (!out) return out
+
+  const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-3) : []
+  if (recent.length && hasRecentNextStepsBlock(recent)) return out
+  if (hasRecentNextStepsBlock([out])) return out
+
+  const header = lang === 'ua' ? 'Якщо хочете —' : 'Если хотите —'
+  const lines: string[] = []
+
+  // Keep suggestions actionable and non-looping: no question marks here.
+  if (intent.isServices || intent.isPricing || intent.isCompare) {
+    if (!hasChosenPackage) {
+      lines.push(lang === 'ua' ? '1) Я коротко порівняю START / BUSINESS / PRO під вашу задачу.' : '1) Я коротко сравню START / BUSINESS / PRO под вашу задачу.')
+    } else {
+      lines.push(lang === 'ua' ? '1) Я уточню 1 деталь і скажу, що саме входить у вибраний пакет.' : '1) Я уточню 1 деталь и скажу, что именно входит в выбранный пакет.')
+    }
+    lines.push(lang === 'ua' ? '2) Я підкажу, які модулі варто додати (оплати/календар/аналітика/CRM).' : '2) Подскажу, какие модули добавить (оплаты/календарь/аналитика/CRM).')
+  } else if (stage === 'DISCOVERY') {
+    lines.push(lang === 'ua' ? '1) Я підкажу, який сценарій продажів ідеальний для вас.' : '1) Подскажу, какой сценарий продаж идеален для вас.')
+    lines.push(lang === 'ua' ? '2) Я складу план запуску по кроках (без технічних деталей).' : '2) Составлю план запуска по шагам (без технических деталей).')
+  } else if (stage === 'TRUST') {
+    lines.push(lang === 'ua' ? '1) Я поясню процес і терміни запуску дуже просто.' : '1) Объясню процесс и сроки запуска очень просто.')
+    lines.push(lang === 'ua' ? '2) Я покажу, як ми не втрачаємо заявки і як це контролюється.' : '2) Покажу, как мы не теряем заявки и как это контролируется.')
+  } else {
+    lines.push(lang === 'ua' ? '1) Я підкажу оптимальний перший крок саме для вашої ситуації.' : '1) Подскажу оптимальный первый шаг именно для вашей ситуации.')
+    lines.push(lang === 'ua' ? '2) Я дам короткий приклад, як буде виглядати діалог із клієнтом.' : '2) Дам короткий пример, как будет выглядеть диалог с клиентом.')
+  }
+
+  if ((stage === 'ASK_CONTACT' || readinessScore >= 55 || intent.isContactIntent) && !CONTACT_HINT_RE.test(out)) {
+    lines.push(lang === 'ua' ? '3) Залиште телефон або email — і я зафіксую заявку та передам менеджеру.' : '3) Оставьте телефон или email — и я зафиксирую заявку и передам менеджеру.')
+  }
+
+  if (!lines.length) return out
+  return `${out}\n\n${header}\n${lines.map((x) => `— ${x}`).join('\n')}`.trim()
+}
+
 export function applyChannelLimits(text: string, channel: AiChannel) {
   if (channel === 'instagram' || channel === 'messenger' || channel === 'telegram') return String(text || '').trim()
   const limits: Record<AiChannel, { maxChars: number; maxLines: number }> = {

@@ -4,6 +4,7 @@ import { getTenantProfile } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
+  applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
@@ -354,6 +355,11 @@ export async function POST(request: NextRequest) {
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
         answer = ensureCta(answer, lang, stage, readinessScore, intent)
+        const recentAssistantTexts = (Array.isArray(body.history) ? body.history : [])
+          .filter((m) => m.role === 'assistant')
+          .slice(-3)
+          .map((m) => String(m.content || ''))
+        answer = applyNextSteps({ text: answer, lang, stage, readinessScore, intent, hasChosenPackage, recentAssistantTexts })
       }
       answer = applyChannelLimits(answer, channelForLimits)
       const quality = evaluateQuality(answer, lang, intent, channelForLimits)
