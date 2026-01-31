@@ -18,6 +18,7 @@ import { appendMessage, getConversation, setConversationLang } from '../conversa
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import fs from 'fs'
 import path from 'path'
+import { createLead, hasRecentLeadByContact } from '@/app/lib/storage'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -99,7 +100,6 @@ const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 const OPENAI_MODEL_MESSENGER = (process.env.OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 
-const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
@@ -186,9 +186,8 @@ function splitTextIntoParts(input: string, partMaxChars: number, maxParts: numbe
 }
 
 function ensureLeadsFile() {
-  const dir = path.dirname(LEADS_FILE)
+  const dir = path.join(process.cwd(), 'data')
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]), 'utf8')
 }
 
 function extractContact(text: string): { phone: string | null; email: string | null } {
@@ -264,19 +263,8 @@ async function saveLeadFromMessenger(input: {
   aiSummary: string | null
 }) {
   ensureLeadsFile()
-  const raw = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
-  const leads = Array.isArray(raw) ? raw : []
-  // de-dupe: same sender + same contact within last 24h
-  const now = Date.now()
-  const exists = leads.slice(0, 200).some((l: any) => {
-    if (String(l?.source || '').toLowerCase() !== 'messenger') return false
-    if (String(l?.contact || '') !== input.contact) return false
-    const notes = String(l?.notes || '')
-    if (!notes.includes(`senderId: ${input.senderId}`)) return false
-    const t = Date.parse(String(l?.createdAt || ''))
-    if (!Number.isFinite(t)) return false
-    return now - t < 24 * 60 * 60 * 1000
-  })
+  // de-dupe: same contact within last 24h
+  const exists = await hasRecentLeadByContact({ contact: input.contact, source: 'messenger', withinMs: 24 * 60 * 60 * 1000 })
   if (exists) return null
 
   const newLead = {
@@ -298,9 +286,8 @@ async function saveLeadFromMessenger(input: {
     createdAt: new Date().toISOString(),
     status: 'new',
   }
-  leads.unshift(newLead)
-  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
-  return newLead.id as number
+  const saved = await createLead(newLead)
+  return saved?.id as number
 }
 
 async function sendTelegramLeadMessenger(input: { leadId: number | null; tenantId: string; pageId: string; senderId: string; contact: string; aiSummary: string | null; lastMessage: string }) {

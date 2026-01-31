@@ -7,6 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
+import { createLead } from '@/app/lib/storage'
 import {
   applyChannelLimits,
   applyNoPaymentPolicy,
@@ -88,7 +89,6 @@ const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
-const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 const COMMENTS_PROCESSED_FILE = path.join(process.cwd(), 'data', 'instagram-comments-processed.json')
 
 const IG_COMMENT_REPLY_ENABLED = (process.env.INSTAGRAM_COMMENT_REPLY_ENABLED || '').trim() === 'true'
@@ -1151,12 +1151,6 @@ async function transcribeAudio(url: string) {
   }
 }
 
-function ensureLeadsFile() {
-  const dir = path.join(process.cwd(), 'data')
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]))
-}
-
 type LeadReadiness = { score: number; label: 'COLD' | 'WARM' | 'HOT' | 'READY'; stage: string }
 
 function readinessLabel(score: number): LeadReadiness['label'] {
@@ -1235,12 +1229,11 @@ async function saveLeadFromInstagram(input: {
   aiSummary: string | null
   aiReadiness: LeadReadiness
 }) {
-  ensureLeadsFile()
-  const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
   const contact = (input.phone || input.email || '').trim()
   if (!contact) throw new Error('missing_contact')
   const newLead = {
     id: Date.now(),
+    tenantId: 'temoweb',
     name: null,
     contact,
     email: input.email,
@@ -1258,9 +1251,8 @@ async function saveLeadFromInstagram(input: {
     createdAt: new Date().toISOString(),
     status: 'new',
   }
-  leads.unshift(newLead)
-  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
-  return newLead.id
+  const saved = await createLead(newLead)
+  return saved?.id || newLead.id
 }
 
 function shouldAskForContact(stage: string, text: string, userTurns: number, readinessScore: number) {

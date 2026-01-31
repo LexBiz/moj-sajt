@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-
-const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+import { createLead } from '@/app/lib/storage'
 const DEFAULT_TENANT_ID = 'temoweb'
 
 function normalizeTenantId(input: unknown) {
@@ -10,12 +7,6 @@ function normalizeTenantId(input: unknown) {
   if (!raw) return DEFAULT_TENANT_ID
   const safe = raw.replace(/[^a-z0-9_-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
   return safe || DEFAULT_TENANT_ID
-}
-
-function ensureDataDir() {
-  const dir = path.join(process.cwd(), 'data')
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]))
 }
 
 type TelegramLeadPayload = {
@@ -112,9 +103,6 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as TelegramLeadPayload
     if (!body?.contact) return NextResponse.json({ error: 'Contact is required' }, { status: 400 })
 
-    ensureDataDir()
-    const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
-
     const summaryFromUser = typeof body.aiSummary === 'string' ? body.aiSummary.trim() : ''
     const shouldGenerate = !summaryFromUser || summaryFromUser.length < 40
     const generatedSummary = shouldGenerate
@@ -149,11 +137,9 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
       status: 'new',
     }
+    const saved = await createLead(newLead)
 
-    leads.unshift(newLead)
-    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
-
-    return NextResponse.json({ success: true, lead: newLead })
+    return NextResponse.json({ success: true, lead: saved })
   } catch (e) {
     console.error('Telegram lead ingest error:', e)
     return NextResponse.json({ error: 'Failed to ingest lead' }, { status: 500 })

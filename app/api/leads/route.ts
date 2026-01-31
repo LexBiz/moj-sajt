@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-
-const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+import { createLead, listLeads } from '@/app/lib/storage'
 const DEFAULT_TENANT_ID = 'temoweb'
 
 function normalizeTenantId(input: unknown) {
@@ -97,16 +94,6 @@ async function generateTruthfulSummary(input: {
     return s ? s.slice(0, 1200) : null
   } catch {
     return null
-  }
-}
-
-function ensureDataDir() {
-  const dir = path.join(process.cwd(), 'data')
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-  if (!fs.existsSync(LEADS_FILE)) {
-    fs.writeFileSync(LEADS_FILE, JSON.stringify([]))
   }
 }
 
@@ -226,16 +213,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  ensureDataDir()
   const { searchParams } = new URL(request.url)
   const tenantId = normalizeTenantId(searchParams.get('tenantId'))
 
-  const raw = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
-  const leadsArr = Array.isArray(raw) ? raw : []
-  const leads = leadsArr
+  const leadsArr = await listLeads()
+  const leads = (Array.isArray(leadsArr) ? leadsArr : [])
     .map((l: any) => ({
       ...l,
-      tenantId: l?.tenantId ? normalizeTenantId(l.tenantId) : DEFAULT_TENANT_ID,
+      tenantId: l?.tenantId ? normalizeTenantId(l.tenantId) : l?.tenant_id ? normalizeTenantId(l.tenant_id) : DEFAULT_TENANT_ID,
+      createdAt: l?.createdAt || l?.created_at || l?.createdAt || null,
     }))
     .filter((l: any) => {
       if (tenantId === DEFAULT_TENANT_ID) return l.tenantId === DEFAULT_TENANT_ID
@@ -256,8 +242,6 @@ export async function POST(request: NextRequest) {
     }
 
     const resolvedTenantId = normalizeTenantId(tenantId)
-    ensureDataDir()
-    const leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf-8'))
 
     const summaryFromUser = typeof aiSummary === 'string' ? aiSummary.trim() : ''
     const shouldGenerate = !summaryFromUser || summaryFromUser.length < 40
@@ -293,13 +277,10 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
       status: 'new',
     }
+    const saved = await createLead(newLead)
+    const telegram = await sendTelegram(saved)
 
-    leads.unshift(newLead)
-    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2))
-
-    const telegram = await sendTelegram(newLead)
-
-    return NextResponse.json({ success: true, lead: newLead, telegram })
+    return NextResponse.json({ success: true, lead: saved, telegram })
   } catch (error) {
     console.error('Error saving lead:', error)
     return NextResponse.json({ error: 'Failed to save lead' }, { status: 500 })

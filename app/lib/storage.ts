@@ -15,6 +15,7 @@ const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 function storageMode() {
   const mode = String(process.env.STORAGE_MODE || '').trim().toLowerCase()
   if (mode === 'pg' || mode === 'postgres' || mode === 'postgresql') return 'postgres'
+  if (!mode && hasDatabase()) return 'postgres'
   return 'json'
 }
 
@@ -189,6 +190,100 @@ export async function resolveTenantIdByConnection(channel: string, externalId: s
 export async function listLeads(): Promise<Lead[]> {
   if (!isPostgresEnabled()) return readJsonFile(LEADS_FILE, []) as any
   const res = await db().query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 500')
-  return res.rows
+  return res.rows.map((r) => ({
+    ...r,
+    createdAt: r.created_at ? new Date(r.created_at).toISOString() : r.createdAt || r.created_at || null,
+  }))
+}
+
+export async function hasRecentLeadByContact(input: { contact: string; source?: string; withinMs?: number }) {
+  const contact = String(input.contact || '').trim()
+  if (!contact) return false
+  const source = String(input.source || '').trim().toLowerCase()
+  const withinMs = typeof input.withinMs === 'number' ? input.withinMs : 24 * 60 * 60 * 1000
+  if (!isPostgresEnabled()) {
+    const leads = readJsonFile(LEADS_FILE, []) as any[]
+    const now = Date.now()
+    return leads.slice(0, 300).some((l: any) => {
+      if (source && String(l?.source || '').toLowerCase() !== source) return false
+      if (String(l?.contact || '').trim() !== contact) return false
+      const t = Date.parse(String(l?.createdAt || l?.created_at || ''))
+      if (!Number.isFinite(t)) return false
+      return now - t < withinMs
+    })
+  }
+  const res = await db().query(
+    `SELECT id FROM leads
+     WHERE contact = $1
+     ${source ? 'AND LOWER(source) = $2' : ''}
+     AND created_at > now() - (${source ? '$3' : '$2'}::int * interval '1 millisecond')
+     LIMIT 1`,
+    source ? [contact, source, withinMs] : [contact, withinMs],
+  )
+  return (res.rows || []).length > 0
+}
+
+export async function createLead(input: any) {
+  const nowIso = new Date().toISOString()
+  const lead = {
+    id: typeof input?.id === 'number' ? input.id : Date.now(),
+    tenantId: input?.tenantId || null,
+    name: input?.name || null,
+    contact: input?.contact || input?.phone || null,
+    email: input?.email || null,
+    businessType: input?.businessType || null,
+    channel: input?.channel || null,
+    pain: input?.pain || null,
+    question: input?.question || null,
+    clientMessages: Array.isArray(input?.clientMessages) ? input.clientMessages : null,
+    aiRecommendation: input?.aiRecommendation || null,
+    aiSummary: input?.aiSummary || null,
+    aiReadiness: input?.aiReadiness || null,
+    source: input?.source || null,
+    lang: input?.lang || null,
+    notes: input?.notes || null,
+    createdAt: input?.createdAt || nowIso,
+    status: input?.status || 'new',
+  }
+  if (!lead.contact) throw new Error('missing_contact')
+
+  if (!isPostgresEnabled()) {
+    const leads = readJsonFile(LEADS_FILE, []) as any[]
+    leads.unshift(lead)
+    writeJsonFile(LEADS_FILE, leads)
+    return lead
+  }
+
+  const res = await db().query(
+    `INSERT INTO leads (
+      id, tenant_id, name, contact, email, business_type, channel, pain, question,
+      client_messages, ai_recommendation, ai_summary, ai_readiness, source, lang, notes, status, created_at
+    ) VALUES (
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13::jsonb,$14,$15,$16,$17,$18
+    )
+    RETURNING id, created_at`,
+    [
+      lead.id,
+      lead.tenantId,
+      lead.name,
+      lead.contact,
+      lead.email,
+      lead.businessType,
+      lead.channel,
+      lead.pain,
+      lead.question,
+      lead.clientMessages ? JSON.stringify(lead.clientMessages) : null,
+      lead.aiRecommendation,
+      lead.aiSummary,
+      lead.aiReadiness ? JSON.stringify(lead.aiReadiness) : null,
+      lead.source,
+      lead.lang,
+      lead.notes,
+      lead.status,
+      lead.createdAt,
+    ],
+  )
+  const row = res.rows?.[0] || {}
+  return { ...lead, id: row.id || lead.id, createdAt: row.created_at ? new Date(row.created_at).toISOString() : lead.createdAt }
 }
 
