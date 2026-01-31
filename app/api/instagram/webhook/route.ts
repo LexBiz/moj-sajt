@@ -10,6 +10,7 @@ import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/p
 import { createLead, getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
 import {
   applyChannelLimits,
+  applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
@@ -1699,6 +1700,19 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)
+      const recentAssistantTexts = history
+        .filter((m) => m.role === 'assistant')
+        .slice(-3)
+        .map((m) => String(m.content || ''))
+      reply = applyNextSteps({
+        text: reply,
+        lang,
+        stage: (nextStage || 'DISCOVERY') as any,
+        readinessScore,
+        intent,
+        hasChosenPackage,
+        recentAssistantTexts,
+      })
     }
     reply = applyChannelLimits(reply, 'instagram')
     const quality = evaluateQuality(reply, lang, intent, 'instagram')

@@ -4,6 +4,7 @@ import { listChannelConnections } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
+  applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
@@ -707,6 +708,19 @@ export async function POST(request: NextRequest) {
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = applyNoPaymentPolicy(reply, preferredLang)
           reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
+          const recentAssistantTexts = history
+            .filter((m) => m.role === 'assistant')
+            .slice(-3)
+            .map((m) => String(m.content || ''))
+          reply = applyNextSteps({
+            text: reply,
+            lang: preferredLang,
+            stage,
+            readinessScore,
+            intent,
+            hasChosenPackage,
+            recentAssistantTexts,
+          })
         }
         reply = applyChannelLimits(reply, 'messenger')
         const quality = evaluateQuality(reply, preferredLang, intent, 'messenger')

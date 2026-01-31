@@ -5,6 +5,7 @@ import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageH
 import { getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
 import {
   applyChannelLimits,
+  applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
@@ -137,6 +138,7 @@ async function generateAiReply(userText: string, apiKey?: string | null) {
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
     out = ensureCta(out, lang, stage, readinessScore, intent)
+    out = applyNextSteps({ text: out, lang, stage, readinessScore, intent, hasChosenPackage })
   }
   out = applyChannelLimits(out, 'whatsapp')
   const quality = evaluateQuality(out, lang, intent, 'whatsapp')
