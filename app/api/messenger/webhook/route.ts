@@ -538,7 +538,16 @@ async function findMessengerConnection(pageId: string): Promise<ChannelConnectio
   const all = (await listChannelConnections()) as ChannelConnection[]
   const pid = String(pageId || '').trim()
   if (!pid) return null
-  return all.find((c) => c.channel === 'messenger' && String(c.externalId || '').trim() === pid) || null
+  return (
+    all.find((c) => {
+      if (c.channel !== 'messenger') return false
+      const ext = String(c.externalId || '').trim()
+      if (ext && ext === pid) return true
+      const meta: any = c.meta || {}
+      const metaPid = String(meta.pageId || meta.page_id || meta.page || '').trim()
+      return metaPid ? metaPid === pid : false
+    }) || null
+  )
 }
 
 export async function GET(request: NextRequest) {
