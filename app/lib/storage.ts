@@ -325,3 +325,18 @@ export async function deleteAllLeads() {
   return res.rowCount || 0
 }
 
+export async function deleteLeadsByIds(ids: number[]) {
+  const list = Array.isArray(ids) ? ids.map((x) => Number(x)).filter((x) => Number.isFinite(x)) : []
+  if (!list.length) return 0
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(LEADS_FILE, []) as any[]
+    const set = new Set(list.map((x) => Number(x)))
+    const next = all.filter((l) => !set.has(Number(l?.id)))
+    const removed = all.length - next.length
+    if (removed > 0) writeJsonFile(LEADS_FILE, next)
+    return removed
+  }
+  const res = await db().query('DELETE FROM leads WHERE id = ANY($1::bigint[])', [list])
+  return res.rowCount || 0
+}
+

@@ -119,6 +119,7 @@ export default function AdminPage() {
   const [dateTo, setDateTo] = useState<string>('') // YYYY-MM-DD
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [editStatus, setEditStatus] = useState<string>('new')
   const [editNotes, setEditNotes] = useState<string>('')
   const [filtersOpen, setFiltersOpen] = useState(true)
@@ -203,6 +204,39 @@ export default function AdminPage() {
       if (selectedId === id) setSelectedId(null)
     } catch (e: any) {
       setError(String(e?.message || e || 'Delete failed'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const clearSelected = () => setSelectedIds([])
+
+  const selectAllVisible = () => {
+    // selects only currently visible (filtered) leads
+    const ids = filtered.map((l) => l.id)
+    setSelectedIds(Array.from(new Set(ids)))
+  }
+
+  const deleteSelected = async () => {
+    if (!selectedIds.length) return
+    if (!confirm(`Удалить выбранные заявки (${selectedIds.length})?`)) return
+    setDeleting(true)
+    setError('')
+    try {
+      const url = `/api/leads?ids=${encodeURIComponent(selectedIds.join(','))}`
+      const res = await fetch(url, { method: 'DELETE', headers: authHeader })
+      const json = (await res.json().catch(() => ({}))) as any
+      if (!res.ok || json?.success === false) throw new Error(json?.error || 'Delete selected failed')
+      const set = new Set(selectedIds)
+      setLeads((prev) => prev.filter((l) => !set.has(l.id)))
+      if (selectedId != null && set.has(selectedId)) setSelectedId(null)
+      setSelectedIds([])
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Delete selected failed'))
     } finally {
       setDeleting(false)
     }
@@ -691,6 +725,30 @@ export default function AdminPage() {
                 {loading ? 'Обновляю…' : 'Обновить'}
               </button>
               <button
+                onClick={selectAllVisible}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+                disabled={loading || deleting || filtered.length === 0}
+                title="Выбрать все заявки из текущего списка"
+              >
+                Выбрать видимые
+              </button>
+              <button
+                onClick={clearSelected}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+                disabled={loading || deleting || selectedIds.length === 0}
+                title="Снять выбор"
+              >
+                Сбросить выбор
+              </button>
+              <button
+                onClick={deleteSelected}
+                className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 rounded-lg transition-colors text-sm font-medium border border-rose-400/30"
+                disabled={loading || deleting || selectedIds.length === 0}
+                title="Удалить выбранные заявки"
+              >
+                Удалить выбранные ({selectedIds.length})
+              </button>
+              <button
                 onClick={() => clearLeads('tenant')}
                 className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 rounded-lg transition-colors text-sm font-medium border border-rose-400/30"
                 disabled={loading || deleting}
@@ -911,7 +969,15 @@ export default function AdminPage() {
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="text-sm font-semibold text-white break-all">{lead.contact}</div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedIds.includes(lead.id)}
+                                    onChange={() => toggleSelected(lead.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <div className="text-sm font-semibold text-white break-all">{lead.contact}</div>
+                                </div>
                                 <div className="mt-1 flex items-center gap-2 flex-wrap">
                                   <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeClass(String(lead.status))}`}>
                                     {STATUS_LABEL[String(lead.status) as LeadStatus] || String(lead.status)}
@@ -949,6 +1015,13 @@ export default function AdminPage() {
                 <table className="w-full">
                   <thead className="bg-slate-900">
                     <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                          onChange={() => (selectedIds.length === filtered.length ? clearSelected() : selectAllVisible())}
+                        />
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Время</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Источник</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Статус</th>
@@ -960,7 +1033,7 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-slate-700">
                     {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                           Ничего не найдено
                         </td>
                       </tr>
@@ -969,7 +1042,7 @@ export default function AdminPage() {
                         const dayLeads = grouped.map.get(dk) || []
                         const header = (
                           <tr key={`h-${dk}`} className="bg-slate-900/60">
-                            <td colSpan={6} className="px-4 py-2 text-xs font-semibold text-slate-300">
+                            <td colSpan={7} className="px-4 py-2 text-xs font-semibold text-slate-300">
                               {dk === 'unknown' ? 'Без даты' : dk}
                               <span className="text-slate-500 font-normal"> • {dayLeads.length}</span>
                             </td>
@@ -983,6 +1056,14 @@ export default function AdminPage() {
                               onClick={() => setSelectedId(lead.id)}
                               className={`cursor-pointer hover:bg-slate-700/40 transition-colors ${selectedId === lead.id ? 'bg-slate-700/30' : ''}`}
                             >
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.includes(lead.id)}
+                                  onChange={() => toggleSelected(lead.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-300">{fmtTimeOnly(lead.createdAt)}</td>
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${src.cls}`}>

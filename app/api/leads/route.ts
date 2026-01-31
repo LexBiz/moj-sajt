@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createLead, deleteAllLeads, deleteLeadById, deleteLeadsByTenant, listLeads } from '@/app/lib/storage'
+import { createLead, deleteAllLeads, deleteLeadById, deleteLeadsByIds, deleteLeadsByTenant, listLeads } from '@/app/lib/storage'
 import { requireAdmin } from '@/app/lib/adminAuth'
 const DEFAULT_TENANT_ID = 'temoweb'
 
@@ -233,6 +233,7 @@ export async function DELETE(request: NextRequest) {
   if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(request.url)
   const idRaw = searchParams.get('id')
+  const idsRaw = searchParams.get('ids')
   const tenantId = normalizeTenantId(searchParams.get('tenantId'))
   const all = searchParams.get('all')
 
@@ -240,6 +241,14 @@ export async function DELETE(request: NextRequest) {
     const id = Number(idRaw)
     const ok = await deleteLeadById(id)
     return NextResponse.json({ success: ok })
+  }
+  if (idsRaw) {
+    const ids = idsRaw
+      .split(',')
+      .map((x) => Number(String(x || '').trim()))
+      .filter((n) => Number.isFinite(n))
+    const removed = await deleteLeadsByIds(ids)
+    return NextResponse.json({ success: true, removed })
   }
   if (all === 'true') {
     const removed = await deleteAllLeads()
