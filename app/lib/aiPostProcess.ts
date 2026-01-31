@@ -27,6 +27,8 @@ const PAYMENT_ASK_RE =
 const PACKAGE_CHOICE_RE =
   /\b(беру|берем|выбираю|обираю|хочу|хочемо|хотим|нужен|потрібен|потрібна|нужно|надо|мой|мій|нам|для\s+нас|для\s+меня|ок|окей)\b[\s\S]*\b(START|BUSINESS|PRO)\b/i
 
+const NEXT_STEPS_HEADER_RE = /(если\s+хотите|якщо\s+хочете)\s*[—-]?\s*(выберите|оберіть)\s*(вариант|варіант)/i
+
 function fmtMoneyEur(n: number) {
   try {
     return `${n.toLocaleString('ru-RU')} €`
@@ -108,7 +110,8 @@ export function applyServicesRouter(text: string, lang: AiLang, intent: AiIntent
 }
 
 export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
-  if (!intent.isPilotTrigger) return text
+  // Offer pilot not only when explicitly asked, but also on pricing interest (common entry point).
+  if (!intent.isPilotTrigger && !intent.isPricing) return text
   if (/pilot|пилот|пілот/i.test(text)) return text
   const p = TEMOWEB_PROFILE.pilot
   const line =
@@ -204,6 +207,7 @@ function extractConversationSignals(params: {
   const comparedPackages = /(сравн|порівн|что\s+лучше|що\s+краще|choose|help\s+choose)/i.test(all)
   const discussedModules = /(модул|module|stripe|календар|calendar|аналітик|аналитик|crm|hubspot|pipedrive)/i.test(all)
   const discussedPrice = /(цена|ціна|стоим|сколько|вартість|скільки|pricing|price|\d+\s?€)/i.test(all)
+  const discussedPilot = /(pilot|пилот|пілот)/i.test(all)
 
   const needsContactNow = (params.stage === 'ASK_CONTACT' || params.readinessScore >= 55 || params.intent.isContactIntent) && !hasContact
 
@@ -214,6 +218,7 @@ function extractConversationSignals(params: {
     comparedPackages,
     discussedModules,
     discussedPrice,
+    discussedPilot,
     needsContactNow,
   }
 }
@@ -232,6 +237,16 @@ export function applyNextSteps(params: {
   if (intent.isSupport) return text
   const out = String(text || '').trim()
   if (!out) return out
+
+  // If model already produced next-step options, only normalize formatting (no templated injection).
+  if (NEXT_STEPS_HEADER_RE.test(out)) {
+    let fixed = out
+    // Fix accidental double numbering like "1) 1)"
+    fixed = fixed.replace(/(\b\d+\)\s+)\1/g, '$1')
+    // Also handle "— 1) 1)" cases defensively
+    fixed = fixed.replace(/—\s*(\d+\)\s+)\1/g, '— $1')
+    return fixed.trim()
+  }
 
   // Avoid showing this block twice in a row, but do not "skip every other" message.
   const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-1) : []
@@ -255,8 +270,8 @@ export function applyNextSteps(params: {
   if (sig.needsContactNow && !sig.contactAskedRecently) {
     lines.push(
       lang === 'ua'
-        ? '1) Залиште телефон або email — я зафіксую заявку і передам менеджеру.'
-        : '1) Оставьте телефон или email — я зафиксирую заявку и передам менеджеру.',
+        ? 'Залиште телефон або email — я зафіксую заявку і передам менеджеру.'
+        : 'Оставьте телефон или email — я зафиксирую заявку и передам менеджеру.',
     )
   }
 
@@ -264,8 +279,8 @@ export function applyNextSteps(params: {
   if ((intent.isPricing || intent.isCompare || intent.isServices) && !sig.comparedPackages && !hasChosenPackage) {
     lines.push(
       lang === 'ua'
-        ? '2) Я коротко порівняю START / BUSINESS / PRO під вашу задачу.'
-        : '2) Я коротко сравню START / BUSINESS / PRO под вашу задачу.',
+        ? 'Я коротко порівняю START / BUSINESS / PRO під вашу задачу.'
+        : 'Я коротко сравню START / BUSINESS / PRO под вашу задачу.',
     )
   }
 
@@ -273,22 +288,31 @@ export function applyNextSteps(params: {
   if ((intent.isServices || intent.isPricing) && !sig.discussedModules) {
     lines.push(
       lang === 'ua'
-        ? '3) Підкажу, які модулі варто додати (оплати/календар/аналітика/CRM).'
-        : '3) Подскажу, какие модули стоит добавить (оплаты/календарь/аналитика/CRM).',
+        ? 'Підкажу, які модулі варто додати (оплати/календар/аналітика/CRM).'
+        : 'Подскажу, какие модули стоит добавить (оплаты/календарь/аналитика/CRM).',
+    )
+  }
+
+  // Pilot as a next step when pricing/budget/quick start is relevant and not yet discussed.
+  if ((intent.isPricing || intent.isPilotTrigger) && !sig.discussedPilot) {
+    lines.push(
+      lang === 'ua'
+        ? 'Поясню, чи підійде вам PILOT PROGRAM (запуск 48–72 год, 2 місяці).'
+        : 'Поясню, подойдёт ли вам PILOT PROGRAM (запуск 48–72 часа, 2 месяца).',
     )
   }
 
   // General progression suggestions (stage-based), but avoid duplicating price/modules/topics.
   if (lines.length < 2) {
     if (stage === 'DISCOVERY') {
-      lines.push(lang === 'ua' ? '1) Я складу план запуску по кроках під ваш бізнес.' : '1) Составлю план запуска по шагам под ваш бизнес.')
-      lines.push(lang === 'ua' ? '2) Підкажу, який сценарій продажів потрібен саме вам.' : '2) Подскажу, какой сценарий продаж нужен именно вам.')
+      lines.push(lang === 'ua' ? 'Я складу план запуску по кроках під ваш бізнес.' : 'Составлю план запуска по шагам под ваш бизнес.')
+      lines.push(lang === 'ua' ? 'Підкажу, який сценарій продажів потрібен саме вам.' : 'Подскажу, какой сценарий продаж нужен именно вам.')
     } else if (stage === 'TRUST') {
-      lines.push(lang === 'ua' ? '1) Поясню процес і терміни запуску дуже просто.' : '1) Объясню процесс и сроки запуска очень просто.')
-      lines.push(lang === 'ua' ? '2) Покажу, як ми не втрачаємо заявки і як це контролюється.' : '2) Покажу, как мы не теряем заявки и как это контролируется.')
+      lines.push(lang === 'ua' ? 'Поясню процес і терміни запуску дуже просто.' : 'Объясню процесс и сроки запуска очень просто.')
+      lines.push(lang === 'ua' ? 'Покажу, як ми не втрачаємо заявки і як це контролюється.' : 'Покажу, как мы не теряем заявки и как это контролируется.')
     } else {
-      lines.push(lang === 'ua' ? '1) Я підкажу оптимальний наступний крок для вашої ситуації.' : '1) Подскажу оптимальный следующий шаг для вашей ситуации.')
-      lines.push(lang === 'ua' ? '2) Дам короткий приклад, як виглядатиме діалог із клієнтом.' : '2) Дам короткий пример, как будет выглядеть диалог с клиентом.')
+      lines.push(lang === 'ua' ? 'Підкажу оптимальний наступний крок для вашої ситуації.' : 'Подскажу оптимальный следующий шаг для вашей ситуации.')
+      lines.push(lang === 'ua' ? 'Дам короткий приклад, як виглядатиме діалог із клієнтом.' : 'Дам короткий пример, как будет выглядеть диалог с клиентом.')
     }
   }
 
