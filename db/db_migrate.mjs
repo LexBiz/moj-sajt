@@ -2,6 +2,29 @@ import fs from 'fs'
 import path from 'path'
 import { Pool } from 'pg'
 
+function loadEnvFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return
+    const raw = fs.readFileSync(filePath, 'utf8')
+    const lines = raw.split(/\r?\n/)
+    for (const line of lines) {
+      const s = String(line || '').trim()
+      if (!s || s.startsWith('#')) continue
+      const idx = s.indexOf('=')
+      if (idx <= 0) continue
+      const key = s.slice(0, idx).trim()
+      let val = s.slice(idx + 1).trim()
+      if (!key) continue
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1)
+      }
+      if (!process.env[key]) process.env[key] = val
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function readEnv(name) {
   const v = process.env[name]
   return typeof v === 'string' ? v.trim() : ''
@@ -43,6 +66,10 @@ async function applyOne(client, migrationsDir, filename) {
 }
 
 async function main() {
+  // Load env from local files for server runs (pm2/next does this, but plain node script doesn't).
+  loadEnvFile(path.join(process.cwd(), '.env.local'))
+  loadEnvFile(path.join(process.cwd(), '.env'))
+
   const databaseUrl = readEnv('DATABASE_URL')
   if (!databaseUrl) {
     console.error('DATABASE_URL is missing')
