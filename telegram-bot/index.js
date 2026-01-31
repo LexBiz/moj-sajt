@@ -448,6 +448,7 @@ async function callOpenAI(history, lang, extraContextText) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        tenantId: process.env.TEMOWEB_TENANT_ID || 'temoweb',
         currentChannel: 'telegram',
         lang: lang || undefined,
         mode: 'post',

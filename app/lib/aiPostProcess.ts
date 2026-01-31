@@ -180,7 +180,7 @@ export function applyNoPaymentPolicy(text: string, lang: AiLang) {
 }
 
 export function applyChannelLimits(text: string, channel: AiChannel) {
-  if (channel === 'instagram' || channel === 'messenger') return String(text || '').trim()
+  if (channel === 'instagram' || channel === 'messenger' || channel === 'telegram') return String(text || '').trim()
   const limits: Record<AiChannel, { maxChars: number; maxLines: number }> = {
     website: { maxChars: 1200, maxLines: 10 },
     flow: { maxChars: 1000, maxLines: 8 },

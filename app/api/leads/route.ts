@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createLead, listLeads } from '@/app/lib/storage'
+import { createLead, deleteAllLeads, deleteLeadById, deleteLeadsByTenant, listLeads } from '@/app/lib/storage'
+import { requireAdmin } from '@/app/lib/adminAuth'
 const DEFAULT_TENANT_ID = 'temoweb'
 
 function normalizeTenantId(input: unknown) {
@@ -206,10 +207,7 @@ async function sendTelegram(lead: any) {
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const password = process.env.ADMIN_PASSWORD || 'admin123'
-  
-  if (authHeader !== `Bearer ${password}`) {
+  if (!requireAdmin(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -229,6 +227,29 @@ export async function GET(request: NextRequest) {
     })
   
   return NextResponse.json(leads)
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { searchParams } = new URL(request.url)
+  const idRaw = searchParams.get('id')
+  const tenantId = normalizeTenantId(searchParams.get('tenantId'))
+  const all = searchParams.get('all')
+
+  if (idRaw) {
+    const id = Number(idRaw)
+    const ok = await deleteLeadById(id)
+    return NextResponse.json({ success: ok })
+  }
+  if (all === 'true') {
+    const removed = await deleteAllLeads()
+    return NextResponse.json({ success: true, removed })
+  }
+  if (tenantId) {
+    const removed = await deleteLeadsByTenant(tenantId)
+    return NextResponse.json({ success: true, removed })
+  }
+  return NextResponse.json({ error: 'Specify id, tenantId, or all=true' }, { status: 400 })
 }
 
 export async function POST(request: NextRequest) {

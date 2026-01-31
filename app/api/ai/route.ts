@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
+import { getTenantProfile } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
@@ -14,6 +15,7 @@ import {
 } from '@/app/lib/aiPostProcess'
 
 type AiRequest = {
+  tenantId?: string
   businessType?: string
   channel?: string
   currentChannel?: 'website' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger'
@@ -181,10 +183,11 @@ async function callOpenAI(
   lang?: AiRequest['lang'],
   currentChannel?: AiRequest['currentChannel'],
   sourceHint?: AiRequest['sourceHint'],
-  extraRules?: string[]
+  extraRules?: string[],
+  apiKey?: string | null
 ): Promise<OpenAiResult | null> {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
+  const key = (apiKey || process.env.OPENAI_API_KEY || '').trim()
+  if (!key) {
     console.error('OPENAI_API_KEY is missing; using fallback')
     return { content: null, summary: null, error: 'missing_api_key' }
   }
@@ -231,7 +234,7 @@ async function callOpenAI(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -331,7 +334,10 @@ export async function POST(request: NextRequest) {
         ]
       : []
 
-    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint, supportRules)
+    const tenantId = String(body.tenantId || 'temoweb').trim().toLowerCase()
+    const profile = tenantId ? await getTenantProfile(tenantId).catch(() => null) : null
+    const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : ''
+    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint, supportRules, apiKey)
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
 
     const hasChosenPackage = Boolean(detectChosenPackage(lastUser || '') || detectChosenPackageFromHistory(body.history))

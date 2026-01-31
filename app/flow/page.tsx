@@ -481,6 +481,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tenantId: 'temoweb',
           businessType: businessResolved,
           channel: channelsResolved.join(', '),
           pain: painsResolved.join(', '),

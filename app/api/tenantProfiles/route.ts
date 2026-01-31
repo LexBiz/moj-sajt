@@ -22,6 +22,7 @@ export type TenantProfile = {
   leadMustCollect: { phone: boolean; email: boolean }
   // notifications
   managerTelegramChatId: string | null
+  openAiKey: string | null
   notes: string | null
 }
 
@@ -46,6 +47,7 @@ function defaultProfile(tenantId: string): TenantProfile {
     faq: [],
     leadMustCollect: { phone: true, email: true },
     managerTelegramChatId: null,
+    openAiKey: null,
     notes: null,
   }
 }
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
     },
     managerTelegramChatId:
       body.managerTelegramChatId == null ? existing.managerTelegramChatId : String(body.managerTelegramChatId).trim() || null,
+    openAiKey: body.openAiKey == null ? existing.openAiKey : String(body.openAiKey).trim() || null,
     notes: body.notes == null ? existing.notes : String(body.notes).trim() || null,
   }
 

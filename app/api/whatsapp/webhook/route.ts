@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
+import { getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
 import {
   applyChannelLimits,
   applyNoPaymentPolicy,
@@ -81,8 +82,9 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   }
 }
 
-async function generateAiReply(userText: string) {
-  if (!OPENAI_API_KEY) {
+async function generateAiReply(userText: string, apiKey?: string | null) {
+  const key = (apiKey || OPENAI_API_KEY || '').trim()
+  if (!key) {
     return 'Принято. Напиши нишу и где приходят заявки — покажу, как автоматизация заберёт это на себя.'
   }
   const isUa = /[іїєґ]/i.test(String(userText || ''))
@@ -107,7 +109,7 @@ async function generateAiReply(userText: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
       model: OPENAI_MODEL,
@@ -249,7 +251,10 @@ export async function POST(request: NextRequest) {
           })
           continue
         }
-        const reply = await generateAiReply(text)
+        const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
+        const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
+        const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
+        const reply = await generateAiReply(text, apiKey)
         await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
       }
     }

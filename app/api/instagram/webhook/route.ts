@@ -7,7 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
-import { createLead } from '@/app/lib/storage'
+import { createLead, getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
 import {
   applyChannelLimits,
   applyNoPaymentPolicy,
@@ -1006,10 +1006,12 @@ async function generateAiReply(params: {
   images?: string[]
   readinessScore?: number
   channel?: 'instagram'
+  apiKey?: string | null
 }) {
-  const { userText, lang, stage, history, images = [], readinessScore = 0 } = params
+  const { userText, lang, stage, history, images = [], readinessScore = 0, apiKey } = params
   const OPENAI_API_KEY = getOpenAiKey()
-  if (!OPENAI_API_KEY) {
+  const key = (apiKey || OPENAI_API_KEY || '').trim()
+  if (!key) {
     return {
       reply:
         lang === 'ua'
@@ -1057,7 +1059,7 @@ async function generateAiReply(params: {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
       model: OPENAI_MODEL_INSTAGRAM,
@@ -1425,7 +1427,11 @@ async function sendTelegramLead({
   }
 }
 
-async function handleIncomingMessage(senderId: string, text: string, media: IncomingMedia[]) {
+async function handleIncomingMessage(senderId: string, text: string, media: IncomingMedia[], recipientId?: string | null) {
+  const rid = String(recipientId || '').trim()
+  const tenantId = rid ? await resolveTenantIdByConnection('instagram', rid).catch(() => null) : null
+  const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
+  const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
   const conversation = getConversation(senderId)
   const maybeLang = parseLangChoice(text)
   const requestedLang = parseLangSwitch(text) || maybeLang
@@ -1621,6 +1627,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         stage: 'collected',
         history,
         images: [],
+        apiKey,
       })
       recordInstagramAi({ provider: ai.provider, detail: ai.detail })
       const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
@@ -1643,6 +1650,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       stage: 'ask_contact',
       history,
       images: [],
+      apiKey,
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
     const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactFix')
@@ -1665,7 +1673,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const intent = detectAiIntent(composedUserText || '')
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
-  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram' })
+  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram', apiKey })
   // Guardrails for IG Direct:
   // - Avoid nagging: don't repeat contact ask every turn.
   // - But also avoid "резина": keep replies short and lead to next step when warm/hot.
@@ -1796,7 +1804,7 @@ export async function POST(request: NextRequest) {
         console.log('IG webhook: incoming message (changes)', { senderId, text: text ? clip(text, 200) : null, mediaCount: media.length })
         processedCount += 1
         recordInstagramWebhook({ senderId, textPreview: clip(text || '[media]', 120) })
-        await handleIncomingMessage(senderId, text || '', media)
+        await handleIncomingMessage(senderId, text || '', media, change.value?.recipient?.id || null)
         continue
       }
 
@@ -1826,7 +1834,7 @@ export async function POST(request: NextRequest) {
       console.log('IG webhook: incoming message', { senderId, text: text ? clip(text, 200) : null, mediaCount: media.length })
       processedCount += 1
       recordInstagramWebhook({ senderId, textPreview: clip(text || '[media]', 120) })
-      await handleIncomingMessage(senderId, text || '', media)
+      await handleIncomingMessage(senderId, text || '', media, msg.recipient?.id || null)
     }
   }
   if (processedCount === 0) {

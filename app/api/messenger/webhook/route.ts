@@ -18,7 +18,7 @@ import { appendMessage, getConversation, setConversationLang } from '../conversa
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import fs from 'fs'
 import path from 'path'
-import { createLead, hasRecentLeadByContact } from '@/app/lib/storage'
+import { createLead, hasRecentLeadByContact, getTenantProfile } from '@/app/lib/storage'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -434,9 +434,11 @@ async function generateAiReplyWithHistory(input: {
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   lang: 'ru' | 'ua'
   images?: string[]
+  apiKey?: string | null
 }) {
   const userText = input.userText
-  if (!OPENAI_API_KEY) return generateAiReply(userText, { lang: input.lang })
+  const apiKey = (input.apiKey || OPENAI_API_KEY || '').trim()
+  if (!apiKey) return generateAiReply(userText, { lang: input.lang })
   const hist = Array.isArray(input.history) ? input.history : []
   const lastUser = userText
   const lang = input.lang
@@ -470,7 +472,7 @@ async function generateAiReplyWithHistory(input: {
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: OPENAI_MODEL_MESSENGER,
       messages: [
@@ -688,7 +690,9 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      let reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls })
+      const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
+      const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
+      let reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls, apiKey })
       const intent = detectAiIntent(msgText || '')
       const userTurns = history.filter((m) => m.role === 'user').length || 1
       const readinessScore = computeReadinessScoreHeuristic(msgText || '', userTurns)

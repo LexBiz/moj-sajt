@@ -15,6 +15,7 @@ type Profile = {
   faq: string[]
   leadMustCollect: { phone: boolean; email: boolean }
   managerTelegramChatId: string | null
+  openAiKey: string | null
   notes: string | null
 }
 
@@ -45,6 +46,7 @@ export default function AdminProfilesPage() {
   const [servicesText, setServicesText] = useState('')
   const [faqText, setFaqText] = useState('')
   const [tgChatId, setTgChatId] = useState('')
+  const [openAiKey, setOpenAiKey] = useState('')
   const [notes, setNotes] = useState('')
 
   const loadTenants = async () => {
@@ -73,6 +75,7 @@ export default function AdminProfilesPage() {
       setServicesText((p.services || []).join('\n'))
       setFaqText((p.faq || []).join('\n'))
       setTgChatId(p.managerTelegramChatId || '')
+      setOpenAiKey(p.openAiKey || '')
       setNotes(p.notes || '')
     } else {
       setDefaultLang('ua')
@@ -84,6 +87,7 @@ export default function AdminProfilesPage() {
       setServicesText('')
       setFaqText('')
       setTgChatId('')
+      setOpenAiKey('')
       setNotes('')
     }
   }
@@ -127,6 +131,7 @@ export default function AdminProfilesPage() {
             .map((x) => x.trim())
             .filter(Boolean),
           managerTelegramChatId: tgChatId.trim() || null,
+          openAiKey: openAiKey.trim() || null,
           notes: notes.trim() || null,
         }),
       })
@@ -304,6 +309,14 @@ export default function AdminProfilesPage() {
               value={tgChatId}
               onChange={(e) => setTgChatId(e.target.value)}
               placeholder="Telegram chat_id менеджера (опционально)"
+              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              disabled={loading}
+            />
+            <input
+              value={openAiKey}
+              onChange={(e) => setOpenAiKey(e.target.value)}
+              placeholder="OpenAI API key клиента (опционально)"
+              type="password"
               className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
               disabled={loading}
             />

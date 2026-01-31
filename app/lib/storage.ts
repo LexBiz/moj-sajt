@@ -287,3 +287,41 @@ export async function createLead(input: any) {
   return { ...lead, id: row.id || lead.id, createdAt: row.created_at ? new Date(row.created_at).toISOString() : lead.createdAt }
 }
 
+export async function deleteLeadById(id: number) {
+  if (!Number.isFinite(id)) return false
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(LEADS_FILE, []) as any[]
+    const next = all.filter((l) => Number(l?.id) !== Number(id))
+    if (next.length === all.length) return false
+    writeJsonFile(LEADS_FILE, next)
+    return true
+  }
+  const res = await db().query('DELETE FROM leads WHERE id=$1', [id])
+  return res.rowCount > 0
+}
+
+export async function deleteLeadsByTenant(tenantId: string) {
+  const tid = String(tenantId || '').trim().toLowerCase()
+  if (!tid) return 0
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(LEADS_FILE, []) as any[]
+    const next = all.filter((l) => String(l?.tenantId || '').toLowerCase() !== tid)
+    const removed = all.length - next.length
+    if (removed > 0) writeJsonFile(LEADS_FILE, next)
+    return removed
+  }
+  const res = await db().query('DELETE FROM leads WHERE tenant_id=$1', [tid])
+  return res.rowCount || 0
+}
+
+export async function deleteAllLeads() {
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(LEADS_FILE, []) as any[]
+    const removed = all.length
+    if (removed > 0) writeJsonFile(LEADS_FILE, [])
+    return removed
+  }
+  const res = await db().query('DELETE FROM leads')
+  return res.rowCount || 0
+}
+

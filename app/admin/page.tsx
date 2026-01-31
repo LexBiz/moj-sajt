@@ -118,6 +118,7 @@ export default function AdminPage() {
   const [dateFrom, setDateFrom] = useState<string>('') // YYYY-MM-DD
   const [dateTo, setDateTo] = useState<string>('') // YYYY-MM-DD
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [editStatus, setEditStatus] = useState<string>('new')
   const [editNotes, setEditNotes] = useState<string>('')
   const [filtersOpen, setFiltersOpen] = useState(true)
@@ -186,6 +187,46 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Failed to load leads:', err)
+    }
+  }
+
+  const deleteLead = async (id: number) => {
+    if (!id) return
+    if (!confirm('Удалить эту заявку?')) return
+    setDeleting(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/leads?id=${encodeURIComponent(String(id))}`, { method: 'DELETE', headers: authHeader })
+      const json = (await res.json().catch(() => ({}))) as any
+      if (!res.ok || json?.success === false) throw new Error(json?.error || 'Delete failed')
+      setLeads((prev) => prev.filter((l) => l.id !== id))
+      if (selectedId === id) setSelectedId(null)
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Delete failed'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const clearLeads = async (mode: 'tenant' | 'all') => {
+    const msg = mode === 'all' ? 'Удалить ВСЕ заявки? Это необратимо.' : `Удалить все заявки tenant=${tenantId}?`
+    if (!confirm(msg)) return
+    setDeleting(true)
+    setError('')
+    try {
+      const url =
+        mode === 'all'
+          ? '/api/leads?all=true'
+          : `/api/leads?tenantId=${encodeURIComponent(tenantId || 'temoweb')}`
+      const res = await fetch(url, { method: 'DELETE', headers: authHeader })
+      const json = (await res.json().catch(() => ({}))) as any
+      if (!res.ok || json?.success === false) throw new Error(json?.error || 'Clear failed')
+      await loadLeads()
+      setSelectedId(null)
+    } catch (e: any) {
+      setError(String(e?.message || e || 'Clear failed'))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -648,6 +689,22 @@ export default function AdminPage() {
                 {loading ? 'Обновляю…' : 'Обновить'}
               </button>
               <button
+                onClick={() => clearLeads('tenant')}
+                className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 rounded-lg transition-colors text-sm font-medium border border-rose-400/30"
+                disabled={loading || deleting}
+                title="Очистить заявки текущего клиента"
+              >
+                Очистить tenant
+              </button>
+              <button
+                onClick={() => clearLeads('all')}
+                className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-100 rounded-lg transition-colors text-sm font-medium border border-rose-400/30"
+                disabled={loading || deleting}
+                title="Очистить все заявки"
+              >
+                Очистить все
+              </button>
+              <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
               >
@@ -861,6 +918,17 @@ export default function AdminPage() {
                                   <span className="text-xs text-slate-400">{fmtTimeOnly(lead.createdAt)}</span>
                                 </div>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  deleteLead(lead.id)
+                                }}
+                                disabled={deleting}
+                                className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-semibold border border-rose-400/30"
+                              >
+                                Удалить
+                              </button>
                             </div>
                             <div className="mt-3 text-sm text-slate-200">
                               <div className="font-semibold">{lead.businessType || '—'}</div>
@@ -884,12 +952,13 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Статус</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Контакт</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">О чём</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Действия</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700">
                     {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                           Ничего не найдено
                         </td>
                       </tr>
@@ -898,7 +967,7 @@ export default function AdminPage() {
                         const dayLeads = grouped.map.get(dk) || []
                         const header = (
                           <tr key={`h-${dk}`} className="bg-slate-900/60">
-                            <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-slate-300">
+                            <td colSpan={6} className="px-4 py-2 text-xs font-semibold text-slate-300">
                               {dk === 'unknown' ? 'Без даты' : dk}
                               <span className="text-slate-500 font-normal"> • {dayLeads.length}</span>
                             </td>
@@ -927,6 +996,19 @@ export default function AdminPage() {
                               <td className="px-4 py-3 text-sm text-slate-200">
                                 <div className="font-semibold">{lead.businessType || '—'}</div>
                                 <div className="text-xs text-slate-400 line-clamp-2">{lead.aiSummary || lead.pain || lead.question || '—'}</div>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    deleteLead(lead.id)
+                                  }}
+                                  disabled={deleting}
+                                  className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-semibold border border-rose-400/30"
+                                >
+                                  Удалить
+                                </button>
                               </td>
                             </tr>
                           )
