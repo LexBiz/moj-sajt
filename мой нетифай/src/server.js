@@ -25,6 +25,7 @@ const DATA_DIR = process.env.DATA_DIR || path.resolve("data");
 const SITES_DIR = path.join(DATA_DIR, "sites");
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "").trim();
+const MAX_FILE_MB = Number(process.env.MAX_FILE_MB || 120); // per-file upload limit
 const ROOT_DOMAIN = (process.env.ROOT_DOMAIN || "").trim().toLowerCase(); // e.g. "example.com"
 const ADMIN_HOSTNAMES = String(process.env.ADMIN_HOSTNAMES || "")
   .split(",")
@@ -158,7 +159,7 @@ app.get("/", (req, res, next) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 25 * 1024 * 1024, // 25MB per file
+    fileSize: Math.max(1, MAX_FILE_MB) * 1024 * 1024, // per-file limit
     files: 5000
   }
 });
@@ -232,6 +233,26 @@ app.put("/api/sites/:slug", requireAuth, upload.array("files"), async (req, res)
     urlPath: `/sites/${slug}/`,
     urlSubdomain: ROOT_DOMAIN ? `https://${slug}.${ROOT_DOMAIN}/` : null
   });
+});
+
+// ---------- error handler (multer/proxy-friendly) ----------
+app.use((err, req, res, next) => {
+  const name = String(err?.name || "");
+  const code = String(err?.code || "");
+  if (name === "MulterError" || code.startsWith("LIMIT_")) {
+    const isTooLarge = code === "LIMIT_FILE_SIZE" || String(err?.message || "").toLowerCase().includes("file too large");
+    if (isTooLarge) {
+      return res.status(413).json({
+        error: "File too large",
+        hint: `One of the files exceeds the per-file limit (${MAX_FILE_MB} MB). Remove large files (videos, raw images) or increase MAX_FILE_MB on server.`,
+        maxFileMb: MAX_FILE_MB,
+        details: { code: code || null }
+      });
+    }
+    return res.status(400).json({ error: "Upload error", details: { code: code || null, message: String(err?.message || "") } });
+  }
+  console.error("Unhandled error:", err);
+  return res.status(500).json({ error: "Server error", details: String(err?.message || err || "") });
 });
 
 // ---------- site serving (path based) ----------
