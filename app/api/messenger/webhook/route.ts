@@ -529,6 +529,19 @@ async function sendMessengerText(opts: { pageAccessToken: string; recipientId: s
       console.error('Messenger send error', resp.status, t.slice(0, 500))
       break
     }
+    // Log response ids to confirm delivery target (no token leakage).
+    try {
+      const j = (await resp.json().catch(() => null)) as any
+      if (j && (j.message_id || j.recipient_id)) {
+        console.log('Messenger send ok (meta)', {
+          recipientIdLast4: opts.recipientId.slice(-4),
+          recipient_id_last4: typeof j.recipient_id === 'string' ? j.recipient_id.slice(-4) : null,
+          message_id_last6: typeof j.message_id === 'string' ? j.message_id.slice(-6) : null,
+        })
+      }
+    } catch {
+      // ignore
+    }
     if (i < parts.length - 1) await new Promise((r) => setTimeout(r, 160))
   }
   console.log('Messenger send ok', { recipientIdLast4: opts.recipientId.slice(-4), api: `${API_HOST}/${API_VERSION}`, parts: parts.length })
