@@ -1,4 +1,7 @@
 import "dotenv/config";
+// Also load parent env files when running under /var/www/mujsajt/мой нетифай
+// so we can reuse the CRM admin password (ADMIN_PASSWORD) as an auth fallback.
+import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import path from "path";
@@ -8,11 +11,20 @@ import { nanoid } from "nanoid";
 
 const app = express();
 
+// Load env from parent (mujsajt) directory if present.
+try {
+  dotenv.config({ path: path.resolve("..", ".env.local") });
+  dotenv.config({ path: path.resolve("..", ".env") });
+} catch {
+  // ignore
+}
+
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0"; // on VPS prefer "127.0.0.1" behind reverse proxy
 const DATA_DIR = process.env.DATA_DIR || path.resolve("data");
 const SITES_DIR = path.join(DATA_DIR, "sites");
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "").trim();
 const ROOT_DOMAIN = (process.env.ROOT_DOMAIN || "").trim().toLowerCase(); // e.g. "example.com"
 const ADMIN_HOSTNAMES = String(process.env.ADMIN_HOSTNAMES || "")
   .split(",")
@@ -38,10 +50,13 @@ async function ensureDirs() {
 }
 
 function requireAuth(req, res, next) {
-  if (!ADMIN_TOKEN) return next(); // dev / local
+  // If no token configured at all, keep it open (dev/local).
+  if (!ADMIN_TOKEN && !ADMIN_PASSWORD) return next();
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length) : "";
-  if (token && token === ADMIN_TOKEN) return next();
+  if (token && ADMIN_TOKEN && token === ADMIN_TOKEN) return next();
+  // Allow using the same password as CRM (/admin) for convenience.
+  if (token && ADMIN_PASSWORD && token === ADMIN_PASSWORD) return next();
   return res.status(401).json({ error: "Unauthorized" });
 }
 

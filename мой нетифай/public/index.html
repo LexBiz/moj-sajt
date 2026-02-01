@@ -38,8 +38,8 @@
       <div class="card">
         <div class="row">
           <div>
-            <label>Токен “мой нетифай” (ADMIN_TOKEN)</label>
-            <input id="token" type="password" placeholder="это НЕ пароль от /admin (CRM)" />
+            <label>Токен “мой нетифай” (ADMIN_TOKEN) или пароль CRM</label>
+            <input id="token" type="password" placeholder="можно: ADMIN_TOKEN или пароль от /admin (CRM)" />
           </div>
           <div>
             <label>Имя сайта (slug)</label>
@@ -165,7 +165,7 @@
           if (!r.ok) {
             const msg =
               r.status === 401
-                ? "Неверный токен. Введи ADMIN_TOKEN именно от “мой нетифай” (это не пароль CRM /admin)."
+                ? "Неверный токен. Введи ADMIN_TOKEN (мой нетифай) или пароль от /admin (CRM)."
                 : data?.error || `Ошибка загрузки списка (HTTP ${r.status}).`;
             setOut({ error: msg, details: data });
             sitesEl.innerHTML = `<div class="muted">${msg}</div>`;
