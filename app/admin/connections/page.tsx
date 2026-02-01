@@ -97,11 +97,33 @@ export default function AdminConnectionsPage() {
       const metaTrim = metaJson.trim()
       let meta: Record<string, any> | null = null
       if (metaTrim) {
+        // Allow pasting a raw token (without JSON) and auto-wrap it.
+        // Also normalize “smart quotes” and remove accidental newlines inside tokens.
+        const normalized = metaTrim
+          .replace(/[“”]/g, '"')
+          .replace(/[‘’]/g, "'")
+          .trim()
+
+        const looksLikeJson = normalized.startsWith('{') || normalized.startsWith('[')
+        const looksLikeRawToken = !looksLikeJson && !normalized.includes('{') && !normalized.includes('}') && !normalized.includes(':')
+        if (looksLikeRawToken) {
+          meta = { pageAccessToken: normalized.replace(/\s+/g, '') }
+        } else {
+          const tryParse = (s: string) => {
+            const parsed = JSON.parse(s)
+            return parsed && typeof parsed === 'object' ? (parsed as any) : null
+          }
         try {
-          const parsed = JSON.parse(metaTrim)
-          meta = parsed && typeof parsed === 'object' ? (parsed as any) : null
+            meta = tryParse(normalized)
         } catch {
-          throw new Error('meta JSON: неверный JSON (пример: {"pageAccessToken":"EAAB..."} )')
+            // Recovery: if token got pasted with line breaks inside the JSON string, extract and normalize it.
+            const m = normalized.match(/pageAccessToken"\s*:\s*"([\s\S]*?)"/i)
+            if (m && m[1]) {
+              meta = { pageAccessToken: String(m[1]).replace(/\s+/g, '') }
+            } else {
+              throw new Error('meta JSON: неверный JSON (пример: {"pageAccessToken":"EAAB..."} )')
+            }
+          }
         }
       }
       const res = await fetch('/api/channelConnections', {
