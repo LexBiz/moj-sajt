@@ -34,10 +34,19 @@ function normalizeId(input: string) {
 
 export async function GET(request: NextRequest) {
   if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const tenants = await listTenants()
-  // Ensure default tenant exists (backward compatible even when DB is empty).
-  const hasDefault = tenants.some((t: any) => t.id === DEFAULT_TENANT.id)
-  const out = hasDefault ? tenants : [DEFAULT_TENANT, ...tenants]
+  let tenants = await listTenants()
+  // Ensure default tenant exists in DB (important for FK constraints like channel_connections.tenant_id -> tenants.id).
+  const hasDefault = tenants.some((t: any) => String(t?.id || '') === DEFAULT_TENANT.id)
+  if (!hasDefault) {
+    try {
+      await upsertTenant({ id: DEFAULT_TENANT.id, name: DEFAULT_TENANT.name, plan: DEFAULT_TENANT.plan, notes: DEFAULT_TENANT.notes })
+      tenants = await listTenants()
+    } catch (e) {
+      console.error('Failed to upsert default tenant:', e)
+      // Continue: UI can still show default tenant, but saves may fail until DB is fixed.
+    }
+  }
+  const out = tenants.some((t: any) => String(t?.id || '') === DEFAULT_TENANT.id) ? tenants : [DEFAULT_TENANT, ...tenants]
   return NextResponse.json({ ok: true, tenants: out }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
 

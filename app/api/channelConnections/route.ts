@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/adminAuth'
-import { listChannelConnections, upsertChannelConnection } from '@/app/lib/storage'
+import { listChannelConnections, upsertChannelConnection, upsertTenant } from '@/app/lib/storage'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -86,7 +86,30 @@ export async function POST(request: NextRequest) {
     notes: body.notes == null ? existing?.notes || null : String(body.notes).trim() || null,
   }
 
-  await upsertChannelConnection(next as any)
+  try {
+    await upsertChannelConnection(next as any)
+  } catch (e: any) {
+    // Common case in Postgres: tenant row missing (FK channel_connections.tenant_id -> tenants.id)
+    const code = String(e?.code || '')
+    if (code === '23503') {
+      try {
+        await upsertTenant({
+          id: tenantId,
+          name: tenantId === 'temoweb' ? 'TemoWeb (внутренний)' : tenantId,
+          plan: tenantId === 'temoweb' ? 'PRO' : 'START',
+          notes: tenantId === 'temoweb' ? 'Системный tenant для твоего бизнеса (TemoWeb).' : null,
+        } as any)
+        await upsertChannelConnection(next as any)
+      } catch (e2: any) {
+        console.error('ChannelConnections upsert failed after tenant upsert:', e2)
+        return NextResponse.json({ error: String(e2?.message || e2 || 'Save failed') }, { status: 500 })
+      }
+    } else {
+      console.error('ChannelConnections upsert failed:', e)
+      return NextResponse.json({ error: String(e?.message || e || 'Save failed') }, { status: 500 })
+    }
+  }
+
   return NextResponse.json({ ok: true, connection: next }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
 
