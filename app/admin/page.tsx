@@ -243,7 +243,10 @@ export default function AdminPage() {
   }
 
   const clearLeads = async (mode: 'tenant' | 'all') => {
-    const msg = mode === 'all' ? 'Удалить ВСЕ заявки? Это необратимо.' : `Удалить все заявки tenant=${tenantId}?`
+    const msg =
+      mode === 'all'
+        ? 'Удалить ВСЕ заявки? Это необратимо.\n\nВажно: удаляются только заявки (leads). Подключения каналов/тенанты НЕ трогаются.'
+        : `Удалить все заявки tenant=${tenantId}?\n\nВажно: удаляются только заявки (leads). Подключения каналов/тенанты НЕ трогаются.`
     if (!confirm(msg)) return
     setDeleting(true)
     setError('')

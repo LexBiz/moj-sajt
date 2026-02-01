@@ -234,7 +234,10 @@ export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const idRaw = searchParams.get('id')
   const idsRaw = searchParams.get('ids')
-  const tenantId = normalizeTenantId(searchParams.get('tenantId'))
+  // IMPORTANT: for DELETE we must NOT default tenantId to temoweb.
+  // Only delete by tenant when tenantId was explicitly provided.
+  const tenantIdRaw = searchParams.get('tenantId')
+  const tenantId = tenantIdRaw != null ? normalizeTenantId(tenantIdRaw) : null
   const all = searchParams.get('all')
 
   if (idRaw) {
