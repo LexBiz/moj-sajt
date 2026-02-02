@@ -24,8 +24,14 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
   if (/(срок|сроки|время|термин|інтеграц|integration|процесс|как\s+это\s+работает)/i.test(t)) score += 10
   if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|услуг|услуги|послуг|послуги|service|services|offerings|оплат|поддержк|setup|внедрен)/i.test(t)) score += 18
   if (/(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) score += 28
+  // Warm confirmations / agreement signals (often appear when user is ready to proceed)
+  if (/(ок(ей)?|ok|понял|зрозуміл|супер|класс|топ|подходит|підходить|давай|домовились|домовилися|поехали|поїхали|хочу|хочемо|готов|готові|беру|берем)/i.test(t))
+    score += 12
+  // Numeric choice (1/2/3) as an explicit next-step selection: mild readiness bump
+  if (/^\s*[1-3]\s*$/.test(t)) score += 6
   if (/(погод|weather|политик|polit|отношен|dating|ресторан|кафе|кофе|анекдот|фильм|сериал|спорт)/i.test(t)) score -= 12
-  if (t.length <= 3) score -= 8
+  // Avoid penalizing short confirmations like "ок/да/1/2"
+  if (t.length <= 3 && !/^\s*[1-3]\s*$/.test(t) && !/(ок|ok|да|ага)/i.test(t)) score -= 8
   score = Math.max(0, Math.min(100, score))
   score = Math.max(0, Math.min(100, score + Math.min(12, userTurns * 2)))
   return score
@@ -192,11 +198,15 @@ export function buildTemoWebSystemPrompt(params: {
       : 'Address the client respectfully. Do not use slang.',
     'ASKING RULE: ask максимум 1 уточняющий вопрос за сообщение (исключение: когда собираете контакт — можно попросить телефон+email в одном сообщении).',
     'SALES RULE: do NOT push the most expensive package. Recommend the minimal suitable option based on the client needs.',
+    'PACKAGE GUIDANCE RULE (CRITICAL): Never say “выбирайте сами/смотрите сами”. If you mention packages/prices, you MUST:',
+    '— either recommend ONE package (START/BUSINESS/PRO) and briefly explain why it fits the client,',
+    '— or, if information is missing, ask ONE clarifying question and explain what you will recommend depending on the answer (so the client feels supported).',
     'If client clearly says: "нужен только 1 канал" — recommend START (and mention optional add-ons like payments/calendar as modules).',
     'Do NOT mention contracts/documents/legal steps unless the client explicitly asks.',
     'PRICE RULE: never drop the biggest number by default. If user did NOT ask price — do not list prices; just say you will recommend after 1 clarifying question.',
     'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
     'PILOT FACTS (never change): duration=2 months; launch=48–72 hours; included channels=1–2 (NOT 1 fixed); price=490€ setup + 99€/month ×2. Base pilot does NOT include: custom dev, complex integrations, ecommerce/autosales, multilingual, advanced analytics. BUT: any extra module from the website can be added as a paid add-on.',
+    'CONTACT TIMING RULE: When the client is warm/hot (confirmed interest, discussed packages/price/process, said “ок/понял/давайте/подходит/готов”) — explicitly ask for contact (phone or email) to fix the request and move to a call/demo. Do NOT wait for perfect wording from the client.',
     'NEXT STEPS RULE (CRITICAL): End EVERY message with a short "next steps" block so the client always knows what to do.',
     'If the user replies with ONLY a single digit "1" / "2" / "3" — treat it as selecting the corresponding option from your previous next steps block and answer accordingly (do NOT reset the conversation).',
     'Output format (exact):',

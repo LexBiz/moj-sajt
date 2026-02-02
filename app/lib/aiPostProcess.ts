@@ -201,6 +201,7 @@ function extractConversationSignals(params: {
   const users = (Array.isArray(params.recentUserTexts) ? params.recentUserTexts : []).join('\n')
   const asst = (Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts : []).join('\n')
   const all = `${users}\n${asst}`
+  const userTurnsApprox = Array.isArray(params.recentUserTexts) ? params.recentUserTexts.filter(Boolean).length : 0
 
   const hasContact = /\S+@\S+\.\S+/.test(users) || /(^|\s)@([a-zA-Z0-9_]{4,32})\b/.test(users) || /(\+?\d[\d\s().-]{7,}\d)/.test(users)
   const contactAskedRecently = /\b(телефон|email|почт|контакт|скиньте|надішліть|залиште)\b/i.test(asst)
@@ -210,8 +211,19 @@ function extractConversationSignals(params: {
   const discussedModules = /(модул|module|stripe|календар|calendar|аналітик|аналитик|crm|hubspot|pipedrive)/i.test(all)
   const discussedPrice = /(цена|ціна|стоим|сколько|вартість|скільки|pricing|price|\d+\s?€)/i.test(all)
   const discussedPilot = /(pilot|пилот|пілот)/i.test(all)
+  const hasReadySignals = /(ок(ей)?|ok|понял|зрозуміл|супер|класс|топ|подходит|підходить|давай|домовились|домовилися|поехали|поїхали|хочу|хочемо|готов|готові|беру|берем)/i.test(
+    users,
+  )
 
-  const needsContactNow = (params.stage === 'ASK_CONTACT' || params.readinessScore >= 55 || params.intent.isContactIntent) && !hasContact
+  // "Golden middle" for contact ask:
+  // - not on the very first turn
+  // - earlier when offer/pricing/packages were discussed and user shows readiness signals
+  const isNotFirst = userTurnsApprox >= 2
+  const warmedByOffer = (discussedPrice || discussedPackages || comparedPackages || discussedPilot) && params.readinessScore >= 45 && isNotFirst
+  const warmedByConfirm = hasReadySignals && params.readinessScore >= 40 && isNotFirst
+  const needsContactNow =
+    !hasContact &&
+    (params.stage === 'ASK_CONTACT' || params.intent.isContactIntent || params.readinessScore >= 55 || warmedByOffer || warmedByConfirm)
 
   return {
     hasContact,
@@ -221,6 +233,8 @@ function extractConversationSignals(params: {
     discussedModules,
     discussedPrice,
     discussedPilot,
+    userTurnsApprox,
+    hasReadySignals,
     needsContactNow,
   }
 }
