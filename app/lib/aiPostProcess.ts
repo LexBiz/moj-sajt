@@ -465,6 +465,8 @@ function extractNextStepsOptionsFromText(text: string) {
   if (!t) return null
   if (!NEXT_STEPS_HEADER_RE.test(t)) return null
   const map: Record<number, string> = {}
+  // Reset global regex state to avoid flaky parsing across calls.
+  NEXT_STEPS_OPT_RE.lastIndex = 0
   let m: RegExpExecArray | null
   while ((m = NEXT_STEPS_OPT_RE.exec(t))) {
     const idx = Number(m[2])
