@@ -127,7 +127,7 @@ function buildPackageGuidance(lang: AiLang) {
   ].join('\n')
 }
 
-function applyPackageGuidance(text: string, lang: AiLang) {
+export function applyPackageGuidance(text: string, lang: AiLang) {
   const out = String(text || '').trim()
   if (!out) return out
   // Only when packages are mentioned in the answer (otherwise we don't spam).

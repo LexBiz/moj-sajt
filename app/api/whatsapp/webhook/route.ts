@@ -5,6 +5,7 @@ import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageH
 import { getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
 import {
   applyChannelLimits,
+  applyPackageGuidance,
   applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
@@ -135,6 +136,7 @@ async function generateAiReply(userText: string, apiKey?: string | null) {
   const hasChosenPackage = Boolean(detectChosenPackage(userText || '') || detectChosenPackageFromHistory([{ role: 'user', content: userText || '' }]))
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
+    out = applyPackageGuidance(out, lang)
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
     out = ensureCta(out, lang, stage, readinessScore, intent)

@@ -4,6 +4,7 @@ import { getTenantProfile } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
+  applyPackageGuidance,
   applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
@@ -371,6 +372,7 @@ export async function POST(request: NextRequest) {
       const channelForLimits = (channel === 'website' ? 'website' : channel) as any
       if (!intent.isSupport) {
         answer = applyServicesRouter(answer, lang, intent, hasChosenPackage)
+        answer = applyPackageGuidance(answer, lang)
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
         answer = ensureCta(answer, lang, stage, readinessScore, intent)

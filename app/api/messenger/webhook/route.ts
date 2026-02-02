@@ -8,6 +8,7 @@ import {
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
+  applyPackageGuidance,
   expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
   detectChosenPackageFromHistory,
@@ -738,6 +739,7 @@ export async function POST(request: NextRequest) {
       if (preferredLang === 'ru' || preferredLang === 'ua') {
         if (!intent.isSupport) {
           reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
+        reply = applyPackageGuidance(reply, preferredLang)
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = applyNoPaymentPolicy(reply, preferredLang)
           reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
