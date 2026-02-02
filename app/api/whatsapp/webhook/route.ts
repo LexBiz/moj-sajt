@@ -7,6 +7,7 @@ import {
   applyChannelLimits,
   applyPackageGuidance,
   applyNextSteps,
+  applyIncompleteDetailsFix,
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
@@ -137,6 +138,7 @@ async function generateAiReply(userText: string, apiKey?: string | null) {
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
     out = applyPackageGuidance(out, lang)
+    out = applyIncompleteDetailsFix(out, lang)
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
     out = ensureCta(out, lang, stage, readinessScore, intent)

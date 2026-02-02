@@ -31,6 +31,51 @@ const NEXT_STEPS_HEADER_RE = /(если\s+хотите|якщо\s+хочете)\
 const NEXT_STEPS_OPT_RE = /(^|\n)\s*[—-]\s*([1-3])\)\s*([^\n]+)\s*(?=\n|$)/g
 const DIGIT_ONLY_RE = /^\s*([1-3])\s*$/
 
+const DETAILS_STUB_RE = /(мен[іi]\s+потр[іi]бно\s+зібрати\s+кілька\s+деталей|мне\s+нужно\s+собрать\s+несколько\s+детал)/i
+
+function stripNextStepsBlock(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return t
+  const lines = t.split('\n')
+  const idx = lines.findIndex((l) => NEXT_STEPS_HEADER_RE.test(String(l || '')))
+  if (idx < 0) return t
+  const kept = lines.slice(0, idx).join('\n').trim()
+  return kept || t
+}
+
+export function applyIncompleteDetailsFix(text: string, lang: AiLang) {
+  const t = String(text || '').trim()
+  if (!t) return t
+  if (!DETAILS_STUB_RE.test(t)) return t
+
+  // If model ended with a colon and no list, append a concrete checklist.
+  const endsWithColon = /:\s*$/.test(t)
+  const hasBulletsAfter = /\n\s*[—-]\s*\d+\)/.test(t) || /\n\s*[—-]\s*/.test(t)
+  if (!endsWithColon && hasBulletsAfter) return t
+
+  const checklist =
+    lang === 'ua'
+      ? [
+          '— 1) 1–2 канали для старту (Instagram / WhatsApp / Telegram / сайт)',
+          '— 2) Ніша + що продаєте (1 речення)',
+          '— 3) Як зараз приходять заявки (коротко)',
+        ].join('\n')
+      : [
+          '— 1) 1–2 канала для старта (Instagram / WhatsApp / Telegram / сайт)',
+          '— 2) Ниша + что продаёте (1 предложение)',
+          '— 3) Откуда сейчас приходят заявки (коротко)',
+        ].join('\n')
+
+  // Also ask for contact (final action) in the same message.
+  const contactLine =
+    lang === 'ua'
+      ? 'І щоб зафіксувати заявку — надішліть, будь ласка, телефон або email.'
+      : 'И чтобы зафиксировать заявку — пришлите, пожалуйста, телефон или email.'
+
+  const base = endsWithColon ? t : `${t}\n`
+  return `${base}\n${checklist}\n\n${contactLine}`.trim()
+}
+
 function fmtMoneyEur(n: number) {
   try {
     return `${n.toLocaleString('ru-RU')} €`
@@ -283,6 +328,18 @@ export function applyNextSteps(params: {
   if (intent.isSupport) return text
   const out = String(text || '').trim()
   if (!out) return out
+
+  // If we are already asking for contact (final action), do NOT show "next steps" options.
+  // This avoids offering extra choices/questions when the user should just leave phone/email.
+  const hasContactAsk = CONTACT_HINT_RE.test(out)
+  if (stage === 'ASK_CONTACT' || hasContactAsk) {
+    // If model produced a next-steps block, strip it. Otherwise keep as-is.
+    let fixed = stripNextStepsBlock(out)
+    // Fix accidental double numbering defensively even after stripping.
+    fixed = fixed.replace(/(\b\d+\)\s+)\1/g, '$1')
+    fixed = fixed.replace(/—\s*(\d+\)\s+)\1/g, '— $1')
+    return fixed.trim()
+  }
 
   // If model already produced next-step options, only normalize formatting (no templated injection).
   if (NEXT_STEPS_HEADER_RE.test(out)) {

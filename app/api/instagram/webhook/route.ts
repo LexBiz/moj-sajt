@@ -12,6 +12,7 @@ import {
   applyChannelLimits,
   applyNextSteps,
   applyNoPaymentPolicy,
+  applyIncompleteDetailsFix,
   applyPilotNudge,
   applyServicesRouter,
   applyPackageGuidance,
@@ -1717,6 +1718,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     if (!intent.isSupport) {
       reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
       reply = applyPackageGuidance(reply, lang)
+      reply = applyIncompleteDetailsFix(reply, lang)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)
       const recentAssistantTexts = history

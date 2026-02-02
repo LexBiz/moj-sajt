@@ -5,6 +5,7 @@ import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/p
 import {
   applyChannelLimits,
   applyPackageGuidance,
+  applyIncompleteDetailsFix,
   applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
@@ -373,6 +374,7 @@ export async function POST(request: NextRequest) {
       if (!intent.isSupport) {
         answer = applyServicesRouter(answer, lang, intent, hasChosenPackage)
         answer = applyPackageGuidance(answer, lang)
+        answer = applyIncompleteDetailsFix(answer, lang)
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
         answer = ensureCta(answer, lang, stage, readinessScore, intent)

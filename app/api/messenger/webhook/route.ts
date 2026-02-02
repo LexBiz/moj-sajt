@@ -6,6 +6,7 @@ import {
   applyChannelLimits,
   applyNextSteps,
   applyNoPaymentPolicy,
+  applyIncompleteDetailsFix,
   applyPilotNudge,
   applyServicesRouter,
   applyPackageGuidance,
@@ -740,6 +741,7 @@ export async function POST(request: NextRequest) {
         if (!intent.isSupport) {
           reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
         reply = applyPackageGuidance(reply, preferredLang)
+        reply = applyIncompleteDetailsFix(reply, preferredLang)
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = applyNoPaymentPolicy(reply, preferredLang)
           reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
