@@ -608,31 +608,31 @@ export default function Home() {
     switch (step) {
       case 'intro':
         return (
-          <div className="space-y-8 text-center sm:text-left">
-            <div className="inline-block px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-400/30">
-              <p className="text-xs uppercase tracking-[0.2em] text-indigo-300 font-black">
+          <div className="space-y-10 text-center sm:text-left">
+            <div className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-gradient-to-r from-indigo-100/80 via-purple-100/70 to-pink-100/60 border border-indigo-400/40 shadow-lg">
+              <p className="text-xs uppercase tracking-[0.25em] text-indigo-800 font-black">
                 {t.systemLabel}
               </p>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.05] tracking-tight">
               {t.heroTitle}
             </h1>
-            <p className="text-lg sm:text-xl text-slate-300 leading-relaxed max-w-2xl">
+            <p className="text-lg sm:text-xl lg:text-2xl text-slate-700 leading-relaxed max-w-2xl font-medium">
               {t.heroDesc}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
+            <div className="flex flex-col sm:flex-row gap-5 pt-8">
               <button
                 onClick={next}
-                className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 px-8 py-4 text-lg font-black text-white shadow-[0_12px_32px_rgba(99,102,241,0.4)] hover:shadow-[0_16px_48px_rgba(99,102,241,0.6)] hover:scale-105 active:scale-95 transition-all duration-300"
+                className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-10 py-6 text-lg font-black text-white shadow-[0_20px_64px_rgba(99,102,241,0.4)] hover:shadow-[0_28px_88px_rgba(99,102,241,0.6)] hover:scale-110 active:scale-95 transition-all duration-300"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-3">
                   {t.start}
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                  <span className="text-2xl group-hover:translate-x-1 transition-transform">→</span>
                 </span>
               </button>
               <button
                 onClick={() => setStep('contact')}
-                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-bold text-white bg-white/10 border-2 border-white/15 hover:bg-white/15 hover:border-indigo-400/50 hover:scale-105 active:scale-95 transition-all duration-300 backdrop-blur-md"
+                className="inline-flex items-center justify-center rounded-2xl px-10 py-6 text-lg font-black text-slate-900 bg-white/90 border border-slate-300/60 hover:bg-white hover:border-indigo-400/60 hover:scale-110 active:scale-95 transition-all duration-300 backdrop-blur-2xl shadow-lg"
               >
                 {t.hurry}
               </button>
@@ -641,9 +641,9 @@ export default function Home() {
         )
       case 'business':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">{t.businessQuestion}</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-tight tracking-tight">{t.businessQuestion}</h2>
+            <div className="grid sm:grid-cols-2 gap-5">
               {(businessOptions[lang] || []).map((opt) => (
                 <button
                   key={opt.value}
@@ -658,15 +658,17 @@ export default function Home() {
                     setStepError((prev) => ({ ...prev, business: undefined }))
                     if (opt.value !== 'other') setStep('channel')
                   }}
-                  className={`w-full text-left px-6 py-5 rounded-2xl min-h-[68px] border-2 transition-all duration-300 group ${
+                  className={`w-full text-left px-7 py-6 rounded-[24px] min-h-[72px] border transition-all duration-300 group ${
                     form.businessType === opt.value
-                      ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 shadow-[0_8px_24px_rgba(99,102,241,0.3)] scale-[1.02]'
-                      : 'border-white/10 bg-white/5 hover:border-indigo-300/60 hover:bg-indigo-500/10 hover:scale-[1.02] hover:shadow-lg'
+                      ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-100/80 via-purple-100/70 to-pink-100/60 shadow-[0_12px_40px_rgba(99,102,241,0.25)] scale-105'
+                      : 'border-slate-300/60 bg-white/80 hover:border-indigo-400/60 hover:bg-white hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-white">{opt.label}</span>
-                    {form.businessType === opt.value ? '✅' : '→'}
+                    <span className="font-black text-slate-900">{opt.label}</span>
+                    <span className={`text-xl transition-transform group-hover:scale-110 ${form.businessType === opt.value ? '' : 'group-hover:translate-x-1'}`}>
+                      {form.businessType === opt.value ? '✅' : '→'}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -677,17 +679,17 @@ export default function Home() {
                 value={form.businessCustom}
                 onChange={(e) => setField('businessCustom', e.target.value)}
                 placeholder={t.otherBusinessPlaceholder}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
+                className="w-full px-6 py-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-slate-300/60 text-slate-900 text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/20 transition-all shadow-xl"
               />
             ) : null}
-            {stepError.business ? <p className="text-sm text-red-300">{stepError.business}</p> : null}
+            {stepError.business ? <p className="text-sm text-red-600 font-bold">{stepError.business}</p> : null}
           </div>
         )
       case 'channel':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">{t.channelQuestion}</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-tight tracking-tight">{t.channelQuestion}</h2>
+            <div className="grid sm:grid-cols-2 gap-5">
               {(channelOptions[lang] || []).map((opt) => (
                 <button
                   key={opt.value}
@@ -705,15 +707,17 @@ export default function Home() {
                     })
                     setStepError((prev) => ({ ...prev, channel: undefined }))
                   }}
-                  className={`w-full text-left px-6 py-5 rounded-2xl min-h-[68px] border-2 transition-all duration-300 group ${
+                  className={`w-full text-left px-7 py-6 rounded-[24px] min-h-[72px] border transition-all duration-300 group ${
                     form.channels.includes(opt.value)
-                      ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 shadow-[0_8px_24px_rgba(99,102,241,0.3)] scale-[1.02]'
-                      : 'border-white/10 bg-white/5 hover:border-indigo-300/60 hover:bg-indigo-500/10 hover:scale-[1.02] hover:shadow-lg'
+                      ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-100/80 via-purple-100/70 to-pink-100/60 shadow-[0_12px_40px_rgba(99,102,241,0.25)] scale-105'
+                      : 'border-slate-300/60 bg-white/80 hover:border-indigo-400/60 hover:bg-white hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-white">{opt.label}</span>
-                    {form.channels.includes(opt.value) ? '✅' : '→'}
+                    <span className="font-black text-slate-900">{opt.label}</span>
+                    <span className={`text-xl transition-transform group-hover:scale-110 ${form.channels.includes(opt.value) ? '' : 'group-hover:translate-x-1'}`}>
+                      {form.channels.includes(opt.value) ? '✅' : '→'}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -724,17 +728,17 @@ export default function Home() {
                 value={form.channelCustom}
                 onChange={(e) => setField('channelCustom', e.target.value)}
                 placeholder={t.otherChannelPlaceholder}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
+                className="w-full px-6 py-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-slate-300/60 text-slate-900 text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/20 transition-all shadow-xl"
               />
             ) : null}
-            {stepError.channel ? <p className="text-sm text-red-300">{stepError.channel}</p> : null}
+            {stepError.channel ? <p className="text-sm text-red-600 font-bold">{stepError.channel}</p> : null}
           </div>
         )
       case 'pain':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">{t.painQuestion}</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-tight tracking-tight">{t.painQuestion}</h2>
+            <div className="grid sm:grid-cols-2 gap-5">
               {(painOptions[lang] || []).map((opt) => (
                 <button
                   key={opt.value}
@@ -752,15 +756,17 @@ export default function Home() {
                     })
                     setStepError((prev) => ({ ...prev, pain: undefined }))
                   }}
-                  className={`w-full text-left px-6 py-5 rounded-2xl min-h-[68px] border-2 transition-all duration-300 group ${
+                  className={`w-full text-left px-7 py-6 rounded-[24px] min-h-[72px] border transition-all duration-300 group ${
                     form.pains.includes(opt.value)
-                      ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 shadow-[0_8px_24px_rgba(99,102,241,0.3)] scale-[1.02]'
-                      : 'border-white/10 bg-white/5 hover:border-indigo-300/60 hover:bg-indigo-500/10 hover:scale-[1.02] hover:shadow-lg'
+                      ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-100/80 via-purple-100/70 to-pink-100/60 shadow-[0_12px_40px_rgba(99,102,241,0.25)] scale-105'
+                      : 'border-slate-300/60 bg-white/80 hover:border-indigo-400/60 hover:bg-white hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-white">{opt.label}</span>
-                    {form.pains.includes(opt.value) ? '✅' : '→'}
+                    <span className="font-black text-slate-900">{opt.label}</span>
+                    <span className={`text-xl transition-transform group-hover:scale-110 ${form.pains.includes(opt.value) ? '' : 'group-hover:translate-x-1'}`}>
+                      {form.pains.includes(opt.value) ? '✅' : '→'}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -771,41 +777,41 @@ export default function Home() {
                 value={form.painCustom}
                 onChange={(e) => setField('painCustom', e.target.value)}
                 placeholder={t.otherPainPlaceholder}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
+                className="w-full px-6 py-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-slate-300/60 text-slate-900 text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/20 transition-all shadow-xl"
               />
             ) : null}
-            {stepError.pain ? <p className="text-sm text-red-300">{stepError.pain}</p> : null}
+            {stepError.pain ? <p className="text-sm text-red-600 font-bold">{stepError.pain}</p> : null}
           </div>
         )
       case 'ai':
         return (
           <div className="flex flex-col h-[85vh] sm:h-[600px] space-y-0">
-            <div className="flex-shrink-0 pb-5 border-b-2 border-white/10">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-shrink-0 pb-6 border-b border-slate-200/60">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
                 <div className="min-w-0">
-                  <h2 className="text-xl sm:text-3xl font-black text-white leading-tight">{t.aiTitle}</h2>
-                  <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">{t.aiDesc}</p>
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-tight tracking-tight">{t.aiTitle}</h2>
+                  <p className="text-slate-700 text-sm sm:text-base mt-3 leading-relaxed font-medium">{t.aiDesc}</p>
                 </div>
-                <label className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-200 select-none hover:bg-white/10 transition-all cursor-pointer">
+                <label className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/80 backdrop-blur-xl border border-slate-300/60 text-sm text-slate-800 select-none hover:bg-white hover:border-indigo-400/60 transition-all duration-300 cursor-pointer shadow-lg">
                   <input
                     type="checkbox"
                     checked={fastMode}
                     onChange={(e) => setFastMode(e.target.checked)}
                     className="h-4 w-4 accent-indigo-500 cursor-pointer"
                   />
-                  <span className="font-semibold">Швидкий режим ⚡</span>
+                  <span className="font-bold">Швидкий режим ⚡</span>
                 </label>
               </div>
             </div>
 
             {form.history.length === 0 && (
-              <div className="flex-shrink-0 w-full py-4 overflow-x-auto sm:overflow-visible scrollbar-none">
-                <div className="flex gap-2 flex-nowrap sm:flex-wrap min-w-min sm:min-w-0">
+              <div className="flex-shrink-0 w-full py-5 overflow-x-auto sm:overflow-visible scrollbar-thin scrollbar-thumb-indigo-400/30 scrollbar-track-transparent">
+                <div className="flex gap-3 flex-nowrap sm:flex-wrap min-w-min sm:min-w-0">
                   {aiSuggestions[lang].map((s) => (
                     <button
                       key={s}
                       onClick={() => setField('question', s)}
-                      className="px-4 py-2.5 rounded-full bg-gradient-to-r from-white/10 to-white/5 border border-white/20 text-sm font-semibold text-slate-200 hover:border-indigo-400/60 hover:bg-gradient-to-r hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-white hover:scale-105 active:scale-95 transition-all whitespace-nowrap flex-shrink-0 shadow-lg"
+                      className="px-5 py-3 rounded-full bg-white/80 backdrop-blur-xl border border-slate-300/60 text-sm font-bold text-slate-800 hover:border-indigo-400/70 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/15 hover:scale-105 active:scale-95 transition-all duration-300 whitespace-nowrap flex-shrink-0 shadow-lg"
                     >
                       {s}
                     </button>
@@ -816,45 +822,47 @@ export default function Home() {
 
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto space-y-4 py-3 px-2 scrollbar-thin scrollbar-thumb-indigo-500/30 scrollbar-track-transparent hover:scrollbar-thumb-indigo-500/50"
+              className="flex-1 overflow-y-auto space-y-5 py-4 px-3 scrollbar-thin scrollbar-thumb-indigo-400/40 scrollbar-track-transparent hover:scrollbar-thumb-indigo-500/60"
             >
               {form.history.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-center space-y-2 px-6">
-                    <div className="text-4xl">💬</div>
-                    <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">{t.aiEmpty}</p>
+                  <div className="text-center space-y-4 px-8">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-100/80 to-purple-100/70 border border-indigo-300/40 shadow-xl shadow-indigo-500/10">
+                      <div className="text-5xl">💬</div>
+                    </div>
+                    <p className="text-slate-600 text-sm leading-relaxed max-w-xs mx-auto font-medium">{t.aiEmpty}</p>
                   </div>
                 </div>
               ) : (
                 form.history.map((msg, idx) => (
-                  <div key={idx} className={`flex animate-in fade-in slide-in-from-bottom-3 duration-500 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div key={idx} className={`flex animate-in fade-in slide-in-from-bottom-4 duration-700 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-3xl px-5 py-3.5 shadow-xl transition-all hover:shadow-2xl ${
+                      className={`max-w-[85%] sm:max-w-[70%] md:max-w-[65%] rounded-[28px] px-6 py-5 shadow-2xl transition-all duration-300 ${
                         msg.role === 'user'
-                          ? 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 text-white shadow-indigo-500/30'
-                          : 'bg-gradient-to-br from-slate-800/90 to-slate-700/80 border border-white/10 text-slate-50 backdrop-blur-md shadow-slate-950/50'
+                          ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:scale-[1.02]'
+                          : 'bg-white/90 backdrop-blur-2xl border border-slate-200/60 text-slate-900 shadow-slate-900/10 hover:shadow-slate-900/15 hover:bg-white hover:scale-[1.02]'
                       }`}
                     >
                       {msg.role === 'assistant' && (
-                        <div className="flex items-center gap-2 mb-2.5 pb-2 border-b border-white/10">
-                          <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]"></div>
-                          <span className="text-[10px] uppercase text-indigo-300 font-black tracking-[0.15em]">{t.aiSystem}</span>
+                        <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-slate-200/60">
+                          <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse shadow-[0_0_12px_rgba(99,102,241,0.7)]"></div>
+                          <span className="text-[10px] uppercase text-indigo-600 font-black tracking-[0.2em]">{t.aiSystem}</span>
                         </div>
                       )}
-                      <p className="text-[15px] leading-[1.6] whitespace-pre-wrap break-words">{msg.content}</p>
+                      <p className="text-[15px] leading-[1.65] whitespace-pre-wrap break-words font-medium">{msg.content}</p>
                     </div>
                   </div>
                 ))
               )}
 
               {aiLoading && (
-                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-3 duration-400">
-                  <div className="max-w-[85%] rounded-3xl px-6 py-4 bg-gradient-to-br from-slate-800/90 to-slate-700/80 border border-white/10 backdrop-blur-md shadow-2xl shadow-slate-950/50">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]" style={{ animationDelay: '0.4s' }}></div>
-                      <span className="text-slate-200 text-sm font-semibold ml-1">{t.aiThinking}</span>
+                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="max-w-[80%] rounded-[28px] px-7 py-5 bg-white/90 backdrop-blur-2xl border border-slate-200/60 shadow-2xl shadow-slate-900/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse shadow-[0_0_16px_rgba(99,102,241,0.8)]"></div>
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse shadow-[0_0_16px_rgba(168,85,247,0.8)]" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 animate-pulse shadow-[0_0_16px_rgba(236,72,153,0.8)]" style={{ animationDelay: '0.4s' }}></div>
+                      <span className="text-slate-700 text-sm font-bold ml-1">{t.aiThinking}</span>
                     </div>
                   </div>
                 </div>
@@ -862,37 +870,37 @@ export default function Home() {
             </div>
 
             {form.history.length > 0 && form.history.length < AI_MAX_HISTORY ? (
-              <div className="flex-shrink-0 flex items-center justify-center gap-3 py-3">
-                <div className="flex items-center gap-1.5">
+              <div className="flex-shrink-0 flex items-center justify-center gap-4 py-4">
+                <div className="flex items-center gap-2">
                   {Array.from({ length: AI_MAX_QUESTIONS }).map((_, i) => (
                     <div
                       key={i}
-                      className={`rounded-full transition-all duration-300 ${
+                      className={`rounded-full transition-all duration-500 ${
                         i < Math.floor(form.history.length / 2)
-                          ? 'w-2.5 h-2.5 bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.8)]'
-                          : 'w-2 h-2 bg-white/20'
+                          ? 'w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_16px_rgba(99,102,241,0.7)]'
+                          : 'w-2 h-2 bg-slate-300/60'
                       }`}
                     />
                   ))}
                 </div>
-                <span className="text-xs text-slate-400 font-bold tracking-wider">
+                <span className="text-xs text-slate-600 font-black tracking-wide">
                   {Math.floor(form.history.length / 2)}/{AI_MAX_QUESTIONS}
                 </span>
               </div>
             ) : null}
 
             {aiError ? (
-              <div className="flex-shrink-0 px-4 py-2 rounded-xl bg-red-500/10 border border-red-400/30 text-red-300 text-sm font-medium">
+              <div className="flex-shrink-0 px-6 py-4 rounded-2xl bg-red-100/80 backdrop-blur-xl border border-red-400/60 text-red-700 text-sm font-bold shadow-lg">
                 {aiError}
               </div>
             ) : null}
             
             {aiProvider === 'fallback' ? (
-              <div className="flex-shrink-0 text-[11px] text-amber-200/90 py-1">{t.debugFallback}</div>
+              <div className="flex-shrink-0 text-xs text-amber-800 bg-amber-100/80 backdrop-blur-xl border border-amber-400/50 rounded-2xl px-5 py-3 font-bold shadow-lg">{t.debugFallback}</div>
             ) : null}
 
-            <div className="flex-shrink-0 pt-5 space-y-3.5 border-t border-white/5">
-              <div className="flex gap-3 items-end">
+            <div className="flex-shrink-0 pt-6 space-y-4 border-t border-slate-200/60">
+              <div className="flex gap-4 items-end">
                 <div className="flex-1 relative">
                   <textarea
                     value={form.question}
@@ -910,34 +918,34 @@ export default function Home() {
                     }
                     disabled={form.history.length >= AI_MAX_HISTORY || aiLoading}
                     rows={1}
-                    className="w-full resize-none rounded-2xl bg-slate-900/80 border-2 border-white/15 pl-5 pr-14 py-4 text-white text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all backdrop-blur-md shadow-lg shadow-slate-950/50 caret-indigo-300"
+                    className="w-full resize-none rounded-[24px] bg-white/90 backdrop-blur-2xl border border-slate-300/60 pl-6 pr-16 py-5 text-slate-900 text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-slate-900/5 caret-indigo-500"
                   />
                 </div>
                 <button
                   onClick={handleAskAI}
                   disabled={aiLoading || form.history.length >= AI_MAX_HISTORY || !form.question.trim()}
-                  className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 text-white font-black text-2xl flex items-center justify-center hover:from-indigo-600 hover:to-purple-700 hover:scale-110 hover:rotate-3 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:rotate-0 shadow-[0_10px_30px_rgba(99,102,241,0.5)] hover:shadow-[0_15px_40px_rgba(99,102,241,0.7)] transition-all duration-300"
+                  className="flex-shrink-0 w-16 h-16 rounded-[24px] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-black text-2xl flex items-center justify-center hover:from-indigo-600 hover:to-pink-600 hover:scale-110 hover:shadow-[0_20px_60px_rgba(99,102,241,0.5)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_16px_48px_rgba(99,102,241,0.4)] transition-all duration-300"
                 >
-                  {aiLoading ? '…' : '→'}
+                  {aiLoading ? '⏳' : '→'}
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-4">
                 {form.history.length === 0 && (
                   <button
                     onClick={handleAskAI}
                     disabled={aiLoading}
-                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 px-7 py-4 text-base font-black text-white hover:from-indigo-600 hover:to-purple-700 hover:scale-105 hover:shadow-[0_15px_40px_rgba(99,102,241,0.6)] active:scale-95 transition-all shadow-[0_10px_30px_rgba(99,102,241,0.5)] disabled:opacity-50 disabled:hover:scale-100"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-9 py-5 text-base font-black text-white hover:shadow-[0_20px_64px_rgba(99,102,241,0.5)] hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_16px_48px_rgba(99,102,241,0.4)] disabled:opacity-40 disabled:hover:scale-100"
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2.5">
                       {aiLoading ? t.aiShowLoading : t.aiShow}
-                      {!aiLoading && <span className="text-lg group-hover:translate-x-1 transition-transform">✨</span>}
+                      {!aiLoading && <span className="text-xl group-hover:scale-110 transition-transform">✨</span>}
                     </span>
                   </button>
                 )}
                 <button
                   onClick={() => setStep('contact')}
-                  className="inline-flex items-center justify-center rounded-2xl px-7 py-4 text-base font-bold text-white bg-white/10 border-2 border-white/20 hover:bg-white/15 hover:border-indigo-400/50 hover:scale-105 active:scale-95 transition-all backdrop-blur-md shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center justify-center rounded-2xl px-9 py-5 text-base font-black text-slate-900 bg-white/90 border border-slate-300/60 hover:bg-white hover:border-indigo-400/60 hover:scale-110 active:scale-95 transition-all duration-300 backdrop-blur-xl shadow-lg hover:shadow-xl hover:shadow-indigo-500/10"
                 >
                   {t.aiContinue} →
                 </button>
@@ -947,9 +955,9 @@ export default function Home() {
         )
       case 'contact':
         return (
-          <div className="space-y-8">
-            <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">{t.contactTitle}</h2>
-            <div className="rounded-2xl border-2 border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] p-6 space-y-3 text-sm text-slate-200 backdrop-blur-sm shadow-inner">
+          <div className="space-y-10">
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight tracking-tight">{t.contactTitle}</h2>
+            <div className="rounded-[28px] border border-slate-200/60 bg-white/80 backdrop-blur-xl p-7 space-y-4 text-sm text-slate-800 shadow-xl">
               <div className="flex justify-between">
                 <span className="text-slate-400">{t.fieldBusiness}</span>
                 <span>{businessResolved || '—'}</span>
@@ -967,50 +975,50 @@ export default function Home() {
                 <span className="text-right">{form.aiRecommendation || form.aiAnswer || '—'}</span>
               </div>
             </div>
-            <div className="grid gap-5">
+            <div className="grid gap-6">
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setField('name', e.target.value)}
                 placeholder={t.namePlaceholder}
-                className="w-full px-5 py-4 rounded-2xl bg-slate-900/60 border-2 border-white/15 text-white text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 transition-all backdrop-blur-sm shadow-lg"
+                className="w-full px-6 py-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-slate-300/60 text-slate-900 text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/20 transition-all duration-300 shadow-xl"
               />
               <input
                 type="text"
                 value={form.contact}
                 onChange={(e) => setField('contact', e.target.value)}
                 placeholder={t.contactPlaceholder}
-                className="w-full px-5 py-4 rounded-2xl bg-slate-900/60 border-2 border-white/15 text-white text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 transition-all backdrop-blur-sm shadow-lg"
+                className="w-full px-6 py-5 rounded-[24px] bg-white/90 backdrop-blur-xl border border-slate-300/60 text-slate-900 text-[16px] placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/20 transition-all duration-300 shadow-xl"
               />
             </div>
-            {submitError ? <p className="text-red-300 text-sm font-semibold">{submitError}</p> : null}
-            <div className="flex flex-wrap gap-4 items-center pt-2">
+            {submitError ? <p className="text-red-600 text-sm font-bold">{submitError}</p> : null}
+            <div className="flex flex-wrap gap-5 items-center pt-4">
               <button
                 onClick={handleSubmit}
                 disabled={submitLoading}
-                className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 px-8 py-4 text-base font-black text-white hover:from-emerald-600 hover:to-teal-700 hover:scale-105 active:scale-95 transition-all shadow-[0_12px_32px_rgba(16,185,129,0.4)] hover:shadow-[0_16px_48px_rgba(16,185,129,0.6)] disabled:opacity-50 disabled:hover:scale-100"
+                className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-10 py-6 text-lg font-black text-white hover:shadow-[0_24px_64px_rgba(16,185,129,0.4)] hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_16px_48px_rgba(16,185,129,0.35)] disabled:opacity-40 disabled:hover:scale-100"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-3">
                   {submitLoading ? t.sending : t.send}
-                  {!submitLoading && <span className="group-hover:translate-x-1 transition-transform">✓</span>}
+                  {!submitLoading && <span className="text-xl group-hover:scale-110 transition-transform">✓</span>}
                 </span>
               </button>
-              <button onClick={prev} className="text-slate-400 hover:text-white text-sm font-semibold transition-colors">
+              <button onClick={prev} className="text-slate-600 hover:text-slate-900 text-sm font-bold transition-colors">
                 {t.back}
               </button>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">{t.contactNote}</p>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">{t.contactNote}</p>
           </div>
         )
       case 'done':
         return (
-          <div className="space-y-8 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-2 border-emerald-400/40 shadow-[0_0_32px_rgba(16,185,129,0.4)] mx-auto">
-              <div className="text-5xl">✅</div>
+          <div className="space-y-10 text-center">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-[32px] bg-gradient-to-br from-emerald-100/80 via-teal-100/70 to-cyan-100/60 border border-emerald-400/50 shadow-[0_16px_64px_rgba(16,185,129,0.3)] mx-auto">
+              <div className="text-6xl">✅</div>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t.doneTitle}</h2>
-            <p className="text-lg text-slate-300 leading-relaxed max-w-md mx-auto">{t.doneDesc}</p>
-            <div className="rounded-2xl border-2 border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] p-6 text-left space-y-3.5 text-sm text-slate-200 backdrop-blur-sm shadow-inner">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight">{t.doneTitle}</h2>
+            <p className="text-lg sm:text-xl text-slate-700 leading-relaxed max-w-lg mx-auto font-medium">{t.doneDesc}</p>
+            <div className="rounded-[28px] border border-slate-200/60 bg-white/80 backdrop-blur-xl p-7 text-left space-y-4 text-sm text-slate-800 shadow-xl">
               <div className="flex justify-between">
                 <span className="text-slate-400">{t.fieldBusiness}</span>
                 <span>{businessResolved || '—'}</span>
@@ -1052,7 +1060,7 @@ export default function Home() {
                 })
                 setStep('intro')
               }}
-              className="inline-flex items-center justify-center rounded-2xl px-7 py-3.5 text-base font-bold text-white bg-white/10 border-2 border-white/15 hover:bg-white/15 hover:border-indigo-400/50 hover:scale-105 active:scale-95 transition-all backdrop-blur-md shadow-lg"
+              className="inline-flex items-center justify-center rounded-2xl px-9 py-5 text-base font-black text-slate-900 bg-white/90 border border-slate-300/60 hover:bg-white hover:border-indigo-400/60 hover:scale-110 active:scale-95 transition-all duration-300 backdrop-blur-xl shadow-lg"
             >
               {t.another}
             </button>
@@ -1064,42 +1072,45 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen bg-slate-950 text-white overflow-x-hidden overscroll-x-none">
+    <main className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900 overflow-x-hidden overscroll-x-none">
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-x-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-slate-950 to-purple-900/30"></div>
-        <div className="absolute -top-10 -right-10 w-80 h-80 bg-purple-500/20 blur-3xl rounded-full"></div>
-        <div className="absolute bottom-0 left-10 w-72 h-72 bg-indigo-500/20 blur-3xl rounded-full"></div>
+        <div className="absolute inset-0 opacity-[0.35]" style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, rgb(148 163 184 / 0.12) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
+        <div className="absolute top-0 right-0 w-[900px] h-[900px] bg-gradient-to-bl from-indigo-200/50 via-purple-200/35 to-pink-200/25 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-to-tr from-blue-200/40 via-cyan-200/25 to-transparent rounded-full blur-3xl"></div>
       </div>
 
-      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-slate-950/90 border-b-2 border-white/10 shadow-xl shadow-slate-950/50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3 group">
+      <header className="sticky top-0 z-40 backdrop-blur-3xl bg-white/85 border-b border-slate-200/60 shadow-xl shadow-slate-900/5">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-4 group cursor-pointer">
             <div className="relative">
-              <img src="/logo.png" alt="TemoWeb" className="h-10 w-10 rounded-xl border-2 border-white/15 shadow-lg group-hover:scale-110 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <img src="/logo.png" alt="TemoWeb" className="h-12 w-12 rounded-2xl border border-slate-200 shadow-lg shadow-indigo-500/10 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-indigo-500/20 transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.15em] text-indigo-200 font-black">TemoWeb</p>
-              <p className="text-[11px] text-slate-400 font-medium">{t.headerSubtitle}</p>
+              <p className="text-sm uppercase tracking-[0.25em] text-slate-900 font-black">TemoWeb</p>
+              <p className="text-[11px] text-slate-600 font-semibold">{t.headerSubtitle}</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-sm text-emerald-200 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+          <div className="hidden sm:flex items-center gap-3 px-5 py-2.5 rounded-full bg-emerald-100/80 border border-emerald-400/40 text-sm text-emerald-800 font-bold shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.7)]"></span>
             {t.headerStatus}
           </div>
         </div>
       </header>
 
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+      <section className="max-w-4xl mx-auto px-6 sm:px-8 py-10 sm:py-14 space-y-8">
         <div className="flex flex-wrap gap-3">
           {(['ua', 'ru', 'cz'] as Lang[]).map((lng) => (
             <button
               key={lng}
               onClick={() => setLang(lng)}
-              className={`rounded-full px-5 py-2.5 text-sm font-black border-2 transition-all duration-300 ${
+              className={`rounded-full px-6 py-3 text-sm font-black border transition-all duration-300 ${
                 lang === lng
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-indigo-400/60 shadow-[0_8px_24px_rgba(99,102,241,0.5)] scale-110'
-                  : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 hover:scale-105'
+                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-transparent shadow-[0_12px_32px_rgba(99,102,241,0.4)] scale-110'
+                  : 'bg-white/70 border-slate-300/60 text-slate-700 hover:bg-white hover:border-indigo-400/60 hover:scale-105 shadow-sm'
               }`}
             >
               {lng.toUpperCase()}
@@ -1107,40 +1118,40 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex-1 h-2.5 rounded-full bg-slate-800/60 overflow-hidden border border-white/10 shadow-inner">
+        <div className="mb-10 flex items-center gap-5">
+          <div className="flex-1 h-3 rounded-full bg-slate-200/60 overflow-hidden border border-slate-300/50 shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-purple-500 shadow-[0_0_16px_rgba(99,102,241,0.6)] transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_24px_rgba(99,102,241,0.6)] transition-all duration-700 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <span className="text-sm text-slate-300 font-semibold tabular-nums">
+          <span className="text-sm text-slate-700 font-black tabular-nums tracking-tight">
             {currentIndex + 1}/{steps.length}
           </span>
         </div>
 
-        <div className="flex gap-2.5 flex-wrap mb-8">
+        <div className="flex gap-3 flex-wrap mb-10">
           {steps.map((s, idx) => {
             const isActive = idx === currentIndex
             const isDone = idx < currentIndex
             return (
               <div
                 key={s.id}
-                className={`flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-bold border-2 transition-all duration-300 ${
+                className={`flex items-center gap-3 px-5 py-3 rounded-full text-xs font-black border transition-all duration-300 ${
                   isActive
-                    ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-500/15 to-purple-500/15 text-indigo-50 shadow-[0_0_20px_rgba(99,102,241,0.4)] scale-105'
+                    ? 'border-indigo-400/70 bg-gradient-to-r from-indigo-100/90 via-purple-100/80 to-pink-100/70 text-indigo-900 shadow-[0_8px_32px_rgba(99,102,241,0.3)] scale-110'
                     : isDone
-                    ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-50 shadow-[0_0_12px_rgba(52,211,153,0.3)]'
-                    : 'border-white/10 bg-white/5 text-slate-500'
+                    ? 'border-emerald-400/70 bg-emerald-100/80 text-emerald-900 shadow-[0_6px_24px_rgba(16,185,129,0.25)]'
+                    : 'border-slate-300/60 bg-white/70 text-slate-600 shadow-sm'
                 }`}
               >
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black transition-all ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black transition-all ${
                     isActive
-                      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.6)]'
+                      ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-indigo-500/40'
                       : isDone
-                      ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_0_10px_rgba(52,211,153,0.5)]'
-                      : 'bg-slate-800/60 text-slate-500 border border-white/10'
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30'
+                      : 'bg-slate-200/70 text-slate-600 border border-slate-300/50'
                   }`}
                 >
                   {isDone ? '✓' : idx + 1}
@@ -1151,23 +1162,24 @@ export default function Home() {
           })}
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl border-2 border-white/10 bg-gradient-to-br from-slate-800/50 via-slate-800/40 to-slate-900/50 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.5)] hover:border-white/15 transition-all duration-300">
-          <div className="absolute -top-16 -left-16 w-56 h-56 bg-indigo-500/15 blur-[80px]"></div>
-          <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-purple-500/15 blur-[80px]"></div>
-          <div className={`relative ${step === 'ai' ? 'p-5 sm:p-8' : 'p-7 sm:p-10'}`}>
+        <div className="relative overflow-hidden rounded-[40px] border border-white/40 bg-white/70 backdrop-blur-3xl shadow-[0_32px_120px_rgba(0,0,0,0.08)] hover:shadow-[0_48px_160px_rgba(99,102,241,0.15)] transition-all duration-700">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 via-white/40 to-purple-50/50 -z-10" />
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-gradient-to-br from-indigo-200/30 to-purple-200/20 blur-3xl"></div>
+          <div className="absolute -bottom-28 -right-28 w-80 h-80 bg-gradient-to-tl from-pink-200/25 via-purple-200/20 to-transparent blur-3xl"></div>
+          <div className={`relative ${step === 'ai' ? 'p-6 sm:p-10' : 'p-8 sm:p-12'}`}>
             <div className={`mb-4 text-sm text-slate-300 ${step === 'ai' ? 'hidden sm:block' : ''}`}>
               {t.step} {currentIndex + 1} {t.of} {steps.length}
             </div>
             {renderStepContent()}
             {step !== 'intro' && step !== 'contact' && step !== 'done' ? (
-              <div className="mt-8 flex justify-between items-center">
-                <button onClick={prev} className="text-slate-300 hover:text-white text-sm">
+              <div className="mt-10 flex justify-between items-center">
+                <button onClick={prev} className="text-slate-600 hover:text-slate-900 text-sm font-bold transition-colors">
                   {t.back}
                 </button>
                 {step !== 'ai' && (
                   <button
                     onClick={next}
-                    className="inline-flex items-center justify-center rounded-full bg-white/10 border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition-all"
+                    className="inline-flex items-center justify-center rounded-2xl bg-white/90 border border-slate-300/60 px-7 py-3.5 text-sm font-black text-slate-900 hover:bg-white hover:border-indigo-400/60 hover:scale-105 active:scale-95 transition-all shadow-lg"
                   >
                     {t.next}
                   </button>

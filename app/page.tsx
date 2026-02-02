@@ -341,28 +341,26 @@ export default function Home() {
         .animate-float { animation: float 8s ease-in-out infinite; }
       `}</style>
 
-      <main className="relative min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white overflow-x-hidden">
+      <main className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-slate-900 overflow-x-hidden">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          {/* Hex grid pattern */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l25.98 15v30L30 60 4.02 45V15z' fill='none' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E")`,
-            backgroundSize: '60px 52px'
+          <div className="absolute inset-0 opacity-[0.4]" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgb(148 163 184 / 0.15) 1px, transparent 0)`,
+            backgroundSize: '48px 48px'
           }} />
-          {/* Subtle glow */}
-          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-indigo-200/40 via-purple-200/30 to-pink-200/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-gradient-to-tr from-blue-200/30 via-cyan-200/20 to-transparent rounded-full blur-3xl" />
           </div>
 
-        <header className="sticky top-0 z-50 backdrop-blur-2xl bg-[#0f172a]/90 border-b-2 border-white/10 shadow-2xl shadow-black/30">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 group">
+        <header className="sticky top-0 z-50 backdrop-blur-2xl bg-white/80 border-b border-slate-200/60 shadow-lg shadow-slate-900/5">
+          <div className="max-w-6xl mx-auto px-6 sm:px-8 py-5 flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4 group cursor-pointer">
               <div className="relative">
-                <img src="/logo.png" alt="TemoWeb" className="h-11 w-11 rounded-xl border-2 border-white/15 shadow-xl group-hover:scale-110 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-blue-500/30 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <img src="/logo.png" alt="TemoWeb" className="h-12 w-12 rounded-2xl border border-slate-200 shadow-lg shadow-indigo-500/10 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-indigo-500/20 transition-all duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
             <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-white font-black">TemoWeb</p>
-                <p className="text-xs text-white/60 font-medium">{t.headerSubtitle}</p>
+                <p className="text-sm uppercase tracking-[0.25em] text-slate-900 font-black">TemoWeb</p>
+                <p className="text-[11px] text-slate-600 font-semibold">{t.headerSubtitle}</p>
             </div>
             </div>
             <div className="flex items-center gap-2.5">
@@ -370,10 +368,10 @@ export default function Home() {
             <button
                   key={lng}
                   onClick={() => setLang(lng)}
-                  className={`px-4 py-2 rounded-full text-xs font-black border-2 transition-all duration-300 ${
+                  className={`px-5 py-2.5 rounded-full text-xs font-black border transition-all duration-300 ${
                     lang === lng
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 border-blue-400/60 text-white shadow-[0_8px_24px_rgba(59,130,246,0.5)] scale-110'
-                      : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 hover:scale-105'
+                      ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 border-transparent text-white shadow-lg shadow-indigo-500/40 scale-110'
+                      : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white hover:border-indigo-300 hover:scale-105 shadow-sm'
                   }`}
                 >
                   {lng.toUpperCase()}
@@ -389,49 +387,49 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[0] = el }}
             className={`relative transition-all duration-1000 ${visibleSections.has(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 sm:p-12 lg:p-16 shadow-[0_20px_80px_rgba(0,0,0,0.3)] overflow-hidden group hover:border-white/20 hover:shadow-[0_25px_100px_rgba(0,0,0,0.4)] transition-all duration-500">
-              {/* TWO-COLUMN LAYOUT: text left, image right */}
-              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                {/* LEFT: TEXT CONTENT */}
-                <div className="space-y-6 lg:pr-8">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/30 px-4 py-2 text-xs text-blue-400 uppercase tracking-[0.2em] font-bold">
+            <div className="relative bg-white/70 backdrop-blur-3xl border border-white/40 rounded-[40px] p-10 sm:p-14 lg:p-20 shadow-[0_32px_120px_rgba(0,0,0,0.08)] overflow-hidden group hover:shadow-[0_40px_160px_rgba(99,102,241,0.12)] transition-all duration-700">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 via-white/40 to-purple-50/50 -z-10" />
+              
+              <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div className="space-y-8 lg:pr-10">
+                  <span className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-300/40 px-5 py-2.5 text-xs text-indigo-700 uppercase tracking-[0.25em] font-black shadow-sm">
                     ⚡ {t.badge}
                 </span>
-                  <div className="rounded-3xl border-2 border-yellow-400/50 bg-gradient-to-br from-yellow-400/15 via-yellow-400/10 to-yellow-500/5 p-6 sm:p-8 shadow-[0_20px_60px_rgba(250,204,21,0.2)] hover:shadow-[0_25px_80px_rgba(250,204,21,0.3)] transition-all duration-300 hover:border-yellow-400/60">
+                  <div className="rounded-3xl border border-amber-300/50 bg-gradient-to-br from-amber-50/90 via-yellow-50/80 to-orange-50/70 backdrop-blur-xl p-7 sm:p-9 shadow-[0_24px_80px_rgba(245,158,11,0.15)] hover:shadow-[0_32px_120px_rgba(245,158,11,0.25)] transition-all duration-500 hover:border-amber-400/60">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                      <div className="flex-1 min-w-0 space-y-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/20 border border-yellow-400/40">
-                          <div className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300">⚡ {t.pilotBadge}</div>
+                      <div className="flex-1 min-w-0 space-y-5">
+                        <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-r from-amber-400/20 to-orange-400/20 border border-amber-400/50 shadow-sm">
+                          <div className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-800">⚡ {t.pilotBadge}</div>
                         </div>
-                        <div className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight">{t.pilotTitle}</div>
-                        <div className="text-sm sm:text-base text-white/90 leading-relaxed">{t.pilotSubtitle}</div>
-                        <div className="inline-block px-4 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30">
-                          <div className="text-sm sm:text-base font-black text-yellow-100">{t.pilotPriceLine}</div>
+                        <div className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 leading-[1.15] tracking-tight">{t.pilotTitle}</div>
+                        <div className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">{t.pilotSubtitle}</div>
+                        <div className="inline-block px-5 py-3 rounded-2xl bg-white/80 border border-amber-300/50 shadow-lg shadow-amber-500/10 backdrop-blur-sm">
+                          <div className="text-sm sm:text-base font-black text-amber-900">{t.pilotPriceLine}</div>
                         </div>
                       </div>
                       <a
                         href="/flow?src=pilot"
-                        className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-8 py-4 font-black text-base hover:from-yellow-300 hover:to-yellow-400 hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_12px_32px_rgba(250,204,21,0.4)] hover:shadow-[0_16px_48px_rgba(250,204,21,0.6)] whitespace-nowrap"
+                        className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 text-slate-900 px-9 py-5 font-black text-base hover:from-amber-300 hover:via-yellow-300 hover:to-orange-300 hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_16px_48px_rgba(245,158,11,0.35)] hover:shadow-[0_24px_64px_rgba(245,158,11,0.5)] whitespace-nowrap"
                       >
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-2.5">
                           {t.pilotCta}
-                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                          <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
                         </span>
                       </a>
                     </div>
                   </div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.05] text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] text-slate-900 tracking-tight">
                 {t.heroTitle}
               </h1>
-                  <p className="text-base sm:text-lg lg:text-xl text-white/70 leading-relaxed">
+                  <p className="text-lg sm:text-xl lg:text-2xl text-slate-700 leading-relaxed font-medium">
                     {t.heroSubtitle}
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-4 pt-6">
+                  <div className="flex flex-col sm:flex-row gap-5 pt-8">
                     <a
                       href={ctaHref}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.4)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.6)] hover:scale-105 active:scale-95 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-11 py-6 text-lg font-black text-white shadow-[0_24px_64px_rgba(99,102,241,0.35)] transition-all duration-300 hover:shadow-[0_32px_96px_rgba(99,102,241,0.5)] hover:scale-110 active:scale-95 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative flex items-center gap-3">
                         <span>{t.ctaPrimary}</span>
                         <span className="text-2xl group-hover/btn:translate-x-1 transition-transform">→</span>
@@ -439,24 +437,22 @@ export default function Home() {
                 </a>
                 <a
                       href={ctaHref}
-                      className="inline-flex items-center justify-center rounded-2xl px-8 py-5 text-lg font-bold text-white bg-white/5 border-2 border-white/15 hover:bg-white/10 hover:border-indigo-400/50 transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm"
+                      className="inline-flex items-center justify-center rounded-2xl px-9 py-6 text-lg font-bold text-slate-900 bg-white/80 border border-slate-300/60 hover:bg-white hover:border-indigo-400 transition-all duration-300 hover:scale-110 active:scale-95 backdrop-blur-xl shadow-lg shadow-slate-900/5"
                 >
                       {t.ctaSecondary}
                 </a>
               </div>
-                  <p className="text-sm text-white/60 font-medium leading-relaxed">{t.ctaNote}</p>
+                  <p className="text-sm text-slate-600 font-semibold leading-relaxed">{t.ctaNote}</p>
             </div>
             
-                {/* RIGHT: SORA IMAGE */}
-                <div className="relative aspect-[4/3] lg:aspect-square rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.4)] group-hover:shadow-[0_30px_80px_rgba(59,130,246,0.3)] transition-all order-first lg:order-last">
+                <div className="relative aspect-[4/3] lg:aspect-square rounded-[32px] overflow-hidden border border-slate-200/60 shadow-[0_32px_120px_rgba(0,0,0,0.12)] group-hover:shadow-[0_48px_160px_rgba(99,102,241,0.2)] transition-all duration-700 order-first lg:order-last">
                   <img 
                     src="/hero-ai.jpg" 
                     alt="AI automation system" 
-                    className="w-full h-full object-cover opacity-90"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/60 to-transparent" />
-                  {/* Glow behind image */}
-                  <div className="absolute -inset-4 bg-blue-500/20 blur-2xl opacity-50 -z-10" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/40 via-purple-900/10 to-transparent" />
+                  <div className="absolute -inset-8 bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-pink-500/10 blur-3xl opacity-60 -z-10" />
                     </div>
                       </div>
                     </div>
@@ -467,15 +463,14 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[1] = el }}
             className={`transition-all duration-1000 delay-150 ${visibleSections.has(1) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 sm:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.08)] overflow-hidden hover:shadow-[0_25px_100px_rgba(0,0,0,0.12)] transition-all duration-500">
-              {/* ИЗОБРАЖЕНИЕ №2 (21:9) — Sora flow background */}
-              <div className="absolute inset-0 opacity-20">
+            <div className="relative bg-white/60 backdrop-blur-3xl border border-white/40 rounded-[40px] p-10 sm:p-14 shadow-[0_32px_120px_rgba(0,0,0,0.08)] overflow-hidden hover:shadow-[0_48px_160px_rgba(99,102,241,0.15)] transition-all duration-700">
+              <div className="absolute inset-0 opacity-30">
                 <img src="/flow-bg.jpg" alt="" className="w-full h-full object-cover" />
                         </div>
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/60 via-[#1e293b]/80 to-[#0f172a]/90" />
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/80 via-white/70 to-purple-50/80" />
               
-              <div className="relative space-y-10">
-                <h2 className="text-3xl sm:text-5xl font-black text-white text-center">
+              <div className="relative space-y-12">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 text-center tracking-tight">
                   {t.howTitle}
             </h2>
                 <div className="grid gap-8 sm:grid-cols-3">
@@ -485,29 +480,29 @@ export default function Home() {
                     return (
                       <div
                         key={idx}
-                        className="group relative bg-white/5 backdrop-blur border border-white/10 rounded-3xl p-8 shadow-md transition-all duration-500 hover:border-white/20 hover:shadow-[0_20px_60px_rgba(59,130,246,0.2)] hover:-translate-y-2 overflow-hidden"
+                        className="group relative bg-white/70 backdrop-blur-2xl border border-slate-200/60 rounded-[32px] p-9 shadow-[0_16px_48px_rgba(0,0,0,0.06)] transition-all duration-500 hover:border-indigo-300/60 hover:shadow-[0_24px_80px_rgba(99,102,241,0.15)] hover:-translate-y-3 overflow-hidden"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative space-y-4 text-center">
-                          <div className="mx-auto w-16 h-16 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Icon className="w-8 h-8 text-white/80" strokeWidth={1.5} />
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 via-purple-50/40 to-pink-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative space-y-5 text-center">
+                          <div className="mx-auto w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-300/40 flex items-center justify-center group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-indigo-500/20 transition-all duration-300">
+                            <Icon className="w-9 h-9 text-indigo-600" strokeWidth={2} />
           </div>
-                          <div className="w-12 mx-auto h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-                          <h3 className="text-xl font-black text-white leading-snug">{step.title}</h3>
-                          <p className="text-sm text-white/70 leading-relaxed">{step.text}</p>
+                          <div className="w-16 mx-auto h-1 rounded-full bg-gradient-to-r from-transparent via-indigo-300/50 to-transparent" />
+                          <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">{step.title}</h3>
+                          <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">{step.text}</p>
                 </div>
               </div>
                     )
                   })}
             </div>
-                <div className="text-center pt-8">
+                <div className="text-center pt-10">
                   <a
                     href={ctaHref}
-                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.5)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.7)] hover:scale-110 active:scale-95"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-11 py-6 text-lg font-black text-white shadow-[0_24px_64px_rgba(99,102,241,0.35)] transition-all duration-300 hover:shadow-[0_32px_96px_rgba(99,102,241,0.5)] hover:scale-110 active:scale-95"
                   >
                     <span className="flex items-center gap-3">
                       {t.howCta}
-                      <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
+                      <span className="text-2xl group-hover:translate-x-1 transition-transform">→</span>
                     </span>
                   </a>
                 </div>
@@ -520,40 +515,42 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[2] = el }}
             className={`transition-all duration-1000 delay-300 ${visibleSections.has(2) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 sm:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.3)] overflow-hidden hover:border-white/20 hover:shadow-[0_25px_100px_rgba(0,0,0,0.4)] transition-all duration-500">
-              <div className="space-y-10">
-                <h2 className="text-3xl sm:text-5xl font-black text-white text-center">
+            <div className="relative bg-white/60 backdrop-blur-3xl border border-white/40 rounded-[40px] p-10 sm:p-14 shadow-[0_32px_120px_rgba(0,0,0,0.08)] overflow-hidden hover:shadow-[0_48px_160px_rgba(99,102,241,0.12)] transition-all duration-700">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-50/60 via-white/40 to-pink-50/50 -z-10" />
+              
+              <div className="space-y-12">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 text-center tracking-tight">
                   {t.whoTitle}
             </h2>
-                <div className="grid sm:grid-cols-2 gap-5">
+                <div className="grid sm:grid-cols-2 gap-6">
                   {t.whoList.map((item, idx) => {
                     const whoIcons = [Scissors, Car, GraduationCap, Wrench, Briefcase]
                     const Icon = whoIcons[idx] || Briefcase
                     return (
                       <div
                         key={idx}
-                        className="group relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl px-6 py-5 shadow-sm transition-all duration-300 hover:border-white/20 hover:bg-blue-500/10 hover:shadow-md hover:-translate-y-1 overflow-hidden"
+                        className="group relative bg-white/70 backdrop-blur-xl border border-slate-200/60 rounded-3xl px-7 py-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-indigo-300/60 hover:bg-white/90 hover:shadow-[0_20px_64px_rgba(99,102,241,0.12)] hover:-translate-y-2 overflow-hidden"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <span className="relative flex items-center gap-4">
-                          <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Icon className="w-5 h-5 text-white/80" strokeWidth={1.5} />
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <span className="relative flex items-center gap-5">
+                          <span className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-300/40 flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-indigo-500/20 transition-all duration-300">
+                            <Icon className="w-7 h-7 text-indigo-600" strokeWidth={2} />
                           </span>
-                          <span className="text-base font-bold text-white/80 group-hover:text-white transition-colors">{item}</span>
+                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover:text-indigo-900 transition-colors">{item}</span>
                         </span>
               </div>
                     )
                   })}
               </div>
-                <p className="text-lg text-white/70 leading-relaxed text-center italic">{t.whoText}</p>
-                <div className="text-center pt-8">
+                <p className="text-lg sm:text-xl text-slate-700 leading-relaxed text-center italic font-medium max-w-2xl mx-auto">{t.whoText}</p>
+                <div className="text-center pt-10">
                   <a
                     href={ctaHref}
-                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.5)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.7)] hover:scale-110 active:scale-95"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-11 py-6 text-lg font-black text-white shadow-[0_24px_64px_rgba(99,102,241,0.35)] transition-all duration-300 hover:shadow-[0_32px_96px_rgba(99,102,241,0.5)] hover:scale-110 active:scale-95"
                   >
                     <span className="flex items-center gap-3">
                       {t.whoCta}
-                      <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
+                      <span className="text-2xl group-hover:translate-x-1 transition-transform">→</span>
                     </span>
                   </a>
               </div>
@@ -566,98 +563,103 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[3] = el }}
             className={`transition-all duration-1000 delay-[450ms] ${visibleSections.has(3) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 sm:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.08)] overflow-hidden hover:shadow-[0_25px_100px_rgba(0,0,0,0.12)] transition-all duration-500">
-              <div className="space-y-10">
-                <h2 className="text-3xl sm:text-5xl font-black text-white text-center">
+            <div className="relative bg-white/60 backdrop-blur-3xl border border-white/40 rounded-[40px] p-10 sm:p-14 shadow-[0_32px_120px_rgba(0,0,0,0.08)] overflow-hidden hover:shadow-[0_48px_160px_rgba(16,185,129,0.12)] transition-all duration-700">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/60 via-white/40 to-teal-50/50 -z-10" />
+              
+              <div className="space-y-12">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 text-center tracking-tight">
                   {t.resultTitle}
             </h2>
-                <div className="grid sm:grid-cols-2 gap-6">
+                <div className="grid sm:grid-cols-2 gap-7">
                   {t.resultBullets.map((item, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-2 border-emerald-400/30 rounded-3xl p-7 shadow-xl transition-all duration-300 hover:border-emerald-400/60 hover:bg-emerald-500/15 hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02]"
+                      className="group relative bg-white/70 backdrop-blur-xl border border-emerald-300/40 rounded-[28px] p-8 shadow-[0_16px_48px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-emerald-400/60 hover:bg-white/90 hover:shadow-[0_24px_80px_rgba(16,185,129,0.15)] hover:-translate-y-3"
                     >
-                      <div className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-teal-50/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[28px]" />
+                      <div className="relative flex items-start gap-5">
+                        <span className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-500/30 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-emerald-500/40 transition-all duration-300">
                           ✓
                         </span>
-                        <div className="flex-1 space-y-2">
-                          <p className="text-base sm:text-lg font-black text-white leading-tight">{item.text}</p>
+                        <div className="flex-1 space-y-2.5">
+                          <p className="text-base sm:text-lg font-black text-slate-900 leading-tight tracking-tight">{item.text}</p>
                           {item.stat && (
-                            <p className="text-sm text-emerald-300 font-bold">{item.stat}</p>
+                            <p className="text-sm sm:text-base text-emerald-700 font-bold">{item.stat}</p>
                           )}
           </div>
               </div>
               </div>
                   ))}
               </div>
-                <div className="text-center pt-8">
+                <div className="text-center pt-10">
                   <a
                     href={ctaHref}
-                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.5)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.7)] hover:scale-110 active:scale-95"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-11 py-6 text-lg font-black text-white shadow-[0_24px_64px_rgba(99,102,241,0.35)] transition-all duration-300 hover:shadow-[0_32px_96px_rgba(99,102,241,0.5)] hover:scale-110 active:scale-95"
                   >
                     <span className="flex items-center gap-3">
                       {t.resultCta}
-                      <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
+                      <span className="text-2xl group-hover:translate-x-1 transition-transform">→</span>
                     </span>
                   </a>
               </div>
 
                 {/* PILOT (2 months) */}
-                <div className="pt-10 border-t border-white/10">
-                  <div className="relative rounded-[32px] border-2 border-yellow-400/40 bg-gradient-to-br from-yellow-400/10 via-white/5 to-white/5 p-8 sm:p-10 shadow-[0_30px_110px_rgba(250,204,21,0.10)] overflow-hidden">
-                    <div className="absolute -top-24 -right-24 w-72 h-72 bg-yellow-400/15 blur-3xl rounded-full" />
-                    <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-500/10 blur-3xl rounded-full" />
-                    <div className="relative space-y-6">
-                      <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="space-y-2 max-w-3xl">
-                          <div className="inline-flex items-center gap-2 rounded-full bg-yellow-400/15 border border-yellow-400/40 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-yellow-200">
-                            🚀 {t.pilotBadge}
+                <div className="pt-12 border-t border-slate-200/60">
+                  <div className="relative rounded-[40px] border border-amber-300/50 bg-gradient-to-br from-amber-50/90 via-yellow-50/80 to-orange-50/70 backdrop-blur-2xl p-10 sm:p-12 shadow-[0_32px_120px_rgba(245,158,11,0.12)] overflow-hidden hover:shadow-[0_48px_160px_rgba(245,158,11,0.2)] transition-all duration-700">
+                    <div className="absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br from-amber-200/30 to-orange-200/20 blur-3xl rounded-full" />
+                    <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-gradient-to-tr from-yellow-200/25 to-transparent blur-3xl rounded-full" />
+                    <div className="relative space-y-8">
+                      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                        <div className="flex-1 space-y-5 max-w-3xl">
+                          <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-r from-amber-400/20 to-orange-400/20 border border-amber-400/50 shadow-sm">
+                            <div className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-800">🚀 {t.pilotBadge}</div>
                           </div>
-                          <h3 className="text-2xl sm:text-4xl font-black text-white">{t.pilotTitle}</h3>
-                          <p className="text-sm sm:text-base text-white/80 leading-relaxed">{t.pilotSubtitle}</p>
-                          <div className="flex flex-wrap gap-2 pt-2 text-xs font-black">
-                            <span className="inline-flex items-center gap-2 rounded-full bg-black/25 border border-white/10 px-3 py-1 text-white/85">
+                          <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight">{t.pilotTitle}</h3>
+                          <p className="text-base sm:text-lg text-slate-700 leading-relaxed font-medium">{t.pilotSubtitle}</p>
+                          <div className="flex flex-wrap gap-3 pt-2 text-xs font-black">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 border border-amber-300/50 px-4 py-2 text-slate-800 shadow-sm">
                               ⚡ {lang === 'ua' ? 'Запуск' : lang === 'ru' ? 'Запуск' : 'Launch'}: {pilotLaunch}
                             </span>
-                            <span className="inline-flex items-center gap-2 rounded-full bg-black/25 border border-white/10 px-3 py-1 text-white/85">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 border border-amber-300/50 px-4 py-2 text-slate-800 shadow-sm">
                               💶 {fmtEur(pilot.setupEur)} + {fmtEur(pilot.supportEurPerMonth)}/{profileLang === 'ua' ? 'міс' : 'мес'} × {pilot.durationMonths}
                             </span>
-                            <span className="inline-flex items-center gap-2 rounded-full bg-black/25 border border-white/10 px-3 py-1 text-white/85">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 border border-amber-300/50 px-4 py-2 text-slate-800 shadow-sm">
                               📡 {lang === 'ua' ? 'Канали' : lang === 'ru' ? 'Каналы' : 'Channels'}: 1–{pilot.includedChannelsUpTo}
                             </span>
                           </div>
-                          <p className="text-sm font-bold text-yellow-200 pt-2">{t.pilotPriceLine}</p>
                         </div>
                         <a
                           href="/flow?src=pilot"
-                          className="inline-flex items-center justify-center rounded-2xl bg-yellow-400 text-slate-900 px-8 py-4 text-base sm:text-lg font-black hover:bg-yellow-300 transition-colors shadow-[0_18px_60px_rgba(250,204,21,0.25)]"
+                          className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 text-slate-900 px-9 py-5 text-lg font-black hover:from-amber-300 hover:via-yellow-300 hover:to-orange-300 hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_20px_64px_rgba(245,158,11,0.4)] hover:shadow-[0_28px_88px_rgba(245,158,11,0.6)] whitespace-nowrap"
                         >
-                          {t.pilotCta} →
+                          <span className="flex items-center gap-2.5">
+                            {t.pilotCta}
+                            <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                          </span>
                         </a>
                       </div>
 
-                      <div className="grid lg:grid-cols-2 gap-6">
-                        <div className="rounded-3xl bg-black/20 border border-white/10 p-6">
-                          <p className="text-xs font-black text-white/70 uppercase tracking-[0.2em]">{t.pilotIncludesTitle}</p>
-                          <ul className="mt-4 space-y-2">
+                      <div className="grid lg:grid-cols-2 gap-7">
+                        <div className="rounded-[28px] bg-white/70 backdrop-blur-xl border border-emerald-300/40 p-7 shadow-lg">
+                          <p className="text-xs font-black text-emerald-900 uppercase tracking-[0.25em]">{t.pilotIncludesTitle}</p>
+                          <ul className="mt-5 space-y-3">
                             {pilotIncluded.slice(0, 7).map((x) => (
-                              <li key={x} className="flex items-start gap-2 text-sm text-white/85 leading-relaxed">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                              <li key={x} className="flex items-start gap-3 text-sm text-slate-800 leading-relaxed font-medium">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={2.5} />
                                 <span>{x}</span>
                               </li>
                             ))}
                           </ul>
-                          <div className="pt-4 text-xs text-white/65">
+                          <div className="pt-5 text-xs text-slate-700 font-semibold border-t border-slate-200/60 mt-5">
                             {lang === 'ua' ? 'Канали на вибір:' : lang === 'ru' ? 'Каналы на выбор:' : 'Choose channels:'} {pilotChannels.join(' / ')}
                           </div>
                         </div>
-                        <div className="rounded-3xl bg-black/20 border border-white/10 p-6">
-                          <p className="text-xs font-black text-white/70 uppercase tracking-[0.2em]">{t.pilotNotIncludesTitle}</p>
-                          <ul className="mt-4 space-y-2">
+                        <div className="rounded-[28px] bg-white/70 backdrop-blur-xl border border-slate-300/40 p-7 shadow-lg">
+                          <p className="text-xs font-black text-slate-700 uppercase tracking-[0.25em]">{t.pilotNotIncludesTitle}</p>
+                          <ul className="mt-5 space-y-3">
                             {pilotNotIncluded.slice(0, 6).map((x) => (
-                              <li key={x} className="flex items-start gap-2 text-sm text-white/80 leading-relaxed">
-                                <span className="mt-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-white/70 flex-shrink-0">
+                              <li key={x} className="flex items-start gap-3 text-sm text-slate-700 leading-relaxed font-medium">
+                                <span className="mt-0.5 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/60 border border-slate-300/50 text-[11px] font-black text-slate-600 flex-shrink-0">
                                   !
                                 </span>
                                 <span>{x}</span>
@@ -671,10 +673,10 @@ export default function Home() {
                 </div>
 
                 {/* PRICING */}
-                <div className="pt-10 border-t border-white/10 space-y-10">
-                  <div className="space-y-3 text-center">
-                    <h3 className="text-2xl sm:text-4xl font-black text-white">{t.pricingTitle}</h3>
-                    <p className="text-sm sm:text-base text-white/70 max-w-3xl mx-auto">{t.pricingSubtitle}</p>
+                <div className="pt-12 border-t border-slate-200/60 space-y-12">
+                  <div className="space-y-4 text-center">
+                    <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">{t.pricingTitle}</h3>
+                    <p className="text-base sm:text-lg text-slate-700 max-w-3xl mx-auto font-medium leading-relaxed">{t.pricingSubtitle}</p>
                   </div>
 
                   {/* Packages (premium cards) */}
@@ -684,90 +686,90 @@ export default function Home() {
                       return (
                         <div
                           key={p.key}
-                          className={`relative rounded-[32px] border-2 p-8 backdrop-blur-2xl shadow-[0_30px_90px_rgba(0,0,0,0.4)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_40px_120px_rgba(0,0,0,0.5)] snap-start flex-shrink-0 w-[88%] sm:w-[70%] md:w-auto ${
+                          className={`relative rounded-[36px] border p-9 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.08)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_36px_120px_rgba(99,102,241,0.15)] snap-start flex-shrink-0 w-[88%] sm:w-[70%] md:w-auto ${
                             isPopular
-                              ? 'border-blue-400/70 bg-gradient-to-br from-blue-500/15 via-indigo-500/10 to-white/5 scale-105'
-                              : 'border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] hover:border-white/20 hover:scale-105'
+                              ? 'border-indigo-400/60 bg-gradient-to-br from-indigo-50/90 via-purple-50/80 to-white/70 scale-110 shadow-[0_32px_120px_rgba(99,102,241,0.2)]'
+                              : 'border-slate-200/60 bg-white/70 hover:border-indigo-300/50 hover:scale-105'
                           }`}
                         >
-                          <div className="space-y-5">
+                          <div className="space-y-6">
                             {isPopular && (
-                              <div className="inline-flex items-center gap-2 rounded-full bg-blue-500 px-4 py-2 text-xs font-black text-white shadow-lg shadow-blue-500/30">
+                              <div className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-5 py-2 text-xs font-black text-white shadow-lg shadow-indigo-500/30">
                                 <Sparkles className="w-4 h-4" /> {profileLang === 'ua' ? 'Найпопулярніший' : 'Самый популярный'}
                               </div>
                             )}
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start justify-between gap-4">
                               <div>
-                                <p className="text-xs font-bold text-white/60 uppercase tracking-[0.2em]">{p.name}</p>
-                                <p className="text-lg font-black text-white leading-snug pt-1">{p.title}</p>
+                                <p className="text-xs font-black text-slate-600 uppercase tracking-[0.25em]">{p.name}</p>
+                                <p className="text-xl font-black text-slate-900 leading-tight pt-2">{p.title}</p>
                               </div>
-                              <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-white/70" />
+                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-300/40 flex items-center justify-center shadow-sm">
+                                <Shield className="w-7 h-7 text-indigo-600" strokeWidth={2} />
                               </div>
                             </div>
 
-                            <div className="rounded-2xl bg-black/20 border border-white/10 p-4 space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/60">{profileLang === 'ua' ? 'Впровадження' : 'Внедрение'}</span>
-                                <span className="text-white font-black text-lg sm:text-xl drop-shadow-[0_10px_30px_rgba(255,255,255,0.25)]">
+                            <div className="rounded-[24px] bg-white/80 backdrop-blur-xl border border-slate-200/60 p-6 space-y-3 shadow-lg">
+                              <div className="flex items-center justify-between text-sm sm:text-base">
+                                <span className="text-slate-600 font-semibold">{profileLang === 'ua' ? 'Впровадження' : 'Внедрение'}</span>
+                                <span className="text-slate-900 font-black text-xl sm:text-2xl">
                                   {p.setup}
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/60">{profileLang === 'ua' ? 'Підтримка' : 'Поддержка'}</span>
-                                <span className="text-white font-black text-lg sm:text-xl drop-shadow-[0_10px_30px_rgba(255,255,255,0.25)]">
+                              <div className="flex items-center justify-between text-sm sm:text-base">
+                                <span className="text-slate-600 font-semibold">{profileLang === 'ua' ? 'Підтримка' : 'Поддержка'}</span>
+                                <span className="text-slate-900 font-black text-xl sm:text-2xl">
                                   {p.support}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/60">{profileLang === 'ua' ? 'Мін. строк' : 'Мин. срок'}</span>
-                                <span className="text-white font-black">
+                                <span className="text-slate-600 font-semibold">{profileLang === 'ua' ? 'Мін. строк' : 'Мин. срок'}</span>
+                                <span className="text-slate-900 font-black">
                                   {p.minMonths} {profileLang === 'ua' ? 'міс' : 'мес'}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/60">{profileLang === 'ua' ? 'Канали' : 'Каналы'}</span>
-                                <span className="text-white font-black">≤ {p.channels}</span>
+                                <span className="text-slate-600 font-semibold">{profileLang === 'ua' ? 'Канали' : 'Каналы'}</span>
+                                <span className="text-slate-900 font-black">≤ {p.channels}</span>
                               </div>
                             </div>
 
-                            <div className="space-y-3">
-                              <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{profileLang === 'ua' ? 'Що ви отримуєте' : 'Что вы получаете'}</p>
-                              <ul className="space-y-2">
+                            <div className="space-y-4">
+                              <p className="text-xs font-black text-slate-600 uppercase tracking-[0.25em]">{profileLang === 'ua' ? 'Що ви отримуєте' : 'Что вы получаете'}</p>
+                              <ul className="space-y-3">
                                 {p.what.slice(0, 6).map((x) => (
-                                  <li key={x} className="flex items-start gap-2 text-sm text-white/80 leading-relaxed">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                                  <li key={x} className="flex items-start gap-3 text-sm text-slate-800 leading-relaxed font-medium">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={2.5} />
                                     <span>{x}</span>
                                   </li>
                                 ))}
                               </ul>
                             </div>
 
-                            <div className="space-y-3 pt-1">
-                              <p className="text-xs font-bold text-white/60 uppercase tracking-[0.18em]">{profileLang === 'ua' ? 'Підтримка включає' : 'Поддержка включает'}</p>
-                              <ul className="space-y-2">
+                            <div className="space-y-4 pt-2">
+                              <p className="text-xs font-black text-slate-600 uppercase tracking-[0.25em]">{profileLang === 'ua' ? 'Підтримка включає' : 'Поддержка включает'}</p>
+                              <ul className="space-y-3">
                                 {p.supportInc.slice(0, 4).map((x) => (
-                                  <li key={x} className="flex items-start gap-2 text-sm text-white/75 leading-relaxed">
-                                    <Users className="w-4 h-4 text-white/50 mt-0.5 flex-shrink-0" />
+                                  <li key={x} className="flex items-start gap-3 text-sm text-slate-700 leading-relaxed font-medium">
+                                    <Users className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
                                     <span>{x}</span>
                                   </li>
                                 ))}
                               </ul>
                             </div>
 
-                            <p className="text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">{p.fits}</p>
+                            <p className="text-sm text-slate-700 leading-relaxed border-t border-slate-200/60 pt-5 font-medium">{p.fits}</p>
 
                             <a
                               href={ctaHref}
-                              className={`group inline-flex w-full items-center justify-center rounded-2xl px-6 py-4 text-base font-black text-white transition-all duration-300 hover:scale-105 active:scale-95 ${
+                              className={`group inline-flex w-full items-center justify-center rounded-2xl px-6 py-5 text-base font-black transition-all duration-300 hover:scale-105 active:scale-95 ${
                                 isPopular
-                                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-[0_20px_60px_rgba(59,130,246,0.5)] hover:shadow-[0_25px_80px_rgba(59,130,246,0.7)]'
-                                  : 'bg-white/10 border-2 border-white/15 hover:bg-white/15 hover:border-indigo-400/50 shadow-lg hover:shadow-xl'
+                                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-[0_24px_64px_rgba(99,102,241,0.4)] hover:shadow-[0_32px_96px_rgba(99,102,241,0.6)]'
+                                  : 'bg-white/90 border-2 border-slate-300/60 text-slate-900 hover:bg-white hover:border-indigo-400/60 shadow-lg hover:shadow-xl hover:shadow-indigo-500/10'
                               }`}
                             >
-                              <span className="flex items-center gap-2">
+                              <span className="flex items-center gap-2.5">
                                 {profileLang === 'ua' ? 'Обговорити під мій бізнес' : 'Обсудить под мой бизнес'}
-                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
                               </span>
                             </a>
                           </div>
@@ -779,32 +781,32 @@ export default function Home() {
                   {/* Add-ons */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.addonsTitle}</h4>
-                    <div className="lg:grid lg:gap-6 lg:grid-cols-2 flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
+                    <div className="lg:grid lg:gap-7 lg:grid-cols-2 flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
                       {addons.map((a) => (
                         <div
                           key={a.key}
-                          className="rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] border-2 border-white/10 p-7 hover:border-white/20 hover:bg-white/10 hover:scale-105 hover:shadow-2xl transition-all duration-300 snap-start flex-shrink-0 w-[88%] sm:w-[70%] lg:w-auto"
+                          className="rounded-[32px] bg-white/70 backdrop-blur-xl border border-slate-200/60 p-8 hover:border-indigo-300/50 hover:bg-white/90 hover:scale-105 hover:shadow-[0_24px_80px_rgba(99,102,241,0.12)] transition-all duration-300 snap-start flex-shrink-0 w-[88%] sm:w-[70%] lg:w-auto"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-2">
-                              <p className="text-base font-black text-white">{a.title}</p>
-                              <div className="flex flex-wrap gap-2 text-xs font-bold">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-white/80">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-3">
+                              <p className="text-lg font-black text-slate-900">{a.title}</p>
+                              <div className="flex flex-wrap gap-2.5 text-xs font-bold">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100/80 border border-indigo-300/40 px-4 py-1.5 text-indigo-800">
                                   <Plus className="w-3.5 h-3.5" /> {a.setup} {profileLang === 'ua' ? 'підключення' : 'подключение'}
                                 </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-white/80">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100/80 border border-purple-300/40 px-4 py-1.5 text-purple-800">
                                   <Calendar className="w-3.5 h-3.5" /> {a.monthly}
                                 </span>
                               </div>
                             </div>
-                            <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                              <Zap className="w-5 h-5 text-white/70" />
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-300/40 flex items-center justify-center shadow-sm">
+                              <Zap className="w-7 h-7 text-indigo-600" strokeWidth={2} />
                             </div>
                           </div>
-                          <ul className="pt-4 space-y-2">
+                          <ul className="pt-5 space-y-3">
                             {a.includes.slice(0, 4).map((x) => (
-                              <li key={x} className="flex items-start gap-2 text-sm text-white/75 leading-relaxed">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5 flex-shrink-0" />
+                              <li key={x} className="flex items-start gap-3 text-sm text-slate-800 leading-relaxed font-medium">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={2.5} />
                                 <span>{x}</span>
                               </li>
                             ))}
@@ -815,9 +817,9 @@ export default function Home() {
                   </div>
 
                   {/* FAQ (accordion) */}
-                  <div className="space-y-8">
-                    <h4 className="text-2xl sm:text-4xl font-black text-white text-center">{t.faqTitle}</h4>
-                    <div className="grid gap-4">
+                  <div className="space-y-10">
+                    <h4 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 text-center tracking-tight">{t.faqTitle}</h4>
+                    <div className="grid gap-5">
                       {faq.map((x, idx) => {
                         const open = faqOpen === idx
                         return (
@@ -825,15 +827,15 @@ export default function Home() {
                             key={x.q}
                             type="button"
                             onClick={() => setFaqOpen((p) => (p === idx ? null : idx))}
-                            className={`text-left rounded-3xl bg-white/5 border-2 border-white/10 px-7 py-6 hover:border-white/20 hover:bg-white/10 hover:shadow-xl transition-all duration-300 ${open ? 'border-indigo-400/50 bg-indigo-500/5 shadow-[0_15px_50px_rgba(99,102,241,0.2)]' : ''}`}
+                            className={`text-left rounded-[32px] bg-white/70 backdrop-blur-xl border px-8 py-7 hover:bg-white/90 hover:shadow-2xl transition-all duration-300 ${open ? 'border-indigo-400/60 bg-white/90 shadow-[0_24px_80px_rgba(99,102,241,0.2)]' : 'border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:border-indigo-300/50'}`}
                           >
-                            <div className="flex items-start justify-between gap-5">
+                            <div className="flex items-start justify-between gap-6">
                               <div className="flex-1 space-y-1">
-                                <p className="text-base sm:text-lg font-black text-white leading-tight">{x.q}</p>
-                                {open && <p className="text-sm sm:text-base text-white/80 leading-relaxed pt-3">{x.a}</p>}
+                                <p className="text-lg sm:text-xl font-black text-slate-900 leading-tight">{x.q}</p>
+                                {open && <p className="text-sm sm:text-base text-slate-700 leading-relaxed pt-4 font-medium">{x.a}</p>}
                               </div>
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${open ? 'bg-indigo-500/20 border-2 border-indigo-400/40' : 'bg-white/5 border border-white/10'}`}>
-                                <Plus className={`w-5 h-5 text-white/80 transition-transform duration-300 ${open ? 'rotate-45' : ''}`} />
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${open ? 'bg-gradient-to-br from-indigo-500/15 via-purple-500/15 to-pink-500/10 border border-indigo-400/50 shadow-lg shadow-indigo-500/20' : 'bg-slate-100/80 border border-slate-300/60'}`}>
+                                <Plus className={`w-6 h-6 transition-all duration-300 ${open ? 'rotate-45 text-indigo-600' : 'text-slate-600'}`} strokeWidth={2.5} />
                               </div>
                             </div>
                           </button>
@@ -851,73 +853,73 @@ export default function Home() {
             ref={(el) => { sectionsRef.current[4] = el }}
             className={`transition-all duration-1000 delay-[600ms] ${visibleSections.has(4) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <div className="relative bg-white/5 backdrop-blur-xl border-2 border-white/10 rounded-[32px] p-10 sm:p-14 shadow-[0_30px_100px_rgba(99,102,241,0.12)] overflow-hidden hover:border-white/20 hover:shadow-[0_35px_120px_rgba(99,102,241,0.18)] transition-all duration-500">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl" />
-              <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-blue-400/10 rounded-full blur-3xl" />
+            <div className="relative bg-white/60 backdrop-blur-3xl border border-white/40 rounded-[40px] p-12 sm:p-16 shadow-[0_32px_120px_rgba(99,102,241,0.12)] overflow-hidden hover:shadow-[0_48px_160px_rgba(99,102,241,0.18)] transition-all duration-700">
+              <div className="absolute -top-28 -right-28 w-80 h-80 bg-gradient-to-br from-indigo-200/40 via-purple-200/30 to-pink-200/20 rounded-full blur-3xl" />
+              <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-gradient-to-tr from-blue-200/30 to-transparent rounded-full blur-3xl" />
               
-              <div className="relative space-y-10">
-                <div className="space-y-4 text-center">
-                  <h2 className="text-3xl sm:text-5xl font-black text-white">
+              <div className="relative space-y-12">
+                <div className="space-y-5 text-center">
+                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight">
                     {t.formTitle}
                   </h2>
-                  <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">{t.formSubtitle}</p>
+                  <p className="text-lg sm:text-xl text-slate-700 leading-relaxed max-w-2xl mx-auto font-medium">{t.formSubtitle}</p>
           </div>
-                <form className="space-y-7 max-w-2xl mx-auto" onSubmit={onSubmit}>
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <div className="space-y-2.5">
-                      <label className="text-sm text-white/80 font-bold">{t.name}</label>
+                <form className="space-y-8 max-w-2xl mx-auto" onSubmit={onSubmit}>
+                  <div className="grid sm:grid-cols-2 gap-7">
+                    <div className="space-y-3">
+                      <label className="text-sm text-slate-700 font-bold">{t.name}</label>
                       <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-white/15 px-6 py-4 text-white text-base placeholder:text-white/40 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/25 transition-all shadow-lg"
+                        className="w-full rounded-2xl bg-white/80 backdrop-blur-xl border border-slate-300/60 px-6 py-5 text-slate-900 text-base placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-lg"
                         placeholder={t.name}
                         type="text"
                       />
             </div>
-                    <div className="space-y-2.5">
-                      <label className="text-sm text-white/80 font-bold">{t.contact}</label>
+                    <div className="space-y-3">
+                      <label className="text-sm text-slate-700 font-bold">{t.contact}</label>
                       <input
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-white/15 px-6 py-4 text-white text-base placeholder:text-white/40 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/25 transition-all shadow-lg"
+                        className="w-full rounded-2xl bg-white/80 backdrop-blur-xl border border-slate-300/60 px-6 py-5 text-slate-900 text-base placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-lg"
                         placeholder={t.contact}
                         type="text"
                         required
                       />
             </div>
             </div>
-                  <div className="space-y-2.5">
-                    <label className="text-sm text-white/80 font-bold">{t.comment}</label>
+                  <div className="space-y-3">
+                    <label className="text-sm text-slate-700 font-bold">{t.comment}</label>
                     <textarea
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
-                      className="w-full rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-white/15 px-6 py-4 text-white text-base placeholder:text-white/40 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/25 transition-all shadow-lg resize-none"
+                      className="w-full rounded-2xl bg-white/80 backdrop-blur-xl border border-slate-300/60 px-6 py-5 text-slate-900 text-base placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-lg resize-none"
                       placeholder={t.comment}
                     />
             </div>
 
-                  {error && <p className="text-sm text-red-300 font-bold flex items-center justify-center gap-2 py-2">⚠️ {error}</p>}
-                  {success && <p className="text-sm text-emerald-300 font-bold flex items-center justify-center gap-2 py-2">✓ {success}</p>}
+                  {error && <p className="text-sm text-red-600 font-bold flex items-center justify-center gap-2 py-2">⚠️ {error}</p>}
+                  {success && <p className="text-sm text-emerald-700 font-bold flex items-center justify-center gap-2 py-2">✓ {success}</p>}
 
-                  <div className="text-center pt-6">
+                  <div className="text-center pt-8">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 px-12 py-6 text-xl font-black text-white shadow-[0_25px_70px_rgba(99,102,241,0.6)] transition-all duration-300 hover:shadow-[0_30px_90px_rgba(99,102,241,0.8)] hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-14 py-7 text-xl font-black text-white shadow-[0_28px_88px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_36px_120px_rgba(99,102,241,0.7)] hover:scale-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                       <span className="relative flex items-center gap-3">
-                        {loading ? '...' : t.formCta}
-                        {!loading && <span className="group-hover/btn:translate-x-1 transition-transform">✨</span>}
+                        {loading ? '⏳' : t.formCta}
+                        {!loading && <span className="text-2xl group-hover/btn:translate-x-1 transition-transform">✨</span>}
                       </span>
                     </button>
                       </div>
                 </form>
                 
-                <div className="flex items-center justify-center gap-3 pt-6 text-center">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.6)]" />
-                  <p className="text-sm text-white/70 italic max-w-2xl">{t.trustBadge}</p>
+                <div className="flex items-center justify-center gap-3 pt-8 text-center">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_16px_rgba(16,185,129,0.6)]" />
+                  <p className="text-sm text-slate-700 italic max-w-2xl font-medium">{t.trustBadge}</p>
                   </div>
                       </div>
                     </div>
