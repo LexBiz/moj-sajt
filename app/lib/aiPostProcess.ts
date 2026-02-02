@@ -445,6 +445,17 @@ export function clip(text: string, max = 1000) {
 function trimToMaxLines(text: string, maxLines: number) {
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
   if (lines.length <= maxLines) return text.trim()
+
+  // Preserve the entire "next steps" block at the end, if present.
+  const idx = lines.findIndex((l) => NEXT_STEPS_HEADER_RE.test(l))
+  if (idx >= 0) {
+    const block = lines.slice(idx)
+    const leadBudget = maxLines - block.length
+    if (leadBudget <= 0) return block.slice(-maxLines).join('\n').trim()
+    const lead = lines.slice(0, Math.min(idx, leadBudget))
+    return [...lead, ...block].join('\n').trim()
+  }
+
   const sliced = lines.slice(0, maxLines).join('\n')
   return `${sliced}…`
 }
