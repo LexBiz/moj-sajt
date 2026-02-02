@@ -8,6 +8,7 @@ import {
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
+  expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
   detectChosenPackageFromHistory,
   detectChosenPackage,
@@ -715,12 +716,22 @@ export async function POST(request: NextRequest) {
 
       const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
       const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
-      let reply = await generateAiReplyWithHistory({ userText: msgText || '', history, lang: preferredLang, images: imageUrls, apiKey })
-      const intent = detectAiIntent(msgText || '')
+      const recentAssistantTextsForChoice = history
+        .filter((m) => m.role === 'assistant')
+        .slice(-6)
+        .map((m) => String(m.content || ''))
+      const effectiveUserText = expandNumericChoiceFromRecentAssistant({
+        userText: msgText || '',
+        lang: preferredLang,
+        recentAssistantTexts: recentAssistantTextsForChoice,
+      })
+
+      let reply = await generateAiReplyWithHistory({ userText: effectiveUserText || '', history, lang: preferredLang, images: imageUrls, apiKey })
+      const intent = detectAiIntent(effectiveUserText || '')
       const userTurns = history.filter((m) => m.role === 'user').length || 1
-      const readinessScore = computeReadinessScoreHeuristic(msgText || '', userTurns)
-      const stage = computeStageHeuristic(msgText || '', readinessScore)
-      const hasChosenPackage = Boolean(detectChosenPackage(msgText || '') || detectChosenPackageFromHistory(history))
+      const readinessScore = computeReadinessScoreHeuristic(effectiveUserText || '', userTurns)
+      const stage = computeStageHeuristic(effectiveUserText || '', readinessScore)
+      const hasChosenPackage = Boolean(detectChosenPackage(effectiveUserText || '') || detectChosenPackageFromHistory(history))
       if (!hasChosenPackage && isPackageCompareRequest(msgText || '')) {
         reply = ensureAllPackagesMentioned(reply, preferredLang === 'ru' ? 'ru' : 'ua')
       }

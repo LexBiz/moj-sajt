@@ -8,6 +8,7 @@ import {
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
+  expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
   detectChosenPackageFromHistory,
   detectChosenPackage,
@@ -316,13 +317,20 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AiRequest
     const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
+    const rawHistory = Array.isArray(body.history) ? body.history : []
+    const recentAssistantTextsForChoice = rawHistory
+      .filter((m) => m.role === 'assistant')
+      .slice(-6)
+      .map((m) => String(m.content || ''))
 
-    const lastUser =
-      body.question ||
-      body.history?.slice().reverse().find((m) => m.role === 'user')?.content ||
-      ''
+    const lastUserRaw = body.question || rawHistory.slice().reverse().find((m) => m.role === 'user')?.content || ''
     const lng = getLang(body.lang)
     const lang = lng === 'ru' ? 'ru' : 'ua'
+    const lastUser = expandNumericChoiceFromRecentAssistant({
+      userText: lastUserRaw || '',
+      lang,
+      recentAssistantTexts: recentAssistantTextsForChoice,
+    })
     const channel = (body.currentChannel || 'website') as any
     const intent = detectAiIntent(lastUser || '')
     const readinessScore = computeReadinessScoreHeuristic(lastUser || '', Array.isArray(body.history) ? body.history.filter((m) => m.role === 'user').length || 1 : 1)
@@ -338,7 +346,18 @@ export async function POST(request: NextRequest) {
     const tenantId = String(body.tenantId || 'temoweb').trim().toLowerCase()
     const profile = tenantId ? await getTenantProfile(tenantId).catch(() => null) : null
     const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : ''
-    const aiResult = await callOpenAI(context, body.history, body.lang, body.currentChannel, body.sourceHint, supportRules, apiKey)
+
+    // If user replied with a digit, rewrite the last user turn for the model so it can follow the chosen option.
+    let historyForAi = rawHistory
+    if (lastUser && lastUser !== lastUserRaw) {
+      if (historyForAi.length && historyForAi[historyForAi.length - 1]?.role === 'user') {
+        historyForAi = [...historyForAi.slice(0, -1), { role: 'user' as const, content: lastUser }]
+      } else {
+        historyForAi = [...historyForAi, { role: 'user' as const, content: lastUser }]
+      }
+    }
+
+    const aiResult = await callOpenAI(context, historyForAi, body.lang, body.currentChannel, body.sourceHint, supportRules, apiKey)
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
 
     const hasChosenPackage = Boolean(detectChosenPackage(lastUser || '') || detectChosenPackageFromHistory(body.history))

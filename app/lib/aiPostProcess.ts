@@ -28,6 +28,8 @@ const PACKAGE_CHOICE_RE =
   /\b(беру|берем|выбираю|обираю|хочу|хочемо|хотим|нужен|потрібен|потрібна|нужно|надо|мой|мій|нам|для\s+нас|для\s+меня|ок|окей)\b[\s\S]*\b(START|BUSINESS|PRO)\b/i
 
 const NEXT_STEPS_HEADER_RE = /(если\s+хотите|якщо\s+хочете)\s*[—-]?\s*(выберите|оберіть)\s*(вариант|варіант)/i
+const NEXT_STEPS_OPT_RE = /(^|\n)\s*[—-]\s*([1-3])\)\s*([^\n]+)\s*(?=\n|$)/g
+const DIGIT_ONLY_RE = /^\s*([1-3])\s*$/
 
 function fmtMoneyEur(n: number) {
   try {
@@ -322,6 +324,45 @@ export function applyNextSteps(params: {
   const numbered = uniq.map((x, i) => `${i + 1}) ${x}`)
   const footer = lang === 'ua' ? 'Можна відповісти цифрою.' : 'Можно ответить цифрой.'
   return `${out}\n\n${header}\n${numbered.map((x) => `— ${x}`).join('\n')}\n${footer}`.trim()
+}
+
+function extractNextStepsOptionsFromText(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return null
+  if (!NEXT_STEPS_HEADER_RE.test(t)) return null
+  const map: Record<number, string> = {}
+  let m: RegExpExecArray | null
+  while ((m = NEXT_STEPS_OPT_RE.exec(t))) {
+    const idx = Number(m[2])
+    const body = String(m[3] || '').trim()
+    if (!Number.isFinite(idx) || idx < 1 || idx > 3) continue
+    if (body) map[idx] = body
+  }
+  return Object.keys(map).length ? map : null
+}
+
+export function expandNumericChoiceFromRecentAssistant(params: {
+  userText: string
+  lang: AiLang
+  recentAssistantTexts?: string[]
+}) {
+  const raw = String(params.userText || '').trim()
+  const m = raw.match(DIGIT_ONLY_RE)
+  if (!m) return raw
+  const choice = Number(m[1])
+  if (!Number.isFinite(choice) || choice < 1 || choice > 3) return raw
+
+  const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-6) : []
+  for (let i = recent.length - 1; i >= 0; i -= 1) {
+    const opts = extractNextStepsOptionsFromText(recent[i])
+    if (!opts) continue
+    const picked = opts[choice]
+    if (!picked) continue
+    return params.lang === 'ua'
+      ? `Клієнт відповів цифрою "${choice}" — це вибір з попереднього блоку "Якщо хочете". Обраний пункт: "${picked}". Продовжуйте саме по цьому пункту.`
+      : `Клиент ответил цифрой "${choice}" — это выбор из предыдущего блока "Если хотите". Выбранный пункт: "${picked}". Продолжайте именно по этому пункту.`
+  }
+  return raw
 }
 
 export function applyChannelLimits(text: string, channel: AiChannel) {

@@ -14,6 +14,7 @@ import {
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
+  expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
   detectChosenPackageFromHistory,
   detectChosenPackage,
@@ -1458,8 +1459,13 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     updateConversation(senderId, { lang, pendingText: null })
   }
 
-  // if user keeps sending "1/2/ru/ua" after selection, ignore as noise
-  if (maybeLang && maybeLang === lang && text.trim().length <= 3) return
+  // If user keeps sending "1/2/ru/ua" right after the language prompt, ignore as noise.
+  // IMPORTANT: digits are also used for "next steps" choices, so we only ignore when last assistant message was language selection.
+  if (maybeLang && maybeLang === lang && text.trim().length <= 3) {
+    const lastAssistant = [...(conversation.history || [])].reverse().find((m: any) => m?.role === 'assistant')?.content || ''
+    const looksLikeLangPrompt = /(якою\s+мовою|на\s+каком\s+язык|русский|українськ|украинск)/i.test(String(lastAssistant || ''))
+    if (looksLikeLangPrompt) return
+  }
 
   // Allow switching language at any time.
   const switchLang = parseLangSwitch(text)
@@ -1667,10 +1673,21 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const images = media.filter((m) => m.kind === 'image').map((m) => m.url)
   const audio = media.find((m) => m.kind === 'audio')?.url || null
   const transcript = audio ? await transcribeAudio(audio) : null
-  const composedUserText =
+  let composedUserText =
     transcript && transcript.length > 0
       ? `${text}\n\n[Voice message transcript]: ${transcript}`
       : text || (images.length > 0 ? '[Image sent]' : '')
+
+  // If user replies with a digit (1/2/3), treat it as choosing an option from the previous "Если хотите" block.
+  const recentAssistantTextsForChoice = history
+    .filter((m) => m.role === 'assistant')
+    .slice(-6)
+    .map((m) => String(m.content || ''))
+  composedUserText = expandNumericChoiceFromRecentAssistant({
+    userText: composedUserText,
+    lang: lang === 'ru' ? 'ru' : 'ua',
+    recentAssistantTexts: recentAssistantTextsForChoice,
+  })
   const intent = detectAiIntent(composedUserText || '')
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.

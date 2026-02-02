@@ -198,6 +198,7 @@ export function buildTemoWebSystemPrompt(params: {
     'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
     'PILOT FACTS (never change): duration=2 months; launch=48–72 hours; included channels=1–2 (NOT 1 fixed); price=490€ setup + 99€/month ×2. Base pilot does NOT include: custom dev, complex integrations, ecommerce/autosales, multilingual, advanced analytics. BUT: any extra module from the website can be added as a paid add-on.',
     'NEXT STEPS RULE (CRITICAL): End EVERY message with a short "next steps" block so the client always knows what to do.',
+    'If the user replies with ONLY a single digit "1" / "2" / "3" — treat it as selecting the corresponding option from your previous next steps block and answer accordingly (do NOT reset the conversation).',
     'Output format (exact):',
     '— Line 1: "Если хотите — выберите вариант:" (RU) or "Якщо хочете — оберіть варіант:" (UA).',
     '— Then 2–3 lines, each exactly: "— 1) ...", "— 2) ...", "— 3) ..." (no double numbering, no extra bullets).',
