@@ -353,26 +353,26 @@ export default function Home() {
           <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-3xl" />
           </div>
 
-        <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0f172a]/80 border-b border-white/5 shadow-lg shadow-black/20">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 group">
+        <header className="sticky top-0 z-50 backdrop-blur-2xl bg-[#0f172a]/90 border-b-2 border-white/10 shadow-2xl shadow-black/30">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 group">
               <div className="relative">
-                <img src="/logo.png" alt="TemoWeb" className="h-10 w-10 rounded-xl border border-white/10 shadow-lg transition-transform group-hover:scale-110" />
-                <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                <img src="/logo.png" alt="TemoWeb" className="h-11 w-11 rounded-xl border-2 border-white/15 shadow-xl group-hover:scale-110 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-blue-500/30 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
             <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white font-bold">TemoWeb</p>
-                <p className="text-[11px] text-white/60">{t.headerSubtitle}</p>
+                <p className="text-sm uppercase tracking-[0.2em] text-white font-black">TemoWeb</p>
+                <p className="text-xs text-white/60 font-medium">{t.headerSubtitle}</p>
             </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {(['ua', 'ru', 'cz'] as Lang[]).map((lng) => (
             <button
                   key={lng}
                   onClick={() => setLang(lng)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-full text-xs font-black border-2 transition-all duration-300 ${
                     lang === lng
-                      ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/30 scale-105'
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 border-blue-400/60 text-white shadow-[0_8px_24px_rgba(59,130,246,0.5)] scale-110'
                       : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 hover:scale-105'
                   }`}
                 >
@@ -397,19 +397,26 @@ export default function Home() {
                   <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/30 px-4 py-2 text-xs text-blue-400 uppercase tracking-[0.2em] font-bold">
                     ⚡ {t.badge}
                 </span>
-                  <div className="rounded-2xl border-2 border-yellow-400/40 bg-yellow-400/10 p-4 shadow-[0_15px_50px_rgba(250,204,21,0.12)]">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300">{t.pilotBadge}</div>
-                        <div className="mt-1 text-lg sm:text-xl font-black text-white">{t.pilotTitle}</div>
-                        <div className="mt-2 text-sm text-white/80 leading-relaxed">{t.pilotSubtitle}</div>
-                        <div className="mt-2 text-sm font-bold text-yellow-200">{t.pilotPriceLine}</div>
+                  <div className="rounded-3xl border-2 border-yellow-400/50 bg-gradient-to-br from-yellow-400/15 via-yellow-400/10 to-yellow-500/5 p-6 sm:p-8 shadow-[0_20px_60px_rgba(250,204,21,0.2)] hover:shadow-[0_25px_80px_rgba(250,204,21,0.3)] transition-all duration-300 hover:border-yellow-400/60">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                      <div className="flex-1 min-w-0 space-y-4">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/20 border border-yellow-400/40">
+                          <div className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300">⚡ {t.pilotBadge}</div>
+                        </div>
+                        <div className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight">{t.pilotTitle}</div>
+                        <div className="text-sm sm:text-base text-white/90 leading-relaxed">{t.pilotSubtitle}</div>
+                        <div className="inline-block px-4 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30">
+                          <div className="text-sm sm:text-base font-black text-yellow-100">{t.pilotPriceLine}</div>
+                        </div>
                       </div>
                       <a
                         href="/flow?src=pilot"
-                        className="inline-flex items-center justify-center rounded-xl bg-yellow-400 text-slate-900 px-4 py-3 font-black hover:bg-yellow-300 transition-colors whitespace-nowrap"
+                        className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-8 py-4 font-black text-base hover:from-yellow-300 hover:to-yellow-400 hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_12px_32px_rgba(250,204,21,0.4)] hover:shadow-[0_16px_48px_rgba(250,204,21,0.6)] whitespace-nowrap"
                       >
-                        {t.pilotCta}
+                        <span className="flex items-center gap-2">
+                          {t.pilotCta}
+                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                        </span>
                       </a>
                     </div>
                   </div>
@@ -419,25 +426,25 @@ export default function Home() {
                   <p className="text-base sm:text-lg lg:text-xl text-white/70 leading-relaxed">
                     {t.heroSubtitle}
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-4 pt-6">
                     <a
                       href={ctaHref}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-blue-500 px-8 py-4 text-base sm:text-lg font-bold text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-300 hover:bg-blue-400 hover:shadow-[0_25px_60px_rgba(59,130,246,0.4)] hover:scale-105 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.4)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.6)] hover:scale-105 active:scale-95 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-blue-400 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                      <span className="relative flex items-center gap-2">
+                      <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center gap-3">
                         <span>{t.ctaPrimary}</span>
-                        <span className="text-xl">→</span>
+                        <span className="text-2xl group-hover/btn:translate-x-1 transition-transform">→</span>
                       </span>
                 </a>
                 <a
                       href={ctaHref}
-                      className="inline-flex items-center justify-center rounded-2xl px-6 py-4 text-base sm:text-lg font-bold text-white bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105"
+                      className="inline-flex items-center justify-center rounded-2xl px-8 py-5 text-lg font-bold text-white bg-white/5 border-2 border-white/15 hover:bg-white/10 hover:border-indigo-400/50 transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm"
                 >
                       {t.ctaSecondary}
                 </a>
               </div>
-                  <p className="text-xs sm:text-sm text-white/50 font-medium">{t.ctaNote}</p>
+                  <p className="text-sm text-white/60 font-medium leading-relaxed">{t.ctaNote}</p>
             </div>
             
                 {/* RIGHT: SORA IMAGE */}
@@ -493,12 +500,15 @@ export default function Home() {
                     )
                   })}
             </div>
-                <div className="text-center pt-4">
+                <div className="text-center pt-8">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.5)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.7)] hover:scale-110 active:scale-95"
                   >
-                    {t.howCta}
+                    <span className="flex items-center gap-3">
+                      {t.howCta}
+                      <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
+                    </span>
                   </a>
                 </div>
               </div>
@@ -536,12 +546,15 @@ export default function Home() {
                   })}
               </div>
                 <p className="text-lg text-white/70 leading-relaxed text-center italic">{t.whoText}</p>
-                <div className="text-center pt-4">
+                <div className="text-center pt-8">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.5)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.7)] hover:scale-110 active:scale-95"
                   >
-                    {t.whoCta}
+                    <span className="flex items-center gap-3">
+                      {t.whoCta}
+                      <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
+                    </span>
                   </a>
               </div>
             </div>
@@ -558,34 +571,35 @@ export default function Home() {
                 <h2 className="text-3xl sm:text-5xl font-black text-white text-center">
                   {t.resultTitle}
             </h2>
-                <div className="grid sm:grid-cols-2 gap-5">
+                <div className="grid sm:grid-cols-2 gap-6">
                   {t.resultBullets.map((item, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-400/30 rounded-2xl p-6 shadow-sm transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/15 hover:shadow-md hover:-translate-y-1"
+                      className="group relative bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-2 border-emerald-400/30 rounded-3xl p-7 shadow-xl transition-all duration-300 hover:border-emerald-400/60 hover:bg-emerald-500/15 hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02]"
                     >
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-base font-black shadow-md">
-                            ✓
-                          </span>
-                          <div className="space-y-1">
-                            <p className="text-base font-bold text-white">{item.text}</p>
-                            {item.stat && (
-                              <p className="text-sm text-emerald-300 font-semibold">{item.stat}</p>
-                            )}
+                      <div className="flex items-start gap-4">
+                        <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                          ✓
+                        </span>
+                        <div className="flex-1 space-y-2">
+                          <p className="text-base sm:text-lg font-black text-white leading-tight">{item.text}</p>
+                          {item.stat && (
+                            <p className="text-sm text-emerald-300 font-bold">{item.stat}</p>
+                          )}
           </div>
-              </div>
               </div>
               </div>
                   ))}
               </div>
-                <div className="text-center pt-6">
+                <div className="text-center pt-8">
                   <a
                     href={ctaHref}
-                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 px-10 py-5 text-lg font-black text-white shadow-[0_15px_50px_rgba(99,102,241,0.4)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-110"
+                    className="group inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-10 py-5 text-lg font-black text-white shadow-[0_20px_60px_rgba(59,130,246,0.5)] transition-all duration-300 hover:shadow-[0_30px_80px_rgba(59,130,246,0.7)] hover:scale-110 active:scale-95"
                   >
-                    {t.resultCta}
+                    <span className="flex items-center gap-3">
+                      {t.resultCta}
+                      <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
+                    </span>
                   </a>
               </div>
 
@@ -670,10 +684,10 @@ export default function Home() {
                       return (
                         <div
                           key={p.key}
-                          className={`relative rounded-[28px] border p-7 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_35px_110px_rgba(0,0,0,0.45)] snap-start flex-shrink-0 w-[88%] sm:w-[70%] md:w-auto ${
+                          className={`relative rounded-[32px] border-2 p-8 backdrop-blur-2xl shadow-[0_30px_90px_rgba(0,0,0,0.4)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_40px_120px_rgba(0,0,0,0.5)] snap-start flex-shrink-0 w-[88%] sm:w-[70%] md:w-auto ${
                             isPopular
-                              ? 'border-blue-400/60 bg-gradient-to-b from-blue-500/10 to-white/5'
-                              : 'border-white/10 bg-white/5 hover:border-white/20'
+                              ? 'border-blue-400/70 bg-gradient-to-br from-blue-500/15 via-indigo-500/10 to-white/5 scale-105'
+                              : 'border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] hover:border-white/20 hover:scale-105'
                           }`}
                         >
                           <div className="space-y-5">
@@ -745,13 +759,16 @@ export default function Home() {
 
                             <a
                               href={ctaHref}
-                              className={`inline-flex w-full items-center justify-center rounded-2xl px-6 py-4 text-base font-black text-white transition-all ${
+                              className={`group inline-flex w-full items-center justify-center rounded-2xl px-6 py-4 text-base font-black text-white transition-all duration-300 hover:scale-105 active:scale-95 ${
                                 isPopular
-                                  ? 'bg-blue-500 hover:bg-blue-400 shadow-[0_18px_50px_rgba(59,130,246,0.35)]'
-                                  : 'bg-white/10 border border-white/10 hover:bg-white/15 hover:border-white/20'
+                                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-[0_20px_60px_rgba(59,130,246,0.5)] hover:shadow-[0_25px_80px_rgba(59,130,246,0.7)]'
+                                  : 'bg-white/10 border-2 border-white/15 hover:bg-white/15 hover:border-indigo-400/50 shadow-lg hover:shadow-xl'
                               }`}
                             >
-                              {profileLang === 'ua' ? 'Обговорити під мій бізнес' : 'Обсудить под мой бизнес'}
+                              <span className="flex items-center gap-2">
+                                {profileLang === 'ua' ? 'Обговорити під мій бізнес' : 'Обсудить под мой бизнес'}
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                              </span>
                             </a>
                           </div>
                         </div>
@@ -762,11 +779,11 @@ export default function Home() {
                   {/* Add-ons */}
                   <div className="space-y-6">
                     <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.addonsTitle}</h4>
-                    <div className="lg:grid lg:gap-5 lg:grid-cols-2 flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
+                    <div className="lg:grid lg:gap-6 lg:grid-cols-2 flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
                       {addons.map((a) => (
                         <div
                           key={a.key}
-                          className="rounded-[26px] bg-white/5 border border-white/10 p-6 hover:border-white/20 transition-all snap-start flex-shrink-0 w-[88%] sm:w-[70%] lg:w-auto"
+                          className="rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] border-2 border-white/10 p-7 hover:border-white/20 hover:bg-white/10 hover:scale-105 hover:shadow-2xl transition-all duration-300 snap-start flex-shrink-0 w-[88%] sm:w-[70%] lg:w-auto"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-2">
@@ -798,9 +815,9 @@ export default function Home() {
                   </div>
 
                   {/* FAQ (accordion) */}
-                  <div className="space-y-6">
-                    <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.faqTitle}</h4>
-                    <div className="grid gap-3">
+                  <div className="space-y-8">
+                    <h4 className="text-2xl sm:text-4xl font-black text-white text-center">{t.faqTitle}</h4>
+                    <div className="grid gap-4">
                       {faq.map((x, idx) => {
                         const open = faqOpen === idx
                         return (
@@ -808,15 +825,15 @@ export default function Home() {
                             key={x.q}
                             type="button"
                             onClick={() => setFaqOpen((p) => (p === idx ? null : idx))}
-                            className="text-left rounded-[22px] bg-white/5 border border-white/10 px-6 py-5 hover:border-white/20 transition-all"
+                            className={`text-left rounded-3xl bg-white/5 border-2 border-white/10 px-7 py-6 hover:border-white/20 hover:bg-white/10 hover:shadow-xl transition-all duration-300 ${open ? 'border-indigo-400/50 bg-indigo-500/5 shadow-[0_15px_50px_rgba(99,102,241,0.2)]' : ''}`}
                           >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="space-y-1">
-                                <p className="text-base font-black text-white">{x.q}</p>
-                                {open && <p className="text-sm text-white/70 leading-relaxed pt-2">{x.a}</p>}
+                            <div className="flex items-start justify-between gap-5">
+                              <div className="flex-1 space-y-1">
+                                <p className="text-base sm:text-lg font-black text-white leading-tight">{x.q}</p>
+                                {open && <p className="text-sm sm:text-base text-white/80 leading-relaxed pt-3">{x.a}</p>}
                               </div>
-                              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                <Plus className={`w-4 h-4 text-white/70 transition-transform ${open ? 'rotate-45' : ''}`} />
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${open ? 'bg-indigo-500/20 border-2 border-indigo-400/40' : 'bg-white/5 border border-white/10'}`}>
+                                <Plus className={`w-5 h-5 text-white/80 transition-transform duration-300 ${open ? 'rotate-45' : ''}`} />
                               </div>
                             </div>
                           </button>
@@ -845,52 +862,55 @@ export default function Home() {
                   </h2>
                   <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">{t.formSubtitle}</p>
           </div>
-                <form className="space-y-6 max-w-2xl mx-auto" onSubmit={onSubmit}>
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
+                <form className="space-y-7 max-w-2xl mx-auto" onSubmit={onSubmit}>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <div className="space-y-2.5">
                       <label className="text-sm text-white/80 font-bold">{t.name}</label>
                       <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-xl bg-white/5 backdrop-blur border border-white/20 px-5 py-4 text-white placeholder:text-white/40 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-sm text-base"
+                        className="w-full rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-white/15 px-6 py-4 text-white text-base placeholder:text-white/40 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/25 transition-all shadow-lg"
                         placeholder={t.name}
                         type="text"
                       />
             </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       <label className="text-sm text-white/80 font-bold">{t.contact}</label>
                       <input
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
-                        className="w-full rounded-xl bg-white/5 backdrop-blur border border-white/20 px-5 py-4 text-white placeholder:text-white/40 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-sm text-base"
+                        className="w-full rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-white/15 px-6 py-4 text-white text-base placeholder:text-white/40 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/25 transition-all shadow-lg"
                         placeholder={t.contact}
                         type="text"
                         required
                       />
             </div>
             </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <label className="text-sm text-white/80 font-bold">{t.comment}</label>
                     <textarea
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl bg-white/5 backdrop-blur border border-white/20 px-5 py-4 text-white placeholder:text-white/40 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-sm resize-none text-base"
+                      className="w-full rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-white/15 px-6 py-4 text-white text-base placeholder:text-white/40 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/25 transition-all shadow-lg resize-none"
                       placeholder={t.comment}
                     />
             </div>
 
-                  {error && <p className="text-sm text-red-300 font-bold flex items-center justify-center gap-2">⚠️ {error}</p>}
-                  {success && <p className="text-sm text-emerald-300 font-bold flex items-center justify-center gap-2">✓ {success}</p>}
+                  {error && <p className="text-sm text-red-300 font-bold flex items-center justify-center gap-2 py-2">⚠️ {error}</p>}
+                  {success && <p className="text-sm text-emerald-300 font-bold flex items-center justify-center gap-2 py-2">✓ {success}</p>}
 
-                  <div className="text-center pt-4">
+                  <div className="text-center pt-6">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-12 py-6 text-xl font-black text-white shadow-[0_20px_60px_rgba(99,102,241,0.5)] transition-all duration-300 hover:shadow-[0_25px_70px_rgba(99,102,241,0.7)] hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+                      className="group/btn relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 px-12 py-6 text-xl font-black text-white shadow-[0_25px_70px_rgba(99,102,241,0.6)] transition-all duration-300 hover:shadow-[0_30px_90px_rgba(99,102,241,0.8)] hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-400 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                      <span className="relative">{loading ? '...' : t.formCta}</span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center gap-3">
+                        {loading ? '...' : t.formCta}
+                        {!loading && <span className="group-hover/btn:translate-x-1 transition-transform">✨</span>}
+                      </span>
                     </button>
                       </div>
                 </form>
