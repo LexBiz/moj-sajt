@@ -76,6 +76,39 @@ export function applyIncompleteDetailsFix(text: string, lang: AiLang) {
   return `${base}\n${checklist}\n\n${contactLine}`.trim()
 }
 
+export function applyPilotKickoffChecklist(params: { text: string; lang: AiLang; intent: AiIntent }) {
+  const out = String(params.text || '').trim()
+  if (!out) return out
+  // Only for pilot-start moments: user chose pilot / wants to start, and we should move to contact + kickoff details.
+  if (!params.intent.isPilotTrigger) return out
+
+  const hasContactAsk = CONTACT_HINT_RE.test(out)
+  const contactLine =
+    params.lang === 'ua'
+      ? 'Будь ласка, надішліть телефон або email — зафіксую заявку і узгодимо старт.'
+      : 'Пожалуйста, пришлите телефон или email — зафиксирую заявку и согласуем старт.'
+
+  // Avoid duplicating if checklist already present.
+  if (/(1–2\s+канал|1-2\s+канал|ніша|ниша|заявк|джерел|источник)/i.test(out) && /—\s*1\)/.test(out)) return out
+
+  const checklist =
+    params.lang === 'ua'
+      ? [
+          '— 1) 1–2 канали для старту (Instagram / WhatsApp / Telegram / сайт)',
+          '— 2) Ніша + що продаєте (1 речення)',
+          '— 3) Як зараз приходять заявки (коротко)',
+        ].join('\n')
+      : [
+          '— 1) 1–2 канала для старта (Instagram / WhatsApp / Telegram / сайт)',
+          '— 2) Ниша + что продаёте (1 предложение)',
+          '— 3) Откуда сейчас приходят заявки (коротко)',
+        ].join('\n')
+
+  // If contact isn't asked yet, add it first (final action), then checklist.
+  if (!hasContactAsk) return `${out}\n\n${contactLine}\n\n${checklist}`.trim()
+  return `${out}\n\n${checklist}`.trim()
+}
+
 function fmtMoneyEur(n: number) {
   try {
     return `${n.toLocaleString('ru-RU')} €`
@@ -464,12 +497,14 @@ export function expandNumericChoiceFromRecentAssistant(params: {
       return params.lang === 'ua'
         ? [
             `Клієнт відповів цифрою "${choice}" — це вибір з попереднього блоку "Якщо хочете". Обраний пункт: "${picked}".`,
+            'Клієнт готовий залишити телефон або email, щоб зафіксувати заявку.',
             'КРИТИЧНО: це кінцевий крок до старту. Попросіть контакт (телефон або email) щоб зафіксувати заявку.',
             'Далі коротко (без води) дайте чек‑лист 3 пунктів, що треба зібрати: 1–2 канали для старту; ніша/послуга; звідки зараз йдуть заявки.',
             'Не додавайте блок "Якщо хочете — оберіть варіант" у цьому повідомленні.',
           ].join('\n')
         : [
             `Клиент ответил цифрой "${choice}" — это выбор из предыдущего блока "Если хотите". Выбранный пункт: "${picked}".`,
+            'Клиент готов оставить телефон или email, чтобы зафиксировать заявку.',
             'КРИТИЧНО: это конечный шаг к старту. Попросите контакт (телефон или email), чтобы зафиксировать заявку.',
             'Дальше коротко (без воды) дайте чек‑лист из 3 пунктов, что нужно: 1–2 канала старта; ниша/услуга; откуда сейчас идут заявки.',
             'Не добавляйте блок "Если хотите — выберите вариант" в этом сообщении.',

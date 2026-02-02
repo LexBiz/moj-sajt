@@ -13,6 +13,7 @@ import {
   applyNextSteps,
   applyNoPaymentPolicy,
   applyIncompleteDetailsFix,
+  applyPilotKickoffChecklist,
   applyPilotNudge,
   applyServicesRouter,
   applyPackageGuidance,
@@ -1721,6 +1722,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       reply = applyIncompleteDetailsFix(reply, lang)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)
+      reply = applyPilotKickoffChecklist({ text: reply, lang, intent })
       const recentAssistantTexts = history
         .filter((m) => m.role === 'assistant')
         .slice(-3)

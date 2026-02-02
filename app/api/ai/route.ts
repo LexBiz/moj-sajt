@@ -6,6 +6,7 @@ import {
   applyChannelLimits,
   applyPackageGuidance,
   applyIncompleteDetailsFix,
+  applyPilotKickoffChecklist,
   applyNextSteps,
   applyNoPaymentPolicy,
   applyPilotNudge,
@@ -378,6 +379,7 @@ export async function POST(request: NextRequest) {
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
         answer = ensureCta(answer, lang, stage, readinessScore, intent)
+        answer = applyPilotKickoffChecklist({ text: answer, lang, intent })
         const recentAssistantTexts = (Array.isArray(body.history) ? body.history : [])
           .filter((m) => m.role === 'assistant')
           .slice(-3)
