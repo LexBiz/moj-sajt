@@ -108,7 +108,37 @@ export function applyServicesRouter(text: string, lang: AiLang, intent: AiIntent
       out = `${out}\n\n${addons}`.trim()
     }
   }
+  if (!hasChosenPackage && (intent.isCompare || intent.isPricing || intent.isServices)) {
+    out = applyPackageGuidance(out, lang)
+  }
   return out
+}
+
+function buildPackageGuidance(lang: AiLang) {
+  if (lang === 'ua') {
+    return [
+      'Щоб не гадати: START — коли 1 канал і треба швидко; BUSINESS — коли 2–3 канали + інтеграції/CRM/оплати; PRO — коли багато каналів і складні сценарії.',
+      'Скажіть 2 речі: скільки каналів стартуємо і чи потрібні оплати/календар/CRM — і я чітко порекомендую 1 пакет.',
+    ].join('\n')
+  }
+  return [
+    'Чтобы не гадать: START — когда 1 канал и нужно быстро; BUSINESS — когда 2–3 канала + интеграции/CRM/оплаты; PRO — когда много каналов и сложные сценарии.',
+    'Скажите 2 вещи: сколько каналов запускаем и нужны ли оплаты/календарь/CRM — и я чётко порекомендую 1 пакет.',
+  ].join('\n')
+}
+
+function applyPackageGuidance(text: string, lang: AiLang) {
+  const out = String(text || '').trim()
+  if (!out) return out
+  // Only when packages are mentioned in the answer (otherwise we don't spam).
+  if (!/\bSTART\b/i.test(out) && !/\bBUSINESS\b/i.test(out) && !/\bPRO\b/i.test(out)) return out
+
+  // If there is already an explicit recommendation, do nothing.
+  if (/(рекоменд|предлож|я\s+бы\s+выбрал|я\s+бы\s+предложил|вам\s+подойдет|вам\s+підійде)\b/i.test(out)) return out
+
+  const guide = buildPackageGuidance(lang)
+  if (out.includes(guide.split('\n')[0])) return out
+  return `${out}\n\n${guide}`.trim()
 }
 
 export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
