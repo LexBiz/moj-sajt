@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import { getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
+import { appendMessage, getConversation } from '../conversationStore'
 import {
   applyChannelLimits,
   applyPackageGuidance,
@@ -12,6 +13,7 @@ import {
   applyPilotNudge,
   applyServicesRouter,
   detectAiIntent,
+  expandNumericChoiceFromRecentAssistant,
   detectChosenPackageFromHistory,
   detectChosenPackage,
   ensureCta,
@@ -85,13 +87,19 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   }
 }
 
-async function generateAiReply(userText: string, apiKey?: string | null) {
-  const key = (apiKey || OPENAI_API_KEY || '').trim()
+async function generateAiReply(params: {
+  userText: string
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  apiKey?: string | null
+}) {
+  const userText = params.userText
+  const key = (params.apiKey || OPENAI_API_KEY || '').trim()
   if (!key) {
     return 'Принято. Напиши нишу и где приходят заявки — покажу, как автоматизация заберёт это на себя.'
   }
   const isUa = /[іїєґ]/i.test(String(userText || ''))
-  const userTurns = 1
+  const hist = Array.isArray(params.history) ? params.history : []
+  const userTurns = Math.max(1, hist.filter((m) => m.role === 'user').length)
   const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
   const intent = detectAiIntent(userText || '')
   const supportRules = intent.isSupport
@@ -118,6 +126,7 @@ async function generateAiReply(userText: string, apiKey?: string | null) {
       model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: system },
+        ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
         { role: 'user', content: userText },
       ],
       temperature: 0.8,
@@ -257,11 +266,28 @@ export async function POST(request: NextRequest) {
           })
           continue
         }
+
+        // Conversation memory (parity with other channels):
+        // - improves answer quality
+        // - enables digit-only selections for "next steps" options
+        const baseConv = getConversation(from)
+        const afterUser = appendMessage(from, { role: 'user', content: text }) || baseConv
+        const recentAssistantTexts = (afterUser?.messages || []).filter((x) => x.role === 'assistant').slice(-6).map((x) => x.content)
+        const expandedUserText = expandNumericChoiceFromRecentAssistant({
+          userText: text,
+          lang: /[іїєґ]/i.test(text) ? 'ua' : 'ru',
+          recentAssistantTexts,
+        })
+        const history = (afterUser?.messages || [])
+          .slice(-20)
+          .map((m) => ({ role: m.role, content: m.content }))
+
         const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
         const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
         const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
-        const reply = await generateAiReply(text, apiKey)
+        const reply = await generateAiReply({ userText: expandedUserText, history, apiKey })
         await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
+        appendMessage(from, { role: 'assistant', content: reply })
       }
     }
   }
