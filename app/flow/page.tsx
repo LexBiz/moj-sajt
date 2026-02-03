@@ -785,7 +785,7 @@ export default function Home() {
         )
       case 'ai':
         return (
-          <div className="flex flex-col h-[85vh] sm:h-[600px] space-y-0">
+          <div className="flex flex-col h-[82vh] sm:h-[620px] lg:h-[calc(100vh-260px)] min-h-[560px] space-y-0">
             <div className="flex-shrink-0 pb-6 border-b border-slate-200/60">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
                 <div className="min-w-0">
@@ -837,7 +837,7 @@ export default function Home() {
                 form.history.map((msg, idx) => (
                   <div key={idx} className={`flex animate-in fade-in slide-in-from-bottom-4 duration-700 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[85%] sm:max-w-[70%] md:max-w-[65%] rounded-[28px] px-6 py-5 shadow-2xl transition-all duration-300 ${
+                      className={`max-w-[92%] sm:max-w-[82%] lg:max-w-[70%] rounded-[28px] px-6 py-5 shadow-2xl transition-all duration-300 ${
                         msg.role === 'user'
                           ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:scale-[1.02]'
                           : 'bg-white/90 backdrop-blur-2xl border border-slate-200/60 text-slate-900 shadow-slate-900/10 hover:shadow-slate-900/15 hover:bg-white hover:scale-[1.02]'
@@ -1083,7 +1083,7 @@ export default function Home() {
       </div>
 
       <header className="sticky top-0 z-40 backdrop-blur-3xl bg-white/85 border-b border-slate-200/60 shadow-xl shadow-slate-900/5">
-        <div className="max-w-4xl mx-auto px-6 sm:px-8 py-6 flex items-center justify-between">
+        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-8 lg:px-12 2xl:px-16 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4 group cursor-pointer">
             <div className="relative">
               <img src="/logo.png" alt="TemoWeb" className="h-12 w-12 rounded-2xl border border-slate-200 shadow-lg shadow-indigo-500/10 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-indigo-500/20 transition-all duration-300" />
@@ -1101,7 +1101,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="max-w-4xl mx-auto px-6 sm:px-8 py-10 sm:py-14 space-y-8">
+      <section className="mx-auto w-full max-w-[1600px] px-4 sm:px-8 lg:px-12 2xl:px-16 py-10 sm:py-14 space-y-8">
         <div className="flex flex-wrap gap-3">
           {(['ua', 'ru', 'cz'] as Lang[]).map((lng) => (
             <button
@@ -1166,7 +1166,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 via-white/40 to-purple-50/50 -z-10" />
           <div className="absolute -top-24 -left-24 w-72 h-72 bg-gradient-to-br from-indigo-200/30 to-purple-200/20 blur-3xl"></div>
           <div className="absolute -bottom-28 -right-28 w-80 h-80 bg-gradient-to-tl from-pink-200/25 via-purple-200/20 to-transparent blur-3xl"></div>
-          <div className={`relative ${step === 'ai' ? 'p-6 sm:p-10' : 'p-8 sm:p-12'}`}>
+          <div className={`relative ${step === 'ai' ? 'p-6 sm:p-10 lg:p-12' : 'p-8 sm:p-12 lg:p-14'}`}>
             <div className={`mb-4 text-sm text-slate-300 ${step === 'ai' ? 'hidden sm:block' : ''}`}>
               {t.step} {currentIndex + 1} {t.of} {steps.length}
             </div>

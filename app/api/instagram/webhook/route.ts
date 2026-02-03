@@ -216,7 +216,7 @@ async function sendInstagramCommentReply(commentId: string, message: string) {
     const resp = await fetch(urlObj.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${IG_ACCESS_TOKEN}` },
-      body: JSON.stringify({ message: clip(message, 900) }),
+      body: JSON.stringify({ message: clipUtf8Bytes(message, 900) }),
     })
     lastStatus = resp.status
     const text = await resp.text().catch(() => '')
@@ -591,6 +591,38 @@ function clip(text: string, max = 1000) {
   return `${text.slice(0, max - 1)}…`
 }
 
+function utf8ByteLength(text: string) {
+  try {
+    return Buffer.byteLength(String(text || ''), 'utf8')
+  } catch {
+    return String(text || '').length
+  }
+}
+
+function sliceToMaxUtf8Bytes(text: string, maxBytes: number) {
+  const s = String(text || '')
+  if (maxBytes <= 0) return ''
+  if (utf8ByteLength(s) <= maxBytes) return s
+
+  // Binary search by character index (fast enough for short DMs).
+  let lo = 0
+  let hi = s.length
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2)
+    const part = s.slice(0, mid)
+    if (utf8ByteLength(part) <= maxBytes) lo = mid
+    else hi = mid - 1
+  }
+  return s.slice(0, lo)
+}
+
+function clipUtf8Bytes(text: string, maxBytes: number) {
+  const s = String(text || '')
+  if (utf8ByteLength(s) <= maxBytes) return s
+  const head = sliceToMaxUtf8Bytes(s, Math.max(1, maxBytes - utf8ByteLength('…')))
+  return `${head}…`
+}
+
 function sanitizeInstagramText(input: string) {
   let t = String(input || '')
   // Remove control characters that can truncate rendering on some clients/APIs.
@@ -906,7 +938,7 @@ function truncatePreservingLastLine(text: string, maxChars: number) {
 function splitTextIntoParts(input: string, partMaxChars: number, maxParts: number) {
   const raw = sanitizeInstagramText(input || '')
   if (!raw) return []
-  if (raw.length <= partMaxChars) return [raw]
+  if (utf8ByteLength(raw) <= partMaxChars) return [raw]
 
   const parts: string[] = []
   let remaining = raw
@@ -923,7 +955,7 @@ function splitTextIntoParts(input: string, partMaxChars: number, maxParts: numbe
     let buf = ''
     for (const b of blocks) {
       const next = buf ? `${buf}\n\n${b}` : b
-      if (next.length <= max) buf = next
+      if (utf8ByteLength(next) <= max) buf = next
       else {
         if (buf) out.push(buf)
         buf = b
@@ -934,7 +966,7 @@ function splitTextIntoParts(input: string, partMaxChars: number, maxParts: numbe
   }
 
   while (remaining.length > 0 && parts.length < maxParts) {
-    if (remaining.length <= partMaxChars) {
+    if (utf8ByteLength(remaining) <= partMaxChars) {
       pushPart(remaining)
       break
     }
@@ -948,7 +980,7 @@ function splitTextIntoParts(input: string, partMaxChars: number, maxParts: numbe
     }
 
     // Next: sentence boundary.
-    const slice = remaining.slice(0, partMaxChars)
+    const slice = sliceToMaxUtf8Bytes(remaining, partMaxChars)
     const m = slice.match(/[\s\S]*[.!?…]\s/)
     if (m && m[0] && m[0].trim().length >= Math.min(120, Math.floor(partMaxChars * 0.35))) {
       pushPart(m[0].trim())
@@ -963,7 +995,7 @@ function splitTextIntoParts(input: string, partMaxChars: number, maxParts: numbe
 
   if (remaining.length > 0 && parts.length >= maxParts) {
     const last = parts[parts.length - 1] || ''
-    parts[parts.length - 1] = clip(last, Math.max(120, partMaxChars - 1))
+    parts[parts.length - 1] = clipUtf8Bytes(last, Math.max(160, partMaxChars - 1))
   }
 
   return parts.filter(Boolean)
@@ -1290,7 +1322,8 @@ async function sendInstagramMessage(recipientId: string, text: string) {
     urlObj.searchParams.set('access_token', IG_ACCESS_TOKEN)
   }
   const url = urlObj.toString()
-  const parts = splitTextIntoParts(text, 900, 24)
+  const partMaxBytes = Number(process.env.INSTAGRAM_DM_PART_MAX_BYTES || 950)
+  const parts = splitTextIntoParts(text, partMaxBytes, 24)
   if (!parts.length) return
 
   const retryDelaysMs = [0, 300, 1200, 2500]
@@ -1313,7 +1346,7 @@ async function sendInstagramMessage(recipientId: string, text: string) {
       const body = {
         recipient: { id: recipientId },
         messaging_type: 'RESPONSE',
-        message: { text: clip(part, 1000) },
+        message: { text: clipUtf8Bytes(part, partMaxBytes) },
       }
       const resp = await fetch(url, {
         method: 'POST',

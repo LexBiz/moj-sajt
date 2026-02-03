@@ -352,7 +352,7 @@ export default function Home() {
           </div>
 
         <header className="sticky top-0 z-50 backdrop-blur-2xl bg-white/80 border-b border-slate-200/60 shadow-lg shadow-slate-900/5">
-          <div className="max-w-6xl mx-auto px-6 sm:px-8 py-5 flex items-center justify-between gap-6">
+          <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-8 lg:px-12 2xl:px-16 py-5 flex items-center justify-between gap-6">
             <div className="flex items-center gap-4 group cursor-pointer">
               <div className="relative">
                 <img src="/logo.png" alt="TemoWeb" className="h-12 w-12 rounded-2xl border border-slate-200 shadow-lg shadow-indigo-500/10 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-indigo-500/20 transition-all duration-300" />
@@ -381,7 +381,7 @@ export default function Home() {
         </div>
       </header>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-16 sm:space-y-24">
+        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-8 lg:px-12 2xl:px-16 py-10 sm:py-16 lg:py-20 space-y-16 sm:space-y-24">
           {/* HERO */}
           <div
             ref={(el) => { sectionsRef.current[0] = el }}
@@ -680,7 +680,7 @@ export default function Home() {
                   </div>
 
                   {/* Packages (premium cards) */}
-                  <div className="md:grid md:gap-6 md:grid-cols-3 flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
+                  <div className="md:grid md:gap-6 md:grid-cols-3 flex gap-4 overflow-x-auto pb-3 -mx-4 sm:-mx-8 lg:-mx-12 2xl:-mx-16 px-4 sm:px-8 lg:px-12 2xl:px-16 snap-x snap-mandatory scroll-px-4">
                     {pricing.map((p) => {
                       const isPopular = p.key === 'business'
                       return (
@@ -780,8 +780,8 @@ export default function Home() {
 
                   {/* Add-ons */}
                   <div className="space-y-6">
-                    <h4 className="text-xl sm:text-3xl font-black text-white text-center">{t.addonsTitle}</h4>
-                    <div className="lg:grid lg:gap-7 lg:grid-cols-2 flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-px-4">
+                    <h4 className="text-xl sm:text-3xl font-black text-slate-900 text-center">{t.addonsTitle}</h4>
+                    <div className="lg:grid lg:gap-7 lg:grid-cols-2 flex gap-6 overflow-x-auto pb-4 -mx-4 sm:-mx-8 lg:-mx-12 2xl:-mx-16 px-4 sm:px-8 lg:px-12 2xl:px-16 snap-x snap-mandatory scroll-px-4">
                       {addons.map((a) => (
                         <div
                           key={a.key}
@@ -940,9 +940,9 @@ export default function Home() {
               href={aboutHref}
                 target="_blank"
                 rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-all duration-300 group"
+              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-all duration-300 group"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 group-hover:animate-pulse" />
               {t.footerAbout}
             </a>
           </footer>
