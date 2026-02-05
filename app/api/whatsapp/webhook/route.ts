@@ -147,14 +147,20 @@ function verifySignature(
     }
     return { ok: false, matched: null, headerPrefix: null, headerLen: 0 }
   }
-  if (!header.startsWith('sha256=')) {
-    if (SIGNATURE_BYPASS) {
-      console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped', { headerPrefix, headerLen })
-      return { ok: true, matched: 'bypass', headerPrefix, headerLen }
-    }
-    return { ok: false, matched: null, headerPrefix, headerLen }
+
+  type SigFormat = 'sha256=' | 'hex-only' | 'other'
+  let format: SigFormat = 'other'
+  let normalizedHeader = header
+  if (header.startsWith('sha256=')) {
+    format = 'sha256='
+  } else if (/^[0-9a-f]{64}$/.test(header)) {
+    // Some environments/loggers can strip the "sha256=" prefix. Normalize it back.
+    format = 'hex-only'
+    normalizedHeader = `sha256=${header}`
   }
-  const actualBuf = Buffer.from(header)
+
+  // We compare against a "sha256=<hex>" string (Meta header format).
+  const actualBuf = Buffer.from(normalizedHeader)
 
   const matchesSecret = (secret: string) => {
     if (!secret) return false
@@ -172,6 +178,7 @@ function verifySignature(
   const igMatch = matchesSecret(IG_APP_SECRET)
   if (SIGNATURE_BYPASS) {
     console.warn('WA webhook: bypass audit', {
+      format,
       headerPrefix,
       headerLen,
       waMatch,
