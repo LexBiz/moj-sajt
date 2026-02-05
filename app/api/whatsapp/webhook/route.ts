@@ -131,15 +131,18 @@ async function sendTelegramLeadWhatsApp(input: {
   }
 }
 
-function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
+function verifySignature(
+  rawBody: Buffer,
+  signatureHeader: string | null,
+): { ok: boolean; matched: 'bypass' | 'whatsapp' | 'instagram' | null; headerPrefix: string | null; headerLen: number } {
   if (SIGNATURE_BYPASS) {
     console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped')
-    return true
+    return { ok: true, matched: 'bypass', headerPrefix: signatureHeader ? String(signatureHeader).slice(0, 12) : null, headerLen: signatureHeader ? String(signatureHeader).length : 0 }
   }
   // Meta can send the sha256 hex in upper/lower case. Normalize to lowercase before comparing.
   const header = signatureHeader?.trim().toLowerCase()
-  if (!header) return false
-  if (!header.startsWith('sha256=')) return false
+  if (!header) return { ok: false, matched: null, headerPrefix: null, headerLen: 0 }
+  if (!header.startsWith('sha256=')) return { ok: false, matched: null, headerPrefix: header.slice(0, 12), headerLen: header.length }
   const actualBuf = Buffer.from(header)
 
   const matchesSecret = (secret: string) => {
@@ -156,13 +159,13 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
 
   // Try WhatsApp app secret first (expected), then fall back to IG secret for diagnosis.
   // This avoids "silent death" when webhook is attached to a different Meta App.
-  if (matchesSecret(WA_APP_SECRET)) return true
+  if (matchesSecret(WA_APP_SECRET)) return { ok: true, matched: 'whatsapp', headerPrefix: header.slice(0, 12), headerLen: header.length }
   if (matchesSecret(IG_APP_SECRET)) {
     console.warn('WA webhook: signature matched INSTAGRAM_APP_SECRET (check Meta App + WHATSAPP_APP_SECRET)')
-    return true
+    return { ok: true, matched: 'instagram', headerPrefix: header.slice(0, 12), headerLen: header.length }
   }
   if (!WA_APP_SECRET) console.warn('WHATSAPP_APP_SECRET is missing')
-  return false
+  return { ok: false, matched: null, headerPrefix: header.slice(0, 12), headerLen: header.length }
 }
 
 async function generateAiReply(params: {
@@ -321,10 +324,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
+  const contentEncoding = request.headers.get('content-encoding')
+  const userAgent = request.headers.get('user-agent')
 
-  console.log('WA webhook: received', { hasSignature: Boolean(signature), length: rawBuffer.length })
-  if (!verifySignature(rawBuffer, signature)) {
-    console.warn('WA webhook: invalid signature')
+  console.log('WA webhook: received', {
+    hasSignature: Boolean(signature),
+    length: rawBuffer.length,
+    contentEncoding: contentEncoding || null,
+    ua: userAgent ? clip(userAgent, 120) : null,
+  })
+  const sig = verifySignature(rawBuffer, signature)
+  if (!sig.ok) {
+    console.warn('WA webhook: invalid signature', sig)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
   }
 
