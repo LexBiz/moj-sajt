@@ -136,7 +136,8 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
     console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped')
     return true
   }
-  const header = signatureHeader?.trim()
+  // Meta can send the sha256 hex in upper/lower case. Normalize to lowercase before comparing.
+  const header = signatureHeader?.trim().toLowerCase()
   if (!header) return false
   if (!header.startsWith('sha256=')) return false
   const actualBuf = Buffer.from(header)
