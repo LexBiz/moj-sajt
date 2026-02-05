@@ -16,6 +16,7 @@ export type AiIntent = {
 
 const CONTACT_HINT_RE =
   /(телефон|email|почт|контакт|зв[ʼ']?яз|связ|call|созвон|зустріч|встреч|демо|demo|оплат|счет|рахунок|invoice|договор|контракт|старт|запуск|подключ|підключ)/i
+const CONTACT_VALUE_RE = /\S+@\S+\.\S+|(^|\s)@([a-zA-Z0-9_]{4,32})\b|(\+?\d[\d\s().-]{7,}\d)/i
 const SUPPORT_RE =
   /(не\s+работ|не\s+працю|сбой|збій|ошибк|помил|не\s+отправ|не\s+відправ|поддержк|підтримк|support|помогите|допомож|сломал|зламал|не\s+приход|не\s+приход|интеграц|інтеграц|token|токен|webhook|підписк|подписк|оплат.*не|оплата\s+не|ошибка\s+api|error\s+api)/i
 const SERVICES_RE =
@@ -33,6 +34,11 @@ const DIGIT_ONLY_RE = /^\s*([1-3])\s*$/
 
 const DETAILS_STUB_RE = /(мен[іi]\s+потр[іi]бно\s+зібрати\s+кілька\s+деталей|мне\s+нужно\s+собрать\s+несколько\s+детал)/i
 
+const INTRO_RE =
+  /(^|\n)\s*(я\s*[—-]\s*)?(персонал(ьный|ний)\s+ai[\s-]*асистент\s+temoweb|personal\s+ai\s+assistant\s+of\s+temoweb)\.?\s*(\n|$)/i
+const LANG_LINE_RE =
+  /(^|\n)\s*(можно\s+написать,\s+на\s+каком\s+языке\s+удобно|можете\s+написати,\s+якою\s+мовою\s+зручно|you\s+can\s+tell\s+me\s+your\s+preferred\s+language)[\s\S]{0,120}(\n|$)/i
+
 function stripNextStepsBlock(text: string) {
   const t = String(text || '').trim()
   if (!t) return t
@@ -41,6 +47,18 @@ function stripNextStepsBlock(text: string) {
   if (idx < 0) return t
   const kept = lines.slice(0, idx).join('\n').trim()
   return kept || t
+}
+
+export function stripRepeatedIntro(text: string, isFirstAssistant: boolean) {
+  const t = String(text || '').trim()
+  if (!t) return t
+  if (isFirstAssistant) return t
+  let out = t
+  // Remove common intro lines if model repeats them after first message.
+  out = out.replace(INTRO_RE, '\n')
+  out = out.replace(LANG_LINE_RE, '\n')
+  out = out.replace(/\n{3,}/g, '\n\n')
+  return out.trim()
 }
 
 export function applyIncompleteDetailsFix(text: string, lang: AiLang) {
@@ -127,6 +145,12 @@ export function detectAiIntent(text: string): AiIntent {
     isContactIntent: CONTACT_HINT_RE.test(t),
     isSupport: SUPPORT_RE.test(t),
   }
+}
+
+export function textHasContactValue(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return false
+  return CONTACT_VALUE_RE.test(t)
 }
 
 export function detectChosenPackage(text: string) {
@@ -231,13 +255,30 @@ export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
   return `${text}\n\n${line}`.trim()
 }
 
-export function ensureCta(text: string, lang: AiLang, stage: TemoWebStage, readinessScore: number, intent: AiIntent) {
+export function ensureCta(
+  text: string,
+  lang: AiLang,
+  stage: TemoWebStage,
+  readinessScore: number,
+  intent: AiIntent,
+  hasContactAlready = false
+) {
   if (intent.isSupport) return text
   const hasQuestion = /\?/.test(text)
   const hasContactAsk = CONTACT_HINT_RE.test(text)
   let out = text
 
-  if ((stage === 'ASK_CONTACT' || readinessScore >= 55 || intent.isContactIntent) && !hasContactAsk) {
+  if (stage === 'ASK_CONTACT' && hasContactAlready) {
+    const confirmLine =
+      lang === 'ua'
+        ? 'Дякую, контакт отримав — заявку зафіксував.'
+        : 'Спасибо, контакт получил — заявку зафиксировал.'
+    if (!/(зафикс|зафікс|заявк\w*\s+принят|заявк\w*\s+прийнят|contact\s+received)/i.test(out)) {
+      out = `${confirmLine}\n\n${out}`.trim()
+    }
+  }
+
+  if (!hasContactAlready && (stage === 'ASK_CONTACT' || readinessScore >= 55 || intent.isContactIntent) && !hasContactAsk) {
     const line =
       lang === 'ua'
         ? 'Якщо зручно, залиште телефон або email — підкажу наступний крок.'
@@ -520,13 +561,13 @@ export function expandNumericChoiceFromRecentAssistant(params: {
 }
 
 export function applyChannelLimits(text: string, channel: AiChannel) {
-  if (channel === 'instagram' || channel === 'messenger' || channel === 'telegram') return String(text || '').trim()
   const limits: Record<AiChannel, { maxChars: number; maxLines: number }> = {
     website: { maxChars: 1200, maxLines: 10 },
     flow: { maxChars: 1000, maxLines: 8 },
-    instagram: { maxChars: 1400, maxLines: 12 },
-    messenger: { maxChars: 1200, maxLines: 10 },
-    telegram: { maxChars: 1100, maxLines: 10 },
+    // Keep under IG common message limits; server-side sending may still split by byte-size if needed.
+    instagram: { maxChars: 1800, maxLines: 14 },
+    messenger: { maxChars: 1400, maxLines: 12 },
+    telegram: { maxChars: 1400, maxLines: 12 },
     whatsapp: { maxChars: 900, maxLines: 8 },
   }
   const { maxChars, maxLines } = limits[channel]

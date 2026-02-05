@@ -23,10 +23,21 @@ export function isPostgresEnabled() {
   return storageMode() === 'postgres' && hasDatabase()
 }
 
+const PG_QUERY_TIMEOUT_MS = Math.max(500, Math.min(20_000, Number(process.env.PG_QUERY_TIMEOUT_MS || 2500) || 2500))
+
+async function pgQuery<T = any>(sql: string, params?: any[]) {
+  // If PG is unreachable/misconfigured, fail fast so chat doesn't hang.
+  const p = db().query(sql as any, params as any)
+  const timeout = new Promise<never>((_, rej) =>
+    setTimeout(() => rej(new Error(`pg_timeout_${PG_QUERY_TIMEOUT_MS}ms`)), PG_QUERY_TIMEOUT_MS),
+  )
+  return (await Promise.race([p, timeout])) as T
+}
+
 // TENANTS
 export async function listTenants(): Promise<Tenant[]> {
   if (!isPostgresEnabled()) return (readJsonFile(TENANTS_FILE, []) as any[]).map((t) => ({ ...t }))
-  const res = await db().query(
+  const res = await pgQuery(
     'SELECT id, name, plan, notes, created_at as "createdAt", updated_at as "updatedAt" FROM tenants ORDER BY created_at DESC',
   )
   return res.rows
@@ -43,7 +54,7 @@ export async function upsertTenant(t: Tenant) {
     writeJsonFile(TENANTS_FILE, all)
     return next
   }
-  const res = await db().query(
+  const res = await pgQuery(
     `INSERT INTO tenants (id, name, plan, notes)
      VALUES ($1,$2,$3,$4)
      ON CONFLICT (id) DO UPDATE SET
@@ -63,7 +74,7 @@ export async function getTenantProfile(tenantId: string): Promise<TenantProfile 
     const all = readJsonFile(PROFILES_FILE, []) as any[]
     return (all.find((p) => p.tenantId === tenantId) as any) || null
   }
-  const res = await db().query(
+  const res = await pgQuery(
     `SELECT COALESCE(data, jsonb_build_object(
         'tenantId', tenant_id,
         'niche', niche,
@@ -98,7 +109,7 @@ export async function upsertTenantProfile(p: TenantProfile) {
   const language = typeof p?.defaultLang === 'string' ? p.defaultLang : typeof p?.language === 'string' ? p.language : null
   const timezone = typeof p?.timezone === 'string' ? p.timezone : null
   const managerTelegramId = typeof p?.managerTelegramChatId === 'string' ? p.managerTelegramChatId : typeof p?.managerTelegramId === 'string' ? p.managerTelegramId : null
-  const res = await db().query(
+  const res = await pgQuery(
     `INSERT INTO tenant_profiles (tenant_id, niche, offer, faq, language, timezone, manager_telegram_id, data)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT (tenant_id) DO UPDATE SET
@@ -128,7 +139,7 @@ export async function upsertTenantProfile(p: TenantProfile) {
 // CONNECTIONS
 export async function listChannelConnections(): Promise<ChannelConnection[]> {
   if (!isPostgresEnabled()) return readJsonFile(CONNECTIONS_FILE, []) as any
-  const res = await db().query(
+  const res = await pgQuery(
     `SELECT COALESCE(data, jsonb_build_object(
         'id', id,
         'tenantId', tenant_id,
@@ -138,7 +149,7 @@ export async function listChannelConnections(): Promise<ChannelConnection[]> {
       )) as connection
      FROM channel_connections ORDER BY created_at DESC`,
   )
-  return res.rows.map((r) => r.connection)
+  return res.rows.map((r: any) => r.connection)
 }
 
 export async function upsertChannelConnection(c: ChannelConnection) {
@@ -157,7 +168,7 @@ export async function upsertChannelConnection(c: ChannelConnection) {
   const channel = String(c?.channel || '').trim()
   if (!channel) throw new Error('channel is required')
   const externalId = c?.externalId == null ? '' : String(c.externalId).trim()
-  const res = await db().query(
+  const res = await pgQuery(
     `INSERT INTO channel_connections (id, tenant_id, channel, external_id, meta, data)
      VALUES ($1,$2,$3,$4,$5,$6)
      ON CONFLICT (id) DO UPDATE SET
@@ -179,7 +190,7 @@ export async function resolveTenantIdByConnection(channel: string, externalId: s
     const found = all.find((x) => String(x.channel) === channel && String(x.externalId) === externalId)
     return found?.tenantId || null
   }
-  const res = await db().query('SELECT tenant_id FROM channel_connections WHERE channel=$1 AND external_id=$2 LIMIT 1', [
+  const res = await pgQuery('SELECT tenant_id FROM channel_connections WHERE channel=$1 AND external_id=$2 LIMIT 1', [
     channel,
     externalId,
   ])
@@ -189,8 +200,8 @@ export async function resolveTenantIdByConnection(channel: string, externalId: s
 // LEADS (kept minimal for now; we’ll switch API gradually)
 export async function listLeads(): Promise<Lead[]> {
   if (!isPostgresEnabled()) return readJsonFile(LEADS_FILE, []) as any
-  const res = await db().query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 500')
-  return res.rows.map((r) => ({
+  const res = await pgQuery('SELECT * FROM leads ORDER BY created_at DESC LIMIT 500')
+  return res.rows.map((r: any) => ({
     ...r,
     createdAt: r.created_at ? new Date(r.created_at).toISOString() : r.createdAt || r.created_at || null,
   }))
@@ -212,7 +223,7 @@ export async function hasRecentLeadByContact(input: { contact: string; source?: 
       return now - t < withinMs
     })
   }
-  const res = await db().query(
+  const res = await pgQuery(
     `SELECT id FROM leads
      WHERE contact = $1
      ${source ? 'AND LOWER(source) = $2' : ''}
@@ -254,7 +265,7 @@ export async function createLead(input: any) {
     return lead
   }
 
-  const res = await db().query(
+  const res = await pgQuery(
     `INSERT INTO leads (
       id, tenant_id, name, contact, email, business_type, channel, pain, question,
       client_messages, ai_recommendation, ai_summary, ai_readiness, source, lang, notes, status, created_at
@@ -296,7 +307,7 @@ export async function deleteLeadById(id: number) {
     writeJsonFile(LEADS_FILE, next)
     return true
   }
-  const res = await db().query('DELETE FROM leads WHERE id=$1', [id])
+  const res = await pgQuery('DELETE FROM leads WHERE id=$1', [id])
   return (res.rowCount || 0) > 0
 }
 
@@ -310,7 +321,7 @@ export async function deleteLeadsByTenant(tenantId: string) {
     if (removed > 0) writeJsonFile(LEADS_FILE, next)
     return removed
   }
-  const res = await db().query('DELETE FROM leads WHERE tenant_id=$1', [tid])
+  const res = await pgQuery('DELETE FROM leads WHERE tenant_id=$1', [tid])
   return res.rowCount || 0
 }
 
@@ -321,7 +332,7 @@ export async function deleteAllLeads() {
     if (removed > 0) writeJsonFile(LEADS_FILE, [])
     return removed
   }
-  const res = await db().query('DELETE FROM leads')
+  const res = await pgQuery('DELETE FROM leads')
   return res.rowCount || 0
 }
 
@@ -336,7 +347,7 @@ export async function deleteLeadsByIds(ids: number[]) {
     if (removed > 0) writeJsonFile(LEADS_FILE, next)
     return removed
   }
-  const res = await db().query('DELETE FROM leads WHERE id = ANY($1::bigint[])', [list])
+  const res = await pgQuery('DELETE FROM leads WHERE id = ANY($1::bigint[])', [list])
   return res.rowCount || 0
 }
 

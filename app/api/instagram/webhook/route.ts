@@ -1259,6 +1259,7 @@ async function generateLeadAiSummary(input: {
 }
 
 async function saveLeadFromInstagram(input: {
+  tenantId: string
   senderId: string
   phone: string | null
   email: string | null
@@ -1272,7 +1273,7 @@ async function saveLeadFromInstagram(input: {
   if (!contact) throw new Error('missing_contact')
   const newLead = {
     id: Date.now(),
-    tenantId: 'temoweb',
+    tenantId: input.tenantId || 'temoweb',
     name: null,
     contact,
     email: input.email,
@@ -1593,6 +1594,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         let leadId: number | null = null
         try {
           leadId = await saveLeadFromInstagram({
+            tenantId: tenantId || 'temoweb',
             senderId,
             phone: mergedDraft.phone,
             email: mergedDraft.email,
@@ -1639,6 +1641,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       let leadId: number | null = null
       try {
         leadId = await saveLeadFromInstagram({
+          tenantId: tenantId || 'temoweb',
           senderId,
           phone: mergedDraft.phone || null,
           email: mergedDraft.email || null,

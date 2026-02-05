@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
-import { getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
+import { createLead, getTenantProfile, hasRecentLeadByContact, resolveTenantIdByConnection } from '@/app/lib/storage'
 import { appendMessage, getConversation } from '../conversationStore'
 import {
   applyChannelLimits,
@@ -16,6 +16,8 @@ import {
   expandNumericChoiceFromRecentAssistant,
   detectChosenPackageFromHistory,
   detectChosenPackage,
+  stripRepeatedIntro,
+  textHasContactValue,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -48,7 +50,8 @@ type WaWebhookPayload = {
 }
 
 const VERIFY_TOKEN = (process.env.WHATSAPP_VERIFY_TOKEN || '').trim()
-const APP_SECRET = (process.env.WHATSAPP_APP_SECRET || process.env.INSTAGRAM_APP_SECRET || '').trim()
+const WA_APP_SECRET = (process.env.WHATSAPP_APP_SECRET || '').trim()
+const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
 const SIGNATURE_BYPASS = (process.env.WHATSAPP_SIGNATURE_BYPASS || '').trim() === 'true'
 const ACCESS_TOKEN = (process.env.WHATSAPP_ACCESS_TOKEN || '').trim()
 const PHONE_NUMBER_ID = (process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim()
@@ -58,10 +61,74 @@ const IGNORE_TEST_EVENTS = (process.env.WHATSAPP_IGNORE_TEST_EVENTS || 'true').t
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_TIMEOUT_MS_GLOBAL = Math.max(5000, Math.min(90000, Number(process.env.OPENAI_TIMEOUT_MS || 18000) || 18000))
+// WhatsApp webhook must return quickly to Meta (10s-ish). Prefer shorter timeout + fallback.
+const OPENAI_TIMEOUT_MS_WA = Math.max(
+  3000,
+  Math.min(30_000, Number(process.env.WHATSAPP_OPENAI_TIMEOUT_MS || OPENAI_TIMEOUT_MS_GLOBAL || 9000) || 9000),
+)
+
+const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim()
+const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_CHAT_ID || '').trim()
 
 function clip(text: string, max = 1000) {
   if (text.length <= max) return text
   return `${text.slice(0, max - 1)}…`
+}
+
+function normalizeWaContact(from: string) {
+  const raw = String(from || '').trim()
+  if (!raw) return null
+  const digits = raw.replace(/[^\d]/g, '')
+  if (!digits) return null
+  // WhatsApp wa_id is digits without '+'
+  return `+${digits}`
+}
+
+async function sendTelegramLeadWhatsApp(input: {
+  tenantId: string | null
+  contact: string
+  from: string
+  text: string
+  metaPhoneNumberId: string | null
+  metaDisplayPhone: string | null
+}) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return { attempted: false as const, ok: false as const }
+  const lines = [
+    '📥 НОВА ЗАЯВКА З WHATSAPP',
+    '',
+    `🏢 tenant: ${input.tenantId || '—'}`,
+    `📞 контакт (wa): ${input.contact || '—'}`,
+    `🧾 from: ${input.from || '—'}`,
+    input.metaDisplayPhone ? `📱 номер бізнесу: ${input.metaDisplayPhone}` : null,
+    input.metaPhoneNumberId ? `🆔 phone_number_id: …${input.metaPhoneNumberId.slice(-4)}` : null,
+    '',
+    '🗣 Повідомлення клієнта:',
+    `— ${clip(input.text || '', 800)}`,
+    '',
+    `🕒 Час: ${new Date().toISOString()}`,
+  ].filter(Boolean)
+  const payload = {
+    chat_id: TELEGRAM_CHAT_ID,
+    text: lines.join('\n'),
+    disable_web_page_preview: true,
+  }
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '')
+      console.error('Telegram send error (WA lead)', { status: resp.status, body: body.slice(0, 400) })
+      return { attempted: true as const, ok: false as const }
+    }
+    return { attempted: true as const, ok: true as const }
+  } catch (e) {
+    console.error('Telegram send exception (WA lead)', e)
+    return { attempted: true as const, ok: false as const }
+  }
 }
 
 function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
@@ -69,22 +136,32 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
     console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped')
     return true
   }
-  if (!APP_SECRET) {
-    console.warn('WHATSAPP_APP_SECRET is missing; signature verification skipped')
-    return true
-  }
   const header = signatureHeader?.trim()
   if (!header) return false
   if (!header.startsWith('sha256=')) return false
-  const expected = `sha256=${crypto.createHmac('sha256', APP_SECRET).update(rawBody).digest('hex')}`
-  const expectedBuf = Buffer.from(expected)
   const actualBuf = Buffer.from(header)
-  if (expectedBuf.length !== actualBuf.length) return false
-  try {
-    return crypto.timingSafeEqual(expectedBuf, actualBuf)
-  } catch {
-    return false
+
+  const matchesSecret = (secret: string) => {
+    if (!secret) return false
+    const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody).digest('hex')}`
+    const expectedBuf = Buffer.from(expected)
+    if (expectedBuf.length !== actualBuf.length) return false
+    try {
+      return crypto.timingSafeEqual(expectedBuf, actualBuf)
+    } catch {
+      return false
+    }
   }
+
+  // Try WhatsApp app secret first (expected), then fall back to IG secret for diagnosis.
+  // This avoids "silent death" when webhook is attached to a different Meta App.
+  if (matchesSecret(WA_APP_SECRET)) return true
+  if (matchesSecret(IG_APP_SECRET)) {
+    console.warn('WA webhook: signature matched INSTAGRAM_APP_SECRET (check Meta App + WHATSAPP_APP_SECRET)')
+    return true
+  }
+  if (!WA_APP_SECRET) console.warn('WHATSAPP_APP_SECRET is missing')
+  return false
 }
 
 async function generateAiReply(params: {
@@ -116,23 +193,38 @@ async function generateAiReply(params: {
     readinessScore,
     extraRules: supportRules,
   })
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: 'system', content: system },
-        ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userText },
-      ],
-      temperature: 0.8,
-      max_tokens: 300,
-    }),
-  })
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS_WA)
+  let resp: Response
+  try {
+    resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      signal: ac.signal,
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: 'system', content: system },
+          ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
+          { role: 'user', content: userText },
+        ],
+        temperature: 0.8,
+        max_tokens: 300,
+      }),
+    })
+  } catch (e: any) {
+    const msg = String(e?.message || e)
+    const aborted = msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('abort')
+    console.error('OpenAI error (WA): fetch failed', { aborted, msg, OPENAI_TIMEOUT_MS_WA })
+    return isUa
+      ? 'Ок. Напишіть нішу і 1 головний біль — я одразу запропоную схему автоматизації і ціну.'
+      : 'Ок. Напиши нишу и 1 главную боль — я сразу предложу схему автоматизации и цену.'
+  } finally {
+    clearTimeout(timer)
+  }
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
     console.error('OpenAI error (WA)', resp.status, t.slice(0, 300))
@@ -141,8 +233,11 @@ async function generateAiReply(params: {
   const j = (await resp.json().catch(() => ({}))) as any
   const content = j?.choices?.[0]?.message?.content
   let out = typeof content === 'string' && content.trim() ? content.trim() : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
+  const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
+  out = stripRepeatedIntro(out, isFirstAssistant)
   const lang = isUa ? 'ua' : 'ru'
   const stage = computeStageHeuristic(userText, readinessScore)
+  const hasContactAlready = textHasContactValue(userText) || hist.some((m) => m.role === 'user' && textHasContactValue(m.content))
   const hasChosenPackage = Boolean(detectChosenPackage(userText || '') || detectChosenPackageFromHistory([{ role: 'user', content: userText || '' }]))
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
@@ -150,7 +245,7 @@ async function generateAiReply(params: {
     out = applyIncompleteDetailsFix(out, lang)
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
-    out = ensureCta(out, lang, stage, readinessScore, intent)
+    out = ensureCta(out, lang, stage, readinessScore, intent, hasContactAlready)
     out = applyNextSteps({ text: out, lang, stage, readinessScore, intent, hasChosenPackage })
   }
   out = applyChannelLimits(out, 'whatsapp')
@@ -285,6 +380,62 @@ export async function POST(request: NextRequest) {
         const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
         const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
         const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
+
+        // Lead capture (unified CRM): WhatsApp always has a sender number, so we create a lead
+        // only when the user is actually warm/ready (stage=ASK_CONTACT) and we have some context.
+        try {
+          const userTurns = Math.max(1, (afterUser?.messages || []).filter((x) => x.role === 'user').length)
+          const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
+          const stage = computeStageHeuristic(text, readinessScore)
+          const intent = detectAiIntent(text)
+          const contact = normalizeWaContact(from)
+          const shouldCreate =
+            Boolean(contact) &&
+            !intent.isSupport &&
+            userTurns >= 3 &&
+            (stage === 'ASK_CONTACT' || textHasContactValue(text))
+
+          if (shouldCreate && contact) {
+            const exists = await hasRecentLeadByContact({ contact, source: 'whatsapp', withinMs: 24 * 60 * 60 * 1000 })
+            if (!exists) {
+              const clientMessages = (afterUser?.messages || [])
+                .filter((x) => x.role === 'user')
+                .slice(-12)
+                .map((x) => x.content)
+                .filter(Boolean)
+              const saved = await createLead({
+                id: Date.now(),
+                tenantId: tenantId || 'temoweb',
+                name: null,
+                contact,
+                email: null,
+                businessType: null,
+                channel: 'WhatsApp',
+                pain: null,
+                question: text,
+                clientMessages,
+                aiRecommendation: null,
+                aiSummary: null,
+                source: 'whatsapp',
+                lang: /[іїєґ]/i.test(text) ? 'ua' : 'ru',
+                notes: metaPhoneNumberId ? `phone_number_id:${metaPhoneNumberId}` : null,
+                status: 'new',
+              })
+              const tg = await sendTelegramLeadWhatsApp({
+                tenantId: tenantId || null,
+                contact,
+                from,
+                text,
+                metaPhoneNumberId,
+                metaDisplayPhone,
+              })
+              console.log('WA lead saved', { leadId: saved?.id, telegram: tg.ok })
+            }
+          }
+        } catch (e) {
+          console.error('WA lead capture failed', { error: String((e as any)?.message || e) })
+        }
+
         const reply = await generateAiReply({ userText: expandedUserText, history, apiKey })
         await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
         appendMessage(from, { role: 'assistant', content: reply })

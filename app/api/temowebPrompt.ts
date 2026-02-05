@@ -19,6 +19,8 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
   const t = String(text || '').trim()
   let score = 10
   if (t.length >= 12) score += 5
+  // Direct contact provided => very hot signal
+  if (/\S+@\S+\.\S+/.test(t) || /(\+?\d[\d\s().-]{7,}\d)/.test(t)) score += 40
   if (/(у\s+меня|мы\s+|клиент|заявк|заказ|продаж|ниша|бизнес|салон|кофейн|ремонт|стомат|барбершоп|школа)/i.test(t)) score += 15
   if (/(как|почему|зачем|что|як|чому|що)\b/i.test(t)) score += 8
   if (/(срок|сроки|время|термин|інтеграц|integration|процесс|как\s+это\s+работает)/i.test(t)) score += 10
@@ -40,6 +42,8 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
 export function computeStageHeuristic(text: string, readinessScore: number): TemoWebStage {
   const t = String(text || '').trim()
   if (!t) return 'DISCOVERY'
+  // If user directly provided contact details, jump to ASK_CONTACT to confirm & proceed.
+  if (/\S+@\S+\.\S+/.test(t) || /(\+?\d[\d\s().-]{7,}\d)/.test(t)) return 'ASK_CONTACT'
   if (readinessScore >= 55 && /(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) return 'ASK_CONTACT'
   if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|услуг|услуги|послуг|послуги|service|services|offerings|пілот|пилот|pilot|поддержк|setup|внедрен|оплат|stripe|календар|calendar|модул)/i.test(t)) return 'OFFER'
   if (/(интеграц|integration|процесс|срок|сроки|гарант|надеж|безопас)/i.test(t)) return 'TRUST'
@@ -208,7 +212,8 @@ export function buildTemoWebSystemPrompt(params: {
     'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
     'PILOT FACTS (never change): duration=2 months; launch=48–72 hours; included channels=1–2 (NOT 1 fixed); price=490€ setup + 99€/month ×2. Base pilot does NOT include: custom dev, complex integrations, ecommerce/autosales, multilingual, advanced analytics. BUT: any extra module from the website can be added as a paid add-on.',
     'CONTACT TIMING RULE: When the client is warm/hot (confirmed interest, discussed packages/price/process, said “ок/понял/давайте/подходит/готов”) — explicitly ask for contact (phone or email) to fix the request and move to a call/demo. Do NOT wait for perfect wording from the client.',
-    'NEXT STEPS RULE (CRITICAL): End EVERY message with a short "next steps" block so the client always knows what to do.',
+    'NEXT STEPS RULE (CRITICAL): End every message with a short "next steps" block so the client always knows what to do.',
+    'EXCEPTION: if stage=ASK_CONTACT (or user already left email/phone) — do NOT output the "next steps" menu. Instead: confirm you fixed the request + ask for ONE contact (phone OR email) if missing + give a short kickoff checklist.',
     'If the user replies with ONLY a single digit "1" / "2" / "3" — treat it as selecting the corresponding option from your previous next steps block and answer accordingly (do NOT reset the conversation).',
     'Output format (exact):',
     '— Line 1: "Если хотите — выберите вариант:" (RU) or "Якщо хочете — оберіть варіант:" (UA).',

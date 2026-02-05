@@ -15,6 +15,8 @@ import {
   detectAiIntent,
   detectChosenPackageFromHistory,
   detectChosenPackage,
+  stripRepeatedIntro,
+  textHasContactValue,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -182,6 +184,12 @@ function buildLegacySystemPrompt(lng: ReturnType<typeof getLang>) {
   ].join(' ')
 }
 
+function getOpenAiTimeoutMs() {
+  const n = Number(process.env.OPENAI_TIMEOUT_MS || 18000)
+  if (!Number.isFinite(n)) return 18000
+  return Math.max(5000, Math.min(90000, Math.round(n)))
+}
+
 async function callOpenAI(
   context: string,
   history?: { role: 'user' | 'assistant'; content: string }[],
@@ -235,69 +243,83 @@ async function callOpenAI(
       ? 'This is the first message: introduce yourself as "personal AI assistant of TemoWeb" and add 1 line: "You can tell me your preferred language. If you don’t — default is Ukrainian 🇺🇦."'
       : 'Це перше повідомлення: представтесь як "персональний AI‑асистент TemoWeb" і додайте 1 рядок про мову: "Можете написати, якою мовою зручно. Якщо не скажете — за замовчуванням українською 🇺🇦."'
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
-        },
-        ...(String(sourceHint || '').trim().toLowerCase() === 'pilot'
-          ? [
-              {
-                role: 'system',
-                content:
-                  lng === 'ru'
-                    ? 'SOURCE HINT: User came from PILOT landing. Prioritize PILOT PROGRAM: answer clearly what is included/not included; confirm add-ons can be added; do NOT suggest START unless user asks for packages.'
-                    : 'SOURCE HINT: Користувач прийшов із PILOT landing. Пріоритет — PILOT PROGRAM: чітко що входить/не входить; підтвердити, що модулі можна додати; не пропонувати START, якщо не питають про пакети.',
-              },
-            ]
-          : []),
-        // Optional "fast mode" (used by Flow): shorter answers + stronger next-step.
-        ...(context.includes('FAST_MODE: true')
-          ? [
-              {
-                role: 'system',
-                content:
-                  lng === 'ru'
-                    ? [
-                        'FAST MODE.',
-                        'Отвечай очень коротко и по делу.',
-                        'Максимум: 4 короткие строки или 2–3 предложения.',
-                        'Без воды и без повторов.',
-                        'Снимай возражения 1 фактом/примером.',
-                        'Завершай конкретным следующим шагом (контакт/демо/что нужно от клиента).',
-                        'Максимум 1 вопрос.',
-                      ].join(' ')
-                    : [
-                        'FAST MODE.',
-                        'Відповідай дуже коротко і по суті.',
-                        'Максимум: 4 короткі рядки або 2–3 речення.',
-                        'Без води та без повторів.',
-                        'Знімай заперечення 1 фактом/прикладом.',
-                        'Завершуй конкретним наступним кроком (контакт/демо/що треба від клієнта).',
-                        'Максимум 1 питання.',
-                      ].join(' '),
-              },
-            ]
-          : []),
-        { role: 'system', content: context },
-        ...(isFirstAssistant && firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
-        ...(history || []),
-      ],
-      // Slightly higher creativity + lower repetition penalties => less “template” feel
-      temperature: 0.95,
-      presence_penalty: 0.2,
-      frequency_penalty: 0.2,
-      max_tokens: 520,
-    }),
-  })
+  const openAiTimeoutMs = getOpenAiTimeoutMs()
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), openAiTimeoutMs)
+  let response: Response
+  try {
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      signal: ac.signal,
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
+          },
+          ...(String(sourceHint || '').trim().toLowerCase() === 'pilot'
+            ? [
+                {
+                  role: 'system',
+                  content:
+                    lng === 'ru'
+                      ? 'SOURCE HINT: User came from PILOT landing. Prioritize PILOT PROGRAM: answer clearly what is included/not included; confirm add-ons can be added; do NOT suggest START unless user asks for packages.'
+                      : 'SOURCE HINT: Користувач прийшов із PILOT landing. Пріоритет — PILOT PROGRAM: чітко що входить/не входить; підтвердити, що модулі можна додати; не пропонувати START, якщо не питають про пакети.',
+                },
+              ]
+            : []),
+          // Optional "fast mode" (used by Flow): shorter answers + stronger next-step.
+          ...(context.includes('FAST_MODE: true')
+            ? [
+                {
+                  role: 'system',
+                  content:
+                    lng === 'ru'
+                      ? [
+                          'FAST MODE.',
+                          'Отвечай очень коротко и по делу.',
+                          'Максимум: 4 короткие строки или 2–3 предложения.',
+                          'Без воды и без повторов.',
+                          'Снимай возражения 1 фактом/примером.',
+                          'Завершай конкретным следующим шагом (контакт/демо/что нужно от клиента).',
+                          'Максимум 1 вопрос.',
+                        ].join(' ')
+                      : [
+                          'FAST MODE.',
+                          'Відповідай дуже коротко і по суті.',
+                          'Максимум: 4 короткі рядки або 2–3 речення.',
+                          'Без води та без повторів.',
+                          'Знімай заперечення 1 фактом/прикладом.',
+                          'Завершуй конкретним наступним кроком (контакт/демо/що треба від клієнта).',
+                          'Максимум 1 питання.',
+                        ].join(' '),
+                },
+              ]
+            : []),
+          { role: 'system', content: context },
+          ...(isFirstAssistant && firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
+          ...(history || []),
+        ],
+        // Slightly higher creativity + lower repetition penalties => less “template” feel
+        temperature: 0.95,
+        presence_penalty: 0.2,
+        frequency_penalty: 0.2,
+        max_tokens: 520,
+      }),
+    })
+  } catch (e: any) {
+    const msg = String(e?.message || e)
+    const aborted = msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('abort')
+    console.error('OpenAI request failed', { aborted, msg, openAiTimeoutMs })
+    return { content: null, summary: null, error: aborted ? 'timeout' : 'fetch_failed' }
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
@@ -336,6 +358,7 @@ export async function POST(request: NextRequest) {
     })
     const channel = (body.currentChannel || 'website') as any
     const intent = detectAiIntent(lastUser || '')
+    const hasContactAlready = textHasContactValue(lastUserRaw || '') || rawHistory.some((m) => m.role === 'user' && textHasContactValue(m.content))
     const readinessScore = computeReadinessScoreHeuristic(lastUser || '', Array.isArray(body.history) ? body.history.filter((m) => m.role === 'user').length || 1 : 1)
     const stage = computeStageHeuristic(lastUser || '', readinessScore)
     const supportRules = intent.isSupport
@@ -362,6 +385,9 @@ export async function POST(request: NextRequest) {
 
     const aiResult = await callOpenAI(context, historyForAi, body.lang, body.currentChannel, body.sourceHint, supportRules, apiKey)
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
+    // Remove repeated "I am AI assistant..." intro after first assistant message.
+    const isFirstAssistant = rawHistory.filter((m) => m.role === 'assistant').length === 0
+    answer = stripRepeatedIntro(answer, isFirstAssistant)
 
     const hasChosenPackage = Boolean(detectChosenPackage(lastUser || '') || detectChosenPackageFromHistory(body.history))
     if (!hasChosenPackage && isPackageCompareRequest(lastUser || '')) {
@@ -378,7 +404,7 @@ export async function POST(request: NextRequest) {
         answer = applyIncompleteDetailsFix(answer, lang)
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
-        answer = ensureCta(answer, lang, stage, readinessScore, intent)
+        answer = ensureCta(answer, lang, stage, readinessScore, intent, hasContactAlready)
         answer = applyPilotKickoffChecklist({ text: answer, lang, intent })
         const recentAssistantTexts = (Array.isArray(body.history) ? body.history : [])
           .filter((m) => m.role === 'assistant')
