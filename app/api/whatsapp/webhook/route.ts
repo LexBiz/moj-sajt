@@ -135,14 +135,25 @@ function verifySignature(
   rawBody: Buffer,
   signatureHeader: string | null,
 ): { ok: boolean; matched: 'bypass' | 'whatsapp' | 'instagram' | null; headerPrefix: string | null; headerLen: number } {
-  if (SIGNATURE_BYPASS) {
-    console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped')
-    return { ok: true, matched: 'bypass', headerPrefix: signatureHeader ? String(signatureHeader).slice(0, 12) : null, headerLen: signatureHeader ? String(signatureHeader).length : 0 }
-  }
   // Meta can send the sha256 hex in upper/lower case. Normalize to lowercase before comparing.
-  const header = signatureHeader?.trim().toLowerCase()
-  if (!header) return { ok: false, matched: null, headerPrefix: null, headerLen: 0 }
-  if (!header.startsWith('sha256=')) return { ok: false, matched: null, headerPrefix: header.slice(0, 12), headerLen: header.length }
+  const header = signatureHeader?.trim().toLowerCase() || ''
+  const headerPrefix = header ? header.slice(0, 12) : null
+  const headerLen = header ? header.length : 0
+
+  if (!header) {
+    if (SIGNATURE_BYPASS) {
+      console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped', { headerPrefix, headerLen })
+      return { ok: true, matched: 'bypass', headerPrefix, headerLen }
+    }
+    return { ok: false, matched: null, headerPrefix: null, headerLen: 0 }
+  }
+  if (!header.startsWith('sha256=')) {
+    if (SIGNATURE_BYPASS) {
+      console.warn('WHATSAPP_SIGNATURE_BYPASS=true; signature verification skipped', { headerPrefix, headerLen })
+      return { ok: true, matched: 'bypass', headerPrefix, headerLen }
+    }
+    return { ok: false, matched: null, headerPrefix, headerLen }
+  }
   const actualBuf = Buffer.from(header)
 
   const matchesSecret = (secret: string) => {
@@ -157,15 +168,29 @@ function verifySignature(
     }
   }
 
+  const waMatch = matchesSecret(WA_APP_SECRET)
+  const igMatch = matchesSecret(IG_APP_SECRET)
+  if (SIGNATURE_BYPASS) {
+    console.warn('WA webhook: bypass audit', {
+      headerPrefix,
+      headerLen,
+      waMatch,
+      igMatch,
+      waSecretPresent: Boolean(WA_APP_SECRET),
+      igSecretPresent: Boolean(IG_APP_SECRET),
+    })
+    return { ok: true, matched: 'bypass', headerPrefix, headerLen }
+  }
+
   // Try WhatsApp app secret first (expected), then fall back to IG secret for diagnosis.
   // This avoids "silent death" when webhook is attached to a different Meta App.
-  if (matchesSecret(WA_APP_SECRET)) return { ok: true, matched: 'whatsapp', headerPrefix: header.slice(0, 12), headerLen: header.length }
-  if (matchesSecret(IG_APP_SECRET)) {
+  if (waMatch) return { ok: true, matched: 'whatsapp', headerPrefix, headerLen }
+  if (igMatch) {
     console.warn('WA webhook: signature matched INSTAGRAM_APP_SECRET (check Meta App + WHATSAPP_APP_SECRET)')
-    return { ok: true, matched: 'instagram', headerPrefix: header.slice(0, 12), headerLen: header.length }
+    return { ok: true, matched: 'instagram', headerPrefix, headerLen }
   }
   if (!WA_APP_SECRET) console.warn('WHATSAPP_APP_SECRET is missing')
-  return { ok: false, matched: null, headerPrefix: header.slice(0, 12), headerLen: header.length }
+  return { ok: false, matched: null, headerPrefix, headerLen }
 }
 
 async function generateAiReply(params: {
