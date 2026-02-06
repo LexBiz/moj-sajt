@@ -571,7 +571,8 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
     console.warn('INSTAGRAM_APP_SECRET is missing; signature verification skipped')
     return true
   }
-  const header = signatureHeader?.trim()
+  // Meta can send sha256 hex in upper/lower case. Normalize to lowercase before comparing.
+  const header = signatureHeader?.trim().toLowerCase()
   if (!header) return false
   if (!header.startsWith('sha256=')) return false
 

@@ -144,9 +144,31 @@ export default function PrivacyPolicy() {
               <h2 className="text-2xl font-bold text-white mb-4">11. Контакты</h2>
               <p className="mb-3">По вопросам обработки персональных данных:</p>
               <ul className="space-y-2">
+                <li>
+                  ✉️ Email:{' '}
+                  <a href="mailto:lexbizai@gmail.com" className="text-indigo-400 hover:text-indigo-300">
+                    lexbizai@gmail.com
+                  </a>
+                </li>
                 <li>📞 Телефон: <a href="tel:+420723995896" className="text-indigo-400 hover:text-indigo-300">+420 723 995 896</a></li>
                 <li>✈️ Telegram: <a href="https://t.me/temoxa_1" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">@temoxa_1</a></li>
                 <li>📱 WhatsApp: <a href="https://wa.me/380960494917" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">+380 96 049 49 17</a></li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">12. Дополнительные документы</h2>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>
+                  <a className="text-indigo-400 hover:text-indigo-300" href="/terms">
+                    Условия использования (Terms of Service)
+                  </a>
+                </li>
+                <li>
+                  <a className="text-indigo-400 hover:text-indigo-300" href="/data-deletion">
+                    Инструкция по удалению данных (User Data Deletion)
+                  </a>
+                </li>
               </ul>
             </section>
           </div>
