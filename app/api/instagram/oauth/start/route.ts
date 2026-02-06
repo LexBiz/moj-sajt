@@ -14,13 +14,12 @@ export async function GET(request: NextRequest) {
   const scope =
     scopeParam ||
     (process.env.INSTAGRAM_OAUTH_SCOPE || '').trim() ||
-    // IMPORTANT:
-    // App Review feature names like "instagram_business_basic" are NOT valid OAuth permission strings.
-    // For Meta Login you must request real permissions like "instagram_basic", "instagram_manage_messages", and (optionally) Page permissions.
-    // Override via INSTAGRAM_OAUTH_SCOPE or ?scope=... when needed.
+    // Updated Instagram Login scopes (2025+):
+    // These scopes are used both for App Review and for OAuth consent.
+    // Add page scopes in "pages" mode to enable resource selection (Page → IG business account).
     (mode === 'pages'
-      ? 'instagram_basic,instagram_manage_messages,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging'
-      : 'instagram_basic,instagram_manage_messages')
+      ? 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging'
+      : 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments')
 
   if (!appId || !redirectUri) {
     return NextResponse.json(

@@ -283,7 +283,9 @@ export default function IntegrationsPage() {
 
   const connectUrl = useMemo(() => {
     const returnTo = encodeURIComponent('/admin/integrations')
-    return `/api/instagram/oauth/start?returnTo=${returnTo}`
+    // Default to "pages" mode for App Review recording:
+    // it requests page scopes required for resource selection (Page → IG business account).
+    return `/api/instagram/oauth/start?mode=pages&returnTo=${returnTo}`
   }, [])
 
 
