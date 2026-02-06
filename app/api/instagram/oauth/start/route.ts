@@ -31,11 +31,14 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const url = new URL('https://www.facebook.com/v24.0/dialog/oauth')
+  // Instagram API with Instagram Login uses Instagram OAuth authorize endpoint.
+  // This is required for instagram_business_* scopes; using Facebook /dialog/oauth will produce "Invalid Scopes".
+  const url = new URL('https://api.instagram.com/oauth/authorize')
   url.searchParams.set('client_id', appId)
   url.searchParams.set('redirect_uri', redirectUri)
   url.searchParams.set('response_type', 'code')
   url.searchParams.set('scope', scope)
+  url.searchParams.set('force_reauth', 'true')
 
   // CSRF protection + correlation id
   const nonce = crypto.randomUUID()

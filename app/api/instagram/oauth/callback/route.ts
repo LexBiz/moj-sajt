@@ -5,26 +5,41 @@ import { readTokenFile, tokenMeta, verifyState, writeTokenFile } from '../_store
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-async function getAppAccessToken(appId: string, appSecret: string) {
-  const url = new URL('https://graph.facebook.com/oauth/access_token')
-  url.searchParams.set('client_id', appId)
-  url.searchParams.set('client_secret', appSecret)
-  url.searchParams.set('grant_type', 'client_credentials')
-  const r = await fetch(url.toString())
+async function exchangeCodeForShortLivedToken(input: { appId: string; appSecret: string; redirectUri: string; code: string }) {
+  const url = new URL('https://graph.instagram.com/access_token')
+  // According to Instagram OAuth spec, this endpoint expects a POST form.
+  const body = new URLSearchParams()
+  body.set('client_id', input.appId)
+  body.set('client_secret', input.appSecret)
+  body.set('grant_type', 'authorization_code')
+  body.set('redirect_uri', input.redirectUri)
+  body.set('code', input.code)
+
+  const r = await fetch(url.toString(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  })
   const j = (await r.json().catch(() => ({}))) as any
-  if (!r.ok) throw new Error(`app_access_token_error ${r.status} ${JSON.stringify(j).slice(0, 300)}`)
+  if (!r.ok) throw new Error(`token_exchange_failed ${r.status} ${JSON.stringify(j).slice(0, 300)}`)
   const token = j?.access_token
-  if (typeof token !== 'string' || !token) throw new Error('app_access_token_missing')
-  return token
+  if (typeof token !== 'string' || !token) throw new Error('token_exchange_missing_access_token')
+  const expiresIn = typeof j?.expires_in === 'number' ? j.expires_in : null
+  return { accessToken: token, expiresIn, raw: j }
 }
 
-async function debugToken(inputToken: string, appAccessToken: string) {
-  const url = new URL('https://graph.facebook.com/debug_token')
-  url.searchParams.set('input_token', inputToken)
-  url.searchParams.set('access_token', appAccessToken)
+async function exchangeShortLivedToLongLived(input: { appSecret: string; shortLivedToken: string }) {
+  const url = new URL('https://graph.instagram.com/access_token')
+  url.searchParams.set('grant_type', 'ig_exchange_token')
+  url.searchParams.set('client_secret', input.appSecret)
+  url.searchParams.set('access_token', input.shortLivedToken)
   const r = await fetch(url.toString())
   const j = (await r.json().catch(() => ({}))) as any
-  return { ok: r.ok, status: r.status, json: j }
+  if (!r.ok) throw new Error(`long_lived_exchange_failed ${r.status} ${JSON.stringify(j).slice(0, 300)}`)
+  const token = j?.access_token
+  if (typeof token !== 'string' || !token) throw new Error('long_lived_exchange_missing_access_token')
+  const expiresIn = typeof j?.expires_in === 'number' ? j.expires_in : null
+  return { accessToken: token, expiresIn, raw: j }
 }
 
 export async function GET(request: NextRequest) {
@@ -58,45 +73,29 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // Exchange code for user access token
-  const tokenUrl = new URL('https://graph.facebook.com/v24.0/oauth/access_token')
-  tokenUrl.searchParams.set('client_id', appId)
-  tokenUrl.searchParams.set('client_secret', appSecret)
-  tokenUrl.searchParams.set('redirect_uri', redirectUri)
-  tokenUrl.searchParams.set('code', code)
-
-  const tokenResp = await fetch(tokenUrl.toString())
-  const tokenJson = (await tokenResp.json().catch(() => ({}))) as any
-
-  if (!tokenResp.ok) {
-    return NextResponse.json(
-      { error: 'token_exchange_failed', status: tokenResp.status, details: tokenJson },
-      { status: 400, headers: { 'Cache-Control': 'no-store' } },
-    )
-  }
-
-  const accessToken = tokenJson?.access_token
-  if (typeof accessToken !== 'string' || !accessToken) {
-    return NextResponse.json(
-      { error: 'token_exchange_missing_access_token', details: tokenJson },
-      { status: 400, headers: { 'Cache-Control': 'no-store' } },
-    )
-  }
-
-  // Debug token scopes (best-effort)
+  // Exchange code -> short-lived token -> long-lived token (recommended for server use).
+  let accessToken = ''
+  let expiresIn: number | null = null
   let debug: any = null
   try {
-    const appAccessToken = await getAppAccessToken(appId, appSecret)
-    debug = await debugToken(accessToken, appAccessToken)
-  } catch (e) {
-    debug = { ok: false, error: String(e) }
+    const short = await exchangeCodeForShortLivedToken({ appId, appSecret, redirectUri, code })
+    debug = { stage: 'short', ok: true, expiresIn: short.expiresIn }
+    const long = await exchangeShortLivedToLongLived({ appSecret, shortLivedToken: short.accessToken })
+    accessToken = long.accessToken
+    expiresIn = long.expiresIn
+    debug = { stage: 'long', ok: true, expiresIn }
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: 'oauth_exchange_failed', details: String(e?.message || e) },
+      { status: 400, headers: { 'Cache-Control': 'no-store' } },
+    )
   }
 
   writeTokenFile({
     obtainedAt: new Date().toISOString(),
     accessToken,
-    expiresIn: typeof tokenJson?.expires_in === 'number' ? tokenJson.expires_in : null,
-    tokenType: typeof tokenJson?.token_type === 'string' ? tokenJson.token_type : null,
+    expiresIn,
+    tokenType: 'bearer',
     appId,
     debug,
   })
@@ -109,23 +108,15 @@ export async function GET(request: NextRequest) {
 
   const returnTo = typeof statePayload?.returnTo === 'string' ? statePayload.returnTo : null
 
+  // Prefer redirecting back to the UI after login (better for App Review video).
+  if (returnTo && typeof returnTo === 'string' && returnTo.startsWith('/')) {
+    const back = new URL(returnTo, u.origin)
+    back.searchParams.set('oauth', 'ok')
+    return NextResponse.redirect(back.toString(), { headers: { 'Cache-Control': 'no-store' } })
+  }
+
   return NextResponse.json(
-    {
-      ok: true,
-      saved: true,
-      tokenMeta: meta,
-      next: {
-        // Set these on server .env to use the saved token for Graph API calls.
-        env: {
-          INSTAGRAM_API_HOST: 'graph.facebook.com',
-          INSTAGRAM_API_VERSION: 'v24.0',
-          INSTAGRAM_ACCESS_TOKEN: '[use saved token file]',
-        },
-      },
-      note:
-        'Token stored server-side. DO NOT share tokens. To view it on the server: cat data/instagram-login-token.json. If OAuth login shows "Invalid Scopes", set INSTAGRAM_OAUTH_SCOPE to the exact permissions you requested in App Review (e.g. instagram_business_basic,instagram_business_manage_messages).',
-      returnTo,
-    },
+    { ok: true, saved: true, tokenMeta: meta, returnTo },
     { headers: { 'Cache-Control': 'no-store, max-age=0' } },
   )
 }
