@@ -211,7 +211,11 @@ async function generateAiReply(params: {
   if (!key) {
     return 'Принято. Напиши нишу и где приходят заявки — покажу, как автоматизация заберёт это на себя.'
   }
-  const isUa = /[іїєґ]/i.test(String(userText || ''))
+  // Default UA across channels. Switch only when user explicitly asks.
+  const t = String(userText || '').trim().toLowerCase()
+  const wantsRu = /\b(рус|русский|по-русски|російськ|російською|ru)\b/i.test(t)
+  const wantsUa = /\b(укр|укра|українськ|українською|ua)\b/i.test(t) || /[іїєґ]/i.test(String(userText || ''))
+  const isUa = wantsUa || !wantsRu
   const hist = Array.isArray(params.history) ? params.history : []
   const userTurns = Math.max(1, hist.filter((m) => m.role === 'user').length)
   const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
