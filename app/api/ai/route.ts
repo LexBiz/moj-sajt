@@ -17,6 +17,7 @@ import {
   detectChosenPackage,
   stripRepeatedIntro,
   textHasContactValue,
+  buildTemoWebFirstMessage,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -343,6 +344,18 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as AiRequest
     const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
     const rawHistory = Array.isArray(body.history) ? body.history : []
+    const isFirstAssistant = rawHistory.filter((m) => m.role === 'assistant').length === 0
+    // Hard requirement: first assistant message is a fixed intro.
+    if (isFirstAssistant) {
+      const answer = buildTemoWebFirstMessage()
+      return NextResponse.json({
+        answer,
+        recommendation: answer,
+        summary: null,
+        provider: 'template',
+        provider_detail: 'first_message_intro',
+      })
+    }
     const recentAssistantTextsForChoice = rawHistory
       .filter((m) => m.role === 'assistant')
       .slice(-6)
@@ -386,7 +399,6 @@ export async function POST(request: NextRequest) {
     const aiResult = await callOpenAI(context, historyForAi, body.lang, body.currentChannel, body.sourceHint, supportRules, apiKey)
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
     // Remove repeated "I am AI assistant..." intro after first assistant message.
-    const isFirstAssistant = rawHistory.filter((m) => m.role === 'assistant').length === 0
     answer = stripRepeatedIntro(answer, isFirstAssistant)
 
     const hasChosenPackage = Boolean(detectChosenPackage(lastUser || '') || detectChosenPackageFromHistory(body.history))

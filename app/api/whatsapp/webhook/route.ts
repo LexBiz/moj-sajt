@@ -18,6 +18,7 @@ import {
   detectChosenPackage,
   stripRepeatedIntro,
   textHasContactValue,
+  buildTemoWebFirstMessage,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -420,6 +421,15 @@ export async function POST(request: NextRequest) {
         const history = (afterUser?.messages || [])
           .slice(-20)
           .map((m) => ({ role: m.role, content: m.content }))
+
+        // Hard requirement: first assistant message is a fixed intro (then default UA afterwards).
+        const hasAnyAssistant = (afterUser?.messages || []).some((x) => x.role === 'assistant')
+        if (!hasAnyAssistant) {
+          const intro = buildTemoWebFirstMessage()
+          await sendWhatsAppText(from, intro, { phoneNumberId: metaPhoneNumberId })
+          appendMessage(from, { role: 'assistant', content: intro })
+          continue
+        }
 
         const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
         const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null

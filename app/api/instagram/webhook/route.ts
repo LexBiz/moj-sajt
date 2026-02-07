@@ -22,6 +22,7 @@ import {
   detectChosenPackageFromHistory,
   detectChosenPackage,
   evaluateQuality,
+  buildTemoWebFirstMessage,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
@@ -1495,6 +1496,16 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   // language selection gate
   if (!conversation.lang) {
     updateConversation(senderId, { lang, pendingText: null })
+  }
+
+  // Hard requirement: first assistant message is a fixed intro.
+  const hasAnyAssistant = Array.isArray(conversation.history) ? conversation.history.some((m: any) => m?.role === 'assistant') : false
+  if (!hasAnyAssistant) {
+    const intro = buildTemoWebFirstMessage()
+    const nextHistory: ConversationMessage[] = [...(conversation.history || []), { role: 'assistant' as const, content: intro }].slice(-24) as any
+    updateConversation(senderId, { stage: 'qualify', history: nextHistory, lastAssistantAt: nowIso() } as any)
+    await sendInstagramMessage(senderId, intro)
+    return
   }
 
   // If user keeps sending "1/2/ru/ua" right after the language prompt, ignore as noise.

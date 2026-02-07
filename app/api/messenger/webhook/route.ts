@@ -14,6 +14,7 @@ import {
   detectAiIntent,
   detectChosenPackageFromHistory,
   detectChosenPackage,
+  buildTemoWebFirstMessage,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -727,6 +728,16 @@ export async function POST(request: NextRequest) {
         lang: preferredLang,
         recentAssistantTexts: recentAssistantTextsForChoice,
       })
+
+      // Hard requirement: first assistant message is a fixed intro.
+      const hasAnyAssistant = history.some((m) => m.role === 'assistant')
+      if (!hasAnyAssistant) {
+        const intro = buildTemoWebFirstMessage()
+        await sendMessengerText({ pageAccessToken, recipientId: senderId, text: intro })
+        appendMessage(pageId, senderId, { role: 'assistant', content: intro })
+        recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `intro_sent pageId=${pageId || '—'}` })
+        continue
+      }
 
       let reply = await generateAiReplyWithHistory({ userText: effectiveUserText || '', history, lang: preferredLang, images: imageUrls, apiKey })
       const intent = detectAiIntent(effectiveUserText || '')
