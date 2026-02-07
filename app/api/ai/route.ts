@@ -251,6 +251,67 @@ async function callOpenAI(
   const timer = setTimeout(() => ac.abort(), openAiTimeoutMs)
   let response: Response
   try {
+    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    // Some newer models (e.g. gpt-5) do not support `max_tokens` in Chat Completions.
+    // Use `max_completion_tokens` for those models, otherwise fallback to `max_tokens`.
+    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+    const payload: any = {
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
+        },
+        ...(String(sourceHint || '').trim().toLowerCase() === 'pilot'
+          ? [
+              {
+                role: 'system',
+                content:
+                  lng === 'ru'
+                    ? 'SOURCE HINT: User came from PILOT landing. Prioritize PILOT PROGRAM: answer clearly what is included/not included; confirm add-ons can be added; do NOT suggest START unless user asks for packages.'
+                    : 'SOURCE HINT: Користувач прийшов із PILOT landing. Пріоритет — PILOT PROGRAM: чітко що входить/не входить; підтвердити, що модулі можна додати; не пропонувати START, якщо не питають про пакети.',
+              },
+            ]
+          : []),
+        // Optional "fast mode" (used by Flow): shorter answers + stronger next-step.
+        ...(context.includes('FAST_MODE: true')
+          ? [
+              {
+                role: 'system',
+                content:
+                  lng === 'ru'
+                    ? [
+                        'FAST MODE.',
+                        'Отвечай очень коротко и по делу.',
+                        'Максимум: 4 короткие строки или 2–3 предложения.',
+                        'Без воды и без повторов.',
+                        'Снимай возражения 1 фактом/примером.',
+                        'Завершай конкретным следующим шагом (контакт/демо/что нужно от клиента).',
+                        'Максимум 1 вопрос.',
+                      ].join(' ')
+                    : [
+                        'FAST MODE.',
+                        'Відповідай дуже коротко і по суті.',
+                        'Максимум: 4 короткі рядки або 2–3 речення.',
+                        'Без води та без повторів.',
+                        'Знімай заперечення 1 фактом/прикладом.',
+                        'Завершуй конкретним наступним кроком (контакт/демо/що треба від клієнта).',
+                        'Максимум 1 питання.',
+                      ].join(' '),
+              },
+            ]
+          : []),
+        { role: 'system', content: context },
+        ...(isFirstAssistant && firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
+        ...(history || []),
+      ],
+      // Slightly higher creativity + lower repetition penalties => less “template” feel
+      temperature: 0.95,
+      presence_penalty: 0.2,
+      frequency_penalty: 0.2,
+    }
+    payload[maxKey] = 520
+
     response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -258,62 +319,7 @@ async function callOpenAI(
         Authorization: `Bearer ${key}`,
       },
       signal: ac.signal,
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: lng === 'cz' ? `${langSystem} ${systemPrompt}` : systemPrompt,
-          },
-          ...(String(sourceHint || '').trim().toLowerCase() === 'pilot'
-            ? [
-                {
-                  role: 'system',
-                  content:
-                    lng === 'ru'
-                      ? 'SOURCE HINT: User came from PILOT landing. Prioritize PILOT PROGRAM: answer clearly what is included/not included; confirm add-ons can be added; do NOT suggest START unless user asks for packages.'
-                      : 'SOURCE HINT: Користувач прийшов із PILOT landing. Пріоритет — PILOT PROGRAM: чітко що входить/не входить; підтвердити, що модулі можна додати; не пропонувати START, якщо не питають про пакети.',
-                },
-              ]
-            : []),
-          // Optional "fast mode" (used by Flow): shorter answers + stronger next-step.
-          ...(context.includes('FAST_MODE: true')
-            ? [
-                {
-                  role: 'system',
-                  content:
-                    lng === 'ru'
-                      ? [
-                          'FAST MODE.',
-                          'Отвечай очень коротко и по делу.',
-                          'Максимум: 4 короткие строки или 2–3 предложения.',
-                          'Без воды и без повторов.',
-                          'Снимай возражения 1 фактом/примером.',
-                          'Завершай конкретным следующим шагом (контакт/демо/что нужно от клиента).',
-                          'Максимум 1 вопрос.',
-                        ].join(' ')
-                      : [
-                          'FAST MODE.',
-                          'Відповідай дуже коротко і по суті.',
-                          'Максимум: 4 короткі рядки або 2–3 речення.',
-                          'Без води та без повторів.',
-                          'Знімай заперечення 1 фактом/прикладом.',
-                          'Завершуй конкретним наступним кроком (контакт/демо/що треба від клієнта).',
-                          'Максимум 1 питання.',
-                        ].join(' '),
-                },
-              ]
-            : []),
-          { role: 'system', content: context },
-          ...(isFirstAssistant && firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
-          ...(history || []),
-        ],
-        // Slightly higher creativity + lower repetition penalties => less “template” feel
-        temperature: 0.95,
-        presence_penalty: 0.2,
-        frequency_penalty: 0.2,
-        max_tokens: 520,
-      }),
+      body: JSON.stringify(payload),
     })
   } catch (e: any) {
     const msg = String(e?.message || e)

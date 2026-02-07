@@ -240,6 +240,19 @@ async function generateAiReply(params: {
   const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS_WA)
   let resp: Response
   try {
+    const model = String(OPENAI_MODEL || 'gpt-4o-mini')
+    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+    const payload: any = {
+      model,
+      messages: [
+        { role: 'system', content: system },
+        ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: userText },
+      ],
+      temperature: 0.8,
+    }
+    payload[maxKey] = 300
+
     resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -247,16 +260,7 @@ async function generateAiReply(params: {
         Authorization: `Bearer ${key}`,
       },
       signal: ac.signal,
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: system },
-          ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: userText },
-        ],
-        temperature: 0.8,
-        max_tokens: 300,
-      }),
+      body: JSON.stringify(payload),
     })
   } catch (e: any) {
     const msg = String(e?.message || e)

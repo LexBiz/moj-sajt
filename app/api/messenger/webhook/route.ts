@@ -228,26 +228,30 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
     clientMessages: input.clientMessages.slice(0, 20),
   }
   try {
+    const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = {
+      model,
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content: [
+            langLine,
+            'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM (ничего не выдумывать).',
+            'Формат: 5–8 строк, каждая начинается с эмодзи: 🏷 🎯 🧩 ⛔️ ➡️ 💬',
+            'Если данных нет — пиши “не уточнили”. Без markdown (#, **).',
+          ].join(' '),
+        },
+        { role: 'user', content: JSON.stringify(payload) },
+      ],
+    }
+    body[maxKey] = 260
+
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: OPENAI_MODEL_MESSENGER,
-        temperature: 0.2,
-        max_tokens: 260,
-        messages: [
-          {
-            role: 'system',
-            content: [
-              langLine,
-              'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM (ничего не выдумывать).',
-              'Формат: 5–8 строк, каждая начинается с эмодзи: 🏷 🎯 🧩 ⛔️ ➡️ 💬',
-              'Если данных нет — пиши “не уточнили”. Без markdown (#, **).',
-            ].join(' '),
-          },
-          { role: 'user', content: JSON.stringify(payload) },
-        ],
-      }),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) return null
     const json = (await resp.json().catch(() => ({}))) as any
@@ -403,21 +407,25 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
   })
+  const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = {
+    model,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: userText },
+    ],
+    temperature: 0.7,
+  }
+  body[maxKey] = 520
+
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
-    body: JSON.stringify({
-      model: OPENAI_MODEL_MESSENGER,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userText },
-      ],
-      temperature: 0.7,
-      max_tokens: 520,
-    }),
+    body: JSON.stringify(body),
   })
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
@@ -477,20 +485,24 @@ async function generateAiReplyWithHistory(input: {
         ] as any)
       : userText
 
+  const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = {
+    model,
+    messages: [
+      { role: 'system', content: system },
+      ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
+      ...hist.slice(-24),
+      { role: 'user', content: userContent },
+    ],
+    temperature: 0.7,
+  }
+  body[maxKey] = 520
+
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: OPENAI_MODEL_MESSENGER,
-      messages: [
-        { role: 'system', content: system },
-        ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
-        ...hist.slice(-24),
-        { role: 'user', content: userContent },
-      ],
-      temperature: 0.7,
-      max_tokens: 520,
-    }),
+    body: JSON.stringify(body),
   })
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')

@@ -56,31 +56,35 @@ async function generateTruthfulSummary(input: {
   }
 
   try {
+    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = {
+      model,
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content: [
+            langLine,
+            'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM.',
+            'Можно использовать только данные из JSON (ничего не выдумывать).',
+            'Если данных нет — пиши “не уточнили”.',
+            'Формат: 4–7 строк, каждая начинается с эмодзи: 🏷 📡 😤 💬 🧩',
+            'Не используй markdown (#, **).',
+          ].join(' '),
+        },
+        { role: 'user', content: JSON.stringify(payload) },
+      ],
+    }
+    body[maxKey] = 220
+
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        temperature: 0.2,
-        max_tokens: 220,
-        messages: [
-          {
-            role: 'system',
-            content: [
-              langLine,
-              'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM.',
-              'Можно использовать только данные из JSON (ничего не выдумывать).',
-              'Если данных нет — пиши “не уточнили”.',
-              'Формат: 4–7 строк, каждая начинается с эмодзи: 🏷 📡 😤 💬 🧩',
-              'Не используй markdown (#, **).',
-            ].join(' '),
-          },
-          { role: 'user', content: JSON.stringify(payload) },
-        ],
-      }),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) return null
     const json = await resp.json()

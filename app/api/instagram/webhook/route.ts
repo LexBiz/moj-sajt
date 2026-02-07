@@ -369,19 +369,23 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     params.lang === 'ru' ? 'Reply ONLY in Russian.' : params.lang === 'en' ? 'Reply ONLY in English.' : 'Reply ONLY in Ukrainian.'
 
   try {
+    const model = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = {
+      model,
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: langLine },
+        { role: 'system', content: system },
+        { role: 'user', content: userText },
+      ],
+    }
+    body[maxKey] = 130
+
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        temperature: 0.7,
-        max_tokens: 130,
-        messages: [
-          { role: 'system', content: langLine },
-          { role: 'system', content: system },
-          { role: 'user', content: userText },
-        ],
-      }),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) return null
     const json = (await resp.json()) as any
@@ -1111,25 +1115,29 @@ async function generateAiReply(params: {
         ] as any)
       : userText
 
+  const model = String(OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = {
+    model,
+    messages: [
+      { role: 'system', content: system },
+      ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
+      ...historyMsgs,
+      { role: 'user', content: userContent },
+    ],
+    temperature: 0.65,
+    presence_penalty: 0.2,
+    frequency_penalty: 0.2,
+  }
+  body[maxKey] = 520
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${key}`,
     },
-    body: JSON.stringify({
-      model: OPENAI_MODEL_INSTAGRAM,
-      messages: [
-        { role: 'system', content: system },
-        ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
-        ...historyMsgs,
-        { role: 'user', content: userContent },
-      ],
-      temperature: 0.65,
-      presence_penalty: 0.2,
-      frequency_penalty: 0.2,
-      max_tokens: 520,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
@@ -1234,38 +1242,42 @@ async function generateLeadAiSummary(input: {
   const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
 
   try {
+    const model = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = {
+      model,
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content: [
+            langLine,
+            'Сделай сильное, ПРАВДИВОЕ резюме лида для CRM TemoWeb — как опытный менеджер, который будет продолжать общение.',
+            'Можно использовать только данные из JSON (ничего не выдумывать).',
+            'Формат: 7–10 строк, каждая начинается с эмодзи. Коротко, но максимально информативно.',
+            'Первая строка — готовность покупки: 🟢/🟡/🟠/🔴 + label + score.',
+            'Дальше ОБЯЗАТЕЛЬНО:',
+            '🏷 бізнес/ніша (якщо є)',
+            '🎯 що хоче (1 речення)',
+            '🧩 що обговорили / до чого дійшли (якщо є рішення)',
+            '⛔️ обмеження/умови (канали, бюджет, “1 канал”, сроки, оплата/запис тощо)',
+            '➡️ наступний крок (дзвінок/демо/доступи/оплата/інтеграції)',
+            'Если клиент “сам не знает” — так и напиши: "не до кінця сформулював потребу" + что нужно уточнить одним вопросом.',
+            'Без markdown (#, **). Обращайся на "Вы/Ви".',
+          ].join(' '),
+        },
+        { role: 'user', content: JSON.stringify(payload) },
+      ],
+    }
+    body[maxKey] = 420
+
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        temperature: 0.2,
-        max_tokens: 420,
-        messages: [
-          {
-            role: 'system',
-            content: [
-              langLine,
-              'Сделай сильное, ПРАВДИВОЕ резюме лида для CRM TemoWeb — как опытный менеджер, который будет продолжать общение.',
-              'Можно использовать только данные из JSON (ничего не выдумывать).',
-              'Формат: 7–10 строк, каждая начинается с эмодзи. Коротко, но максимально информативно.',
-              'Первая строка — готовность покупки: 🟢/🟡/🟠/🔴 + label + score.',
-              'Дальше ОБЯЗАТЕЛЬНО:',
-              '🏷 бізнес/ніша (якщо є)',
-              '🎯 що хоче (1 речення)',
-              '🧩 що обговорили / до чого дійшли (якщо є рішення)',
-              '⛔️ обмеження/умови (канали, бюджет, “1 канал”, сроки, оплата/запис тощо)',
-              '➡️ наступний крок (дзвінок/демо/доступи/оплата/інтеграції)',
-              'Если клиент “сам не знает” — так и напиши: "не до кінця сформулював потребу" + что нужно уточнить одним вопросом.',
-              'Без markdown (#, **). Обращайся на "Вы/Ви".',
-            ].join(' '),
-          },
-          { role: 'user', content: JSON.stringify(payload) },
-        ],
-      }),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) return null
     const json = (await resp.json()) as any
