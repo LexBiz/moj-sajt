@@ -20,6 +20,7 @@ import {
   textHasContactValue,
   buildTemoWebFirstMessage,
   applyManagerInitiative,
+  applyPackageFactsGuard,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -288,6 +289,7 @@ async function generateAiReply(params: {
     out = applyIncompleteDetailsFix(out, lang)
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
+    out = applyPackageFactsGuard(out, lang)
     out = applyManagerInitiative({ text: out, lang, stage, intent, userText })
     out = ensureCta(out, lang, stage, readinessScore, intent, hasContactAlready)
     out = applyNextSteps({ text: out, lang, stage, readinessScore, intent, hasChosenPackage })

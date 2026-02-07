@@ -19,6 +19,7 @@ import {
   textHasContactValue,
   buildTemoWebFirstMessage,
   applyManagerInitiative,
+  applyPackageFactsGuard,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -417,6 +418,7 @@ export async function POST(request: NextRequest) {
         answer = applyIncompleteDetailsFix(answer, lang)
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
+        answer = applyPackageFactsGuard(answer, lang)
         answer = applyManagerInitiative({ text: answer, lang, stage, intent, userText: lastUser || lastUserRaw || '' })
         answer = ensureCta(answer, lang, stage, readinessScore, intent, hasContactAlready)
         answer = applyPilotKickoffChecklist({ text: answer, lang, intent })

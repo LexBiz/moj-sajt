@@ -24,6 +24,7 @@ import {
   evaluateQuality,
   buildTemoWebFirstMessage,
   applyManagerInitiative,
+  applyPackageFactsGuard,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
@@ -1788,6 +1789,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       reply = applyIncompleteDetailsFix(reply, lang)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)
+      reply = applyPackageFactsGuard(reply, lang)
       reply = applyManagerInitiative({ text: reply, lang, stage: (nextStage || 'DISCOVERY') as any, intent, userText: text || '' })
       reply = applyPilotKickoffChecklist({ text: reply, lang, intent })
       const recentAssistantTexts = history

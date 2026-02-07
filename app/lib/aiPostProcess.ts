@@ -106,6 +106,40 @@ export function applyManagerInitiative(params: {
   return `${out}\n\n${plan}`.trim()
 }
 
+export function applyPackageFactsGuard(text: string, lang: AiLang) {
+  let out = String(text || '').trim()
+  if (!out) return out
+
+  // START channels: must be "до 2" per TEMOWEB_PROFILE.packages.start.channelsUpTo
+  if (/\bSTART\b/i.test(out)) {
+    out = out.replace(/(до)\s*1\s*(канал(а|ов)?|каналів|channel(s)?)/gi, (m) => {
+      // Preserve "до" and language word form.
+      if (/каналів/i.test(m)) return 'до 2 каналів'
+      if (/channels?/i.test(m)) return 'up to 2 channels'
+      return 'до 2 каналов'
+    })
+    // If model wrote a too-narrow channel list like "(Instagram Direct або WhatsApp)" — widen it.
+    if (/(канал[ауів]*\s*\()\s*instagram\s+direct\s+або\s+whatsapp\s*\)/i.test(out)) {
+      out = out.replace(
+        /(канал[ауів]*\s*\()\s*instagram\s+direct\s+або\s+whatsapp\s*\)/i,
+        lang === 'ua'
+          ? 'каналу (Instagram Direct / Facebook Messenger / WhatsApp / Telegram / сайт)'
+          : 'канала (Instagram Direct / Facebook Messenger / WhatsApp / Telegram / сайт)',
+      )
+    }
+  }
+
+  // PILOT channels: must be "1–2" (never "only 1").
+  if (/PILOT/i.test(out)) {
+    out = out.replace(/(включено|каналы|канали|канал)\s*:\s*1\s*(канал(а|ов)?|каналів)/gi, (m) => {
+      if (lang === 'ua') return 'Канали: 1–2 канали'
+      return 'Каналы: 1–2 канала'
+    })
+  }
+
+  return out.trim()
+}
+
 const INTRO_RE =
   /(^|\n)\s*(я\s*[—-]\s*)?(персонал(ьный|ний)\s+ai[\s-]*асистент\s+temoweb|personal\s+ai\s+assistant\s+of\s+temoweb)\.?\s*(\n|$)/i
 const LANG_LINE_RE =

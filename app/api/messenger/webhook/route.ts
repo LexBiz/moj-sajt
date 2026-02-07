@@ -16,6 +16,7 @@ import {
   detectChosenPackage,
   buildTemoWebFirstMessage,
   applyManagerInitiative,
+  applyPackageFactsGuard,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -756,6 +757,7 @@ export async function POST(request: NextRequest) {
           reply = applyIncompleteDetailsFix(reply, preferredLang)
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = applyNoPaymentPolicy(reply, preferredLang)
+          reply = applyPackageFactsGuard(reply, preferredLang)
           reply = applyManagerInitiative({
             text: reply,
             lang: preferredLang,
