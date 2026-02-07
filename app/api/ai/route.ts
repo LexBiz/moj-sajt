@@ -303,44 +303,27 @@ async function callOpenAI(
       ...(history || []),
     ]
 
-    // gpt-5 works reliably via the Responses API (uses `max_output_tokens`).
-    // Keep Chat Completions for older chat models.
-    if (modelLower.startsWith('gpt-5')) {
-      const payload: any = {
-        model,
-        input: messages.map((m: any) => ({ role: m.role, content: String(m.content || '') })),
-        max_output_tokens: 520,
-        temperature: 0.95,
-      }
-      response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`,
-        },
-        signal: ac.signal,
-        body: JSON.stringify(payload),
-      })
-    } else {
-      const payload: any = {
-        model,
-        messages,
-        // Slightly higher creativity + lower repetition penalties => less “template” feel
-        temperature: 0.95,
-        presence_penalty: 0.2,
-        frequency_penalty: 0.2,
-        max_tokens: 520,
-      }
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`,
-        },
-        signal: ac.signal,
-        body: JSON.stringify(payload),
-      })
+    // Use Chat Completions for all models. For gpt-5, Chat Completions requires `max_completion_tokens`.
+    const isGpt5 = modelLower.startsWith('gpt-5')
+    const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+    const payload: any = {
+      model,
+      messages,
+      // Slightly higher creativity + lower repetition penalties => less “template” feel
+      temperature: 0.95,
+      presence_penalty: 0.2,
+      frequency_penalty: 0.2,
     }
+    payload[maxKey] = 520
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      signal: ac.signal,
+      body: JSON.stringify(payload),
+    })
   } catch (e: any) {
     const msg = String(e?.message || e)
     const aborted = msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('abort')
