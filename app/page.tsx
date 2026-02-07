@@ -2022,12 +2022,6 @@ export default function Home() {
                 <a href="/privacy" className="text-sm text-slate-400 hover:text-white transition-colors">
                   {lang === 'ru' ? 'Конфиденциальность' : lang === 'ua' ? 'Конфіденційність' : 'Privacy'}
                 </a>
-                <a href="/terms" className="text-sm text-slate-400 hover:text-white transition-colors">
-                  {lang === 'ru' ? 'Условия' : lang === 'ua' ? 'Умови' : 'Terms'}
-                </a>
-                <a href="/data-deletion" className="text-sm text-slate-400 hover:text-white transition-colors">
-                  {lang === 'ru' ? 'Удаление данных' : lang === 'ua' ? 'Видалення даних' : 'Data deletion'}
-                </a>
               </div>
             </div>
           </div>
