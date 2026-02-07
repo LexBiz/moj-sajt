@@ -229,33 +229,37 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
   }
   try {
     const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-    const body: any = {
-      model,
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'system',
-          content: [
-            langLine,
-            'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM (ничего не выдумывать).',
-            'Формат: 5–8 строк, каждая начинается с эмодзи: 🏷 🎯 🧩 ⛔️ ➡️ 💬',
-            'Если данных нет — пиши “не уточнили”. Без markdown (#, **).',
-          ].join(' '),
-        },
-        { role: 'user', content: JSON.stringify(payload) },
-      ],
-    }
-    body[maxKey] = 260
+    const modelLower = model.toLowerCase().trim()
+    const messages = [
+      {
+        role: 'system',
+        content: [
+          langLine,
+          'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM (ничего не выдумывать).',
+          'Формат: 5–8 строк, каждая начинается с эмодзи: 🏷 🎯 🧩 ⛔️ ➡️ 💬',
+          'Если данных нет — пиши “не уточнили”. Без markdown (#, **).',
+        ].join(' '),
+      },
+      { role: 'user', content: JSON.stringify(payload) },
+    ]
 
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        modelLower.startsWith('gpt-5')
+          ? { model, temperature: 0.2, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 260 }
+          : { model, temperature: 0.2, messages, max_tokens: 260 },
+      ),
     })
     if (!resp.ok) return null
     const json = (await resp.json().catch(() => ({}))) as any
-    const content = json?.choices?.[0]?.message?.content
+    const content =
+      typeof json?.output_text === 'string'
+        ? json.output_text
+        : typeof json?.choices?.[0]?.message?.content === 'string'
+          ? json.choices[0].message.content
+          : null
     const s = typeof content === 'string' ? content.trim() : ''
     return s ? s.slice(0, 1200) : null
   } catch {
@@ -408,24 +412,23 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     readinessScore,
   })
   const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-  const body: any = {
-    model,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: userText },
-    ],
-    temperature: 0.7,
-  }
-  body[maxKey] = 520
+  const modelLower = model.toLowerCase().trim()
+  const messages = [
+    { role: 'system', content: system },
+    { role: 'user', content: userText },
+  ]
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(
+      modelLower.startsWith('gpt-5')
+        ? { model, temperature: 0.7, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 520 }
+        : { model, temperature: 0.7, messages, max_tokens: 520 },
+    ),
   })
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
@@ -433,7 +436,8 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     return 'Ок. Напишите нишу и 1 главную боль — я сразу предложу схему автоматизации и ориентир по цене.'
   }
   const j = (await resp.json().catch(() => ({}))) as any
-  const content = j?.choices?.[0]?.message?.content
+  const content =
+    typeof j?.output_text === 'string' ? j.output_text : typeof j?.choices?.[0]?.message?.content === 'string' ? j.choices[0].message.content : null
   const finishReason = j?.choices?.[0]?.finish_reason
   const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
   const guarded = enforceSingleQuestion(cleaned)
@@ -486,23 +490,35 @@ async function generateAiReplyWithHistory(input: {
       : userText
 
   const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-  const body: any = {
-    model,
-    messages: [
-      { role: 'system', content: system },
-      ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
-      ...hist.slice(-24),
-      { role: 'user', content: userContent },
-    ],
-    temperature: 0.7,
+  const modelLower = model.toLowerCase().trim()
+  const messages: any[] = [
+    { role: 'system', content: system },
+    ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
+    ...hist.slice(-24),
+    { role: 'user', content: userContent },
+  ]
+  const toInputContent = (v: any) => {
+    if (typeof v === 'string') return v
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return String(v || '')
+    }
   }
-  body[maxKey] = 520
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify(
+      modelLower.startsWith('gpt-5')
+        ? {
+            model,
+            temperature: 0.7,
+            input: messages.map((m) => ({ role: m.role, content: toInputContent(m.content) })),
+            max_output_tokens: 520,
+          }
+        : { model, temperature: 0.7, messages, max_tokens: 520 },
+    ),
   })
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
@@ -510,7 +526,8 @@ async function generateAiReplyWithHistory(input: {
     return generateAiReply(userText, { lang })
   }
   const j = (await resp.json().catch(() => ({}))) as any
-  const content = j?.choices?.[0]?.message?.content
+  const content =
+    typeof j?.output_text === 'string' ? j.output_text : typeof j?.choices?.[0]?.message?.content === 'string' ? j.choices[0].message.content : null
   const finishReason = j?.choices?.[0]?.finish_reason
   const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
   const guarded = enforceSingleQuestion(cleaned)

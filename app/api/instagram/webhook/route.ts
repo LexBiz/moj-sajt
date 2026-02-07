@@ -370,26 +370,30 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
 
   try {
     const model = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-    const body: any = {
-      model,
-      temperature: 0.7,
-      messages: [
-        { role: 'system', content: langLine },
-        { role: 'system', content: system },
-        { role: 'user', content: userText },
-      ],
-    }
-    body[maxKey] = 130
+    const modelLower = model.toLowerCase().trim()
+    const messages = [
+      { role: 'system', content: langLine },
+      { role: 'system', content: system },
+      { role: 'user', content: userText },
+    ]
 
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        modelLower.startsWith('gpt-5')
+          ? { model, temperature: 0.7, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 130 }
+          : { model, temperature: 0.7, messages, max_tokens: 130 },
+      ),
     })
     if (!resp.ok) return null
     const json = (await resp.json()) as any
-    const content = json?.choices?.[0]?.message?.content
+    const content =
+      typeof json?.output_text === 'string'
+        ? json.output_text
+        : typeof json?.choices?.[0]?.message?.content === 'string'
+          ? json.choices[0].message.content
+          : null
     const out = typeof content === 'string' ? content.trim() : ''
     return out ? out.slice(0, 700) : null
   } catch {
@@ -1116,28 +1120,46 @@ async function generateAiReply(params: {
       : userText
 
   const model = String(OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-  const body: any = {
-    model,
-    messages: [
-      { role: 'system', content: system },
-      ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
-      ...historyMsgs,
-      { role: 'user', content: userContent },
-    ],
-    temperature: 0.65,
-    presence_penalty: 0.2,
-    frequency_penalty: 0.2,
+  const modelLower = model.toLowerCase().trim()
+  const messages: any[] = [
+    { role: 'system', content: system },
+    ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
+    ...historyMsgs,
+    { role: 'user', content: userContent },
+  ]
+  const toInputContent = (v: any) => {
+    if (typeof v === 'string') return v
+    // For multimodal content arrays (text/image_url), fall back to a safe JSON string.
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return String(v || '')
+    }
   }
-  body[maxKey] = 520
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${key}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(
+      modelLower.startsWith('gpt-5')
+        ? {
+            model,
+            input: messages.map((m) => ({ role: m.role, content: toInputContent(m.content) })),
+            max_output_tokens: 520,
+            temperature: 0.65,
+          }
+        : {
+            model,
+            messages,
+            temperature: 0.65,
+            presence_penalty: 0.2,
+            frequency_penalty: 0.2,
+            max_tokens: 520,
+          },
+    ),
   })
 
   if (!response.ok) {
@@ -1154,7 +1176,12 @@ async function generateAiReply(params: {
   }
 
   const json = (await response.json()) as any
-  const content = json?.choices?.[0]?.message?.content
+  const content =
+    typeof json?.output_text === 'string'
+      ? json.output_text
+      : typeof json?.choices?.[0]?.message?.content === 'string'
+        ? json.choices[0].message.content
+        : null
   const finishReason = json?.choices?.[0]?.finish_reason
   if (typeof content !== 'string') {
     return {
@@ -1243,45 +1270,49 @@ async function generateLeadAiSummary(input: {
 
   try {
     const model = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-    const body: any = {
-      model,
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'system',
-          content: [
-            langLine,
-            'Сделай сильное, ПРАВДИВОЕ резюме лида для CRM TemoWeb — как опытный менеджер, который будет продолжать общение.',
-            'Можно использовать только данные из JSON (ничего не выдумывать).',
-            'Формат: 7–10 строк, каждая начинается с эмодзи. Коротко, но максимально информативно.',
-            'Первая строка — готовность покупки: 🟢/🟡/🟠/🔴 + label + score.',
-            'Дальше ОБЯЗАТЕЛЬНО:',
-            '🏷 бізнес/ніша (якщо є)',
-            '🎯 що хоче (1 речення)',
-            '🧩 що обговорили / до чого дійшли (якщо є рішення)',
-            '⛔️ обмеження/умови (канали, бюджет, “1 канал”, сроки, оплата/запис тощо)',
-            '➡️ наступний крок (дзвінок/демо/доступи/оплата/інтеграції)',
-            'Если клиент “сам не знает” — так и напиши: "не до кінця сформулював потребу" + что нужно уточнить одним вопросом.',
-            'Без markdown (#, **). Обращайся на "Вы/Ви".',
-          ].join(' '),
-        },
-        { role: 'user', content: JSON.stringify(payload) },
-      ],
-    }
-    body[maxKey] = 420
+    const modelLower = model.toLowerCase().trim()
+    const messages = [
+      {
+        role: 'system',
+        content: [
+          langLine,
+          'Сделай сильное, ПРАВДИВОЕ резюме лида для CRM TemoWeb — как опытный менеджер, который будет продолжать общение.',
+          'Можно использовать только данные из JSON (ничего не выдумывать).',
+          'Формат: 7–10 строк, каждая начинается с эмодзи. Коротко, но максимально информативно.',
+          'Первая строка — готовность покупки: 🟢/🟡/🟠/🔴 + label + score.',
+          'Дальше ОБЯЗАТЕЛЬНО:',
+          '🏷 бізнес/ніша (якщо є)',
+          '🎯 що хоче (1 речення)',
+          '🧩 що обговорили / до чого дійшли (якщо є рішення)',
+          '⛔️ обмеження/умови (канали, бюджет, “1 канал”, сроки, оплата/запис тощо)',
+          '➡️ наступний крок (дзвінок/демо/доступи/оплата/інтеграції)',
+          'Если клиент “сам не знает” — так и напиши: "не до кінця сформулював потребу" + что нужно уточнить одним вопросом.',
+          'Без markdown (#, **). Обращайся на "Вы/Ви".',
+        ].join(' '),
+      },
+      { role: 'user', content: JSON.stringify(payload) },
+    ]
 
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        modelLower.startsWith('gpt-5')
+          ? { model, temperature: 0.2, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 420 }
+          : { model, temperature: 0.2, messages, max_tokens: 420 },
+      ),
     })
     if (!resp.ok) return null
     const json = (await resp.json()) as any
-    const content = json?.choices?.[0]?.message?.content
+    const content =
+      typeof json?.output_text === 'string'
+        ? json.output_text
+        : typeof json?.choices?.[0]?.message?.content === 'string'
+          ? json.choices[0].message.content
+          : null
     const s = typeof content === 'string' ? content.trim() : ''
     return s ? s.slice(0, 1200) : null
   } catch {

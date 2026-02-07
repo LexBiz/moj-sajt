@@ -62,39 +62,43 @@ async function generateTruthfulSummary(input: {
 
   try {
     const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-    const body: any = {
-      model,
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'system',
-          content: [
-            langLine,
-            'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM.',
-            'Можно использовать только данные из JSON (ничего не выдумывать).',
-            'Если данных нет — пиши “не уточнили”.',
-            'Формат: 4–7 строк, каждая начинается с эмодзи:',
-            '🏷 бизнес, 📡 каналы, 😤 боль, 💬 запрос/вопрос, 🧩 что хочет/следующий шаг',
-            'Не используй markdown (#, **).',
-          ].join(' '),
-        },
-        { role: 'user', content: JSON.stringify(payload) },
-      ],
-    }
-    body[maxKey] = 220
+    const modelLower = model.toLowerCase().trim()
+    const messages = [
+      {
+        role: 'system',
+        content: [
+          langLine,
+          'Сделай короткое, ПРАВДИВОЕ резюме лида для CRM.',
+          'Можно использовать только данные из JSON (ничего не выдумывать).',
+          'Если данных нет — пиши “не уточнили”.',
+          'Формат: 4–7 строк, каждая начинается с эмодзи:',
+          '🏷 бизнес, 📡 каналы, 😤 боль, 💬 запрос/вопрос, 🧩 что хочет/следующий шаг',
+          'Не используй markdown (#, **).',
+        ].join(' '),
+      },
+      { role: 'user', content: JSON.stringify(payload) },
+    ]
 
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        modelLower.startsWith('gpt-5')
+          ? { model, temperature: 0.2, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 220 }
+          : { model, temperature: 0.2, messages, max_tokens: 220 },
+      ),
     })
     if (!resp.ok) return null
     const json = await resp.json()
-    const content = json?.choices?.[0]?.message?.content
+    const content =
+      typeof json?.output_text === 'string'
+        ? json.output_text
+        : typeof json?.choices?.[0]?.message?.content === 'string'
+          ? json.choices[0].message.content
+          : null
     const s = typeof content === 'string' ? content.trim() : ''
     return s ? s.slice(0, 1200) : null
   } catch {

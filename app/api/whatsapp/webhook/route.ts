@@ -241,26 +241,25 @@ async function generateAiReply(params: {
   let resp: Response
   try {
     const model = String(OPENAI_MODEL || 'gpt-4o-mini')
-    const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-    const payload: any = {
-      model,
-      messages: [
-        { role: 'system', content: system },
-        ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userText },
-      ],
-      temperature: 0.8,
-    }
-    payload[maxKey] = 300
+    const modelLower = model.toLowerCase().trim()
+    const messages = [
+      { role: 'system', content: system },
+      ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userText },
+    ]
 
-    resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${key}`,
       },
       signal: ac.signal,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(
+        modelLower.startsWith('gpt-5')
+          ? { model, temperature: 0.8, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 300 }
+          : { model, temperature: 0.8, messages, max_tokens: 300 },
+      ),
     })
   } catch (e: any) {
     const msg = String(e?.message || e)
@@ -278,7 +277,8 @@ async function generateAiReply(params: {
     return 'Ок. Напиши нишу и 1 главную боль — я сразу предложу схему автоматизации и цену.'
   }
   const j = (await resp.json().catch(() => ({}))) as any
-  const content = j?.choices?.[0]?.message?.content
+  const content =
+    typeof j?.output_text === 'string' ? j.output_text : typeof j?.choices?.[0]?.message?.content === 'string' ? j.choices[0].message.content : null
   let out = typeof content === 'string' && content.trim() ? content.trim() : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   out = stripRepeatedIntro(out, isFirstAssistant)

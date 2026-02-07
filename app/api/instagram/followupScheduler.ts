@@ -86,22 +86,26 @@ async function generateFollowUp(params: { lang: ConversationLang; history: Conve
 
   const historyMsgs = params.history.slice(-10).map((m) => ({ role: m.role, content: clip(m.content, 420) }))
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-  const maxKey = model.toLowerCase().startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens'
-  const body: any = {
-    model,
-    temperature: 0.55,
-    messages: [{ role: 'system', content: system }, { role: 'system', content: instruction }, ...historyMsgs],
-  }
-  body[maxKey] = 160
+  const modelLower = model.toLowerCase().trim()
+  const messages = [{ role: 'system', content: system }, { role: 'system', content: instruction }, ...historyMsgs]
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify(
+      modelLower.startsWith('gpt-5')
+        ? { model, temperature: 0.55, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 160 }
+        : { model, temperature: 0.55, messages, max_tokens: 160 },
+    ),
   })
   if (!resp.ok) return null
   const json = (await resp.json()) as any
-  const content = json?.choices?.[0]?.message?.content
+  const content =
+    typeof json?.output_text === 'string'
+      ? json.output_text
+      : typeof json?.choices?.[0]?.message?.content === 'string'
+        ? json.choices[0].message.content
+        : null
   const out = typeof content === 'string' ? content.trim() : ''
   return out ? out.slice(0, 800) : null
 }
