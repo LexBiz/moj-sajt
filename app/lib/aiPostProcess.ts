@@ -40,16 +40,71 @@ const SERVICES_RE =
   /(услуг|услуги|послуг|послуги|service|services|offerings|what\s+do\s+you\s+offer|что\s+вы\s+предлагаете|що\s+ви\s+пропонуєте|прайс|каталог)/i
 const PRICING_RE = /(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|pricing|price)/i
 const PILOT_RE = /(пілот|пилот|pilot|попробовать|спробуват|тест|быстро|швидко|дешевле|дешевш|дорого|дорога|дороговато|малый\s+бюджет|малий\s+бюджет)/i
+// IMPORTANT: do NOT block normal discussion of payments as a module ("оплата/Stripe"),
+// only block direct "pay now / invoice / send payment link" requests.
 const PAYMENT_ASK_RE =
-  /(оплат|оплач|счет|рахунок|invoice|pay\s+now|payment\s+link|оплата\s+сейчас|оплатить|внести\s+оплат)/i
+  /\b(оплат(ите|ить)\b|оплата\s+сейчас|pay\s+now|payment\s+link|ссылк\w*\s+на\s+оплат\w*|счет(\s+на\s+оплату)?|рахунок|invoice|внести\s+оплат\w*)\b/i
 const PACKAGE_CHOICE_RE =
   /\b(беру|берем|выбираю|обираю|хочу|хочемо|хотим|нужен|потрібен|потрібна|нужно|надо|мой|мій|нам|для\s+нас|для\s+меня|ок|окей)\b[\s\S]*\b(START|BUSINESS|PRO)\b/i
 
 const NEXT_STEPS_HEADER_RE = /(если\s+хотите|якщо\s+хочете)\s*[—–-]?\s*(выберите|оберіть)\s*(вариант|варіант)/i
-const NEXT_STEPS_OPT_RE = /(^|\n)\s*[—–-]\s*([1-3])\)\s*([^\n]+)\s*(?=\n|$)/g
-const DIGIT_ONLY_RE = /^\s*([1-3])\s*$/
+const NEXT_STEPS_OPT_RE = /(^|\n)\s*[—–-]\s*([1-2])\)\s*([^\n]+)\s*(?=\n|$)/g
+const DIGIT_ONLY_RE = /^\s*([1-2])\s*$/
 
 const DETAILS_STUB_RE = /(мен[іi]\s+потр[іi]бно\s+зібрати\s+кілька\s+деталей|мне\s+нужно\s+собрать\s+несколько\s+детал)/i
+
+function looksTooDry(out: string) {
+  const t = String(out || '').trim()
+  if (!t) return true
+  const lines = t.split('\n').map((x) => x.trim()).filter(Boolean)
+  // Very short answer with no structure often feels like an AI brush-off.
+  if (t.length < 260) return true
+  if (lines.length < 4) return true
+  return false
+}
+
+export function applyManagerInitiative(params: {
+  text: string
+  lang: AiLang
+  stage: TemoWebStage
+  intent: AiIntent
+  userText: string
+}) {
+  if (params.intent.isSupport) return params.text
+  const out = String(params.text || '').trim()
+  if (!out) return out
+
+  const user = String(params.userText || '')
+  const oneChannel = /(1\s*канал|один\s+канал|1\s*channel)/i.test(user)
+  const mentionsModules = /(оплат|stripe|календар|calendar|crm|аналітик|аналитик|module|модул)/i.test(user)
+  const offerMoment = params.stage === 'OFFER' || params.intent.isPricing || params.intent.isServices || (oneChannel && mentionsModules)
+  if (!offerMoment) return out
+  if (!looksTooDry(out)) return out
+
+  // Don’t add if already has a concrete mini-plan block.
+  if (/(что\s+дальше|наступн\w*\s+крок|план\s+запуска|план\s+внедрения|дальше\s+сделаем)/i.test(out)) return out
+
+  const plan =
+    params.lang === 'ua'
+      ? [
+          'Щоб це виглядало “під ключ” і без сюрпризів, я зроблю так:',
+          '— Підключимо 1 канал для старту і налаштуємо сценарій діалогу (питання → кваліфікація → контакт).',
+          '— Додамо модулі, які вам потрібні (оплата/аналітика/CRM) як доп. блоки.',
+          '— Протестуємо на реальних повідомленнях і перевіримо, що заявки фіксуються в CRM та приходять вам у Telegram.',
+          '',
+          'Один момент: який саме канал беремо першим — Instagram Direct чи Messenger?',
+        ].join('\n')
+      : [
+          'Чтобы это выглядело “под ключ” и без сюрпризов, я сделаю так:',
+          '— Подключим 1 канал для старта и настроим сценарий диалога (вопросы → квалификация → контакт).',
+          '— Добавим нужные модули (оплата/аналитика/CRM) как доп. блоки.',
+          '— Протестируем на реальных сообщениях и проверим, что заявки фиксируются в CRM и приходят вам в Telegram.',
+          '',
+          'Один момент: какой канал берём первым — Instagram Direct или Messenger?',
+        ].join('\n')
+
+  return `${out}\n\n${plan}`.trim()
+}
 
 const INTRO_RE =
   /(^|\n)\s*(я\s*[—-]\s*)?(персонал(ьный|ний)\s+ai[\s-]*асистент\s+temoweb|personal\s+ai\s+assistant\s+of\s+temoweb)\.?\s*(\n|$)/i
@@ -227,9 +282,6 @@ export function applyServicesRouter(text: string, lang: AiLang, intent: AiIntent
       out = `${out}\n\n${addons}`.trim()
     }
   }
-  if (!hasChosenPackage && (intent.isCompare || intent.isPricing || intent.isServices)) {
-    out = applyPackageGuidance(out, lang)
-  }
   return out
 }
 
@@ -246,14 +298,21 @@ function buildPackageGuidance(lang: AiLang) {
   ].join('\n')
 }
 
-export function applyPackageGuidance(text: string, lang: AiLang) {
+export function applyPackageGuidance(params: { text: string; lang: AiLang; intent: AiIntent; recentAssistantTexts?: string[] }) {
+  const { text, lang, intent } = params
   const out = String(text || '').trim()
   if (!out) return out
+  // Only when it's actually relevant (services/pricing/compare). Otherwise it reads like a шаблон.
+  if (!(intent.isPricing || intent.isCompare || intent.isServices)) return out
   // Only when packages are mentioned in the answer (otherwise we don't spam).
   if (!/\bSTART\b/i.test(out) && !/\bBUSINESS\b/i.test(out) && !/\bPRO\b/i.test(out)) return out
 
   // If there is already an explicit recommendation, do nothing.
-  if (/(рекоменд|предлож|я\s+бы\s+выбрал|я\s+бы\s+предложил|вам\s+подойдет|вам\s+підійде)\b/i.test(out)) return out
+  if (/(рекоменд|пропон|предлож|я\s+бы\s+выбрал|я\s+бы\s+предложил|подойд[её]т|підійде)\b/i.test(out)) return out
+
+  // Avoid repeating the same guidance back-to-back.
+  const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-2).join('\n') : ''
+  if (recent && /чтобы\s+не\s+гадать|щоб\s+не\s+гадати/i.test(recent)) return out
 
   const guide = buildPackageGuidance(lang)
   if (out.includes(guide.split('\n')[0])) return out
@@ -262,7 +321,10 @@ export function applyPackageGuidance(text: string, lang: AiLang) {
 
 export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
   // Offer pilot not only when explicitly asked, but also on pricing interest (common entry point).
-  if (!intent.isPilotTrigger && !intent.isPricing) return text
+  const oneChannel = /(1\s*канал|один\s+канал|1\s*channel)/i.test(text)
+  const mentionsModules = /(оплат|stripe|календар|calendar|crm|аналітик|аналитик|module|модул)/i.test(text)
+  const pilotRelevant = intent.isPilotTrigger || intent.isPricing || (oneChannel && mentionsModules)
+  if (!pilotRelevant) return text
   if (/pilot|пилот|пілот/i.test(text)) return text
   const p = TEMOWEB_PROFILE.pilot
   const line =
@@ -304,21 +366,14 @@ export function ensureCta(
     return out
   }
 
-  if (stage === 'OFFER' && !hasContactAsk) {
+  // Avoid adding templated "2 вещи" CTA too often — it makes the assistant sound like a bot.
+  // Only add a soft CTA if the answer is very short and contains no question.
+  if (!hasQuestion && String(out || '').trim().length < 220) {
     const line =
       lang === 'ua'
-        ? 'Підберу пакет після 1 уточнення: ніша і звідки зараз йдуть заявки.'
-        : 'Подберу пакет после 1 уточнения: ниша и откуда сейчас идут заявки.'
-    if (!out.includes(line)) out = `${out}\n\n${line}`.trim()
-    return out
-  }
-
-  if (!hasQuestion) {
-    const line =
-      lang === 'ua'
-        ? 'Щоб порадити точніше, потрібні 2 речі: ніша і джерело заявок.'
-        : 'Чтобы посоветовать точнее, нужны 2 вещи: ниша и источник заявок.'
-    if (!out.includes(line)) out = `${out}\n\n${line}`.trim()
+        ? 'Щоб підказати точніше, напишіть нішу і звідки зараз йдуть заявки (Instagram/сайт/реклама тощо).'
+        : 'Чтобы подсказать точнее, напишите нишу и откуда сейчас идут заявки (Instagram/сайт/реклама и т.д.).'
+    if (!out.includes(line) && !NEXT_STEPS_HEADER_RE.test(out)) out = `${out}\n\n${line}`.trim()
   }
   return out
 }
@@ -510,8 +565,8 @@ export function applyNextSteps(params: {
     }
   }
 
-  // Trim to 3 items max, keep stable numbering and no question marks.
-  const uniq = Array.from(new Set(lines)).slice(0, 3)
+  // Trim to 2 items max (as requested): keep stable numbering and no question marks.
+  const uniq = Array.from(new Set(lines)).slice(0, 2)
   if (!uniq.length) return out
   const numbered = uniq.map((x, i) => `${i + 1}) ${x}`)
   const footer = lang === 'ua' ? 'Можна відповісти цифрою.' : 'Можно ответить цифрой.'
@@ -544,7 +599,7 @@ export function expandNumericChoiceFromRecentAssistant(params: {
   const m = raw.match(DIGIT_ONLY_RE)
   if (!m) return raw
   const choice = Number(m[1])
-  if (!Number.isFinite(choice) || choice < 1 || choice > 3) return raw
+  if (!Number.isFinite(choice) || choice < 1 || choice > 2) return raw
 
   const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-6) : []
   for (let i = recent.length - 1; i >= 0; i -= 1) {
@@ -579,13 +634,14 @@ export function expandNumericChoiceFromRecentAssistant(params: {
 
 export function applyChannelLimits(text: string, channel: AiChannel) {
   const limits: Record<AiChannel, { maxChars: number; maxLines: number }> = {
-    website: { maxChars: 1200, maxLines: 10 },
-    flow: { maxChars: 1000, maxLines: 8 },
+    website: { maxChars: 1700, maxLines: 14 },
+    flow: { maxChars: 1500, maxLines: 12 },
     // Keep under IG common message limits; server-side sending may still split by byte-size if needed.
-    instagram: { maxChars: 1800, maxLines: 14 },
-    messenger: { maxChars: 1400, maxLines: 12 },
-    telegram: { maxChars: 1400, maxLines: 12 },
-    whatsapp: { maxChars: 900, maxLines: 8 },
+    instagram: { maxChars: 2400, maxLines: 18 },
+    messenger: { maxChars: 2000, maxLines: 16 },
+    telegram: { maxChars: 2000, maxLines: 16 },
+    // WhatsApp supports longer messages; server sender can split if needed.
+    whatsapp: { maxChars: 1600, maxLines: 14 },
   }
   const { maxChars, maxLines } = limits[channel]
   const trimmed = trimToMaxLines(text, maxLines)

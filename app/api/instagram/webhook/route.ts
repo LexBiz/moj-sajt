@@ -23,6 +23,7 @@ import {
   detectChosenPackage,
   evaluateQuality,
   buildTemoWebFirstMessage,
+  applyManagerInitiative,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
@@ -1742,7 +1743,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       ? `${text}\n\n[Voice message transcript]: ${transcript}`
       : text || (images.length > 0 ? '[Image sent]' : '')
 
-  // If user replies with a digit (1/2/3), treat it as choosing an option from the previous "Если хотите" block.
+  // If user replies with a digit (1/2), treat it as choosing an option from the previous "Если хотите" block.
   const recentAssistantTextsForChoice = history
     .filter((m) => m.role === 'assistant')
     .slice(-6)
@@ -1779,10 +1780,15 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   if (lang === 'ru' || lang === 'ua') {
     if (!intent.isSupport) {
       reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
-      reply = applyPackageGuidance(reply, lang)
+      const recentAssistantTextsForGuidance = history
+        .filter((m) => m.role === 'assistant')
+        .slice(-6)
+        .map((m) => String(m.content || ''))
+      reply = applyPackageGuidance({ text: reply, lang, intent, recentAssistantTexts: recentAssistantTextsForGuidance })
       reply = applyIncompleteDetailsFix(reply, lang)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)
+      reply = applyManagerInitiative({ text: reply, lang, stage: (nextStage || 'DISCOVERY') as any, intent, userText: text || '' })
       reply = applyPilotKickoffChecklist({ text: reply, lang, intent })
       const recentAssistantTexts = history
         .filter((m) => m.role === 'assistant')

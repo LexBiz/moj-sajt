@@ -18,6 +18,7 @@ import {
   stripRepeatedIntro,
   textHasContactValue,
   buildTemoWebFirstMessage,
+  applyManagerInitiative,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -412,10 +413,11 @@ export async function POST(request: NextRequest) {
       const channelForLimits = (channel === 'website' ? 'website' : channel) as any
       if (!intent.isSupport) {
         answer = applyServicesRouter(answer, lang, intent, hasChosenPackage)
-        answer = applyPackageGuidance(answer, lang)
+        answer = applyPackageGuidance({ text: answer, lang, intent, recentAssistantTexts: recentAssistantTextsForChoice })
         answer = applyIncompleteDetailsFix(answer, lang)
         answer = applyPilotNudge(answer, lang, intent)
         answer = applyNoPaymentPolicy(answer, lang)
+        answer = applyManagerInitiative({ text: answer, lang, stage, intent, userText: lastUser || lastUserRaw || '' })
         answer = ensureCta(answer, lang, stage, readinessScore, intent, hasContactAlready)
         answer = applyPilotKickoffChecklist({ text: answer, lang, intent })
         const recentAssistantTexts = (Array.isArray(body.history) ? body.history : [])

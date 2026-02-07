@@ -19,6 +19,7 @@ import {
   stripRepeatedIntro,
   textHasContactValue,
   buildTemoWebFirstMessage,
+  applyManagerInitiative,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -282,10 +283,12 @@ async function generateAiReply(params: {
   const hasChosenPackage = Boolean(detectChosenPackage(userText || '') || detectChosenPackageFromHistory([{ role: 'user', content: userText || '' }]))
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
-    out = applyPackageGuidance(out, lang)
+    const recentAssistantTexts = hist.filter((m) => m.role === 'assistant').slice(-6).map((m) => String(m.content || ''))
+    out = applyPackageGuidance({ text: out, lang, intent, recentAssistantTexts })
     out = applyIncompleteDetailsFix(out, lang)
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
+    out = applyManagerInitiative({ text: out, lang, stage, intent, userText })
     out = ensureCta(out, lang, stage, readinessScore, intent, hasContactAlready)
     out = applyNextSteps({ text: out, lang, stage, readinessScore, intent, hasChosenPackage })
   }
@@ -308,7 +311,7 @@ async function sendWhatsAppText(to: string, text: string, opts?: { phoneNumberId
     messaging_product: 'whatsapp',
     to,
     type: 'text',
-    text: { body: clip(text, 1000) },
+    text: { body: clip(text, 1600) },
   }
   const resp = await fetch(url, {
     method: 'POST',

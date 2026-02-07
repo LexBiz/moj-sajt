@@ -15,6 +15,7 @@ import {
   detectChosenPackageFromHistory,
   detectChosenPackage,
   buildTemoWebFirstMessage,
+  applyManagerInitiative,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -751,10 +752,17 @@ export async function POST(request: NextRequest) {
       if (preferredLang === 'ru' || preferredLang === 'ua') {
         if (!intent.isSupport) {
           reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
-        reply = applyPackageGuidance(reply, preferredLang)
-        reply = applyIncompleteDetailsFix(reply, preferredLang)
+          reply = applyPackageGuidance({ text: reply, lang: preferredLang, intent, recentAssistantTexts: recentAssistantTextsForChoice })
+          reply = applyIncompleteDetailsFix(reply, preferredLang)
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = applyNoPaymentPolicy(reply, preferredLang)
+          reply = applyManagerInitiative({
+            text: reply,
+            lang: preferredLang,
+            stage,
+            intent,
+            userText: effectiveUserText || msgText || '',
+          })
           reply = ensureCta(reply, preferredLang, stage, readinessScore, intent)
           const recentAssistantTexts = history
             .filter((m) => m.role === 'assistant')
