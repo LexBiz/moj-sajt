@@ -248,18 +248,21 @@ async function generateAiReply(params: {
       { role: 'user', content: userText },
     ]
 
-    resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
+    // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
+    const isGpt5 = modelLower.startsWith('gpt-5')
+    const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = { model, messages }
+    if (!isGpt5) body.temperature = 0.8
+    body[maxKey] = 300
+
+    resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${key}`,
       },
       signal: ac.signal,
-      body: JSON.stringify(
-        modelLower.startsWith('gpt-5')
-          ? { model, temperature: 0.8, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 300 }
-          : { model, temperature: 0.8, messages, max_tokens: 300 },
-      ),
+      body: JSON.stringify(body),
     })
   } catch (e: any) {
     const msg = String(e?.message || e)

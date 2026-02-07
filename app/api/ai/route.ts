@@ -309,10 +309,13 @@ async function callOpenAI(
     const payload: any = {
       model,
       messages,
-      // Slightly higher creativity + lower repetition penalties => less “template” feel
-      temperature: 0.95,
-      presence_penalty: 0.2,
-      frequency_penalty: 0.2,
+    }
+    // gpt-5 has strict parameter support (e.g. may reject non-default temperature).
+    // Keep creative tuning for older chat models only.
+    if (!isGpt5) {
+      payload.temperature = 0.95
+      payload.presence_penalty = 0.2
+      payload.frequency_penalty = 0.2
     }
     payload[maxKey] = 520
     response = await fetch('https://api.openai.com/v1/chat/completions', {

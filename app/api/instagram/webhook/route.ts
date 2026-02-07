@@ -380,7 +380,8 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` (not `max_tokens`).
     const isGpt5 = modelLower.startsWith('gpt-5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
-    const body: any = { model, temperature: 0.7, messages }
+    const body: any = { model, messages }
+    if (!isGpt5) body.temperature = 0.7
     body[maxKey] = 130
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -1145,9 +1146,11 @@ async function generateAiReply(params: {
   const body: any = {
     model,
     messages,
-    temperature: 0.65,
-    presence_penalty: 0.2,
-    frequency_penalty: 0.2,
+  }
+  if (!isGpt5) {
+    body.temperature = 0.65
+    body.presence_penalty = 0.2
+    body.frequency_penalty = 0.2
   }
   body[maxKey] = 520
 
@@ -1294,7 +1297,8 @@ async function generateLeadAiSummary(input: {
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` (not `max_tokens`).
     const isGpt5 = modelLower.startsWith('gpt-5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
-    const body: any = { model, temperature: 0.2, messages }
+    const body: any = { model, messages }
+    if (!isGpt5) body.temperature = 0.2
     body[maxKey] = 420
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {

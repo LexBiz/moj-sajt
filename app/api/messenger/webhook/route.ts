@@ -243,14 +243,17 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
       { role: 'user', content: JSON.stringify(payload) },
     ]
 
-    const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
+    // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
+    const isGpt5 = modelLower.startsWith('gpt-5')
+    const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = { model, messages }
+    if (!isGpt5) body.temperature = 0.2
+    body[maxKey] = 260
+
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify(
-        modelLower.startsWith('gpt-5')
-          ? { model, temperature: 0.2, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 260 }
-          : { model, temperature: 0.2, messages, max_tokens: 260 },
-      ),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) return null
     const json = (await resp.json().catch(() => ({}))) as any
@@ -418,17 +421,20 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     { role: 'user', content: userText },
   ]
 
-  const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
+  // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
+  const isGpt5 = modelLower.startsWith('gpt-5')
+  const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = { model, messages }
+  if (!isGpt5) body.temperature = 0.7
+  body[maxKey] = 520
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
-    body: JSON.stringify(
-      modelLower.startsWith('gpt-5')
-        ? { model, temperature: 0.7, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 520 }
-        : { model, temperature: 0.7, messages, max_tokens: 520 },
-    ),
+    body: JSON.stringify(body),
   })
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
@@ -506,19 +512,17 @@ async function generateAiReplyWithHistory(input: {
     }
   }
 
-  const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
+  // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
+  const isGpt5 = modelLower.startsWith('gpt-5')
+  const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = { model, messages }
+  if (!isGpt5) body.temperature = 0.7
+  body[maxKey] = 520
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(
-      modelLower.startsWith('gpt-5')
-        ? {
-            model,
-            temperature: 0.7,
-            input: messages.map((m) => ({ role: m.role, content: toInputContent(m.content) })),
-            max_output_tokens: 520,
-          }
-        : { model, temperature: 0.7, messages, max_tokens: 520 },
-    ),
+    body: JSON.stringify(body),
   })
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
