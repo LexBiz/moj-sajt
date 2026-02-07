@@ -704,8 +704,10 @@ function detectLangFromText(text: string): ConversationLang {
 function parseLangChoice(text: string): ConversationLang | null {
   const t = text.trim().toLowerCase()
   if (!t) return null
-  if (t === '1' || t === 'ru' || t.includes('рус')) return 'ru'
-  if (t === '2' || t === 'ua' || t.includes('укр') || t.includes('укра')) return 'ua'
+  // NOTE: digits "1/2/3" are reserved for the "next steps" option picker.
+  // Do NOT treat digits as language choice, otherwise option selection breaks.
+  if (t === 'ru' || t.includes('рус')) return 'ru'
+  if (t === 'ua' || t.includes('укр') || t.includes('укра')) return 'ua'
   if (isUkrainianText(t)) return 'ua'
   return null
 }
@@ -1523,12 +1525,15 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
-  // If user keeps sending "1/2/ru/ua" right after the language prompt, ignore as noise.
-  // IMPORTANT: digits are also used for "next steps" choices, so we only ignore when last assistant message was language selection.
+  // If user keeps sending very short "ru/ua/1/2/3" right after a language prompt, ignore as noise.
+  // IMPORTANT: digits are also used for "next steps" choices, so NEVER ignore digits if the last assistant message looks like a "choose option" block.
   if (maybeLang && maybeLang === lang && text.trim().length <= 3) {
     const lastAssistant = [...(conversation.history || [])].reverse().find((m: any) => m?.role === 'assistant')?.content || ''
-    const looksLikeLangPrompt = /(якою\s+мовою|на\s+каком\s+язык|русский|українськ|украинск)/i.test(String(lastAssistant || ''))
-    if (looksLikeLangPrompt) return
+    const lastText = String(lastAssistant || '')
+    const digitOnly = /^\s*[1-3]\s*$/.test(text)
+    const looksLikeNextSteps = /(оберіть\s+варіант|выберите\s+вариант|якщо\s+хочете|если\s+хотите)/i.test(lastText) || /[—–-]\s*1\)\s*/.test(lastText)
+    const looksLikeLangPrompt = /(якою\s+мовою|на\s+каком\s+язык|русский|російською|українськ|украинск)/i.test(lastText)
+    if (looksLikeLangPrompt && !(digitOnly && looksLikeNextSteps)) return
   }
 
   // Allow switching language at any time.

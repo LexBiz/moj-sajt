@@ -29,11 +29,11 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
   // Warm confirmations / agreement signals (often appear when user is ready to proceed)
   if (/(ок(ей)?|ok|понял|зрозуміл|супер|класс|топ|подходит|підходить|давай|домовились|домовилися|поехали|поїхали|хочу|хочемо|готов|готові|беру|берем)/i.test(t))
     score += 12
-  // Numeric choice (1/2) as an explicit next-step selection: mild readiness bump
-  if (/^\s*[1-2]\s*$/.test(t)) score += 6
+  // Numeric choice (1/2/3) as an explicit next-step selection: mild readiness bump
+  if (/^\s*[1-3]\s*$/.test(t)) score += 6
   if (/(погод|weather|политик|polit|отношен|dating|ресторан|кафе|кофе|анекдот|фильм|сериал|спорт)/i.test(t)) score -= 12
   // Avoid penalizing short confirmations like "ок/да/1/2"
-  if (t.length <= 3 && !/^\s*[1-2]\s*$/.test(t) && !/(ок|ok|да|ага)/i.test(t)) score -= 8
+  if (t.length <= 3 && !/^\s*[1-3]\s*$/.test(t) && !/(ок|ok|да|ага)/i.test(t)) score -= 8
   score = Math.max(0, Math.min(100, score))
   score = Math.max(0, Math.min(100, score + Math.min(12, userTurns * 2)))
   return score
@@ -214,10 +214,10 @@ export function buildTemoWebSystemPrompt(params: {
     'CONTACT TIMING RULE: When the client is warm/hot (confirmed interest, discussed packages/price/process, said “ок/понял/давайте/подходит/готов”) — explicitly ask for contact (phone or email) to fix the request and move to a call/demo. Do NOT wait for perfect wording from the client.',
     'NEXT STEPS RULE (CRITICAL): End every message with a short "next steps" block so the client always knows what to do.',
     'EXCEPTION: if stage=ASK_CONTACT (or user already left email/phone) — do NOT output the "next steps" menu. Instead: confirm you fixed the request + ask for ONE contact (phone OR email) if missing + give a short kickoff checklist.',
-    'If the user replies with ONLY a single digit "1" / "2" — treat it as selecting the corresponding option from your previous next steps block and answer accordingly (do NOT reset the conversation).',
+    'If the user replies with ONLY a single digit "1" / "2" / "3" — treat it as selecting the corresponding option from your previous next steps block and answer accordingly (do NOT reset the conversation).',
     'Output format (exact):',
     '— Line 1: "Если хотите — выберите вариант:" (RU) or "Якщо хочете — оберіть варіант:" (UA).',
-    '— Then 2 lines, each exactly: "— 1) ...", "— 2) ..." (no double numbering, no extra bullets).',
+    '— Then 3 lines, each exactly: "— 1) ...", "— 2) ...", "— 3) ..." (no double numbering, no extra bullets).',
     '— Last line: "Можно ответить цифрой." (RU) or "Можна відповісти цифрою." (UA).',
     'Content rules for options:',
     '— Options MUST be specific to the current context (no generic шаблоны like "подскажу следующий шаг").',
