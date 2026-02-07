@@ -71,6 +71,8 @@ type IgWebhookPayload = {
 
 const IG_VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || '').trim()
 const IG_APP_SECRET = (process.env.INSTAGRAM_APP_SECRET || '').trim()
+// Optional: allow verifying against a second secret (when webhook is still subscribed from an older Meta App).
+const IG_APP_SECRET_ALT = (process.env.INSTAGRAM_APP_SECRET_ALT || '').trim()
 const IG_SIGNATURE_BYPASS = (process.env.INSTAGRAM_SIGNATURE_BYPASS || '').trim() === 'true'
 const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
 const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
@@ -568,7 +570,7 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
     console.warn('INSTAGRAM_SIGNATURE_BYPASS=true; signature verification skipped')
     return true
   }
-  if (!IG_APP_SECRET) {
+  if (!IG_APP_SECRET && !IG_APP_SECRET_ALT) {
     console.warn('INSTAGRAM_APP_SECRET is missing; signature verification skipped')
     return true
   }
@@ -577,15 +579,26 @@ function verifySignature(rawBody: Buffer, signatureHeader: string | null) {
   if (!header) return false
   if (!header.startsWith('sha256=')) return false
 
-  const expected = `sha256=${crypto.createHmac('sha256', IG_APP_SECRET).update(rawBody).digest('hex')}`
-  const expectedBuf = Buffer.from(expected)
   const actualBuf = Buffer.from(header)
-  if (expectedBuf.length !== actualBuf.length) return false
-  try {
-    return crypto.timingSafeEqual(expectedBuf, actualBuf)
-  } catch {
-    return false
+
+  const matches = (secret: string) => {
+    if (!secret) return false
+    const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody).digest('hex')}`
+    const expectedBuf = Buffer.from(expected)
+    if (expectedBuf.length !== actualBuf.length) return false
+    try {
+      return crypto.timingSafeEqual(expectedBuf, actualBuf)
+    } catch {
+      return false
+    }
   }
+
+  if (matches(IG_APP_SECRET)) return true
+  if (IG_APP_SECRET_ALT && matches(IG_APP_SECRET_ALT)) {
+    console.warn('IG webhook: signature matched INSTAGRAM_APP_SECRET_ALT (old app still subscribed)')
+    return true
+  }
+  return false
 }
 
 function clip(text: string, max = 1000) {
