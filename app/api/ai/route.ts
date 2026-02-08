@@ -372,6 +372,19 @@ async function callOpenAI(
     }
     return texts.length ? texts.join('\n') : null
   })()
+  if (raw == null) {
+    try {
+      console.warn('OpenAI parse: no text content', {
+        model: modelLower,
+        topKeys: json && typeof json === 'object' ? Object.keys(json) : null,
+        choice0Keys: json?.choices?.[0] ? Object.keys(json.choices[0]) : null,
+        message0Keys: json?.choices?.[0]?.message ? Object.keys(json.choices[0].message) : null,
+        sample: JSON.stringify(json).slice(0, 900),
+      })
+    } catch {
+      // ignore
+    }
+  }
   const content = typeof raw === 'string' ? normalizeAnswer(raw) : null
   let summary: string | null = null
   if (content) {
