@@ -372,7 +372,7 @@ async function callOpenAI(
     }
     return texts.length ? texts.join('\n') : null
   })()
-  if (raw == null) {
+  if (raw == null || (typeof raw === 'string' && !raw.trim())) {
     try {
       console.warn('OpenAI parse: no text content', {
         model: String(json?.model || process.env.OPENAI_MODEL || '').trim(),
