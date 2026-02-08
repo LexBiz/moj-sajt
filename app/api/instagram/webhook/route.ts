@@ -392,12 +392,18 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     })
     if (!resp.ok) return null
     const json = (await resp.json()) as any
+    const cc = json?.choices?.[0]?.message?.content
     const content =
       typeof json?.output_text === 'string'
         ? json.output_text
-        : typeof json?.choices?.[0]?.message?.content === 'string'
-          ? json.choices[0].message.content
-          : null
+        : typeof cc === 'string'
+          ? cc
+          : Array.isArray(cc)
+            ? cc
+                .map((p: any) => (typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : ''))
+                .filter(Boolean)
+                .join('')
+            : null
     const out = typeof content === 'string' ? content.trim() : ''
     return out ? out.slice(0, 700) : null
   } catch {
@@ -1179,12 +1185,18 @@ async function generateAiReply(params: {
   }
 
   const json = (await response.json()) as any
+  const cc = json?.choices?.[0]?.message?.content
   const content =
     typeof json?.output_text === 'string'
       ? json.output_text
-      : typeof json?.choices?.[0]?.message?.content === 'string'
-        ? json.choices[0].message.content
-        : null
+      : typeof cc === 'string'
+        ? cc
+        : Array.isArray(cc)
+          ? cc
+              .map((p: any) => (typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : ''))
+              .filter(Boolean)
+              .join('')
+          : null
   const finishReason = json?.choices?.[0]?.finish_reason
   if (typeof content !== 'string') {
     return {
@@ -1314,12 +1326,18 @@ async function generateLeadAiSummary(input: {
     })
     if (!resp.ok) return null
     const json = (await resp.json()) as any
+    const cc = json?.choices?.[0]?.message?.content
     const content =
       typeof json?.output_text === 'string'
         ? json.output_text
-        : typeof json?.choices?.[0]?.message?.content === 'string'
-          ? json.choices[0].message.content
-          : null
+        : typeof cc === 'string'
+          ? cc
+          : Array.isArray(cc)
+            ? cc
+                .map((p: any) => (typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : ''))
+                .filter(Boolean)
+                .join('')
+            : null
     const s = typeof content === 'string' ? content.trim() : ''
     return s ? s.slice(0, 1200) : null
   } catch {

@@ -444,8 +444,18 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     return 'Ок. Напишите нишу и 1 главную боль — я сразу предложу схему автоматизации и ориентир по цене.'
   }
   const j = (await resp.json().catch(() => ({}))) as any
+  const cc = j?.choices?.[0]?.message?.content
   const content =
-    typeof j?.output_text === 'string' ? j.output_text : typeof j?.choices?.[0]?.message?.content === 'string' ? j.choices[0].message.content : null
+    typeof j?.output_text === 'string'
+      ? j.output_text
+      : typeof cc === 'string'
+        ? cc
+        : Array.isArray(cc)
+          ? cc
+              .map((p: any) => (typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : ''))
+              .filter(Boolean)
+              .join('')
+          : null
   const finishReason = j?.choices?.[0]?.finish_reason
   const cleaned = typeof content === 'string' ? normalizeAnswer(content) : ''
   const guarded = enforceSingleQuestion(cleaned)

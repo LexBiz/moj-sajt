@@ -349,6 +349,15 @@ async function callOpenAI(
     if (typeof json?.output_text === 'string') return json.output_text
     const cc = json?.choices?.[0]?.message?.content
     if (typeof cc === 'string') return cc
+    // Some models may return content as an array of parts: [{ type: 'text', text: '...' }, ...]
+    if (Array.isArray(cc)) {
+      const parts: string[] = []
+      for (const p of cc) {
+        if (typeof p === 'string') parts.push(p)
+        else if (typeof p?.text === 'string') parts.push(p.text)
+      }
+      if (parts.length) return parts.join('')
+    }
     const out = json?.output
     if (!Array.isArray(out)) return null
     const texts: string[] = []

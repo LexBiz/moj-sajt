@@ -281,8 +281,18 @@ async function generateAiReply(params: {
     return 'Ок. Напиши нишу и 1 главную боль — я сразу предложу схему автоматизации и цену.'
   }
   const j = (await resp.json().catch(() => ({}))) as any
+  const cc = j?.choices?.[0]?.message?.content
   const content =
-    typeof j?.output_text === 'string' ? j.output_text : typeof j?.choices?.[0]?.message?.content === 'string' ? j.choices[0].message.content : null
+    typeof j?.output_text === 'string'
+      ? j.output_text
+      : typeof cc === 'string'
+        ? cc
+        : Array.isArray(cc)
+          ? cc
+              .map((p: any) => (typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : ''))
+              .filter(Boolean)
+              .join('')
+          : null
   let out = typeof content === 'string' && content.trim() ? content.trim() : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   out = stripRepeatedIntro(out, isFirstAssistant)
