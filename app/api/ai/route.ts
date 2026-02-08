@@ -355,6 +355,7 @@ async function callOpenAI(
       for (const p of cc) {
         if (typeof p === 'string') parts.push(p)
         else if (typeof p?.text === 'string') parts.push(p.text)
+        else if (typeof p?.text?.value === 'string') parts.push(p.text.value)
       }
       if (parts.length) return parts.join('')
     }

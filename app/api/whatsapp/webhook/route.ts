@@ -289,7 +289,9 @@ async function generateAiReply(params: {
         ? cc
         : Array.isArray(cc)
           ? cc
-              .map((p: any) => (typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : ''))
+              .map((p: any) =>
+                typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : typeof p?.text?.value === 'string' ? p.text.value : '',
+              )
               .filter(Boolean)
               .join('')
           : null
