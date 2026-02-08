@@ -208,20 +208,35 @@ async function generateAiReply(params: {
   history?: Array<{ role: 'user' | 'assistant'; content: string }>
   apiKey?: string | null
 }) {
-  const userText = params.userText
+  const rawUserText = params.userText
   const key = (params.apiKey || OPENAI_API_KEY || '').trim()
-  if (!key) {
-    return 'Принято. Напиши нишу и где приходят заявки — покажу, как автоматизация заберёт это на себя.'
-  }
   // Default UA across channels. Switch only when user explicitly asks.
-  const t = String(userText || '').trim().toLowerCase()
+  const t = String(rawUserText || '').trim().toLowerCase()
   const wantsRu = /\b(рус|русский|по-русски|російськ|російською|ru)\b/i.test(t)
-  const wantsUa = /\b(укр|укра|українськ|українською|ua)\b/i.test(t) || /[іїєґ]/i.test(String(userText || ''))
+  const wantsUa = /\b(укр|укра|українськ|українською|ua)\b/i.test(t) || /[іїєґ]/i.test(String(rawUserText || ''))
   const isUa = wantsUa || !wantsRu
   const hist = Array.isArray(params.history) ? params.history : []
+  const lang: 'ua' | 'ru' = isUa ? 'ua' : 'ru'
+
+  // If user replies with a digit (1/2/3), treat it as choosing an option from the previous next-steps block.
+  const recentAssistantTextsForChoice = hist
+    .filter((m) => m.role === 'assistant')
+    .slice(-6)
+    .map((m) => String(m.content || ''))
+  const composedUserText = expandNumericChoiceFromRecentAssistant({
+    userText: rawUserText || '',
+    lang,
+    recentAssistantTexts: recentAssistantTextsForChoice,
+  })
+
+  if (!key) {
+    return isUa
+      ? 'Прийнято ✅ Напишіть 1–2 деталі: ніша + звідки зараз приходять заявки — і я покажу рішення.'
+      : 'Принято ✅ Напишите 1–2 детали: ниша + откуда сейчас приходят заявки — и я покажу решение.'
+  }
   const userTurns = Math.max(1, hist.filter((m) => m.role === 'user').length)
-  const readinessScore = computeReadinessScoreHeuristic(userText, userTurns)
-  const intent = detectAiIntent(userText || '')
+  const readinessScore = computeReadinessScoreHeuristic(composedUserText, userTurns)
+  const intent = detectAiIntent(composedUserText || '')
   const supportRules = intent.isSupport
     ? [
         isUa
@@ -232,7 +247,7 @@ async function generateAiReply(params: {
   const system = buildTemoWebSystemPrompt({
     lang: isUa ? 'ua' : 'ru',
     channel: 'whatsapp',
-    stage: computeStageHeuristic(userText, readinessScore),
+    stage: computeStageHeuristic(composedUserText, readinessScore),
     readinessScore,
     extraRules: supportRules,
   })
@@ -246,7 +261,7 @@ async function generateAiReply(params: {
     const messages = [
       { role: 'system', content: system },
       ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: userText },
+      { role: 'user', content: composedUserText },
     ]
 
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
@@ -278,7 +293,9 @@ async function generateAiReply(params: {
   if (!resp.ok) {
     const t = await resp.text().catch(() => '')
     console.error('OpenAI error (WA)', resp.status, t.slice(0, 300))
-    return 'Ок. Напиши нишу и 1 главную боль — я сразу предложу схему автоматизации и цену.'
+    return isUa
+      ? 'Ок. Напишіть нішу і 1 головний біль — я одразу запропоную схему автоматизації і ціну.'
+      : 'Ок. Напиши нишу и 1 главную боль — я сразу предложу схему автоматизации и цену.'
   }
   const j = (await resp.json().catch(() => ({}))) as any
   const cc = j?.choices?.[0]?.message?.content
@@ -295,13 +312,20 @@ async function generateAiReply(params: {
               .filter(Boolean)
               .join('')
           : null
-  let out = typeof content === 'string' && content.trim() ? content.trim() : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
+  let out =
+    typeof content === 'string' && content.trim()
+      ? content.trim()
+      : isUa
+        ? 'Ок. Напишіть нішу і біль — я запропоную схему та ціну.'
+        : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   out = stripRepeatedIntro(out, isFirstAssistant)
-  const lang = isUa ? 'ua' : 'ru'
-  const stage = computeStageHeuristic(userText, readinessScore)
-  const hasContactAlready = textHasContactValue(userText) || hist.some((m) => m.role === 'user' && textHasContactValue(m.content))
-  const hasChosenPackage = Boolean(detectChosenPackage(userText || '') || detectChosenPackageFromHistory([{ role: 'user', content: userText || '' }]))
+  const stage = computeStageHeuristic(composedUserText, readinessScore)
+  const hasContactAlready =
+    textHasContactValue(rawUserText) || hist.some((m) => m.role === 'user' && textHasContactValue(m.content))
+  const hasChosenPackage = Boolean(
+    detectChosenPackage(composedUserText || '') || detectChosenPackageFromHistory([{ role: 'user', content: composedUserText || '' }]),
+  )
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
     const recentAssistantTexts = hist.filter((m) => m.role === 'assistant').slice(-6).map((m) => String(m.content || ''))
@@ -310,7 +334,7 @@ async function generateAiReply(params: {
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
     out = applyPackageFactsGuard(out, lang)
-    out = applyManagerInitiative({ text: out, lang, stage, intent, userText })
+    out = applyManagerInitiative({ text: out, lang, stage, intent, userText: composedUserText })
     out = ensureCta(out, lang, stage, readinessScore, intent, hasContactAlready)
     out = applyNextSteps({ text: out, lang, stage, readinessScore, intent, hasChosenPackage })
   }
