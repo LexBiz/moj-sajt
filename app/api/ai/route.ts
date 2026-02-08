@@ -258,7 +258,8 @@ async function callOpenAI(
     let modelLower = model.toLowerCase()
     // gpt-5 can spend all completion tokens on reasoning and return empty `message.content`
     // in Chat Completions. For the website/flow chat we prefer a stable model.
-    const isWebChannel = currentChannel === 'website' || currentChannel === 'flow'
+    const ch = String(currentChannel || '')
+    const isWebChannel = ch === 'website' || ch === 'flow'
     if (isWebChannel && (modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5'))) {
       model = String(process.env.OPENAI_MODEL_WEB_FALLBACK || 'gpt-4o').trim().replace(/[‐‑‒–—−]/g, '-')
       modelLower = model.toLowerCase()
