@@ -20,6 +20,7 @@ import {
   ensureCta,
   evaluateQuality,
   stripBannedTemplates,
+  enforcePackageConsistency,
 } from '@/app/lib/aiPostProcess'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
@@ -107,6 +108,72 @@ const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_CHAT_ID || '').trim()
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 const OPENAI_MODEL_MESSENGER = (process.env.OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
+const OPENAI_TRANSCRIBE_TIMEOUT_MS = Math.max(
+  3000,
+  Math.min(25_000, Number(process.env.OPENAI_TRANSCRIBE_TIMEOUT_MS || 12_000) || 12_000),
+)
+
+function getOpenAiKey(apiKey?: string | null) {
+  return String(apiKey || OPENAI_API_KEY || '').trim()
+}
+
+async function fetchBinary(url: string, opts?: { pageAccessToken?: string }) {
+  const u = String(url || '').trim()
+  if (!u) return null
+  try {
+    const r1 = await fetch(u)
+    if (r1.ok) return Buffer.from(await r1.arrayBuffer())
+  } catch {
+    // ignore
+  }
+  const token = String(opts?.pageAccessToken || '').trim()
+  if (!token) return null
+  try {
+    const r2 = await fetch(u, { headers: { Authorization: `Bearer ${token}` } })
+    if (!r2.ok) return null
+    return Buffer.from(await r2.arrayBuffer())
+  } catch {
+    return null
+  }
+}
+
+async function transcribeAudioFromUrl(params: { url: string; apiKey?: string | null; mime?: string | null; pageAccessToken?: string }) {
+  const key = getOpenAiKey(params.apiKey)
+  if (!key) return null
+  const buf = await fetchBinary(params.url, { pageAccessToken: params.pageAccessToken })
+  if (!buf) return null
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), OPENAI_TRANSCRIBE_TIMEOUT_MS)
+  try {
+    const form = new FormData()
+    form.append('model', OPENAI_TRANSCRIBE_MODEL)
+    const mime = params.mime && params.mime.includes('/') ? params.mime : 'audio/mpeg'
+    // Blob types in TS don't accept Buffer directly; wrap in Uint8Array.
+    form.append('file', new Blob([new Uint8Array(buf)], { type: mime }), 'audio.mp3')
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+      signal: ac.signal,
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      console.error('OpenAI transcribe error (Messenger)', resp.status, t.slice(0, 200))
+      return null
+    }
+    const json = (await resp.json().catch(() => ({}))) as any
+    const text = typeof json?.text === 'string' ? json.text.trim() : null
+    return text && text.length > 0 ? text : null
+  } catch (e) {
+    const msg = String((e as any)?.message || e)
+    const aborted = msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('abort')
+    console.error('Transcribe exception (Messenger)', { aborted, msg })
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 
 function clip(text: string, max = 1000) {
@@ -416,9 +483,16 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
   })
-  const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
-  const modelLower = model.toLowerCase()
+  let model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    .trim()
+    .replace(/[‐‑‒–—−]/g, '-')
+  let modelLower = model.toLowerCase()
+  // Speed/stability: if gpt-5 is configured for Messenger, use a fast fallback unless explicitly overridden.
+  if (modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')) {
+    const fb = String(process.env.OPENAI_MODEL_MESSENGER_FALLBACK || 'gpt-4o').trim().replace(/[‐‑‒–—−]/g, '-')
+    model = fb || model
+    modelLower = model.toLowerCase()
+  }
   const messages = [
     { role: 'system', content: system },
     { role: 'user', content: userText },
@@ -429,7 +503,7 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
   const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
   const body: any = { model, messages }
   if (!isGpt5) body.temperature = 0.7
-  body[maxKey] = 520
+  body[maxKey] = 360
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -510,13 +584,20 @@ async function generateAiReplyWithHistory(input: {
         ] as any)
       : userText
 
-  const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
-  const modelLower = model.toLowerCase()
+  let model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    .trim()
+    .replace(/[‐‑‒–—−]/g, '-')
+  let modelLower = model.toLowerCase()
+  // Speed/stability: if gpt-5 is configured for Messenger, use a fast fallback unless explicitly overridden.
+  if (modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')) {
+    const fb = String(process.env.OPENAI_MODEL_MESSENGER_FALLBACK || 'gpt-4o').trim().replace(/[‐‑‒–—−]/g, '-')
+    model = fb || model
+    modelLower = model.toLowerCase()
+  }
   const messages: any[] = [
     { role: 'system', content: system },
     ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
-    ...hist.slice(-24),
+    ...hist.slice(-16),
     { role: 'user', content: userContent },
   ]
   const toInputContent = (v: any) => {
@@ -533,7 +614,7 @@ async function generateAiReplyWithHistory(input: {
   const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
   const body: any = { model, messages }
   if (!isGpt5) body.temperature = 0.7
-  body[maxKey] = 520
+  body[maxKey] = 360
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -686,14 +767,21 @@ export async function POST(request: NextRequest) {
         .filter((a) => (a?.type || '').toLowerCase() === 'image')
         .map((a) => String(a?.payload?.url || '').trim())
         .filter(Boolean)
+      const audioUrls = attachments
+        .filter((a) => {
+          const t = String(a?.type || '').toLowerCase()
+          return t === 'audio' || t === 'voice' || t === 'video'
+        })
+        .map((a) => String(a?.payload?.url || '').trim())
+        .filter(Boolean)
       const isEcho = Boolean(ev?.message?.is_echo)
 
-      const preview = msgText ? clip(msgText, 120) : imageUrls.length ? '[image]' : null
+      const preview = msgText ? clip(msgText, 120) : imageUrls.length ? '[image]' : audioUrls.length ? '[audio]' : null
       recordMessengerWebhook({ pageId: pageId || null, senderId: senderId || null, textPreview: preview })
 
       if (!senderId) continue
       if (IGNORE_ECHO && isEcho) continue
-      if (!msgText && !imageUrls.length) continue
+      if (!msgText && !imageUrls.length && !audioUrls.length) continue
 
       if (mid) {
         const dedupeKey = `${pageId}:${senderId}:${mid}`
@@ -723,19 +811,33 @@ export async function POST(request: NextRequest) {
         senderIdLast4: senderId.slice(-4),
         text: msgText ? clip(msgText, 200) : null,
         imageCount: imageUrls.length,
+        audioCount: audioUrls.length,
       })
       const conv = getConversation(pageId, senderId)
       const explicitLang = parseLangSwitch(msgText || '')
       if (explicitLang) setConversationLang(pageId, senderId, explicitLang)
       const preferredLang = explicitLang || conv.lang || 'ua'
-      appendMessage(pageId, senderId, { role: 'user', content: msgText || (preferredLang === 'ua' ? '[Надіслано зображення]' : '[Отправлено изображение]') })
+      const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
+      const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
+
+      const audioUrl = audioUrls[0] || null
+      const transcript = audioUrl ? await transcribeAudioFromUrl({ url: audioUrl, apiKey, pageAccessToken }) : null
+      const baseText = (msgText || '').trim()
+      const composedUserText =
+        transcript && transcript.trim()
+          ? baseText
+            ? `${baseText}\n\n[Voice message transcript]: ${transcript.trim()}`
+            : `[Voice message transcript]: ${transcript.trim()}`
+          : baseText || (imageUrls.length ? (preferredLang === 'ua' ? '[Надіслано зображення]' : '[Отправлено изображение]') : audioUrl ? '[Voice message]' : '')
+
+      appendMessage(pageId, senderId, { role: 'user', content: composedUserText })
       const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
 
       // Lead capture: if user sent phone/email -> save lead to CRM and notify Telegram.
-      const contactDraft = extractContact(msgText || '')
+      const contactDraft = extractContact(baseText || '')
       const contact = (contactDraft.email || contactDraft.phone || '').trim()
       if (contact && conn?.tenantId) {
-        const clientMessages = [msgText, ...history.filter((m) => m.role === 'user').map((m) => m.content)]
+        const clientMessages = [composedUserText, ...history.filter((m) => m.role === 'user').map((m) => m.content)]
           .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
           .slice(0, 20)
         const aiSummary = await generateLeadAiSummary({ lang: preferredLang, contact, clientMessages })
@@ -745,7 +847,7 @@ export async function POST(request: NextRequest) {
           senderId,
           contact,
           lang: preferredLang,
-          lastMessage: msgText || '[image]',
+          lastMessage: composedUserText || '[message]',
           clientMessages,
           aiSummary,
         })
@@ -756,7 +858,7 @@ export async function POST(request: NextRequest) {
           senderId,
           contact,
           aiSummary,
-          lastMessage: msgText || '[image]',
+          lastMessage: composedUserText || '[message]',
         })
         const okMsg =
           preferredLang === 'ua'
@@ -768,14 +870,12 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
-      const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
       const recentAssistantTextsForChoice = history
         .filter((m) => m.role === 'assistant')
         .slice(-6)
         .map((m) => String(m.content || ''))
       const effectiveUserText = expandNumericChoiceFromRecentAssistant({
-        userText: msgText || '',
+        userText: composedUserText || '',
         lang: preferredLang,
         recentAssistantTexts: recentAssistantTextsForChoice,
       })
@@ -787,22 +887,36 @@ export async function POST(request: NextRequest) {
         await sendMessengerText({ pageAccessToken, recipientId: senderId, text: intro })
         appendMessage(pageId, senderId, { role: 'assistant', content: intro })
         recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `intro_sent pageId=${pageId || '—'}` })
-        continue
+        // Do NOT return: after intro we still answer the user's first message (text or voice).
       }
 
       let reply = await generateAiReplyWithHistory({ userText: effectiveUserText || '', history, lang: preferredLang, images: imageUrls, apiKey })
       const intent = detectAiIntent(effectiveUserText || '')
       const userTurns = history.filter((m) => m.role === 'user').length || 1
       const readinessScore = computeReadinessScoreHeuristic(effectiveUserText || '', userTurns)
-      const stage = computeStageHeuristic(effectiveUserText || '', readinessScore)
+      const hasContactAlready =
+        history.some((m) => m.role === 'user' && /\S+@\S+\.\S+/.test(m.content)) ||
+        history.some((m) => m.role === 'user' && /(\+?\d[\d\s().-]{7,}\d)/.test(m.content)) ||
+        history.some((m) => m.role === 'user' && /(^|\s)@([a-zA-Z0-9_]{4,32})\b/.test(m.content))
+      const contactAskedRecently = recentAssistantTextsForChoice.some((t) =>
+        /\b(телефон|email|почт|контакт|скиньте|надішліть|залиште)\b/i.test(String(t || '')),
+      )
+      let stage = computeStageHeuristic(effectiveUserText || '', readinessScore)
+      if (!hasContactAlready && userTurns >= 6 && !contactAskedRecently && !intent.isSupport) stage = 'ASK_CONTACT'
       const hasChosenPackage = Boolean(detectChosenPackage(effectiveUserText || '') || detectChosenPackageFromHistory(history))
-      if (!hasChosenPackage && isPackageCompareRequest(msgText || '')) {
+      if (!hasChosenPackage && isPackageCompareRequest(baseText || '')) {
         reply = ensureAllPackagesMentioned(reply, preferredLang === 'ru' ? 'ru' : 'ua')
       }
       if (preferredLang === 'ru' || preferredLang === 'ua') {
         if (!intent.isSupport) {
           reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
           reply = applyPackageGuidance({ text: reply, lang: preferredLang, intent, recentAssistantTexts: recentAssistantTextsForChoice })
+          reply = enforcePackageConsistency({
+            reply,
+            lang: preferredLang,
+            userText: effectiveUserText || '',
+            recentAssistantTexts: recentAssistantTextsForChoice,
+          })
           reply = applyIncompleteDetailsFix(reply, preferredLang)
           reply = applyPilotNudge(reply, preferredLang, intent)
           reply = applyNoPaymentPolicy(reply, preferredLang)

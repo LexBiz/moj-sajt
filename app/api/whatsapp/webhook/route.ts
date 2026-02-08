@@ -22,6 +22,7 @@ import {
   buildTemoWebFirstMessage,
   applyManagerInitiative,
   applyPackageFactsGuard,
+  enforcePackageConsistency,
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
@@ -35,6 +36,7 @@ type WaTextMessage = {
   timestamp?: string
   type?: string
   text?: { body?: string }
+  audio?: { id?: string; mime_type?: string; voice?: boolean }
 }
 
 type WaChangeValue = {
@@ -64,13 +66,90 @@ const WHATSAPP_API_VERSION = (process.env.WHATSAPP_API_VERSION || 'v22.0').trim(
 const IGNORE_TEST_EVENTS = (process.env.WHATSAPP_IGNORE_TEST_EVENTS || 'true').trim() !== 'false'
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
-const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_MODEL = (process.env.OPENAI_MODEL_WHATSAPP || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
 const OPENAI_TIMEOUT_MS_GLOBAL = Math.max(5000, Math.min(90000, Number(process.env.OPENAI_TIMEOUT_MS || 18000) || 18000))
 // WhatsApp webhook must return quickly to Meta (10s-ish). Prefer shorter timeout + fallback.
 const OPENAI_TIMEOUT_MS_WA = Math.max(
   3000,
   Math.min(30_000, Number(process.env.WHATSAPP_OPENAI_TIMEOUT_MS || OPENAI_TIMEOUT_MS_GLOBAL || 9000) || 9000),
 )
+const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
+const OPENAI_TRANSCRIBE_TIMEOUT_MS = Math.max(
+  3000,
+  Math.min(20_000, Number(process.env.OPENAI_TRANSCRIBE_TIMEOUT_MS || 9000) || 9000),
+)
+
+function getOpenAiKey(apiKey?: string | null) {
+  return String(apiKey || OPENAI_API_KEY || '').trim()
+}
+
+async function waFetchMediaUrl(mediaId: string) {
+  const id = String(mediaId || '').trim()
+  if (!id) return null
+  if (!ACCESS_TOKEN) return null
+  const url = `https://${WHATSAPP_API_HOST}/${WHATSAPP_API_VERSION}/${encodeURIComponent(id)}`
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${ACCESS_TOKEN}` } })
+  if (!resp.ok) return null
+  const json = (await resp.json().catch(() => null)) as any
+  const mediaUrl = typeof json?.url === 'string' ? json.url.trim() : ''
+  const mime = typeof json?.mime_type === 'string' ? json.mime_type.trim() : null
+  return mediaUrl ? { url: mediaUrl, mime } : null
+}
+
+async function waDownloadMediaBinary(mediaUrl: string) {
+  const url = String(mediaUrl || '').trim()
+  if (!url) return null
+  if (!ACCESS_TOKEN) return null
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${ACCESS_TOKEN}` } })
+  if (!resp.ok) return null
+  const ab = await resp.arrayBuffer()
+  return Buffer.from(ab)
+}
+
+async function transcribeAudioBuffer(params: { buf: Buffer; apiKey?: string | null; mime?: string | null }) {
+  const key = getOpenAiKey(params.apiKey)
+  if (!key) return null
+  const buf = params.buf
+  if (!buf || buf.length === 0) return null
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), OPENAI_TRANSCRIBE_TIMEOUT_MS)
+  try {
+    const form = new FormData()
+    form.append('model', OPENAI_TRANSCRIBE_MODEL)
+    const mime = params.mime && params.mime.includes('/') ? params.mime : 'audio/mpeg'
+    // Blob types in TS don't accept Buffer directly; wrap in Uint8Array.
+    form.append('file', new Blob([new Uint8Array(buf)], { type: mime }), 'audio.mp3')
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+      signal: ac.signal,
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      console.error('OpenAI transcribe error (WA)', resp.status, t.slice(0, 200))
+      return null
+    }
+    const json = (await resp.json().catch(() => ({}))) as any
+    const text = typeof json?.text === 'string' ? json.text.trim() : null
+    return text && text.length > 0 ? text : null
+  } catch (e) {
+    const msg = String((e as any)?.message || e)
+    const aborted = msg.toLowerCase().includes('aborted') || msg.toLowerCase().includes('abort')
+    console.error('Transcribe exception (WA)', { aborted, msg })
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function transcribeWhatsAppMediaAudio(params: { mediaId: string; apiKey?: string | null }) {
+  const media = await waFetchMediaUrl(params.mediaId)
+  if (!media?.url) return null
+  const buf = await waDownloadMediaBinary(media.url)
+  if (!buf) return null
+  return transcribeAudioBuffer({ buf, apiKey: params.apiKey, mime: media.mime })
+}
 
 const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim()
 const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_CHAT_ID || '').trim()
@@ -238,6 +317,15 @@ async function generateAiReply(params: {
   const userTurns = Math.max(1, hist.filter((m) => m.role === 'user').length)
   const readinessScore = computeReadinessScoreHeuristic(composedUserText, userTurns)
   const intent = detectAiIntent(composedUserText || '')
+  const hasContactAlready =
+    textHasContactValue(rawUserText) || hist.some((m) => m.role === 'user' && textHasContactValue(m.content))
+  const contactAskedRecently = hist
+    .filter((m) => m.role === 'assistant')
+    .slice(-6)
+    .some((m) => /\b(телефон|email|почт|контакт|скиньте|надішліть|залиште)\b/i.test(String(m.content || '')))
+  // Decision layer: if dialogue is long and we still don't have contact, force closing.
+  let stage = computeStageHeuristic(composedUserText, readinessScore)
+  if (!hasContactAlready && userTurns >= 6 && !contactAskedRecently && !intent.isSupport) stage = 'ASK_CONTACT'
   const supportRules = intent.isSupport
     ? [
         isUa
@@ -248,7 +336,7 @@ async function generateAiReply(params: {
   const system = buildTemoWebSystemPrompt({
     lang: isUa ? 'ua' : 'ru',
     channel: 'whatsapp',
-    stage: computeStageHeuristic(composedUserText, readinessScore),
+    stage,
     readinessScore,
     extraRules: supportRules,
   })
@@ -256,12 +344,19 @@ async function generateAiReply(params: {
   const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS_WA)
   let resp: Response
   try {
-    const modelRaw = String(OPENAI_MODEL || 'gpt-4o-mini')
-    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
-    const modelLower = model.toLowerCase()
+    let model = String(OPENAI_MODEL || 'gpt-4o-mini')
+      .trim()
+      .replace(/[‐‑‒–—−]/g, '-')
+    let modelLower = model.toLowerCase()
+    // Speed/stability: if gpt-5 is configured for WhatsApp, use a fast fallback unless explicitly overridden.
+    if (modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')) {
+      const fb = String(process.env.OPENAI_MODEL_WHATSAPP_FALLBACK || 'gpt-4o').trim().replace(/[‐‑‒–—−]/g, '-')
+      model = fb || model
+      modelLower = model.toLowerCase()
+    }
     const messages = [
       { role: 'system', content: system },
-      ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
+      ...hist.slice(-12).map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: composedUserText },
     ]
 
@@ -270,7 +365,7 @@ async function generateAiReply(params: {
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
     const body: any = { model, messages }
     if (!isGpt5) body.temperature = 0.8
-    body[maxKey] = 300
+    body[maxKey] = 240
 
     resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -322,9 +417,6 @@ async function generateAiReply(params: {
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   out = stripRepeatedIntro(out, isFirstAssistant)
   out = stripBannedTemplates(out)
-  const stage = computeStageHeuristic(composedUserText, readinessScore)
-  const hasContactAlready =
-    textHasContactValue(rawUserText) || hist.some((m) => m.role === 'user' && textHasContactValue(m.content))
   const hasChosenPackage = Boolean(
     detectChosenPackage(composedUserText || '') || detectChosenPackageFromHistory([{ role: 'user', content: composedUserText || '' }]),
   )
@@ -332,6 +424,7 @@ async function generateAiReply(params: {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
     const recentAssistantTexts = hist.filter((m) => m.role === 'assistant').slice(-6).map((m) => String(m.content || ''))
     out = applyPackageGuidance({ text: out, lang, intent, recentAssistantTexts })
+    out = enforcePackageConsistency({ reply: out, lang, userText: composedUserText, recentAssistantTexts })
     out = applyIncompleteDetailsFix(out, lang)
     out = applyPilotNudge(out, lang, intent)
     out = applyNoPaymentPolicy(out, lang)
@@ -447,13 +540,18 @@ export async function POST(request: NextRequest) {
         const from = m.from
         const type = (m.type || '').toLowerCase()
         const text = m.text?.body?.trim()
-        recordWhatsAppWebhook({ from: from || null, type: type || null, textPreview: text ? clip(text, 120) : null })
+        const audioId = m.audio?.id ? String(m.audio.id).trim() : null
+        const preview = text ? clip(text, 120) : audioId ? '[audio]' : null
+        recordWhatsAppWebhook({ from: from || null, type: type || null, textPreview: preview })
         if (!from) continue
-        if (type !== 'text' || !text) continue
+        if (type !== 'text' && type !== 'audio') continue
+        if (type === 'text' && !text) continue
+        if (type === 'audio' && !audioId) continue
 
-        console.log('WA webhook: incoming text', { from, text: clip(text, 200) })
+        if (type === 'text') console.log('WA webhook: incoming text', { from, text: clip(text || '', 200) })
+        if (type === 'audio' && audioId) console.log('WA webhook: incoming audio', { from, audioIdLast6: audioId.slice(-6) })
         // Meta "Test" webhook often sends a dummy message from 16315551181 with body "this is a text message".
-        if (IGNORE_TEST_EVENTS && (from === '16315551181' || text.toLowerCase() === 'this is a text message')) {
+        if (type === 'text' && IGNORE_TEST_EVENTS && (from === '16315551181' || (text || '').toLowerCase() === 'this is a text message')) {
           console.log('WA webhook: ignoring test event', {
             from,
             metaDisplayPhone,
@@ -465,16 +563,32 @@ export async function POST(request: NextRequest) {
         // Conversation memory (parity with other channels):
         // - improves answer quality
         // - enables digit-only selections for "next steps" options
+        const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
+        const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
+        const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
+
+        // Voice/audio: transcribe to text so AI can handle it like a normal message.
+        const transcript =
+          type === 'audio' && audioId
+            ? await transcribeWhatsAppMediaAudio({ mediaId: audioId, apiKey })
+            : null
+        const effectiveText =
+          type === 'audio'
+            ? transcript && transcript.trim()
+              ? `[Voice message transcript]: ${transcript.trim()}`
+              : '[Voice message]'
+            : (text || '').trim()
+
         const baseConv = getConversation(from)
-        const afterUser = appendMessage(from, { role: 'user', content: text }) || baseConv
+        const afterUser = appendMessage(from, { role: 'user', content: effectiveText }) || baseConv
         const recentAssistantTexts = (afterUser?.messages || []).filter((x) => x.role === 'assistant').slice(-6).map((x) => x.content)
         const expandedUserText = expandNumericChoiceFromRecentAssistant({
-          userText: text,
-          lang: /[іїєґ]/i.test(text) ? 'ua' : 'ru',
+          userText: effectiveText,
+          lang: /[іїєґ]/i.test(effectiveText) ? 'ua' : 'ru',
           recentAssistantTexts,
         })
         const history = (afterUser?.messages || [])
-          .slice(-20)
+          .slice(-14)
           .map((m) => ({ role: m.role, content: m.content }))
 
         // Hard requirement: first assistant message is a fixed intro (then default UA afterwards).
@@ -483,26 +597,22 @@ export async function POST(request: NextRequest) {
           const intro = buildTemoWebFirstMessage()
           await sendWhatsAppText(from, intro, { phoneNumberId: metaPhoneNumberId })
           appendMessage(from, { role: 'assistant', content: intro })
-          continue
+          // Do NOT return: after intro we still answer the user's first message (text or voice).
         }
-
-        const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
-        const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
-        const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
 
         // Lead capture (unified CRM): WhatsApp always has a sender number, so we create a lead
         // only when the user is actually warm/ready (stage=ASK_CONTACT) and we have some context.
         try {
           const userTurns = Math.max(1, (afterUser?.messages || []).filter((x) => x.role === 'user').length)
-          const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
-          const stage = computeStageHeuristic(text, readinessScore)
-          const intent = detectAiIntent(text)
+          const readinessScore = computeReadinessScoreHeuristic(expandedUserText, userTurns)
+          const stage = computeStageHeuristic(expandedUserText, readinessScore)
+          const intent = detectAiIntent(expandedUserText)
           const contact = normalizeWaContact(from)
           const shouldCreate =
             Boolean(contact) &&
             !intent.isSupport &&
             userTurns >= 3 &&
-            (stage === 'ASK_CONTACT' || textHasContactValue(text))
+            (stage === 'ASK_CONTACT' || textHasContactValue(expandedUserText))
 
           if (shouldCreate && contact) {
             const exists = await hasRecentLeadByContact({ contact, source: 'whatsapp', withinMs: 24 * 60 * 60 * 1000 })
@@ -521,12 +631,12 @@ export async function POST(request: NextRequest) {
                 businessType: null,
                 channel: 'WhatsApp',
                 pain: null,
-                question: text,
+                question: expandedUserText,
                 clientMessages,
                 aiRecommendation: null,
                 aiSummary: null,
                 source: 'whatsapp',
-                lang: /[іїєґ]/i.test(text) ? 'ua' : 'ru',
+                lang: /[іїєґ]/i.test(expandedUserText) ? 'ua' : 'ru',
                 notes: metaPhoneNumberId ? `phone_number_id:${metaPhoneNumberId}` : null,
                 status: 'new',
               })
@@ -534,7 +644,7 @@ export async function POST(request: NextRequest) {
                 tenantId: tenantId || null,
                 contact,
                 from,
-                text,
+                text: expandedUserText,
                 metaPhoneNumberId,
                 metaDisplayPhone,
               })

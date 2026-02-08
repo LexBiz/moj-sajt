@@ -26,6 +26,7 @@ import {
   applyManagerInitiative,
   applyPackageFactsGuard,
   stripBannedTemplates,
+  enforcePackageConsistency,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
@@ -1452,6 +1453,8 @@ async function saveLeadFromInstagram(input: {
 
 function shouldAskForContact(stage: string, text: string, userTurns: number, readinessScore: number) {
   if (stage === 'ask_contact' || stage === 'collected' || stage === 'done') return false
+  // Decision layer: if the dialogue is long, switch to closing even if readiness heuristic is low.
+  if (userTurns >= 6) return true
   // ASK_CONTACT is allowed only when score is high enough (per the prompt).
   if (readinessScore < 55) return false
   // Clear "start intent" signals
@@ -1927,6 +1930,12 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         .slice(-6)
         .map((m) => String(m.content || ''))
       reply = applyPackageGuidance({ text: reply, lang, intent, recentAssistantTexts: recentAssistantTextsForGuidance })
+      reply = enforcePackageConsistency({
+        reply,
+        lang: lang === 'ru' ? 'ru' : 'ua',
+        userText: composedUserText || text || '',
+        recentAssistantTexts: recentAssistantTextsForGuidance,
+      })
       reply = applyIncompleteDetailsFix(reply, lang)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)

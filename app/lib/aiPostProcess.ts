@@ -387,6 +387,75 @@ export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
   return `${text}\n\n${line}`.trim()
 }
 
+type PackageCode = 'START' | 'BUSINESS' | 'PRO'
+
+const RECOMMEND_RE = /\b(рекоменд\w*|пропон\w*|предлож\w*|подойд[её]т|підійде|старт(уем|уємо)\s+(?:з|с)|старт\s*—)\b[\s:,-]*?(?:пакет\s+|тариф\s+|план\s+)?\b(START|BUSINESS|PRO)\b/i
+const START_WITH_RE = /\b(старт(уем|уемо|уємо)\s+(?:с|з)|нач(инаем|немо)\s+(?:с|з))\b[\s:,-]*?(?:пакет\s+)?\b(START|BUSINESS|PRO)\b/i
+
+function detectExplicitRecommendation(text: string): PackageCode | null {
+  const t = String(text || '')
+  const m = t.match(RECOMMEND_RE) || t.match(START_WITH_RE)
+  const pkg = m?.[3] || m?.[2]
+  if (!pkg) return null
+  const u = String(pkg).toUpperCase()
+  return u === 'START' || u === 'BUSINESS' || u === 'PRO' ? (u as PackageCode) : null
+}
+
+function detectMostRecentRecommendation(recentAssistantTexts: string[]) {
+  const items = Array.isArray(recentAssistantTexts) ? recentAssistantTexts : []
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const pkg = detectExplicitRecommendation(items[i] || '')
+    if (pkg) return pkg
+  }
+  return null
+}
+
+function hasNewCriticalInfo(userText: string) {
+  const t = String(userText || '').toLowerCase()
+  // Channels count increase / complexity hints
+  if (/(2|3|4|5)\s*(канал|канала|канали|channels?)/i.test(t)) return true
+  if (/(два|три|чотири|п'ять)\s+(канал|канали)/i.test(t)) return true
+  // New integrations / complexity that can justify package change
+  if (/(crm|hubspot|pipedrive|интеграц|інтеграц|оплат|stripe|e-?commerce|магазин|каталог|доставка|склад|api)/i.test(t)) return true
+  return false
+}
+
+/**
+ * Decision Control Layer enforcement:
+ * - If we already recommended a package earlier, do NOT contradict it in later turns
+ *   unless user provided new critical info.
+ */
+export function enforcePackageConsistency(params: {
+  reply: string
+  lang: AiLang
+  userText: string
+  recentAssistantTexts?: string[]
+}) {
+  const reply = String(params.reply || '').trim()
+  if (!reply) return reply
+  const recent = Array.isArray(params.recentAssistantTexts) ? params.recentAssistantTexts.filter(Boolean).slice(-10) : []
+  const prev = detectMostRecentRecommendation(recent)
+  if (!prev) return reply
+  const cur = detectExplicitRecommendation(reply)
+  if (!cur) return reply
+  if (cur === prev) return reply
+  if (hasNewCriticalInfo(params.userText || '')) return reply
+
+  // Best-effort correction: keep previous recommendation.
+  let fixed = reply
+  fixed = fixed.replace(RECOMMEND_RE, (m) => m.replace(cur, prev))
+  fixed = fixed.replace(START_WITH_RE, (m) => m.replace(cur, prev))
+
+  const line =
+    params.lang === 'ua'
+      ? `Щоб не плутати: тримаю рекомендацію ${prev}.`
+      : `Чтобы не путать: держу рекомендацию ${prev}.`
+  if (!fixed.toLowerCase().includes(line.toLowerCase())) {
+    fixed = `${line}\n\n${fixed}`.trim()
+  }
+  return fixed
+}
+
 export function ensureCta(
   text: string,
   lang: AiLang,
