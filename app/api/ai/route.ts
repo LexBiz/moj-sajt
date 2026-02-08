@@ -367,6 +367,7 @@ async function callOpenAI(
       if (!Array.isArray(content)) continue
       for (const c of content) {
         if (typeof c?.text === 'string') texts.push(c.text)
+        else if (typeof c?.text?.value === 'string') texts.push(c.text.value)
       }
     }
     return texts.length ? texts.join('\n') : null
