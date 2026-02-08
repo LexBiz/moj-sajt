@@ -19,6 +19,7 @@ import {
   applyPackageFactsGuard,
   ensureCta,
   evaluateQuality,
+  stripBannedTemplates,
 } from '@/app/lib/aiPostProcess'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
 import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
@@ -833,6 +834,7 @@ export async function POST(request: NextRequest) {
             recentUserTexts,
           })
         }
+        reply = stripBannedTemplates(reply)
         reply = applyChannelLimits(reply, 'messenger')
         const quality = evaluateQuality(reply, preferredLang, intent, 'messenger')
         if (quality.missingPackages || quality.missingAddons || quality.tooLong || quality.noCta) {

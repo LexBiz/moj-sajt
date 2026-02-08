@@ -16,6 +16,7 @@ import {
   detectChosenPackageFromHistory,
   detectChosenPackage,
   stripRepeatedIntro,
+  stripBannedTemplates,
   textHasContactValue,
   buildTemoWebFirstMessage,
   applyManagerInitiative,
@@ -452,6 +453,8 @@ export async function POST(request: NextRequest) {
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
     // Remove repeated "I am AI assistant..." intro after first assistant message.
     answer = stripRepeatedIntro(answer, isFirstAssistant)
+    // Remove “bot phrases” if model emits them.
+    answer = stripBannedTemplates(answer)
 
     const hasChosenPackage = Boolean(detectChosenPackage(lastUser || '') || detectChosenPackageFromHistory(body.history))
     if (!hasChosenPackage && isPackageCompareRequest(lastUser || '')) {

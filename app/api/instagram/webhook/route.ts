@@ -25,6 +25,7 @@ import {
   buildTemoWebFirstMessage,
   applyManagerInitiative,
   applyPackageFactsGuard,
+  stripBannedTemplates,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
 
@@ -1951,6 +1952,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         recentUserTexts,
       })
     }
+    reply = stripBannedTemplates(reply)
     reply = applyChannelLimits(reply, 'instagram')
     const quality = evaluateQuality(reply, lang, intent, 'instagram')
     if (quality.missingPackages || quality.missingAddons || quality.tooLong || quality.noCta) {

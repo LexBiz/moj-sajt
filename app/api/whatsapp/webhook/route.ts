@@ -17,6 +17,7 @@ import {
   detectChosenPackageFromHistory,
   detectChosenPackage,
   stripRepeatedIntro,
+  stripBannedTemplates,
   textHasContactValue,
   buildTemoWebFirstMessage,
   applyManagerInitiative,
@@ -320,6 +321,7 @@ async function generateAiReply(params: {
         : 'Ок. Напиши нишу и боль — я предложу схему и цену.'
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   out = stripRepeatedIntro(out, isFirstAssistant)
+  out = stripBannedTemplates(out)
   const stage = computeStageHeuristic(composedUserText, readinessScore)
   const hasContactAlready =
     textHasContactValue(rawUserText) || hist.some((m) => m.role === 'user' && textHasContactValue(m.content))

@@ -168,6 +168,24 @@ export function stripRepeatedIntro(text: string, isFirstAssistant: boolean) {
   return out.trim()
 }
 
+const BANNED_TEMPLATE_LINE_RE =
+  /(спасибо\s+за\s+обращение|будем\s+рады\s+помочь|обращайтесь|хорошего\s+дня|если\s+есть\s+вопрос|если\s+будут\s+вопрос|дяку(ємо|ю)\s+за\s+звернення|будемо\s+раді\s+допомогти|звертайт(е|есь)|гарного\s+дня|якщо\s+є\s+питання|якщо\s+будуть\s+питання)/i
+
+/**
+ * Anti-template filter: remove “bot phrases” from the final answer.
+ * This is a safety net in addition to the system prompt rules.
+ */
+export function stripBannedTemplates(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return t
+  const lines = t
+    .split('\n')
+    .map((l) => String(l || ''))
+    .filter((l) => !BANNED_TEMPLATE_LINE_RE.test(l.trim()))
+  const out = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  return out || t
+}
+
 export function applyIncompleteDetailsFix(text: string, lang: AiLang) {
   const t = String(text || '').trim()
   if (!t) return t
