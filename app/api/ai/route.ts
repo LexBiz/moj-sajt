@@ -375,7 +375,7 @@ async function callOpenAI(
   if (raw == null) {
     try {
       console.warn('OpenAI parse: no text content', {
-        model: modelLower,
+        model: String(json?.model || process.env.OPENAI_MODEL || '').trim(),
         topKeys: json && typeof json === 'object' ? Object.keys(json) : null,
         choice0Keys: json?.choices?.[0] ? Object.keys(json.choices[0]) : null,
         message0Keys: json?.choices?.[0]?.message ? Object.keys(json.choices[0].message) : null,
