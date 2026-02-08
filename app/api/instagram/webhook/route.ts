@@ -369,8 +369,9 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     params.lang === 'ru' ? 'Reply ONLY in Russian.' : params.lang === 'en' ? 'Reply ONLY in English.' : 'Reply ONLY in Ukrainian.'
 
   try {
-    const model = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-    const modelLower = model.toLowerCase().trim()
+    const modelRaw = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    const modelLower = model.toLowerCase()
     const messages = [
       { role: 'system', content: langLine },
       { role: 'system', content: system },
@@ -378,7 +379,7 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     ]
 
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` (not `max_tokens`).
-    const isGpt5 = modelLower.startsWith('gpt-5')
+    const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
     const body: any = { model, messages }
     if (!isGpt5) body.temperature = 0.7
@@ -1122,8 +1123,9 @@ async function generateAiReply(params: {
         ] as any)
       : userText
 
-  const model = String(OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const modelLower = model.toLowerCase().trim()
+  const modelRaw = String(OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+  const modelLower = model.toLowerCase()
   const messages: any[] = [
     { role: 'system', content: system },
     ...(isFirstAssistantMsg ? [{ role: 'system', content: firstMsgRule }, { role: 'system', content: firstMsgLangAsk }] : []),
@@ -1141,7 +1143,7 @@ async function generateAiReply(params: {
   }
 
   // Use Chat Completions. For gpt-5 use `max_completion_tokens` (not `max_tokens`).
-  const isGpt5 = modelLower.startsWith('gpt-5')
+  const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
   const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
   const body: any = {
     model,
@@ -1270,8 +1272,9 @@ async function generateLeadAiSummary(input: {
   const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
 
   try {
-    const model = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-    const modelLower = model.toLowerCase().trim()
+    const modelRaw = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    const modelLower = model.toLowerCase()
     const messages = [
       {
         role: 'system',
@@ -1295,7 +1298,7 @@ async function generateLeadAiSummary(input: {
     ]
 
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` (not `max_tokens`).
-    const isGpt5 = modelLower.startsWith('gpt-5')
+    const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
     const body: any = { model, messages }
     if (!isGpt5) body.temperature = 0.2

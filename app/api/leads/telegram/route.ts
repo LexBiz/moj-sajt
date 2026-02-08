@@ -56,8 +56,9 @@ async function generateTruthfulSummary(input: {
   }
 
   try {
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-    const modelLower = model.toLowerCase().trim()
+    const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    const modelLower = model.toLowerCase()
     const messages = [
       {
         role: 'system',
@@ -73,17 +74,19 @@ async function generateTruthfulSummary(input: {
       { role: 'user', content: JSON.stringify(payload) },
     ]
 
-    const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
+    const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
+    const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+    const body: any = { model, messages }
+    if (!isGpt5) body.temperature = 0.2
+    body[maxKey] = 220
+
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(
-        modelLower.startsWith('gpt-5')
-          ? { model, temperature: 0.2, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 220 }
-          : { model, temperature: 0.2, messages, max_tokens: 220 },
-      ),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) return null
     const json = await resp.json()

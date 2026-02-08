@@ -251,8 +251,10 @@ async function callOpenAI(
   const timer = setTimeout(() => ac.abort(), openAiTimeoutMs)
   let response: Response
   try {
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-    const modelLower = model.toLowerCase().trim()
+    const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    // Normalize possible unicode hyphens (e.g. "gpt‑5") to ASCII "gpt-5"
+    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    const modelLower = model.toLowerCase()
 
     const messages = [
       {
@@ -304,7 +306,7 @@ async function callOpenAI(
     ]
 
     // Use Chat Completions for all models. For gpt-5, Chat Completions requires `max_completion_tokens`.
-    const isGpt5 = modelLower.startsWith('gpt-5')
+    const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
     const payload: any = {
       model,

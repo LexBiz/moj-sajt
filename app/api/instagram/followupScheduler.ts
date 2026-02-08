@@ -85,18 +85,21 @@ async function generateFollowUp(params: { lang: ConversationLang; history: Conve
       : 'Клиент молчит ~3 часа после вашего последнего сообщения. Напишите ОДНО короткое follow‑up сообщение (2–5 строк), без спама и БЕЗ просьбы контакта. 1 человеческая фраза + 1 четкий вопрос по бизнесу/потребности. Обязательно на "Вы".'
 
   const historyMsgs = params.history.slice(-10).map((m) => ({ role: m.role, content: clip(m.content, 420) }))
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
-  const modelLower = model.toLowerCase().trim()
+  const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+  const modelLower = model.toLowerCase()
   const messages = [{ role: 'system', content: system }, { role: 'system', content: instruction }, ...historyMsgs]
 
-  const resp = await fetch(modelLower.startsWith('gpt-5') ? 'https://api.openai.com/v1/responses' : 'https://api.openai.com/v1/chat/completions', {
+  const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
+  const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = { model, messages }
+  if (!isGpt5) body.temperature = 0.55
+  body[maxKey] = 160
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(
-      modelLower.startsWith('gpt-5')
-        ? { model, temperature: 0.55, input: messages.map((m) => ({ role: m.role, content: String(m.content || '') })), max_output_tokens: 160 }
-        : { model, temperature: 0.55, messages, max_tokens: 160 },
-    ),
+    body: JSON.stringify(body),
   })
   if (!resp.ok) return null
   const json = (await resp.json()) as any

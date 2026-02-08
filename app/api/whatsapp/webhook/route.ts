@@ -240,8 +240,9 @@ async function generateAiReply(params: {
   const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS_WA)
   let resp: Response
   try {
-    const model = String(OPENAI_MODEL || 'gpt-4o-mini')
-    const modelLower = model.toLowerCase().trim()
+    const modelRaw = String(OPENAI_MODEL || 'gpt-4o-mini')
+    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    const modelLower = model.toLowerCase()
     const messages = [
       { role: 'system', content: system },
       ...hist.slice(-16).map((m) => ({ role: m.role, content: m.content })),
@@ -249,7 +250,7 @@ async function generateAiReply(params: {
     ]
 
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
-    const isGpt5 = modelLower.startsWith('gpt-5')
+    const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
     const body: any = { model, messages }
     if (!isGpt5) body.temperature = 0.8

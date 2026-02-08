@@ -228,8 +228,9 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
     clientMessages: input.clientMessages.slice(0, 20),
   }
   try {
-    const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-    const modelLower = model.toLowerCase().trim()
+    const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    const modelLower = model.toLowerCase()
     const messages = [
       {
         role: 'system',
@@ -244,7 +245,7 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
     ]
 
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
-    const isGpt5 = modelLower.startsWith('gpt-5')
+    const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
     const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
     const body: any = { model, messages }
     if (!isGpt5) body.temperature = 0.2
@@ -414,15 +415,16 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
   })
-  const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const modelLower = model.toLowerCase().trim()
+  const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+  const modelLower = model.toLowerCase()
   const messages = [
     { role: 'system', content: system },
     { role: 'user', content: userText },
   ]
 
   // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
-  const isGpt5 = modelLower.startsWith('gpt-5')
+  const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
   const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
   const body: any = { model, messages }
   if (!isGpt5) body.temperature = 0.7
@@ -495,8 +497,9 @@ async function generateAiReplyWithHistory(input: {
         ] as any)
       : userText
 
-  const model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const modelLower = model.toLowerCase().trim()
+  const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+  const modelLower = model.toLowerCase()
   const messages: any[] = [
     { role: 'system', content: system },
     ...(firstMsgRule ? [{ role: 'system', content: firstMsgRule }] : []),
@@ -513,7 +516,7 @@ async function generateAiReplyWithHistory(input: {
   }
 
   // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
-  const isGpt5 = modelLower.startsWith('gpt-5')
+  const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
   const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
   const body: any = { model, messages }
   if (!isGpt5) body.temperature = 0.7
