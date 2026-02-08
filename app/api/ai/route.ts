@@ -250,11 +250,20 @@ async function callOpenAI(
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), openAiTimeoutMs)
   let response: Response
+  let modelLowerForLog: string | null = null
   try {
     const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o-mini')
     // Normalize possible unicode hyphens (e.g. "gpt‑5") to ASCII "gpt-5"
-    const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
-    const modelLower = model.toLowerCase()
+    let model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+    let modelLower = model.toLowerCase()
+    // gpt-5 can spend all completion tokens on reasoning and return empty `message.content`
+    // in Chat Completions. For the website/flow chat we prefer a stable model.
+    const isWebChannel = currentChannel === 'website' || currentChannel === 'flow'
+    if (isWebChannel && (modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5'))) {
+      model = String(process.env.OPENAI_MODEL_WEB_FALLBACK || 'gpt-4o').trim().replace(/[‐‑‒–—−]/g, '-')
+      modelLower = model.toLowerCase()
+    }
+    modelLowerForLog = modelLower
 
     const messages = [
       {
@@ -372,19 +381,6 @@ async function callOpenAI(
     }
     return texts.length ? texts.join('\n') : null
   })()
-  if (raw == null || (typeof raw === 'string' && !raw.trim())) {
-    try {
-      console.warn('OpenAI parse: no text content', {
-        model: String(json?.model || process.env.OPENAI_MODEL || '').trim(),
-        topKeys: json && typeof json === 'object' ? Object.keys(json) : null,
-        choice0Keys: json?.choices?.[0] ? Object.keys(json.choices[0]) : null,
-        message0Keys: json?.choices?.[0]?.message ? Object.keys(json.choices[0].message) : null,
-        sample: JSON.stringify(json).slice(0, 900),
-      })
-    } catch {
-      // ignore
-    }
-  }
   const content = typeof raw === 'string' ? normalizeAnswer(raw) : null
   let summary: string | null = null
   if (content) {
