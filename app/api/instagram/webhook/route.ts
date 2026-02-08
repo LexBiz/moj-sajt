@@ -1218,6 +1218,67 @@ async function generateAiReply(params: {
   out = out.replace(/\n{3,}/g, '\n\n')
   if (finishReason === 'length') out = trimToLastCompleteSentence(out)
   out = sanitizeInstagramText(out)
+
+  // gpt-5 can sometimes return empty assistant content while spending tokens on reasoning.
+  // In that case, retry once with a stable chat model so the user doesn't see "no reply".
+  if (!out.trim() && isGpt5) {
+    try {
+      const fallbackModelRaw = String(process.env.OPENAI_MODEL_INSTAGRAM_FALLBACK || 'gpt-4o')
+      const fallbackModel = fallbackModelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
+      const fallbackBody: any = {
+        model: fallbackModel,
+        messages,
+        temperature: 0.65,
+        presence_penalty: 0.2,
+        frequency_penalty: 0.2,
+        max_tokens: 520,
+      }
+      const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify(fallbackBody),
+      })
+      if (r2.ok) {
+        const j2 = (await r2.json().catch(() => ({}))) as any
+        const cc2 = j2?.choices?.[0]?.message?.content
+        const content2 =
+          typeof j2?.output_text === 'string'
+            ? j2.output_text
+            : typeof cc2 === 'string'
+              ? cc2
+              : Array.isArray(cc2)
+                ? cc2
+                    .map((p: any) =>
+                      typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : typeof p?.text?.value === 'string' ? p.text.value : '',
+                    )
+                    .filter(Boolean)
+                    .join('')
+                : null
+        if (typeof content2 === 'string' && content2.trim()) {
+          let out2 = content2.trim()
+          out2 = out2.replace(/\*\*/g, '')
+          out2 = out2.replace(/\*(?=\S)/g, '')
+          out2 = out2.replace(/(^|\n)\s*\*\s+/g, '$1— ')
+          out2 = out2.replace(/\n{3,}/g, '\n\n')
+          out2 = sanitizeInstagramText(out2)
+          out = out2.trim()
+        }
+      }
+    } catch {
+      // ignore retry failures; fallback below will handle it
+    }
+  }
+
+  if (!out.trim()) {
+    return {
+      reply: lang === 'ua' ? 'Я на звʼязку ✅ Напишіть, будь ласка, 1–2 деталі по бізнесу — і я зберу рішення. 💡' : 'Я на связи ✅ Напишите, пожалуйста, 1–2 детали по бизнесу — и я соберу решение. 💡',
+      provider: 'fallback' as const,
+      detail: isGpt5 ? 'openai_empty_content' : 'openai_empty_content_non_gpt5',
+    }
+  }
   return {
     reply: out.trim(),
     provider: 'openai' as const,
