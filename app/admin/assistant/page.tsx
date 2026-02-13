@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type AssistantItem = {
   id: number
@@ -43,6 +43,10 @@ export default function AdminAssistantPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'inbox' | 'open' | 'all' | 'done'>('inbox')
+  const [recording, setRecording] = useState(false)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<BlobPart[]>([])
+  const chatScrollRef = useRef<HTMLDivElement | null>(null)
 
   const authHeader = useMemo(() => {
     const h: Record<string, string> = {}
@@ -92,6 +96,15 @@ export default function AdminAssistantPage() {
     void loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, tenantId, tab])
+
+  // Auto-scroll chat to bottom on new messages.
+  useEffect(() => {
+    const el = chatScrollRef.current
+    if (!el) return
+    try {
+      el.scrollTop = el.scrollHeight
+    } catch {}
+  }, [messages.length])
 
   async function markDone(id: number) {
     if (!authHeader.Authorization) return
@@ -148,6 +161,58 @@ export default function AdminAssistantPage() {
     }
   }
 
+  async function toggleVoice() {
+    if (loading) return
+    if (recording) {
+      try {
+        recorderRef.current?.stop()
+      } catch {}
+      setRecording(false)
+      return
+    }
+    setError('')
+    recordedChunksRef.current = []
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const rec = new MediaRecorder(stream)
+      recorderRef.current = rec
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
+      rec.onstop = async () => {
+        try {
+          stream.getTracks().forEach((t) => t.stop())
+        } catch {}
+        const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' })
+        if (!blob || blob.size < 800) return
+        setLoading(true)
+        try {
+          const fd = new FormData()
+          fd.append('tenantId', tenantId)
+          fd.append('audio', blob, 'voice.webm')
+          const headers: Record<string, string> = {}
+          if (authHeader.Authorization) headers.Authorization = authHeader.Authorization
+          const res = await fetch('/api/admin/assistant/chat', { method: 'POST', headers, body: fd })
+          if (!res.ok) throw new Error('voice_failed')
+          const j = await res.json()
+          const reply = String(j?.reply || '').trim()
+          // Optimistic UI: append assistant reply (user message is stored server-side as voice transcript)
+          if (reply) setMessages((prev) => [...prev, { id: Date.now() + 2, role: 'assistant', content: reply } as any])
+          await loadAll()
+        } catch {
+          setError('Не получилось отправить голосовое. Проверь доступ к микрофону/пароль.')
+        } finally {
+          setLoading(false)
+        }
+      }
+      rec.start()
+      setRecording(true)
+    } catch {
+      setError('Нет доступа к микрофону в браузере.')
+      setRecording(false)
+    }
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
@@ -198,7 +263,7 @@ export default function AdminAssistantPage() {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
           <div className="border-b border-white/10 px-4 py-3 font-semibold">Чат</div>
-          <div className="p-4 space-y-3 max-h-[62vh] overflow-auto">
+          <div ref={chatScrollRef} className="p-4 space-y-3 max-h-[62vh] overflow-auto">
             {messages.length === 0 ? (
               <div className="text-slate-400 text-sm">
                 Напиши, например: «Запомни: в понедельник созвон с Петром в 16:00», или «Сделай список задач на неделю».
@@ -227,7 +292,26 @@ export default function AdminAssistantPage() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Напиши задачу/идею/дату/план…"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    void send()
+                  }
+                }}
               />
+              <button
+                className={[
+                  'rounded-xl px-3 py-2 font-semibold border',
+                  recording
+                    ? 'bg-rose-600/30 border-rose-400/30 text-rose-100 hover:bg-rose-600/40'
+                    : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10',
+                ].join(' ')}
+                onClick={toggleVoice}
+                disabled={loading}
+                title={recording ? 'Stop' : 'Voice'}
+              >
+                {recording ? 'Stop' : 'Voice'}
+              </button>
               <button
                 className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 font-semibold disabled:opacity-60"
                 onClick={send}

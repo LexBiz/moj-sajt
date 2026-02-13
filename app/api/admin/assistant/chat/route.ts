@@ -97,6 +97,51 @@ function localNowString(timeZone: string) {
   }
 }
 
+function looksMemoryWorthy(text: string) {
+  const t = String(text || '').trim()
+  if (!t) return false
+  // Explicit intent words
+  if (/(запомни|зафиксир|фиксируй|сохрани|заметка|идея|план|дедлайн|срок|важно|срочно|напомни|встреч|созвон|позвонить)/i.test(t)) {
+    return true
+  }
+  // Dates/times patterns
+  if (/\b\d{1,2}[:.]\d{2}\b/.test(t)) return true
+  if (/\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b/.test(t)) return true
+  if (/(сегодня|завтра|послезавтра|в\s+понедельник|во\s+вторник|в\s+среду|в\s+четверг|в\s+пятниц|в\s+суббот|в\s+воскрес)/i.test(t)) return true
+  return false
+}
+
+async function transcribeAudio(params: { apiKey: string; buf: Buffer; mime?: string | null }) {
+  const key = String(params.apiKey || '').trim()
+  if (!key) return null
+  const buf = params.buf
+  if (!buf || buf.length === 0) return null
+  const model = String(process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
+  const timeoutMs = Math.max(3000, Math.min(25_000, Number(process.env.OPENAI_TRANSCRIBE_TIMEOUT_MS || 12_000) || 12_000))
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), timeoutMs)
+  try {
+    const form = new FormData()
+    form.append('model', model)
+    const mime = params.mime && params.mime.includes('/') ? params.mime : 'audio/mpeg'
+    form.append('file', new Blob([new Uint8Array(buf)], { type: mime }), 'audio.mp3')
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+      signal: ac.signal,
+    })
+    if (!resp.ok) return null
+    const json = (await resp.json().catch(() => ({}))) as any
+    const text = typeof json?.text === 'string' ? json.text.trim() : ''
+    return text || null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function callOpenAi(params: { apiKey: string; model: string; messages: any[]; max: number; temperature?: number }) {
   const model = normalizeModel(params.model)
   const modelLower = model.toLowerCase()
@@ -121,13 +166,32 @@ async function callOpenAi(params: { apiKey: string; model: string; messages: any
 export async function POST(request: NextRequest) {
   if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = (await request.json().catch(() => ({}))) as any
-  const tenantId = normalizeTenantId(body?.tenantId)
-  const message = String(body?.message || '').trim()
-  if (!message) return NextResponse.json({ error: 'missing_message' }, { status: 400 })
-
   const apiKey = String(process.env.OPENAI_API_KEY || '').trim()
   if (!apiKey) return NextResponse.json({ error: 'missing_openai_key' }, { status: 500 })
+
+  const contentType = String(request.headers.get('content-type') || '').toLowerCase()
+  let tenantId = 'temoweb'
+  let message = ''
+  let isVoice = false
+
+  if (contentType.includes('multipart/form-data')) {
+    const form = await request.formData().catch(() => null)
+    const tid = form ? normalizeTenantId(form.get('tenantId')) : 'temoweb'
+    tenantId = tid
+    const audio = form ? (form.get('audio') as any) : null
+    if (audio && typeof audio?.arrayBuffer === 'function') {
+      const buf = Buffer.from(await audio.arrayBuffer())
+      const mime = typeof audio?.type === 'string' ? audio.type : null
+      const transcript = await transcribeAudio({ apiKey, buf, mime })
+      message = transcript ? `[Voice]: ${transcript}` : '[Voice message]'
+      isVoice = true
+    }
+  } else {
+    const body = (await request.json().catch(() => ({}))) as any
+    tenantId = normalizeTenantId(body?.tenantId)
+    message = String(body?.message || '').trim()
+  }
+  if (!message) return NextResponse.json({ error: 'missing_message' }, { status: 400 })
 
   // Persist user's message.
   await appendAssistantMessage({ tenantId, role: 'user', content: message })
@@ -150,16 +214,11 @@ export async function POST(request: NextRequest) {
         .join('\n')
     : ''
 
-  const model =
-    normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT || process.env.OPENAI_MODEL_ASSISTANT || ''))
+  const chatModel = normalizeModel(
+    String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_CHAT || process.env.OPENAI_MODEL_ADMIN_ASSISTANT || process.env.OPENAI_MODEL_ASSISTANT || process.env.OPENAI_MODEL || 'gpt-4o'),
+  )
+  const extractorModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_EXTRACTOR || 'gpt-4o-mini'))
   const fallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_FALLBACK || 'gpt-4o-mini'))
-  const explicitModel = model
-  let usedPrimaryModel = explicitModel || normalizeModel(String(process.env.OPENAI_MODEL || 'gpt-4o'))
-  // Stability: if no explicit assistant model was configured and OPENAI_MODEL is gpt-5, use gpt-4o by default.
-  if (!explicitModel) {
-    const ml = usedPrimaryModel.toLowerCase()
-    if (ml.startsWith('gpt-5') || ml.startsWith('gpt5')) usedPrimaryModel = 'gpt-4o'
-  }
 
   const nowIso = new Date().toISOString()
   const today = nowIso.slice(0, 10)
@@ -168,69 +227,82 @@ export async function POST(request: NextRequest) {
     profile && typeof (profile as any)?.timezone === 'string' && String((profile as any).timezone).trim()
       ? String((profile as any).timezone).trim()
       : 'Europe/Prague'
-  const system = [
-    'Ты — личный executive-assistant владельца TemoWeb внутри CRM.',
-    'Цель: удерживать контекст на месяцы/годы, превращать хаос в план, ничего важного не терять.',
-    'Всегда действуй как профессиональный менеджер: кратко, по делу, с конкретным следующим шагом.',
-    'Ты можешь сохранять: заметки, задачи, напоминания (время), факты, проекты.',
-    'Если времени/даты нет — уточни 1 вопрос, но всё равно сохрани как черновик/заметку.',
+  // 1) Generate a high-quality reply (no JSON constraints).
+  const replySystem = [
+    'Ты — личный executive-assistant владельца TemoWeb.',
+    'Общайся как живой профессиональный помощник: коротко, по делу, уверенно.',
+    'Твоя задача: помочь принять решение, предложить следующий шаг, и при необходимости уточнить 1 вопрос.',
+    'НЕ пиши канцелярит. НЕ пиши шаблоны вроде “Если есть вопросы”.',
     '',
-    `СЕГОДНЯ/СЕЙЧАС (UTC): ${nowIso}`,
-    `Сегодня (YYYY-MM-DD): ${today}`,
+    `Now UTC: ${nowIso}`,
     `Timezone: ${tz}`,
     `Local time: ${localNowString(tz)}`,
-    'Относительные даты ("сегодня/завтра/в понедельник") интерпретируй, опираясь на это время.',
+    'Относительные даты интерпретируй по Local time.',
     '',
-    'ОБЯЗАТЕЛЬНЫЙ ФОРМАТ ВЫХОДА: верни ТОЛЬКО JSON без markdown и без пояснений вокруг.',
-    'JSON-форма:',
-    '{ "reply": string, "actions": [ ... ] }',
-    'actions возможны:',
+    'Память (релевантное):',
+    relevantText || '(пока пусто)',
+  ].join('\n')
+  const replyMessages = [{ role: 'system', content: replySystem }, { role: 'user', content: message }]
+
+  let assistantReply = ''
+  let usedReplyModel = chatModel
+  try {
+    const json = await callOpenAi({ apiKey, model: chatModel, messages: replyMessages, max: 700, temperature: 0.5 })
+    assistantReply = safeTextFromChatCompletion(json).trim()
+  } catch {
+    usedReplyModel = fallbackModel
+    try {
+      const json = await callOpenAi({ apiKey, model: fallbackModel, messages: replyMessages, max: 700, temperature: 0.5 })
+      assistantReply = safeTextFromChatCompletion(json).trim()
+    } catch {
+      assistantReply = ''
+    }
+  }
+
+  // 2) Extract structured actions with a stable model (strict JSON).
+  const extractSystem = [
+    'Return ONLY JSON. No markdown, no extra text.',
+    '{ "actions": [ ... ] }',
+    'Allowed actions:',
     '- save_note: {type:"save_note", title?, body?, tags?, priority?}',
     '- create_task: {type:"create_task", title, body?, dueAt?, priority?, tags?}',
     '- create_reminder: {type:"create_reminder", title, body?, remindAt, tags?}',
     '- complete_item: {type:"complete_item", id}',
     '- reschedule_reminder: {type:"reschedule_reminder", id, remindAt}',
-    'Даты: используй ISO-8601 (например "2026-02-13T16:00:00Z"). Если не уверен — ставь null.',
+    'Dates: ISO-8601 or null.',
     '',
-    'Память (релевантное):',
-    relevantText || '(пока пусто)',
+    `Now UTC: ${nowIso}`,
+    `Timezone: ${tz}`,
+    `Local time: ${localNowString(tz)}`,
+    '',
+    'Memory (relevant):',
+    relevantText || '(empty)',
   ].join('\n')
+  const extractPayload = { userMessage: message, assistantReply: assistantReply || null, isVoice }
+  const extractMessages = [{ role: 'system', content: extractSystem }, { role: 'user', content: JSON.stringify(extractPayload) }]
 
-  const messages = [
-    { role: 'system', content: system },
-    { role: 'user', content: message },
-  ]
-
-  let outText = ''
-  let usedModel = usedPrimaryModel
+  let actionsRaw: any[] = []
   try {
-    const json = await callOpenAi({ apiKey, model: usedPrimaryModel, messages, max: 520, temperature: 0.4 })
-    outText = safeTextFromChatCompletion(json).trim()
-  } catch (e) {
-    usedModel = fallbackModel
-    try {
-      const json = await callOpenAi({ apiKey, model: fallbackModel, messages, max: 520, temperature: 0.4 })
-      outText = safeTextFromChatCompletion(json).trim()
-    } catch (e2) {
-      const msg = String((e2 as any)?.message || e2)
-      return NextResponse.json({ error: 'assistant_openai_failed', detail: msg.slice(0, 300) }, { status: 502 })
-    }
+    const json = await callOpenAi({ apiKey, model: extractorModel, messages: extractMessages, max: 520, temperature: 0.2 })
+    const text = safeTextFromChatCompletion(json).trim()
+    const parsed = tryParseJsonObject(text) as any
+    actionsRaw = Array.isArray(parsed?.actions) ? parsed.actions : []
+  } catch {
+    actionsRaw = []
   }
 
-  const parsed = tryParseJsonObject(outText) as any
-  const reply = typeof parsed?.reply === 'string' ? parsed.reply.trim() : ''
-  const actionsRaw = Array.isArray(parsed?.actions) ? parsed.actions : []
-
   const created: any[] = []
-  // Hard guarantee: ALWAYS store the user's message in long-term memory (even if the model didn't emit actions).
-  if (!actionsRaw.length) {
+  // Keep the "not lose anything" guarantee via assistant_messages log.
+  // Only create extracted items when the message is memory-worthy or the model returned actions.
+  const shouldCreateDefaultNote = !actionsRaw.length && looksMemoryWorthy(message)
+  if (shouldCreateDefaultNote) {
     const item = await createAssistantItem({
       tenantId,
       kind: 'note',
       title: message.length <= 80 ? message : null,
       body: message,
       status: 'inbox',
-      meta: { source: 'assistant_chat_default_note', model: usedModel },
+      meta: { source: 'assistant_chat_default_note', model: usedReplyModel },
     }).catch(() => null)
     if (item) created.push(item)
   }
@@ -245,7 +317,7 @@ export async function POST(request: NextRequest) {
         status: 'inbox',
         priority: a?.priority ?? null,
         tags: Array.isArray(a?.tags) ? a.tags : null,
-        meta: { source: 'assistant_chat', model: usedModel, action: 'save_note' },
+        meta: { source: 'assistant_chat', model: usedReplyModel, action: 'save_note' },
       }).catch(() => null)
       if (item) created.push(item)
     }
@@ -261,7 +333,7 @@ export async function POST(request: NextRequest) {
         priority: a?.priority ?? null,
         dueAt: a?.dueAt || null,
         tags: Array.isArray(a?.tags) ? a.tags : null,
-        meta: { source: 'assistant_chat', model: usedModel, action: 'create_task' },
+        meta: { source: 'assistant_chat', model: usedReplyModel, action: 'create_task' },
       }).catch(() => null)
       if (item) created.push(item)
     }
@@ -276,7 +348,7 @@ export async function POST(request: NextRequest) {
         status: 'open',
         remindAt: a?.remindAt || null,
         tags: Array.isArray(a?.tags) ? a.tags : null,
-        meta: { source: 'assistant_chat', model: usedModel, action: 'create_reminder' },
+        meta: { source: 'assistant_chat', model: usedReplyModel, action: 'create_reminder' },
       }).catch(() => null)
       if (item) created.push(item)
     }
@@ -294,13 +366,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const finalReply = reply || `Принял. Я сохранил это в память и разложу по шагам. Что из этого самое срочное на сегодня?`
+  const finalReply =
+    assistantReply ||
+    `Принял. Если коротко: что сейчас важнее — зафиксировать план на сегодня или поставить напоминание/дедлайн?`
   await appendAssistantMessage({ tenantId, role: 'assistant', content: finalReply })
 
   return NextResponse.json({
     ok: true,
     tenantId,
-    model: usedModel,
+    model: usedReplyModel,
     reply: finalReply,
     created,
   })
