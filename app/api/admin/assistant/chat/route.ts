@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/adminAuth'
-import { appendAssistantMessage, createAssistantItem, listAssistantItems } from '@/app/lib/storage'
+import { appendAssistantMessage, createAssistantItem, listAssistantItems, updateAssistantItem } from '@/app/lib/storage'
 
 function normalizeTenantId(input: unknown) {
   const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
@@ -35,6 +35,8 @@ type AssistantAction =
   | { type: 'save_note'; title?: string | null; body?: string | null; tags?: string[]; priority?: number | null }
   | { type: 'create_task'; title: string; body?: string | null; dueAt?: string | null; priority?: number | null; tags?: string[] }
   | { type: 'create_reminder'; title: string; body?: string | null; remindAt: string | null; tags?: string[] }
+  | { type: 'complete_item'; id: number | string }
+  | { type: 'reschedule_reminder'; id: number | string; remindAt: string | null }
 
 function tryParseJsonObject(text: string) {
   const raw = String(text || '').trim()
@@ -110,12 +112,13 @@ export async function POST(request: NextRequest) {
     ? relevant
         .slice(0, 10)
         .map((x: any) => {
+          const id = x?.id != null ? String(x.id) : ''
           const k = String(x?.kind || '')
           const st = String(x?.status || '')
           const title = String(x?.title || '').trim()
           const b = String(x?.body || '').trim()
           const due = x?.dueAt || x?.remindAt || null
-          return `- [${k}/${st}] ${title || '(без назви)'}${due ? ` (${due})` : ''}\n  ${clip(b, 240)}`
+          return `- #${id} [${k}/${st}] ${title || '(без назви)'}${due ? ` (${due})` : ''}\n  ${clip(b, 240)}`
         })
         .join('\n')
     : ''
@@ -151,6 +154,8 @@ export async function POST(request: NextRequest) {
     '- save_note: {type:"save_note", title?, body?, tags?, priority?}',
     '- create_task: {type:"create_task", title, body?, dueAt?, priority?, tags?}',
     '- create_reminder: {type:"create_reminder", title, body?, remindAt, tags?}',
+    '- complete_item: {type:"complete_item", id}',
+    '- reschedule_reminder: {type:"reschedule_reminder", id, remindAt}',
     'Даты: используй ISO-8601 (например "2026-02-13T16:00:00Z"). Если не уверен — ставь null.',
     '',
     'Память (релевантное):',
@@ -239,6 +244,18 @@ export async function POST(request: NextRequest) {
         tags: Array.isArray(a?.tags) ? a.tags : null,
         meta: { source: 'assistant_chat', model: usedModel, action: 'create_reminder' },
       }).catch(() => null)
+      if (item) created.push(item)
+    }
+    if (t === 'complete_item') {
+      const id = Number(a?.id)
+      if (!Number.isFinite(id)) continue
+      const item = await updateAssistantItem(id, { status: 'done' }).catch(() => null)
+      if (item) created.push(item)
+    }
+    if (t === 'reschedule_reminder') {
+      const id = Number(a?.id)
+      if (!Number.isFinite(id)) continue
+      const item = await updateAssistantItem(id, { remindAt: a?.remindAt || null, status: 'open' }).catch(() => null)
       if (item) created.push(item)
     }
   }
