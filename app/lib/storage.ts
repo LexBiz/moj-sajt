@@ -11,6 +11,8 @@ const TENANTS_FILE = path.join(process.cwd(), 'data', 'tenants.json')
 const PROFILES_FILE = path.join(process.cwd(), 'data', 'tenant-profiles.json')
 const CONNECTIONS_FILE = path.join(process.cwd(), 'data', 'channel-connections.json')
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
+const ASSISTANT_ITEMS_FILE = path.join(process.cwd(), 'data', 'assistant-items.json')
+const ASSISTANT_MESSAGES_FILE = path.join(process.cwd(), 'data', 'assistant-messages.json')
 
 function storageMode() {
   const mode = String(process.env.STORAGE_MODE || '').trim().toLowerCase()
@@ -349,5 +351,353 @@ export async function deleteLeadsByIds(ids: number[]) {
   }
   const res = await pgQuery('DELETE FROM leads WHERE id = ANY($1::bigint[])', [list])
   return res.rowCount || 0
+}
+
+// PERSONAL ASSISTANT MEMORY (Admin)
+export type AssistantItemKind = 'note' | 'task' | 'reminder' | 'fact' | 'project'
+export type AssistantItemStatus = 'open' | 'done' | 'cancelled'
+
+export type AssistantItem = {
+  id: number
+  tenantId: string
+  kind: AssistantItemKind
+  title?: string | null
+  body?: string | null
+  status: AssistantItemStatus
+  priority?: number | null
+  dueAt?: string | null
+  remindAt?: string | null
+  remindedAt?: string | null
+  tags?: any[] | null
+  meta?: any | null
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+export type AssistantMessage = {
+  id: number
+  tenantId: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  createdAt?: string | null
+}
+
+function normalizeAssistantKind(k: unknown): AssistantItemKind {
+  const s = String(k || '').trim().toLowerCase()
+  if (s === 'task') return 'task'
+  if (s === 'reminder') return 'reminder'
+  if (s === 'fact') return 'fact'
+  if (s === 'project') return 'project'
+  return 'note'
+}
+
+function normalizeAssistantStatus(s: unknown): AssistantItemStatus {
+  const v = String(s || '').trim().toLowerCase()
+  if (v === 'done') return 'done'
+  if (v === 'cancelled' || v === 'canceled') return 'cancelled'
+  return 'open'
+}
+
+function safeIsoOrNull(v: any) {
+  const s = typeof v === 'string' ? v.trim() : v == null ? '' : String(v).trim()
+  if (!s) return null
+  const t = Date.parse(s)
+  if (!Number.isFinite(t)) return null
+  return new Date(t).toISOString()
+}
+
+export async function listAssistantItems(input: {
+  tenantId: string
+  kind?: AssistantItemKind | string | null
+  status?: AssistantItemStatus | string | null
+  q?: string | null
+  limit?: number
+}) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const kind = input.kind ? normalizeAssistantKind(input.kind) : null
+  const status = input.status ? normalizeAssistantStatus(input.status) : null
+  const q = typeof input.q === 'string' ? input.q.trim() : ''
+  const limit = Math.max(1, Math.min(200, Number(input.limit || 60) || 60))
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_ITEMS_FILE, []) as any[]
+    return (Array.isArray(all) ? all : [])
+      .filter((x) => String(x?.tenantId || '').toLowerCase() === tenantId)
+      .filter((x) => (kind ? normalizeAssistantKind(x?.kind) === kind : true))
+      .filter((x) => (status ? normalizeAssistantStatus(x?.status) === status : true))
+      .filter((x) => {
+        if (!q) return true
+        const hay = `${x?.title || ''}\n${x?.body || ''}`.toLowerCase()
+        return hay.includes(q.toLowerCase())
+      })
+      .slice(0, limit)
+  }
+
+  const params: any[] = [tenantId]
+  let where = 'tenant_id=$1'
+  if (kind) {
+    params.push(kind)
+    where += ` AND kind=$${params.length}`
+  }
+  if (status) {
+    params.push(status)
+    where += ` AND status=$${params.length}`
+  }
+  if (q) {
+    params.push(`%${q}%`)
+    where += ` AND (COALESCE(title,'') ILIKE $${params.length} OR COALESCE(body,'') ILIKE $${params.length})`
+  }
+  params.push(limit)
+  const res = await pgQuery(
+    `SELECT
+      id,
+      tenant_id as "tenantId",
+      kind,
+      title,
+      body,
+      status,
+      priority,
+      due_at as "dueAt",
+      remind_at as "remindAt",
+      reminded_at as "remindedAt",
+      tags,
+      meta,
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+     FROM assistant_items
+     WHERE ${where}
+     ORDER BY COALESCE(remind_at, due_at, created_at) DESC
+     LIMIT $${params.length}`,
+    params,
+  )
+  return res.rows
+}
+
+export async function createAssistantItem(input: Partial<AssistantItem> & { tenantId: string }) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const kind = normalizeAssistantKind(input.kind)
+  const status = normalizeAssistantStatus(input.status)
+  const title = typeof input.title === 'string' ? input.title.trim() : input.title == null ? null : String(input.title).trim()
+  const body = typeof input.body === 'string' ? input.body.trim() : input.body == null ? null : String(input.body).trim()
+  const priority = input.priority == null ? null : Number(input.priority)
+  const dueAt = safeIsoOrNull(input.dueAt)
+  const remindAt = safeIsoOrNull(input.remindAt)
+  const tags = Array.isArray(input.tags) ? input.tags : null
+  const meta = input.meta ?? null
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_ITEMS_FILE, []) as any[]
+    const now = new Date().toISOString()
+    const id = Date.now()
+    const item: AssistantItem = {
+      id,
+      tenantId,
+      kind,
+      title,
+      body,
+      status,
+      priority: Number.isFinite(priority as any) ? (priority as any) : null,
+      dueAt,
+      remindAt,
+      remindedAt: null,
+      tags,
+      meta,
+      createdAt: now,
+      updatedAt: now,
+    }
+    all.unshift(item)
+    writeJsonFile(ASSISTANT_ITEMS_FILE, all)
+    return item
+  }
+
+  const res = await pgQuery(
+    `INSERT INTO assistant_items (tenant_id, kind, title, body, status, priority, due_at, remind_at, tags, meta)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
+     RETURNING
+      id,
+      tenant_id as "tenantId",
+      kind,
+      title,
+      body,
+      status,
+      priority,
+      due_at as "dueAt",
+      remind_at as "remindAt",
+      reminded_at as "remindedAt",
+      tags,
+      meta,
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [tenantId, kind, title, body, status, Number.isFinite(priority as any) ? priority : null, dueAt, remindAt, tags ? JSON.stringify(tags) : null, meta ? JSON.stringify(meta) : null],
+  )
+  return res.rows[0]
+}
+
+export async function updateAssistantItem(id: number, patch: Partial<AssistantItem>) {
+  const itemId = Number(id)
+  if (!Number.isFinite(itemId)) throw new Error('invalid_id')
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_ITEMS_FILE, []) as any[]
+    const idx = all.findIndex((x) => Number(x?.id) === itemId)
+    if (idx < 0) return null
+    const now = new Date().toISOString()
+    const cur = all[idx]
+    const next = {
+      ...cur,
+      ...patch,
+      kind: patch.kind ? normalizeAssistantKind(patch.kind) : cur.kind,
+      status: patch.status ? normalizeAssistantStatus(patch.status) : cur.status,
+      dueAt: patch.dueAt !== undefined ? safeIsoOrNull(patch.dueAt) : cur.dueAt,
+      remindAt: patch.remindAt !== undefined ? safeIsoOrNull(patch.remindAt) : cur.remindAt,
+      remindedAt: patch.remindedAt !== undefined ? safeIsoOrNull(patch.remindedAt) : cur.remindedAt,
+      updatedAt: now,
+    }
+    all[idx] = next
+    writeJsonFile(ASSISTANT_ITEMS_FILE, all)
+    return next
+  }
+
+  // Minimal update: only fields we use right now.
+  const fields: string[] = []
+  const params: any[] = []
+  const push = (sql: string, val: any) => {
+    params.push(val)
+    fields.push(`${sql}=$${params.length}`)
+  }
+  if (patch.kind) push('kind', normalizeAssistantKind(patch.kind))
+  if (patch.title !== undefined) push('title', patch.title == null ? null : String(patch.title).trim())
+  if (patch.body !== undefined) push('body', patch.body == null ? null : String(patch.body).trim())
+  if (patch.status) push('status', normalizeAssistantStatus(patch.status))
+  if (patch.priority !== undefined) push('priority', patch.priority == null ? null : Number(patch.priority))
+  if (patch.dueAt !== undefined) push('due_at', safeIsoOrNull(patch.dueAt))
+  if (patch.remindAt !== undefined) push('remind_at', safeIsoOrNull(patch.remindAt))
+  if (patch.remindedAt !== undefined) push('reminded_at', safeIsoOrNull(patch.remindedAt))
+  if (patch.tags !== undefined) push('tags', patch.tags == null ? null : JSON.stringify(patch.tags))
+  if (patch.meta !== undefined) push('meta', patch.meta == null ? null : JSON.stringify(patch.meta))
+  if (!fields.length) return null
+  params.push(itemId)
+  const res = await pgQuery(
+    `UPDATE assistant_items SET ${fields.join(', ')}, updated_at=now()
+     WHERE id=$${params.length}
+     RETURNING
+      id,
+      tenant_id as "tenantId",
+      kind,
+      title,
+      body,
+      status,
+      priority,
+      due_at as "dueAt",
+      remind_at as "remindAt",
+      reminded_at as "remindedAt",
+      tags,
+      meta,
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    params,
+  )
+  return res.rows?.[0] || null
+}
+
+export async function listDueAssistantReminders(input: { tenantId: string; dueWithinMs?: number; limit?: number }) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const dueWithinMs = Math.max(10_000, Math.min(7 * 24 * 60 * 60 * 1000, Number(input.dueWithinMs || 60_000) || 60_000))
+  const limit = Math.max(1, Math.min(50, Number(input.limit || 20) || 20))
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_ITEMS_FILE, []) as any[]
+    const now = Date.now()
+    return (Array.isArray(all) ? all : [])
+      .filter((x) => String(x?.tenantId || '').toLowerCase() === tenantId)
+      .filter((x) => normalizeAssistantKind(x?.kind) === 'reminder')
+      .filter((x) => normalizeAssistantStatus(x?.status) === 'open')
+      .filter((x) => {
+        const ra = Date.parse(String(x?.remindAt || ''))
+        if (!Number.isFinite(ra)) return false
+        if (ra > now + dueWithinMs) return false
+        const rr = Date.parse(String(x?.remindedAt || ''))
+        return !Number.isFinite(rr) || rr < ra
+      })
+      .slice(0, limit)
+  }
+
+  const res = await pgQuery(
+    `SELECT
+      id,
+      tenant_id as "tenantId",
+      kind,
+      title,
+      body,
+      status,
+      priority,
+      due_at as "dueAt",
+      remind_at as "remindAt",
+      reminded_at as "remindedAt",
+      tags,
+      meta,
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+     FROM assistant_items
+     WHERE tenant_id=$1
+       AND kind='reminder'
+       AND status='open'
+       AND remind_at IS NOT NULL
+       AND remind_at <= now() + ($2::int * interval '1 millisecond')
+       AND (reminded_at IS NULL OR reminded_at < remind_at)
+     ORDER BY remind_at ASC
+     LIMIT $3`,
+    [tenantId, dueWithinMs, limit],
+  )
+  return res.rows
+}
+
+export async function appendAssistantMessage(input: { tenantId: string; role: AssistantMessage['role']; content: string }) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const role = input.role
+  const content = String(input.content || '').trim()
+  if (!content) throw new Error('missing_content')
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_MESSAGES_FILE, []) as any[]
+    const now = new Date().toISOString()
+    const msg: AssistantMessage = { id: Date.now(), tenantId, role, content, createdAt: now }
+    all.unshift(msg)
+    writeJsonFile(ASSISTANT_MESSAGES_FILE, all)
+    return msg
+  }
+
+  const res = await pgQuery(
+    `INSERT INTO assistant_messages (tenant_id, role, content)
+     VALUES ($1,$2,$3)
+     RETURNING id, tenant_id as "tenantId", role, content, created_at as "createdAt"`,
+    [tenantId, role, content],
+  )
+  return res.rows[0]
+}
+
+export async function listAssistantMessages(input: { tenantId: string; limit?: number }) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const limit = Math.max(1, Math.min(200, Number(input.limit || 60) || 60))
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_MESSAGES_FILE, []) as any[]
+    return (Array.isArray(all) ? all : []).filter((x) => String(x?.tenantId || '').toLowerCase() === tenantId).slice(0, limit)
+  }
+
+  const res = await pgQuery(
+    `SELECT id, tenant_id as "tenantId", role, content, created_at as "createdAt"
+     FROM assistant_messages
+     WHERE tenant_id=$1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [tenantId, limit],
+  )
+  return res.rows
 }
 

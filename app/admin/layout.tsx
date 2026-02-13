@@ -37,6 +37,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <NavLink href="/admin" label="CRM" />
+            <NavLink href="/admin/assistant" label="Ассистент" />
             <NavLink href="/admin/tenants" label="Клиенты" />
             <NavLink href="/admin/profiles" label="Профили" />
             <NavLink href="/admin/connections" label="Подключения" />
