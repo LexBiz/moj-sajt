@@ -355,7 +355,7 @@ export async function deleteLeadsByIds(ids: number[]) {
 
 // PERSONAL ASSISTANT MEMORY (Admin)
 export type AssistantItemKind = 'note' | 'task' | 'reminder' | 'fact' | 'project'
-export type AssistantItemStatus = 'open' | 'done' | 'cancelled'
+export type AssistantItemStatus = 'inbox' | 'open' | 'done' | 'cancelled'
 
 export type AssistantItem = {
   id: number
@@ -393,6 +393,7 @@ function normalizeAssistantKind(k: unknown): AssistantItemKind {
 
 function normalizeAssistantStatus(s: unknown): AssistantItemStatus {
   const v = String(s || '').trim().toLowerCase()
+  if (v === 'inbox') return 'inbox'
   if (v === 'done') return 'done'
   if (v === 'cancelled' || v === 'canceled') return 'cancelled'
   return 'open'
@@ -699,5 +700,52 @@ export async function listAssistantMessages(input: { tenantId: string; limit?: n
     [tenantId, limit],
   )
   return res.rows
+}
+
+// ASSISTANT STATE (persistent KV)
+const ASSISTANT_STATE_FILE = path.join(process.cwd(), 'data', 'assistant-state.json')
+
+export async function getAssistantState(tenantId: string, key: string) {
+  const tid = String(tenantId || '').trim().toLowerCase()
+  const k = String(key || '').trim()
+  if (!tid || !k) return null
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_STATE_FILE, []) as any[]
+    const row = (Array.isArray(all) ? all : []).find((x) => String(x?.tenantId || '').toLowerCase() === tid && String(x?.key || '') === k)
+    return row?.value ?? null
+  }
+
+  const res = await pgQuery('SELECT value FROM assistant_state WHERE tenant_id=$1 AND key=$2 LIMIT 1', [tid, k])
+  return res.rows?.[0]?.value ?? null
+}
+
+export async function setAssistantState(tenantId: string, key: string, value: any) {
+  const tid = String(tenantId || '').trim().toLowerCase()
+  const k = String(key || '').trim()
+  if (!tid || !k) return null
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_STATE_FILE, []) as any[]
+    const idx = (Array.isArray(all) ? all : []).findIndex(
+      (x) => String(x?.tenantId || '').toLowerCase() === tid && String(x?.key || '') === k,
+    )
+    const row = { tenantId: tid, key: k, value, updatedAt: new Date().toISOString() }
+    if (idx >= 0) all[idx] = row
+    else all.unshift(row)
+    writeJsonFile(ASSISTANT_STATE_FILE, all)
+    return row
+  }
+
+  const res = await pgQuery(
+    `INSERT INTO assistant_state (tenant_id, key, value)
+     VALUES ($1,$2,$3::jsonb)
+     ON CONFLICT (tenant_id, key) DO UPDATE SET
+      value=EXCLUDED.value,
+      updated_at=now()
+     RETURNING tenant_id as "tenantId", key, value, updated_at as "updatedAt"`,
+    [tid, k, value == null ? null : JSON.stringify(value)],
+  )
+  return res.rows?.[0] || null
 }
 

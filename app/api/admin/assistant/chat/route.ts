@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/adminAuth'
-import { appendAssistantMessage, createAssistantItem, listAssistantItems, updateAssistantItem } from '@/app/lib/storage'
+import { appendAssistantMessage, createAssistantItem, getTenantProfile, listAssistantItems, updateAssistantItem } from '@/app/lib/storage'
 
 function normalizeTenantId(input: unknown) {
   const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
@@ -70,6 +70,33 @@ function pickQueryTerms(message: string) {
   return words.join(' ')
 }
 
+function localNowString(timeZone: string) {
+  const tz = String(timeZone || '').trim() || 'UTC'
+  try {
+    const dtf = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+    const parts = dtf.formatToParts(new Date())
+    const get = (t: string) => parts.find((p) => p.type === t)?.value || ''
+    const y = get('year')
+    const m = get('month')
+    const d = get('day')
+    const hh = get('hour')
+    const mm = get('minute')
+    const ss = get('second')
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss} (${tz})`
+  } catch {
+    return `${new Date().toISOString()} (UTC)`
+  }
+}
+
 async function callOpenAi(params: { apiKey: string; model: string; messages: any[]; max: number; temperature?: number }) {
   const model = normalizeModel(params.model)
   const modelLower = model.toLowerCase()
@@ -136,6 +163,11 @@ export async function POST(request: NextRequest) {
 
   const nowIso = new Date().toISOString()
   const today = nowIso.slice(0, 10)
+  const profile = await getTenantProfile(tenantId).catch(() => null)
+  const tz =
+    profile && typeof (profile as any)?.timezone === 'string' && String((profile as any).timezone).trim()
+      ? String((profile as any).timezone).trim()
+      : 'Europe/Prague'
   const system = [
     'Ты — личный executive-assistant владельца TemoWeb внутри CRM.',
     'Цель: удерживать контекст на месяцы/годы, превращать хаос в план, ничего важного не терять.',
@@ -145,6 +177,8 @@ export async function POST(request: NextRequest) {
     '',
     `СЕГОДНЯ/СЕЙЧАС (UTC): ${nowIso}`,
     `Сегодня (YYYY-MM-DD): ${today}`,
+    `Timezone: ${tz}`,
+    `Local time: ${localNowString(tz)}`,
     'Относительные даты ("сегодня/завтра/в понедельник") интерпретируй, опираясь на это время.',
     '',
     'ОБЯЗАТЕЛЬНЫЙ ФОРМАТ ВЫХОДА: верни ТОЛЬКО JSON без markdown и без пояснений вокруг.',
@@ -195,7 +229,7 @@ export async function POST(request: NextRequest) {
       kind: 'note',
       title: message.length <= 80 ? message : null,
       body: message,
-      status: 'open',
+      status: 'inbox',
       meta: { source: 'assistant_chat_default_note', model: usedModel },
     }).catch(() => null)
     if (item) created.push(item)
@@ -208,7 +242,7 @@ export async function POST(request: NextRequest) {
         kind: 'note',
         title: a?.title || null,
         body: a?.body || message,
-        status: 'open',
+        status: 'inbox',
         priority: a?.priority ?? null,
         tags: Array.isArray(a?.tags) ? a.tags : null,
         meta: { source: 'assistant_chat', model: usedModel, action: 'save_note' },

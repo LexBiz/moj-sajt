@@ -42,6 +42,7 @@ export default function AdminAssistantPage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState<'inbox' | 'open' | 'all' | 'done'>('inbox')
 
   const authHeader = useMemo(() => {
     const h: Record<string, string> = {}
@@ -67,9 +68,10 @@ export default function AdminAssistantPage() {
     else if (authHeader.Authorization) hdrs.Authorization = authHeader.Authorization
     setError('')
     try {
+      const statusParam = tab === 'all' ? '' : `&status=${encodeURIComponent(tab)}`
       const [mRes, iRes] = await Promise.all([
         fetch(`/api/admin/assistant/messages?tenantId=${encodeURIComponent(tenantId)}&limit=80`, { headers: hdrs }),
-        fetch(`/api/admin/assistant/items?tenantId=${encodeURIComponent(tenantId)}&status=open&limit=80`, { headers: hdrs }),
+        fetch(`/api/admin/assistant/items?tenantId=${encodeURIComponent(tenantId)}${statusParam}&limit=120`, { headers: hdrs }),
       ])
       if (!mRes.ok) throw new Error('auth_or_messages_failed')
       if (!iRes.ok) throw new Error('items_failed')
@@ -89,7 +91,21 @@ export default function AdminAssistantPage() {
     if (!isAuthenticated) return
     void loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, tenantId])
+  }, [isAuthenticated, tenantId, tab])
+
+  async function markDone(id: number) {
+    if (!authHeader.Authorization) return
+    try {
+      await fetch('/api/admin/assistant/items', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader.Authorization },
+        body: JSON.stringify({ id, patch: { status: 'done' } }),
+      })
+      await loadAll()
+    } catch {
+      // ignore
+    }
+  }
 
   async function login() {
     setLoading(true)
@@ -225,7 +241,30 @@ export default function AdminAssistantPage() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-          <div className="border-b border-white/10 px-4 py-3 font-semibold">Открытое (память)</div>
+          <div className="border-b border-white/10 px-4 py-3">
+            <div className="font-semibold">Память</div>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {(
+                [
+                  { k: 'inbox', label: 'Inbox' },
+                  { k: 'open', label: 'Open' },
+                  { k: 'done', label: 'Done' },
+                  { k: 'all', label: 'All' },
+                ] as const
+              ).map((x) => (
+                <button
+                  key={x.k}
+                  onClick={() => setTab(x.k)}
+                  className={[
+                    'px-3 py-1 rounded-lg border transition-colors',
+                    tab === x.k ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10',
+                  ].join(' ')}
+                >
+                  {x.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="p-4 space-y-3 max-h-[72vh] overflow-auto">
             {items.length === 0 ? <div className="text-slate-400 text-sm">Пока пусто. Напиши в чат — и появятся заметки/задачи/напоминания.</div> : null}
             {items.map((it) => {
@@ -233,11 +272,23 @@ export default function AdminAssistantPage() {
               return (
                 <div key={it.id} className="rounded-xl border border-white/10 bg-slate-950/30 p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs text-slate-400">{it.kind}</div>
+                    <div className="text-xs text-slate-400">
+                      #{it.id} • {it.kind} • {it.status}
+                    </div>
                     {when ? <div className="text-xs text-slate-400">{fmt(when)}</div> : null}
                   </div>
                   <div className="mt-1 font-semibold text-sm text-white">{it.title || '(без назви)'}</div>
                   {it.body ? <div className="mt-1 text-sm text-slate-200 whitespace-pre-wrap">{clip(it.body, 360)}</div> : null}
+                  {it.status !== 'done' ? (
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <button
+                        className="text-xs px-3 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10"
+                        onClick={() => markDone(it.id)}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )
             })}
