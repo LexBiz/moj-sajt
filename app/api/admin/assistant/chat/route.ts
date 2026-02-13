@@ -121,8 +121,15 @@ export async function POST(request: NextRequest) {
     : ''
 
   const model =
-    normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT || process.env.OPENAI_MODEL_ASSISTANT || process.env.OPENAI_MODEL || 'gpt-4o'))
+    normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT || process.env.OPENAI_MODEL_ASSISTANT || ''))
   const fallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_FALLBACK || 'gpt-4o-mini'))
+  const explicitModel = model
+  let usedPrimaryModel = explicitModel || normalizeModel(String(process.env.OPENAI_MODEL || 'gpt-4o'))
+  // Stability: if no explicit assistant model was configured and OPENAI_MODEL is gpt-5, use gpt-4o by default.
+  if (!explicitModel) {
+    const ml = usedPrimaryModel.toLowerCase()
+    if (ml.startsWith('gpt-5') || ml.startsWith('gpt5')) usedPrimaryModel = 'gpt-4o'
+  }
 
   const system = [
     'Ты — личный executive-assistant владельца TemoWeb внутри CRM.',
@@ -150,9 +157,9 @@ export async function POST(request: NextRequest) {
   ]
 
   let outText = ''
-  let usedModel = model
+  let usedModel = usedPrimaryModel
   try {
-    const json = await callOpenAi({ apiKey, model, messages, max: 520, temperature: 0.4 })
+    const json = await callOpenAi({ apiKey, model: usedPrimaryModel, messages, max: 520, temperature: 0.4 })
     outText = safeTextFromChatCompletion(json).trim()
   } catch (e) {
     usedModel = fallbackModel
@@ -170,6 +177,18 @@ export async function POST(request: NextRequest) {
   const actionsRaw = Array.isArray(parsed?.actions) ? parsed.actions : []
 
   const created: any[] = []
+  // Hard guarantee: ALWAYS store the user's message in long-term memory (even if the model didn't emit actions).
+  if (!actionsRaw.length) {
+    const item = await createAssistantItem({
+      tenantId,
+      kind: 'note',
+      title: message.length <= 80 ? message : null,
+      body: message,
+      status: 'open',
+      meta: { source: 'assistant_chat_default_note', model: usedModel },
+    }).catch(() => null)
+    if (item) created.push(item)
+  }
   for (const a of actionsRaw) {
     const t = String(a?.type || '').trim()
     if (t === 'save_note') {
