@@ -528,22 +528,31 @@ export async function POST(request: NextRequest) {
     const msgTrim = String(message || '').trim()
     const msgLower = msgTrim.toLowerCase()
     const isZapomni = msgLower.startsWith('запомни') || msgLower.startsWith('zapomni')
-    if (isZapomni && !wantsStream && !isVoice) {
+    if (isZapomni && !isVoice) {
       const raw = msgTrim.replace(/^запомни[:\s-]*/i, '').replace(/^zapomni[:\s-]*/i, '').trim() || msgTrim
-      // Get a 1-sentence paraphrase (ChatGPT-like, no lists).
-      const sys = [
-        'Перефразируй текст на русском ОДНИМ предложением (без списков, без markdown).',
-        'Сохрани смысл, не добавляй ничего от себя.',
-      ].join('\n')
-      let one = ''
-      try {
-        one = await callOpenAiText({ apiKey, model: chatModel, messages: [{ role: 'system', content: sys }, { role: 'user', content: raw }], max: 90, temperature: 0.2 })
-      } catch {
-        one = raw
-      }
-      const reply = `Окей, запомнил: ${one.replace(/\s+/g, ' ').trim()}.`
+      const one = raw.replace(/\s+/g, ' ').trim()
+      const short = one.length > 220 ? `${one.slice(0, 219)}…` : one
+      const reply = `Окей, запомнил: ${short}.`
       await appendAssistantMessage({ tenantId, role: 'assistant', content: reply }).catch(() => null)
       await updateGptMemorySummary({ apiKey, tenantId, model: memoryModel, fallbackModel, user: message, assistant: reply }).catch(() => null)
+      if (wantsStream) {
+        const encoder = new TextEncoder()
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(reply))
+            controller.close()
+          },
+        })
+        return new Response(stream, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            'X-Accel-Buffering': 'no',
+            'X-Model': chatModel,
+          },
+        })
+      }
       return NextResponse.json({ ok: true, tenantId, mode, model: chatModel, reply, applied: [], patch: null })
     }
 
