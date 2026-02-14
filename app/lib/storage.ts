@@ -354,8 +354,20 @@ export async function deleteLeadsByIds(ids: number[]) {
 }
 
 // PERSONAL ASSISTANT MEMORY (Admin)
-export type AssistantItemKind = 'note' | 'task' | 'reminder' | 'fact' | 'project'
-export type AssistantItemStatus = 'inbox' | 'open' | 'done' | 'cancelled'
+// PERSONAL ASSISTANT MEMORY (Admin)
+// NOTE: In Postgres these fields are TEXT, so we can safely extend types over time.
+export type AssistantItemKind =
+  | 'note'
+  | 'task'
+  | 'reminder'
+  | 'project'
+  | 'meeting'
+  | 'decision'
+  | 'blocker'
+  | 'contact'
+  | 'reference'
+  | 'fact'
+export type AssistantItemStatus = 'inbox' | 'open' | 'waiting' | 'done' | 'archived' | 'cancelled'
 
 export type AssistantItem = {
   id: number
@@ -386,15 +398,22 @@ function normalizeAssistantKind(k: unknown): AssistantItemKind {
   const s = String(k || '').trim().toLowerCase()
   if (s === 'task') return 'task'
   if (s === 'reminder') return 'reminder'
-  if (s === 'fact') return 'fact'
   if (s === 'project') return 'project'
+  if (s === 'meeting') return 'meeting'
+  if (s === 'decision') return 'decision'
+  if (s === 'blocker') return 'blocker'
+  if (s === 'contact') return 'contact'
+  if (s === 'reference') return 'reference'
+  if (s === 'fact') return 'fact'
   return 'note'
 }
 
 function normalizeAssistantStatus(s: unknown): AssistantItemStatus {
   const v = String(s || '').trim().toLowerCase()
   if (v === 'inbox') return 'inbox'
+  if (v === 'waiting') return 'waiting'
   if (v === 'done') return 'done'
+  if (v === 'archived') return 'archived'
   if (v === 'cancelled' || v === 'canceled') return 'cancelled'
   return 'open'
 }
@@ -473,6 +492,50 @@ export async function listAssistantItems(input: {
     params,
   )
   return res.rows
+}
+
+export async function getAssistantItemsByIds(input: { tenantId: string; ids: number[] }) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const ids = Array.isArray(input.ids) ? input.ids.map((x) => Number(x)).filter((x) => Number.isFinite(x)) : []
+  if (!ids.length) return []
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_ITEMS_FILE, []) as any[]
+    const map = new Map<number, any>()
+    for (const x of Array.isArray(all) ? all : []) {
+      if (String(x?.tenantId || '').toLowerCase() !== tenantId) continue
+      const id = Number(x?.id)
+      if (!Number.isFinite(id)) continue
+      map.set(id, x)
+    }
+    return ids.map((id) => map.get(id)).filter(Boolean)
+  }
+
+  const res = await pgQuery(
+    `SELECT
+      id,
+      tenant_id as "tenantId",
+      kind,
+      title,
+      body,
+      status,
+      priority,
+      due_at as "dueAt",
+      remind_at as "remindAt",
+      reminded_at as "remindedAt",
+      tags,
+      meta,
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+     FROM assistant_items
+     WHERE tenant_id=$1
+       AND id = ANY($2::bigint[])`,
+    [tenantId, ids],
+  )
+  const map = new Map<number, any>()
+  for (const row of res.rows || []) map.set(Number(row?.id), row)
+  return ids.map((id) => map.get(id)).filter(Boolean)
 }
 
 export async function createAssistantItem(input: Partial<AssistantItem> & { tenantId: string }) {

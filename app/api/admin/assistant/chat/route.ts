@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/app/lib/adminAuth'
-import { appendAssistantMessage, createAssistantItem, getTenantProfile, listAssistantItems, updateAssistantItem } from '@/app/lib/storage'
+import {
+  appendAssistantMessage,
+  createAssistantItem,
+  getAssistantState,
+  getAssistantItemsByIds,
+  getTenantProfile,
+  listAssistantItems,
+  listAssistantMessages,
+  setAssistantState,
+  updateAssistantItem,
+} from '@/app/lib/storage'
 
 function normalizeTenantId(input: unknown) {
   const raw = typeof input === 'string' ? input.trim().toLowerCase() : ''
@@ -31,12 +41,83 @@ function safeTextFromChatCompletion(json: any) {
   return typeof content === 'string' ? content : ''
 }
 
-type AssistantAction =
-  | { type: 'save_note'; title?: string | null; body?: string | null; tags?: string[]; priority?: number | null }
-  | { type: 'create_task'; title: string; body?: string | null; dueAt?: string | null; priority?: number | null; tags?: string[] }
-  | { type: 'create_reminder'; title: string; body?: string | null; remindAt: string | null; tags?: string[] }
-  | { type: 'complete_item'; id: number | string }
-  | { type: 'reschedule_reminder'; id: number | string; remindAt: string | null }
+type ExecPatch = {
+  state?: { mode?: 'capture' | 'ask' | 'plan' | 'review'; overload_level?: number; focus_project_id?: string | null } | null
+  ops?: Array<
+    | { op: 'create_item'; item: any }
+    | { op: 'update_item'; id: number; patch: any }
+    | { op: 'close_item'; id: number }
+    | { op: 'link_items'; from_id: number; to_id: number; relation: 'blocks' | 'depends_on' | 'related' }
+  >
+  today_board?: { top3_ids?: number[]; next_move?: { text?: string; duration_min?: number; related_ids?: number[] } } | null
+  notes_for_system?: string | null
+}
+
+const TEMO_EXEC_ASSISTANT_PROMPT = `You are TEMO Executive Assistant inside a private CRM.
+
+GOAL
+Turn the user’s chaotic “brain dump” (often emotional, with slang and swearing) into a reliable operational system:
+- capture everything without requiring the user to format
+- convert raw input into: Projects, Tasks, Reminders, Meetings, Decisions, Blockers
+- maintain a “Today Board” and “Next Moves”
+- ask at most 2 clarifying questions, only when absolutely necessary
+- keep the user in control: show what you created/changed, allow undo/edit quickly
+- do not behave like an archive; behave like an operator/COO
+
+CORE PRINCIPLES
+1) Default to EXECUTIVE MODE:
+   - First produce a compact Executive Summary (what was said + what changed).
+   - Then propose a realistic next action.
+   - Keep user-facing output short, structured, action-oriented.
+2) The user’s tone can be chaotic; you remain calm, direct, and helpful.
+3) Never demand the user to “fill fields”. You infer structure.
+4) Don’t spam memory. Create/update structured items only when useful.
+5) Every time you create/update/close/shift something, you must report it explicitly (IDs, dates).
+6) If overloaded signals are present (stress, “я в ахуе”, “голова кипит”), reduce verbosity, reduce questions, focus on “Top 3 + Next move”.
+
+INPUTS YOU WILL RECEIVE EACH TURN
+- user_message (raw text, may include voice transcript)
+- recent_chat (last N messages)
+- pinned_memory (stable preferences, timezone, etc.)
+- relevant_items (retrieved tasks/notes/reminders/projects that likely relate)
+- today_context (date, weekday, timezone)
+
+YOUR OUTPUT MUST BE TWO PARTS:
+A) USER-FACING MESSAGE (natural language)
+B) STRUCTURED JSON PATCH (machine-readable), following the schema below.
+If you are not changing anything, output an empty patch with reason.
+
+USER-FACING MESSAGE FORMAT (always):
+1) “Окей, понял.” + 1 line summary in user’s language (Russian).
+2) TODAY (max 3 bullets) — what matters today/next 24h
+3) NEXT (max 3 bullets) — upcoming deadlines/meetings
+4) BLOCKERS (optional, max 2 bullets)
+5) ONE NEXT MOVE — exactly one concrete next step (15–45 min)
+6) If needed: up to 2 clarifying questions, numbered.
+
+IMPORTANT BEHAVIOR RULES
+- If the user dumps many things: create an INBOX bundle (items with status=inbox) and propose a quick “разбор инбокса” later.
+- Tasks must have a “next_action” that is executable.
+- Use separate fields: due_at (deadline) vs remind_at (notification time).
+- Meetings: capture date/time, attendees, intent, prep tasks.
+- Decisions: capture what was decided + implications + date.
+- Prefer moving/splitting tasks over letting them be overdue.
+- If the user says “сделай план/раскидай”: immediately generate a 1–3 day plan using open tasks + dates.
+
+MEMORY POLICY
+- assistant_messages is raw log: everything.
+- assistant_items is executive memory: only structured items.
+- Do NOT store emotional text as memory unless it affects operation (e.g., “I’m overloaded this week” -> temporary state for 24–48h).
+- When uncertain, store as inbox with low confidence.
+
+QUALITY BAR
+Your primary KPI is that the user can dump chaos and immediately feel:
+- “everything is captured”
+- “I see what matters now”
+- “I know the next move”
+- “nothing will be forgotten”
+
+Never output only JSON. Always output the user-facing message + then the JSON patch.`
 
 function tryParseJsonObject(text: string) {
   const raw = String(text || '').trim()
@@ -50,6 +131,14 @@ function tryParseJsonObject(text: string) {
   } catch {
     return null
   }
+}
+
+function detectOverloadLevel(text: string) {
+  const t = String(text || '').toLowerCase()
+  if (!t) return 0
+  if (/(я\s+в\s+ахуе|голова\s+кипит|перегруз|перегруж|пиздец|заебал|устал|не\s+вывожу|стресс)/i.test(t)) return 3
+  if (/(очень\s+много|слишком\s+много|капец|нерв|паник)/i.test(t)) return 2
+  return 0
 }
 
 function clip(text: string, max = 1200) {
@@ -97,6 +186,28 @@ function localNowString(timeZone: string) {
   }
 }
 
+function formatInTz(iso: string, timeZone: string) {
+  const s = String(iso || '').trim()
+  if (!s) return ''
+  const t = Date.parse(s)
+  if (!Number.isFinite(t)) return s
+  const tz = String(timeZone || '').trim() || 'UTC'
+  try {
+    const dtf = new Intl.DateTimeFormat('ru-RU', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    return `${dtf.format(new Date(t))} (${tz})`
+  } catch {
+    return new Date(t).toISOString()
+  }
+}
+
 function looksMemoryWorthy(text: string) {
   const t = String(text || '').trim()
   if (!t) return false
@@ -140,6 +251,27 @@ async function transcribeAudio(params: { apiKey: string; buf: Buffer; mime?: str
   } finally {
     clearTimeout(timer)
   }
+}
+
+function wantsPlan(text: string) {
+  const t = String(text || '').toLowerCase()
+  if (!t) return false
+  return /(сделай|составь|раскидай|распиши|зафиксируй)\s+план|план\s+на|планир|раскидай/i.test(t)
+}
+
+function isPatchUseful(p: any) {
+  if (!p || typeof p !== 'object') return false
+  if (p?.today_board && (Array.isArray(p.today_board?.top3_ids) || p.today_board?.next_move)) return true
+  if (Array.isArray(p?.ops) && p.ops.length) return true
+  if (p?.state && (p.state.mode || typeof p.state.overload_level === 'number')) return true
+  return false
+}
+
+function preferGpt52(model: string) {
+  const m = normalizeModel(model)
+  const low = m.toLowerCase()
+  if (low === 'gpt-5' || low === 'gpt-5.0' || (low.startsWith('gpt-5') && !low.startsWith('gpt-5.2'))) return 'gpt-5.2'
+  return m
 }
 
 async function callOpenAi(params: { apiKey: string; model: string; messages: any[]; max: number; temperature?: number }) {
@@ -199,6 +331,7 @@ export async function POST(request: NextRequest) {
   // Retrieval: pull a few relevant memory items by simple keyword match.
   const q = pickQueryTerms(message)
   const relevant = await listAssistantItems({ tenantId, q, limit: 10 }).catch(() => [])
+  const recentChat = await listAssistantMessages({ tenantId, limit: 14 }).catch(() => [])
   const relevantText = Array.isArray(relevant)
     ? relevant
         .slice(0, 10)
@@ -214,11 +347,20 @@ export async function POST(request: NextRequest) {
         .join('\n')
     : ''
 
-  const chatModel = normalizeModel(
-    String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_CHAT || process.env.OPENAI_MODEL_ADMIN_ASSISTANT || process.env.OPENAI_MODEL_ASSISTANT || process.env.OPENAI_MODEL || 'gpt-4o'),
-  )
-  const extractorModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_EXTRACTOR || 'gpt-4o-mini'))
-  const fallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_FALLBACK || 'gpt-4o-mini'))
+  const chatModelRaw =
+    String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_CHAT || '').trim() ||
+    String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT || '').trim() ||
+    String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_MODEL || '').trim() ||
+    String(process.env.OPENAI_MODEL_ASSISTANT || '').trim() ||
+    String(process.env.OPENAI_MODEL || '').trim() ||
+    'gpt-5.2'
+  const extractorModelRaw = String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_EXTRACTOR || '').trim() || 'gpt-5.2'
+
+  // If the global OPENAI_MODEL is set to gpt-5 (older), prefer gpt-5.2 for the assistant unless explicitly overridden.
+  const chatModel = preferGpt52(chatModelRaw)
+  const extractorModel = preferGpt52(extractorModelRaw)
+  const extractorFallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_EXTRACTOR_FALLBACK || 'gpt-4o-mini'))
+  const fallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_FALLBACK || 'gpt-4o'))
 
   const nowIso = new Date().toISOString()
   const today = nowIso.slice(0, 10)
@@ -227,156 +369,340 @@ export async function POST(request: NextRequest) {
     profile && typeof (profile as any)?.timezone === 'string' && String((profile as any).timezone).trim()
       ? String((profile as any).timezone).trim()
       : 'Europe/Prague'
-  // 1) Generate a high-quality reply (no JSON constraints).
-  const replySystem = [
-    'Ты — личный executive-assistant владельца TemoWeb.',
-    'Общайся как живой профессиональный помощник: коротко, по делу, уверенно.',
-    'Твоя задача: помочь принять решение, предложить следующий шаг, и при необходимости уточнить 1 вопрос.',
-    'НЕ пиши канцелярит. НЕ пиши шаблоны вроде “Если есть вопросы”.',
-    '',
-    `Now UTC: ${nowIso}`,
-    `Timezone: ${tz}`,
-    `Local time: ${localNowString(tz)}`,
-    'Относительные даты интерпретируй по Local time.',
-    '',
-    'Память (релевантное):',
-    relevantText || '(пока пусто)',
-  ].join('\n')
-  const replyMessages = [{ role: 'system', content: replySystem }, { role: 'user', content: message }]
+  // Build inputs bundle for the extractor/replier.
+  const pinnedMemory = {
+    timezone: tz,
+    managerTelegramId: profile && typeof (profile as any)?.managerTelegramId === 'string' ? (profile as any).managerTelegramId : null,
+  }
+  const todayContext = { utc: nowIso, timezone: tz, local: localNowString(tz) }
 
-  let assistantReply = ''
+  // 1) Extract JSON PATCH (stable model). This is the “operator” layer.
+  const overloadLevel = detectOverloadLevel(message)
+  const planIntent = wantsPlan(message)
+  const lastState = await getAssistantState(tenantId, 'exec_state').catch(() => null)
+  const extractorSystem = [
+    TEMO_EXEC_ASSISTANT_PROMPT,
+    '',
+    'SYSTEM OVERRIDE FOR THIS CALL:',
+    '- You must output ONLY part B: STRUCTURED JSON PATCH.',
+    '- Do NOT output any user-facing message here.',
+    '- Return ONLY a single JSON object (no markdown, no code fences, no extra text).',
+    '- NEVER answer with an empty ops[] if the user message contains tasks/meetings/deadlines OR plan intent.',
+    '- If user asked for a plan ("план/раскидай/зафиксируй план"), set state.mode="plan" and create 3–8 tasks with executable next_action.',
+    '- Always fill today_board.top3_ids and today_board.next_move (15–45 min) when plan intent or overload_level >= 2.',
+    '',
+    'SCHEMA:',
+    '{',
+    '  "state": {"mode":"capture|ask|plan|review","overload_level":0,"focus_project_id":"optional"},',
+    '  "ops": [',
+    '    {"op":"create_item","item":{...}},',
+    '    {"op":"update_item","id":123,"patch":{...}},',
+    '    {"op":"close_item","id":123},',
+    '    {"op":"link_items","from_id":123,"to_id":456,"relation":"blocks|depends_on|related"}',
+    '  ],',
+    '  "today_board": {"top3_ids":[123,456,789],"next_move":{"text":"...","duration_min":30,"related_ids":[123]}},',
+    '  "notes_for_system":"short internal note"',
+    '}',
+    '',
+    'ITEM SHAPE inside create_item:',
+    '{',
+    '  "type":"task|reminder|note|project|meeting|decision|blocker|contact|reference",',
+    '  "title":"short",',
+    '  "body":"optional",',
+    '  "status":"inbox|open|waiting|done|archived",',
+    '  "priority":"P0|P1|P2|P3",',
+    '  "area":"work|money|health|family|other",',
+    '  "due_at":"ISO8601 or null",',
+    '  "remind_at":"ISO8601 or null",',
+    '  "next_action":"one executable step",',
+    '  "tags":["optional"],',
+    '  "confidence":0.0',
+    '}',
+    '',
+    `today_context: ${JSON.stringify(todayContext)}`,
+    `pinned_memory: ${JSON.stringify(pinnedMemory)}`,
+    `last_state: ${JSON.stringify(lastState)}`,
+  ].join('\n')
+
+  const extractorPayload = {
+    user_message: message,
+    is_voice: isVoice,
+    recent_chat: Array.isArray(recentChat) ? recentChat.slice().reverse().map((m: any) => ({ role: m.role, content: String(m.content || '') })) : [],
+    relevant_items: Array.isArray(relevant) ? relevant : [],
+    overload_level_hint: overloadLevel,
+    plan_intent: planIntent,
+  }
+
+  let patch: ExecPatch = {}
+  const runExtractor = async (model: string) => {
+    const json = await callOpenAi({
+      apiKey,
+      model,
+      messages: [{ role: 'system', content: extractorSystem }, { role: 'user', content: JSON.stringify(extractorPayload) }],
+      max: 900,
+      temperature: 0.2,
+    })
+    const txt = safeTextFromChatCompletion(json).trim()
+    const parsed = tryParseJsonObject(txt) as any
+    return (parsed || {}) as ExecPatch
+  }
+  try {
+    patch = await runExtractor(extractorModel)
+    if (!isPatchUseful(patch)) patch = await runExtractor(extractorFallbackModel)
+  } catch {
+    try {
+      patch = await runExtractor(extractorFallbackModel)
+    } catch {
+      patch = {}
+    }
+  }
+
+  const ops = Array.isArray(patch?.ops) ? patch.ops : []
+  const applied: Array<{ kind: string; id?: number; title?: string; note?: string }> = []
+  const idMap = new Map<string, number>()
+
+  const parseIsoOrNull = (v: any) => {
+    const s = typeof v === 'string' ? v.trim() : ''
+    if (!s) return null
+    const t = Date.parse(s)
+    if (!Number.isFinite(t)) return null
+    return new Date(t).toISOString()
+  }
+  const mapPriority = (p: any) => {
+    const s = String(p || '').toUpperCase()
+    if (s === 'P0') return 0
+    if (s === 'P1') return 1
+    if (s === 'P2') return 2
+    if (s === 'P3') return 3
+    return null
+  }
+  const mapStatus = (s: any) => {
+    const v = String(s || '').toLowerCase()
+    if (v === 'inbox') return 'inbox'
+    if (v === 'waiting') return 'waiting'
+    if (v === 'done') return 'done'
+    if (v === 'archived') return 'archived'
+    return 'open'
+  }
+  const mapTypeToKind = (t: any) => {
+    const v = String(t || '').toLowerCase()
+    if (
+      v === 'task' ||
+      v === 'reminder' ||
+      v === 'note' ||
+      v === 'project' ||
+      v === 'meeting' ||
+      v === 'decision' ||
+      v === 'blocker' ||
+      v === 'contact' ||
+      v === 'reference'
+    )
+      return v === 'note' ? 'note' : v
+    return 'note'
+  }
+
+  for (const op of ops) {
+    const k = String((op as any)?.op || '').trim()
+    if (k === 'create_item') {
+      const item = (op as any)?.item || {}
+      const createdItem = await createAssistantItem({
+        tenantId,
+        kind: mapTypeToKind(item?.type),
+        title: item?.title || null,
+        body: item?.body || null,
+        status: mapStatus(item?.status || 'inbox'),
+        priority: mapPriority(item?.priority),
+        dueAt: parseIsoOrNull(item?.due_at),
+        remindAt: parseIsoOrNull(item?.remind_at),
+        tags: Array.isArray(item?.tags) ? item.tags : null,
+        meta: {
+          ...((typeof item?.project === 'object' && item?.project) || {}),
+          area: item?.area || null,
+          next_action: item?.next_action || null,
+          confidence: typeof item?.confidence === 'number' ? item.confidence : null,
+          source: 'exec_patch',
+        },
+      }).catch(() => null)
+      if (createdItem?.id != null) {
+        const idNum = Number(createdItem.id)
+        applied.push({ kind: 'create', id: idNum, title: createdItem.title || createdItem.kind })
+        // If extractor referenced temporary ids as strings, we could map later. (optional)
+        if (typeof item?.id === 'string') idMap.set(String(item.id), idNum)
+      }
+    }
+    if (k === 'update_item') {
+      const id = Number((op as any)?.id)
+      if (!Number.isFinite(id)) continue
+      const pch = (op as any)?.patch || {}
+      const updated = await updateAssistantItem(id, {
+        title: pch?.title,
+        body: pch?.body,
+        status: pch?.status ? mapStatus(pch.status) : undefined,
+        priority: pch?.priority ? mapPriority(pch.priority) : undefined,
+        dueAt: pch?.due_at !== undefined ? parseIsoOrNull(pch.due_at) : undefined,
+        remindAt: pch?.remind_at !== undefined ? parseIsoOrNull(pch.remind_at) : undefined,
+        tags: pch?.tags,
+        meta: pch?.meta,
+      } as any).catch(() => null)
+      if (updated) applied.push({ kind: 'update', id, title: updated.title || updated.kind })
+    }
+    if (k === 'close_item') {
+      const id = Number((op as any)?.id)
+      if (!Number.isFinite(id)) continue
+      const updated = await updateAssistantItem(id, { status: 'done' } as any).catch(() => null)
+      if (updated) applied.push({ kind: 'close', id, title: updated.title || updated.kind })
+    }
+    if (k === 'link_items') {
+      const fromId = Number((op as any)?.from_id)
+      const toId = Number((op as any)?.to_id)
+      const rel = String((op as any)?.relation || 'related')
+      if (!Number.isFinite(fromId) || !Number.isFinite(toId)) continue
+      const cur = await updateAssistantItem(fromId, {
+        meta: { link: { to: toId, relation: rel }, source: 'exec_patch' },
+      } as any).catch(() => null)
+      if (cur) applied.push({ kind: 'link', id: fromId, title: cur.title || cur.kind, note: `${rel} -> #${toId}` })
+    }
+  }
+
+  // Safety net: if extractor produced nothing but the message looks memory-worthy, capture it as inbox note.
+  if (!applied.length && looksMemoryWorthy(message)) {
+    const item = await createAssistantItem({
+      tenantId,
+      kind: planIntent ? 'task' : 'note',
+      title: planIntent ? 'Сделать план (из Inbox)' : message.length <= 80 ? message : 'Inbox',
+      body: message,
+      status: 'inbox',
+      meta: { source: 'exec_patch_fallback', overloadLevel, planIntent, next_action: planIntent ? 'Собрать 3 главные цели на 24 часа' : null, confidence: 0.4 },
+    }).catch(() => null)
+    if (item?.id != null) applied.push({ kind: 'create', id: Number(item.id), title: item.title || item.kind, note: 'fallback' })
+  }
+
+  // Persist state + today board.
+  const nextState = {
+    mode: patch?.state?.mode || 'capture',
+    overload_level: typeof patch?.state?.overload_level === 'number' ? patch.state.overload_level : overloadLevel,
+    focus_project_id: patch?.state?.focus_project_id || null,
+  }
+  await setAssistantState(tenantId, 'exec_state', nextState).catch(() => null)
+  if (patch?.today_board) await setAssistantState(tenantId, 'today_board', patch.today_board).catch(() => null)
+
+  // 2) Build user-facing message deterministically from patch/state/items
+  const todayBoard = (patch?.today_board || (await getAssistantState(tenantId, 'today_board').catch(() => null)) || {}) as any
+  const top3Ids: number[] = Array.isArray(todayBoard?.top3_ids) ? todayBoard.top3_ids.map((x: any) => Number(x)).filter((x: any) => Number.isFinite(x)) : []
+  const move = todayBoard?.next_move || null
+  const changeIds = applied.map((x) => Number(x.id)).filter((x) => Number.isFinite(x))
+  const fetchIds = Array.from(new Set([...top3Ids, ...changeIds])).slice(0, 30)
+  const fetched = await getAssistantItemsByIds({ tenantId, ids: fetchIds }).catch(() => [])
+  const byId = new Map<number, any>()
+  for (const it of Array.isArray(fetched) ? fetched : []) byId.set(Number(it?.id), it)
+
+  const changeLine = applied.length
+    ? applied
+        .slice(0, 10)
+        .map((a) => {
+          const it = a.id != null ? byId.get(Number(a.id)) : null
+          const when = it?.remindAt || it?.dueAt || null
+          const whenText = when ? ` • ${formatInTz(String(when), tz)}` : ''
+          return `${a.kind.toUpperCase()}: #${a.id} ${String(a.title || it?.title || it?.kind || '').trim()}${whenText}`
+        })
+        .join(' | ')
+    : 'ничего не менял'
+
+  const summarySystem = [
+    'Сделай ОДНУ строку-резюме на русском (10–18 слов). Без шаблонов и без вопросов.',
+    'Учитывай, что ассистент — COO/оператор, помогает превратить хаос в план.',
+    `Сегодня/контекст: ${todayContext.local}`,
+    `Изменения: ${changeLine}`,
+  ].join('\n')
+  let summaryLine = ''
   let usedReplyModel = chatModel
   try {
-    const json = await callOpenAi({ apiKey, model: chatModel, messages: replyMessages, max: 700, temperature: 0.5 })
-    assistantReply = safeTextFromChatCompletion(json).trim()
+    const json = await callOpenAi({
+      apiKey,
+      model: chatModel,
+      messages: [{ role: 'system', content: summarySystem }, { role: 'user', content: message }],
+      max: 120,
+      temperature: 0.4,
+    })
+    summaryLine = safeTextFromChatCompletion(json).trim()
   } catch {
     usedReplyModel = fallbackModel
     try {
-      const json = await callOpenAi({ apiKey, model: fallbackModel, messages: replyMessages, max: 700, temperature: 0.5 })
-      assistantReply = safeTextFromChatCompletion(json).trim()
+      const json = await callOpenAi({
+        apiKey,
+        model: fallbackModel,
+        messages: [{ role: 'system', content: summarySystem }, { role: 'user', content: message }],
+        max: 120,
+        temperature: 0.4,
+      })
+      summaryLine = safeTextFromChatCompletion(json).trim()
     } catch {
-      assistantReply = ''
+      summaryLine = ''
     }
   }
+  if (!summaryLine) summaryLine = planIntent ? 'Зафиксировал запрос на план и превратил входящее в понятные шаги.' : 'Зафиксировал и разложил по задачам/напоминаниям.'
 
-  // 2) Extract structured actions with a stable model (strict JSON).
-  const extractSystem = [
-    'Return ONLY JSON. No markdown, no extra text.',
-    '{ "actions": [ ... ] }',
-    'Allowed actions:',
-    '- save_note: {type:"save_note", title?, body?, tags?, priority?}',
-    '- create_task: {type:"create_task", title, body?, dueAt?, priority?, tags?}',
-    '- create_reminder: {type:"create_reminder", title, body?, remindAt, tags?}',
-    '- complete_item: {type:"complete_item", id}',
-    '- reschedule_reminder: {type:"reschedule_reminder", id, remindAt}',
-    'Dates: ISO-8601 or null.',
+  const renderItemBullet = (id: number) => {
+    const it = byId.get(Number(id))
+    if (!it) return `— #${id}`
+    const title = String(it?.title || it?.kind || '').trim() || '(без названия)'
+    const nextAction = String(it?.meta?.next_action || '').trim()
+    const when = it?.remindAt || it?.dueAt || null
+    const whenText = when ? ` • ${formatInTz(String(when), tz)}` : ''
+    const na = nextAction ? ` — next: ${nextAction}` : ''
+    return `— #${id} ${title}${whenText}${na}`
+  }
+
+  const todayBullets = (top3Ids.length ? top3Ids : changeIds).slice(0, 3).map(renderItemBullet)
+  const nextCandidates = fetchIds
+    .map((id) => byId.get(Number(id)))
+    .filter((it) => it && (it.dueAt || it.remindAt))
+    .sort((a, b) => Date.parse(String(a.remindAt || a.dueAt)) - Date.parse(String(b.remindAt || b.dueAt)))
+  const nextBullets = nextCandidates
+    .filter((it) => {
+      const d = Date.parse(String(it.remindAt || it.dueAt))
+      if (!Number.isFinite(d)) return false
+      const now = Date.now()
+      return d > now + 6 * 60 * 60 * 1000
+    })
+    .slice(0, 3)
+    .map((it) => renderItemBullet(Number(it.id)))
+
+  const blockers = fetchIds
+    .map((id) => byId.get(Number(id)))
+    .filter((it) => it && (String(it.kind) === 'blocker' || String(it.status) === 'waiting'))
+    .slice(0, 2)
+    .map((it) => renderItemBullet(Number(it.id)))
+
+  const nextMoveText =
+    (move && typeof move?.text === 'string' && move.text.trim()) ||
+    (top3Ids[0] ? String(byId.get(Number(top3Ids[0]))?.meta?.next_action || '').trim() : '') ||
+    (planIntent ? '15–30 мин: выписать 3 главные цели на завтра и разложить на шаги' : '15–30 мин: разбор Inbox — выбрать Top‑3 на сегодня')
+  const duration = move && Number.isFinite(Number(move?.duration_min)) ? Math.max(15, Math.min(45, Number(move.duration_min))) : 30
+
+  const finalReply = [
+    `Окей, понял. ${summaryLine}`,
+    `Изменения: ${changeLine}`,
     '',
-    `Now UTC: ${nowIso}`,
-    `Timezone: ${tz}`,
-    `Local time: ${localNowString(tz)}`,
+    'TODAY',
+    ...(todayBullets.length ? todayBullets : ['— (пока пусто)']),
     '',
-    'Memory (relevant):',
-    relevantText || '(empty)',
+    'NEXT',
+    ...(nextBullets.length ? nextBullets : ['— (пока без дат/встреч)']),
+    ...(blockers.length
+      ? [
+          '',
+          'BLOCKERS',
+          ...blockers,
+        ]
+      : []),
+    '',
+    'ONE NEXT MOVE',
+    `— ${duration} мин: ${nextMoveText}`,
   ].join('\n')
-  const extractPayload = { userMessage: message, assistantReply: assistantReply || null, isVoice }
-  const extractMessages = [{ role: 'system', content: extractSystem }, { role: 'user', content: JSON.stringify(extractPayload) }]
 
-  let actionsRaw: any[] = []
-  try {
-    const json = await callOpenAi({ apiKey, model: extractorModel, messages: extractMessages, max: 520, temperature: 0.2 })
-    const text = safeTextFromChatCompletion(json).trim()
-    const parsed = tryParseJsonObject(text) as any
-    actionsRaw = Array.isArray(parsed?.actions) ? parsed.actions : []
-  } catch {
-    actionsRaw = []
-  }
-
-  const created: any[] = []
-  // Keep the "not lose anything" guarantee via assistant_messages log.
-  // Only create extracted items when the message is memory-worthy or the model returned actions.
-  const shouldCreateDefaultNote = !actionsRaw.length && looksMemoryWorthy(message)
-  if (shouldCreateDefaultNote) {
-    const item = await createAssistantItem({
-      tenantId,
-      kind: 'note',
-      title: message.length <= 80 ? message : null,
-      body: message,
-      status: 'inbox',
-      meta: { source: 'assistant_chat_default_note', model: usedReplyModel },
-    }).catch(() => null)
-    if (item) created.push(item)
-  }
-  for (const a of actionsRaw) {
-    const t = String(a?.type || '').trim()
-    if (t === 'save_note') {
-      const item = await createAssistantItem({
-        tenantId,
-        kind: 'note',
-        title: a?.title || null,
-        body: a?.body || message,
-        status: 'inbox',
-        priority: a?.priority ?? null,
-        tags: Array.isArray(a?.tags) ? a.tags : null,
-        meta: { source: 'assistant_chat', model: usedReplyModel, action: 'save_note' },
-      }).catch(() => null)
-      if (item) created.push(item)
-    }
-    if (t === 'create_task') {
-      const title = String(a?.title || '').trim()
-      if (!title) continue
-      const item = await createAssistantItem({
-        tenantId,
-        kind: 'task',
-        title,
-        body: a?.body || null,
-        status: 'open',
-        priority: a?.priority ?? null,
-        dueAt: a?.dueAt || null,
-        tags: Array.isArray(a?.tags) ? a.tags : null,
-        meta: { source: 'assistant_chat', model: usedReplyModel, action: 'create_task' },
-      }).catch(() => null)
-      if (item) created.push(item)
-    }
-    if (t === 'create_reminder') {
-      const title = String(a?.title || '').trim()
-      if (!title) continue
-      const item = await createAssistantItem({
-        tenantId,
-        kind: 'reminder',
-        title,
-        body: a?.body || null,
-        status: 'open',
-        remindAt: a?.remindAt || null,
-        tags: Array.isArray(a?.tags) ? a.tags : null,
-        meta: { source: 'assistant_chat', model: usedReplyModel, action: 'create_reminder' },
-      }).catch(() => null)
-      if (item) created.push(item)
-    }
-    if (t === 'complete_item') {
-      const id = Number(a?.id)
-      if (!Number.isFinite(id)) continue
-      const item = await updateAssistantItem(id, { status: 'done' }).catch(() => null)
-      if (item) created.push(item)
-    }
-    if (t === 'reschedule_reminder') {
-      const id = Number(a?.id)
-      if (!Number.isFinite(id)) continue
-      const item = await updateAssistantItem(id, { remindAt: a?.remindAt || null, status: 'open' }).catch(() => null)
-      if (item) created.push(item)
-    }
-  }
-
-  const finalReply =
-    assistantReply ||
-    `Принял. Если коротко: что сейчас важнее — зафиксировать план на сегодня или поставить напоминание/дедлайн?`
   await appendAssistantMessage({ tenantId, role: 'assistant', content: finalReply })
 
-  return NextResponse.json({
-    ok: true,
-    tenantId,
-    model: usedReplyModel,
-    reply: finalReply,
-    created,
-  })
+  return NextResponse.json({ ok: true, tenantId, model: usedReplyModel, reply: finalReply, applied, patch })
 }
 
