@@ -460,6 +460,7 @@ export async function POST(request: NextRequest) {
   const ops = Array.isArray(patch?.ops) ? patch.ops : []
   const applied: Array<{ kind: string; id?: number; title?: string; note?: string }> = []
   const idMap = new Map<string, number>()
+  const createdIds: number[] = []
 
   const parseIsoOrNull = (v: any) => {
     const s = typeof v === 'string' ? v.trim() : ''
@@ -526,6 +527,7 @@ export async function POST(request: NextRequest) {
       if (createdItem?.id != null) {
         const idNum = Number(createdItem.id)
         applied.push({ kind: 'create', id: idNum, title: createdItem.title || createdItem.kind })
+        createdIds.push(idNum)
         // If extractor referenced temporary ids as strings, we could map later. (optional)
         if (typeof item?.id === 'string') idMap.set(String(item.id), idNum)
       }
@@ -587,8 +589,34 @@ export async function POST(request: NextRequest) {
   if (patch?.today_board) await setAssistantState(tenantId, 'today_board', patch.today_board).catch(() => null)
 
   // 2) Build user-facing message deterministically from patch/state/items
-  const todayBoard = (patch?.today_board || (await getAssistantState(tenantId, 'today_board').catch(() => null)) || {}) as any
-  const top3Ids: number[] = Array.isArray(todayBoard?.top3_ids) ? todayBoard.top3_ids.map((x: any) => Number(x)).filter((x: any) => Number.isFinite(x)) : []
+  const todayBoardRaw = (patch?.today_board || (await getAssistantState(tenantId, 'today_board').catch(() => null)) || {}) as any
+  const top3IdsRaw: number[] = Array.isArray(todayBoardRaw?.top3_ids)
+    ? todayBoardRaw.top3_ids.map((x: any) => Number(x)).filter((x: any) => Number.isFinite(x))
+    : []
+  // If user asked for a plan and we created fresh tasks, prefer those for Today Board.
+  const top3Ids =
+    planIntent && createdIds.length
+      ? createdIds.slice(0, 3)
+      : top3IdsRaw.length
+        ? top3IdsRaw
+        : []
+  const todayBoard =
+    planIntent && createdIds.length
+      ? {
+          ...todayBoardRaw,
+          top3_ids: top3Ids,
+          next_move: todayBoardRaw?.next_move
+            ? {
+                ...todayBoardRaw.next_move,
+                related_ids:
+                  Array.isArray(todayBoardRaw?.next_move?.related_ids) && todayBoardRaw.next_move.related_ids.length
+                    ? todayBoardRaw.next_move.related_ids
+                    : [createdIds[0]],
+              }
+            : todayBoardRaw?.next_move,
+        }
+      : todayBoardRaw
+  if (planIntent && createdIds.length) await setAssistantState(tenantId, 'today_board', todayBoard).catch(() => null)
   const move = todayBoard?.next_move || null
   const changeIds = applied.map((x) => Number(x.id)).filter((x) => Number.isFinite(x))
   const fetchIds = Array.from(new Set([...top3Ids, ...changeIds])).slice(0, 30)
