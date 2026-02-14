@@ -492,7 +492,8 @@ export async function POST(request: NextRequest) {
         : 'Europe/Prague'
     const nowIso = new Date().toISOString()
     const memorySummary = (await getAssistantState(tenantId, 'gpt_memory_summary').catch(() => null)) as any
-    const memoryText = typeof memorySummary === 'string' ? memorySummary : ''
+    const memoryTextRaw = typeof memorySummary === 'string' ? memorySummary : ''
+    const memoryText = clip(memoryTextRaw, 800)
     const recentChat = await listAssistantMessages({ tenantId, limit: 40 }).catch(() => [])
     const history = Array.isArray(recentChat)
       ? recentChat
@@ -524,13 +525,36 @@ export async function POST(request: NextRequest) {
     const fallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_FALLBACK || 'gpt-4o'))
     const memoryModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_MEMORY || 'gpt-4o-mini'))
 
+    const msgTrim = String(message || '').trim()
+    const msgLower = msgTrim.toLowerCase()
+    const isZapomni = msgLower.startsWith('запомни') || msgLower.startsWith('zapomni')
+    if (isZapomni && !wantsStream && !isVoice) {
+      const raw = msgTrim.replace(/^запомни[:\s-]*/i, '').replace(/^zapomni[:\s-]*/i, '').trim() || msgTrim
+      // Get a 1-sentence paraphrase (ChatGPT-like, no lists).
+      const sys = [
+        'Перефразируй текст на русском ОДНИМ предложением (без списков, без markdown).',
+        'Сохрани смысл, не добавляй ничего от себя.',
+      ].join('\n')
+      let one = ''
+      try {
+        one = await callOpenAiText({ apiKey, model: chatModel, messages: [{ role: 'system', content: sys }, { role: 'user', content: raw }], max: 90, temperature: 0.2 })
+      } catch {
+        one = raw
+      }
+      const reply = `Окей, запомнил: ${one.replace(/\s+/g, ' ').trim()}.`
+      await appendAssistantMessage({ tenantId, role: 'assistant', content: reply }).catch(() => null)
+      await updateGptMemorySummary({ apiKey, tenantId, model: memoryModel, fallbackModel, user: message, assistant: reply }).catch(() => null)
+      return NextResponse.json({ ok: true, tenantId, mode, model: chatModel, reply, applied: [], patch: null })
+    }
+
     const system = [
       'Ты — личный ChatGPT ассистент пользователя внутри private CRM.',
-      'Говори как в приложении ChatGPT: естественно, по-человечески, без заголовков и канцелярита.',
+      'Говори как в приложении ChatGPT: естественно, по-человечески.',
       'Язык: русский.',
       'Память: запоминай важные факты о пользователе и проектах. Ничего не забывай.',
       'Не создавай задачи/напоминания автоматически — только если пользователь явно просит (например: "создай задачу", "поставь напоминание", "зафиксируй").',
       'Если сообщение начинается с "Запомни:" — просто подтверди, что запомнил, и коротко перефразируй (1–3 предложения). Не делай план, если не просили.',
+      'Формат по умолчанию: один связный абзац без markdown/заголовков/нумерации. Списки — только если пользователь просит план/шаги.',
       'По умолчанию отвечай кратко (3–8 предложений). Разворачивайся только если пользователь просит план/детали.',
       'Не копируй стиль старых сообщений с секциями TODAY/NEXT и т.п.',
       '',
@@ -584,11 +608,11 @@ export async function POST(request: NextRequest) {
     let reply = ''
     let used = chatModel
     try {
-      reply = await callOpenAiText({ apiKey, model: chatModel, messages, max: 650, temperature: 0.4 })
+      reply = await callOpenAiText({ apiKey, model: chatModel, messages, max: 480, temperature: 0.4 })
     } catch {
       used = fallbackModel
       try {
-        reply = await callOpenAiText({ apiKey, model: fallbackModel, messages, max: 650, temperature: 0.4 })
+        reply = await callOpenAiText({ apiKey, model: fallbackModel, messages, max: 480, temperature: 0.4 })
       } catch {
         reply = ''
       }
