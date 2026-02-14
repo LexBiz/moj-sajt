@@ -493,12 +493,23 @@ export async function POST(request: NextRequest) {
     const nowIso = new Date().toISOString()
     const memorySummary = (await getAssistantState(tenantId, 'gpt_memory_summary').catch(() => null)) as any
     const memoryText = typeof memorySummary === 'string' ? memorySummary : ''
-    const recentChat = await listAssistantMessages({ tenantId, limit: 22 }).catch(() => [])
+    const recentChat = await listAssistantMessages({ tenantId, limit: 40 }).catch(() => [])
     const history = Array.isArray(recentChat)
       ? recentChat
           .slice()
           .reverse()
           .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant'))
+          // Drop "exec mode" formatted assistant outputs to avoid style bleed into GPT mode.
+          .filter((m: any) => {
+            if (m.role !== 'assistant') return true
+            const c = String(m.content || '')
+            if (!c) return false
+            if (c.includes('Изменения:')) return false
+            if (c.includes('СЕГОДНЯ') || c.includes('ДАЛЕЕ') || c.includes('СЛЕДУЮЩИЙ ШАГ')) return false
+            if (c.includes('TODAY') || c.includes('NEXT') || c.includes('ONE NEXT MOVE')) return false
+            return true
+          })
+          .slice(-18)
           .map((m: any) => ({ role: m.role, content: String(m.content || '') }))
       : []
 
@@ -515,10 +526,13 @@ export async function POST(request: NextRequest) {
 
     const system = [
       'Ты — личный ChatGPT ассистент пользователя внутри private CRM.',
-      'Говори как в приложении ChatGPT: естественно, по-человечески, без шаблонов.',
+      'Говори как в приложении ChatGPT: естественно, по-человечески, без заголовков и канцелярита.',
       'Язык: русский.',
       'Память: запоминай важные факты о пользователе и проектах. Ничего не забывай.',
       'Не создавай задачи/напоминания автоматически — только если пользователь явно просит (например: "создай задачу", "поставь напоминание", "зафиксируй").',
+      'Если сообщение начинается с "Запомни:" — просто подтверди, что запомнил, и коротко перефразируй (1–3 предложения). Не делай план, если не просили.',
+      'По умолчанию отвечай кратко (3–8 предложений). Разворачивайся только если пользователь просит план/детали.',
+      'Не копируй стиль старых сообщений с секциями TODAY/NEXT и т.п.',
       '',
       `Now UTC: ${nowIso}`,
       `Timezone: ${tz}`,
@@ -570,11 +584,11 @@ export async function POST(request: NextRequest) {
     let reply = ''
     let used = chatModel
     try {
-      reply = await callOpenAiText({ apiKey, model: chatModel, messages, max: 900, temperature: 0.4 })
+      reply = await callOpenAiText({ apiKey, model: chatModel, messages, max: 650, temperature: 0.4 })
     } catch {
       used = fallbackModel
       try {
-        reply = await callOpenAiText({ apiKey, model: fallbackModel, messages, max: 900, temperature: 0.4 })
+        reply = await callOpenAiText({ apiKey, model: fallbackModel, messages, max: 650, temperature: 0.4 })
       } catch {
         reply = ''
       }
