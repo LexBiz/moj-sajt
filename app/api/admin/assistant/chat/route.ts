@@ -147,6 +147,10 @@ function clip(text: string, max = 1200) {
   return `${s.slice(0, max - 1)}…`
 }
 
+function hasCyrillic(text: string) {
+  return /[А-Яа-яЁёІіЇїЄє]/.test(String(text || ''))
+}
+
 function pickQueryTerms(message: string) {
   const t = String(message || '')
     .toLowerCase()
@@ -274,6 +278,51 @@ function preferGpt52(model: string) {
   return m
 }
 
+function normalizeRuText(v: any) {
+  const s = typeof v === 'string' ? v.trim() : v == null ? '' : String(v).trim()
+  return s || null
+}
+
+async function translateFieldsToRussian(params: {
+  apiKey: string
+  model: string
+  fallbackModel: string
+  title: string | null
+  body: string | null
+  next_action: string | null
+}) {
+  const input = { title: params.title || '', body: params.body || '', next_action: params.next_action || '' }
+  const sys = [
+    'Translate to Russian.',
+    'Return ONLY JSON: {"title":"...","body":"...","next_action":"..."}',
+    'Keep title short (<= 80 chars). Keep meaning. Do not add extra info.',
+  ].join('\n')
+  const run = async (model: string) => {
+    const json = await callOpenAi({
+      apiKey: params.apiKey,
+      model,
+      messages: [{ role: 'system', content: sys }, { role: 'user', content: JSON.stringify(input) }],
+      max: 220,
+      temperature: 0.2,
+    })
+    const txt = safeTextFromChatCompletion(json).trim()
+    const parsed = tryParseJsonObject(txt) as any
+    const title = normalizeRuText(parsed?.title) || params.title
+    const body = normalizeRuText(parsed?.body) || params.body
+    const next_action = normalizeRuText(parsed?.next_action) || params.next_action
+    return { title, body, next_action }
+  }
+  try {
+    return await run(params.model)
+  } catch {
+    try {
+      return await run(params.fallbackModel)
+    } catch {
+      return { title: params.title, body: params.body, next_action: params.next_action }
+    }
+  }
+}
+
 async function callOpenAi(params: { apiKey: string; model: string; messages: any[]; max: number; temperature?: number }) {
   const model = normalizeModel(params.model)
   const modelLower = model.toLowerCase()
@@ -379,6 +428,7 @@ export async function POST(request: NextRequest) {
   // 1) Extract JSON PATCH (stable model). This is the “operator” layer.
   const overloadLevel = detectOverloadLevel(message)
   const planIntent = wantsPlan(message)
+  const forceRussian = true
   const lastState = await getAssistantState(tenantId, 'exec_state').catch(() => null)
   const extractorSystem = [
     TEMO_EXEC_ASSISTANT_PROMPT,
@@ -387,6 +437,7 @@ export async function POST(request: NextRequest) {
     '- You must output ONLY part B: STRUCTURED JSON PATCH.',
     '- Do NOT output any user-facing message here.',
     '- Return ONLY a single JSON object (no markdown, no code fences, no extra text).',
+    '- Output language: Russian. All item.title/body/next_action must be Russian (translate if needed).',
     '- NEVER answer with an empty ops[] if the user message contains tasks/meetings/deadlines OR plan intent.',
     '- If user asked for a plan ("план/раскидай/зафиксируй план"), set state.mode="plan" and create 3–8 tasks with executable next_action.',
     '- Always fill today_board.top3_ids and today_board.next_move (15–45 min) when plan intent or overload_level >= 2.',
@@ -431,6 +482,7 @@ export async function POST(request: NextRequest) {
     relevant_items: Array.isArray(relevant) ? relevant : [],
     overload_level_hint: overloadLevel,
     plan_intent: planIntent,
+    output_language: forceRussian ? 'ru' : 'auto',
   }
 
   let patch: ExecPatch = {}
@@ -506,11 +558,32 @@ export async function POST(request: NextRequest) {
     const k = String((op as any)?.op || '').trim()
     if (k === 'create_item') {
       const item = (op as any)?.item || {}
+      // Always store content in Russian for the owner-facing assistant.
+      let titleRu = normalizeRuText(item?.title)
+      let bodyRu = normalizeRuText(item?.body)
+      let nextActionRu = normalizeRuText(item?.next_action)
+      if (forceRussian) {
+        const hay = `${titleRu || ''}\n${bodyRu || ''}\n${nextActionRu || ''}`.trim()
+        const hasLat = /[A-Za-z]/.test(hay)
+        if (hay && hasLat && !hasCyrillic(hay)) {
+          const t = await translateFieldsToRussian({
+            apiKey,
+            model: chatModel,
+            fallbackModel,
+            title: titleRu,
+            body: bodyRu,
+            next_action: nextActionRu,
+          })
+          titleRu = t.title
+          bodyRu = t.body
+          nextActionRu = t.next_action
+        }
+      }
       const createdItem = await createAssistantItem({
         tenantId,
         kind: mapTypeToKind(item?.type),
-        title: item?.title || null,
-        body: item?.body || null,
+        title: titleRu,
+        body: bodyRu,
         status: mapStatus(item?.status || 'inbox'),
         priority: mapPriority(item?.priority),
         dueAt: parseIsoOrNull(item?.due_at),
@@ -519,7 +592,7 @@ export async function POST(request: NextRequest) {
         meta: {
           ...((typeof item?.project === 'object' && item?.project) || {}),
           area: item?.area || null,
-          next_action: item?.next_action || null,
+          next_action: nextActionRu,
           confidence: typeof item?.confidence === 'number' ? item.confidence : null,
           source: 'exec_patch',
         },
@@ -677,14 +750,22 @@ export async function POST(request: NextRequest) {
     const nextAction = String(it?.meta?.next_action || '').trim()
     const when = it?.remindAt || it?.dueAt || null
     const whenText = when ? ` • ${formatInTz(String(when), tz)}` : ''
-    const na = nextAction ? ` — next: ${nextAction}` : ''
+    const na = nextAction ? ` — шаг: ${nextAction}` : ''
     return `— #${id} ${title}${whenText}${na}`
   }
 
   const todayBullets = (top3Ids.length ? top3Ids : changeIds).slice(0, 3).map(renderItemBullet)
+  const seenNext = new Set<number>()
   const nextCandidates = fetchIds
     .map((id) => byId.get(Number(id)))
     .filter((it) => it && (it.dueAt || it.remindAt))
+    .filter((it) => {
+      const id = Number(it?.id)
+      if (!Number.isFinite(id)) return false
+      if (seenNext.has(id)) return false
+      seenNext.add(id)
+      return true
+    })
     .sort((a, b) => Date.parse(String(a.remindAt || a.dueAt)) - Date.parse(String(b.remindAt || b.dueAt)))
   const nextBullets = nextCandidates
     .filter((it) => {
@@ -712,20 +793,20 @@ export async function POST(request: NextRequest) {
     `Окей, понял. ${summaryLine}`,
     `Изменения: ${changeLine}`,
     '',
-    'TODAY',
+    'СЕГОДНЯ',
     ...(todayBullets.length ? todayBullets : ['— (пока пусто)']),
     '',
-    'NEXT',
+    'ДАЛЕЕ',
     ...(nextBullets.length ? nextBullets : ['— (пока без дат/встреч)']),
     ...(blockers.length
       ? [
           '',
-          'BLOCKERS',
+          'БЛОКЕРЫ',
           ...blockers,
         ]
       : []),
     '',
-    'ONE NEXT MOVE',
+    'СЛЕДУЮЩИЙ ШАГ',
     `— ${duration} мин: ${nextMoveText}`,
   ].join('\n')
 
