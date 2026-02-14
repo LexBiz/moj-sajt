@@ -348,6 +348,101 @@ async function callOpenAi(params: { apiKey: string; model: string; messages: any
   return (await resp.json().catch(() => ({}))) as any
 }
 
+async function callOpenAiText(params: { apiKey: string; model: string; messages: any[]; max: number; temperature?: number }) {
+  const json = await callOpenAi(params)
+  return safeTextFromChatCompletion(json).trim()
+}
+
+async function streamOpenAiText(params: { apiKey: string; model: string; messages: any[]; max: number }) {
+  const model = normalizeModel(params.model)
+  const modelLower = model.toLowerCase()
+  const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
+  const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
+  const body: any = { model, messages: params.messages, stream: true }
+  body[maxKey] = params.max
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${params.apiKey}` },
+    body: JSON.stringify(body),
+  })
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '')
+    throw new Error(`openai_http_${resp.status}:${t.slice(0, 200)}`)
+  }
+  if (!resp.body) throw new Error('openai_no_body')
+
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let buf = ''
+  let done = false
+  let full = ''
+
+  async function* gen() {
+    while (!done) {
+      const r = await reader.read()
+      if (r.done) break
+      buf += decoder.decode(r.value, { stream: true })
+      const parts = buf.split('\n')
+      buf = parts.pop() || ''
+      for (const line of parts) {
+        const s = line.trim()
+        if (!s.startsWith('data:')) continue
+        const data = s.slice(5).trim()
+        if (!data) continue
+        if (data === '[DONE]') {
+          done = true
+          break
+        }
+        try {
+          const j = JSON.parse(data)
+          const delta = j?.choices?.[0]?.delta?.content
+          if (typeof delta === 'string' && delta) {
+            full += delta
+            yield delta
+          }
+        } catch {
+          // ignore malformed chunk
+        }
+      }
+    }
+  }
+
+  return { gen, getFull: () => full }
+}
+
+async function updateGptMemorySummary(params: { apiKey: string; tenantId: string; model: string; fallbackModel: string; user: string; assistant: string }) {
+  const prev = (await getAssistantState(params.tenantId, 'gpt_memory_summary').catch(() => null)) as any
+  const prevText = typeof prev === 'string' ? prev : prev && typeof prev?.text === 'string' ? prev.text : ''
+  const sys = [
+    'Ты ведёшь долговременную память о пользователе (владельце CRM).',
+    'Обнови краткую сводку памяти на русском: факты о человеке, предпочтения, проекты, договорённости, важные контексты.',
+    'НЕ добавляй лишнее. НЕ придумывай. Если нет факта — не добавляй.',
+    'Ответ: только текст (до 1200 символов).',
+  ].join('\n')
+  const userPayload = {
+    prev_summary: prevText || null,
+    last_exchange: { user: params.user, assistant: params.assistant },
+  }
+  let next = ''
+  try {
+    next = await callOpenAiText({ apiKey: params.apiKey, model: params.model, messages: [{ role: 'system', content: sys }, { role: 'user', content: JSON.stringify(userPayload) }], max: 260, temperature: 0.2 })
+  } catch {
+    try {
+      next = await callOpenAiText({
+        apiKey: params.apiKey,
+        model: params.fallbackModel,
+        messages: [{ role: 'system', content: sys }, { role: 'user', content: JSON.stringify(userPayload) }],
+        max: 260,
+        temperature: 0.2,
+      })
+    } catch {
+      next = ''
+    }
+  }
+  if (next) await setAssistantState(params.tenantId, 'gpt_memory_summary', next).catch(() => null)
+}
+
 export async function POST(request: NextRequest) {
   if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -355,14 +450,19 @@ export async function POST(request: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'missing_openai_key' }, { status: 500 })
 
   const contentType = String(request.headers.get('content-type') || '').toLowerCase()
+  const url = new URL(request.url)
+  const wantsStream = url.searchParams.get('stream') === '1'
   let tenantId = 'temoweb'
   let message = ''
   let isVoice = false
+  let mode: 'gpt' | 'exec' = 'gpt'
 
   if (contentType.includes('multipart/form-data')) {
     const form = await request.formData().catch(() => null)
     const tid = form ? normalizeTenantId(form.get('tenantId')) : 'temoweb'
     tenantId = tid
+    const m = form ? String(form.get('mode') || '').trim().toLowerCase() : ''
+    if (m === 'exec') mode = 'exec'
     const audio = form ? (form.get('audio') as any) : null
     if (audio && typeof audio?.arrayBuffer === 'function') {
       const buf = Buffer.from(await audio.arrayBuffer())
@@ -375,11 +475,115 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as any
     tenantId = normalizeTenantId(body?.tenantId)
     message = String(body?.message || '').trim()
+    const m = String(body?.mode || '').trim().toLowerCase()
+    if (m === 'exec') mode = 'exec'
   }
   if (!message) return NextResponse.json({ error: 'missing_message' }, { status: 400 })
 
   // Persist user's message.
   await appendAssistantMessage({ tenantId, role: 'user', content: message })
+
+  // GPT MODE: "raw ChatGPT-like" assistant with memory + (optional) streaming
+  if (mode === 'gpt') {
+    const profile = await getTenantProfile(tenantId).catch(() => null)
+    const tz =
+      profile && typeof (profile as any)?.timezone === 'string' && String((profile as any).timezone).trim()
+        ? String((profile as any).timezone).trim()
+        : 'Europe/Prague'
+    const nowIso = new Date().toISOString()
+    const memorySummary = (await getAssistantState(tenantId, 'gpt_memory_summary').catch(() => null)) as any
+    const memoryText = typeof memorySummary === 'string' ? memorySummary : ''
+    const recentChat = await listAssistantMessages({ tenantId, limit: 22 }).catch(() => [])
+    const history = Array.isArray(recentChat)
+      ? recentChat
+          .slice()
+          .reverse()
+          .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant'))
+          .map((m: any) => ({ role: m.role, content: String(m.content || '') }))
+      : []
+
+    const chatModelRaw =
+      String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_CHAT || '').trim() ||
+      String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT || '').trim() ||
+      String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_MODEL || '').trim() ||
+      String(process.env.OPENAI_MODEL_ASSISTANT || '').trim() ||
+      String(process.env.OPENAI_MODEL || '').trim() ||
+      'gpt-5.2'
+    const chatModel = preferGpt52(chatModelRaw) || 'gpt-5.2'
+    const fallbackModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_FALLBACK || 'gpt-4o'))
+    const memoryModel = normalizeModel(String(process.env.OPENAI_MODEL_ADMIN_ASSISTANT_MEMORY || 'gpt-4o-mini'))
+
+    const system = [
+      'Ты — личный ChatGPT ассистент пользователя внутри private CRM.',
+      'Говори как в приложении ChatGPT: естественно, по-человечески, без шаблонов.',
+      'Язык: русский.',
+      'Память: запоминай важные факты о пользователе и проектах. Ничего не забывай.',
+      'Не создавай задачи/напоминания автоматически — только если пользователь явно просит (например: "создай задачу", "поставь напоминание", "зафиксируй").',
+      '',
+      `Now UTC: ${nowIso}`,
+      `Timezone: ${tz}`,
+      `Local time: ${localNowString(tz)}`,
+      '',
+      'Сводка долговременной памяти (обновляется автоматически):',
+      memoryText ? memoryText : '(пока пусто)',
+    ].join('\n')
+
+    const messages = [{ role: 'system', content: system }, ...history]
+
+    if (wantsStream && !isVoice) {
+      const { gen, getFull } = await streamOpenAiText({ apiKey, model: chatModel, messages, max: 900 })
+      const encoder = new TextEncoder()
+      let fullText = ''
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of gen()) {
+              fullText += chunk
+              controller.enqueue(encoder.encode(chunk))
+            }
+          } catch (e: any) {
+            const msg = typeof e?.message === 'string' ? e.message : 'stream_error'
+            controller.enqueue(encoder.encode(`\n\n[error: ${msg}]`))
+          } finally {
+            const final = fullText || getFull() || ''
+            if (final.trim()) {
+              await appendAssistantMessage({ tenantId, role: 'assistant', content: final.trim() }).catch(() => null)
+              await updateGptMemorySummary({ apiKey, tenantId, model: memoryModel, fallbackModel, user: message, assistant: final.trim() }).catch(
+                () => null,
+              )
+            }
+            controller.close()
+          }
+        },
+      })
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          'X-Accel-Buffering': 'no',
+          'X-Model': chatModel,
+        },
+      })
+    }
+
+    let reply = ''
+    let used = chatModel
+    try {
+      reply = await callOpenAiText({ apiKey, model: chatModel, messages, max: 900, temperature: 0.4 })
+    } catch {
+      used = fallbackModel
+      try {
+        reply = await callOpenAiText({ apiKey, model: fallbackModel, messages, max: 900, temperature: 0.4 })
+      } catch {
+        reply = ''
+      }
+    }
+    if (!reply) reply = 'Окей. Напиши, что именно нужно сделать первым шагом — я подхвачу.'
+    await appendAssistantMessage({ tenantId, role: 'assistant', content: reply }).catch(() => null)
+    await updateGptMemorySummary({ apiKey, tenantId, model: memoryModel, fallbackModel, user: message, assistant: reply }).catch(() => null)
+    return NextResponse.json({ ok: true, tenantId, mode, model: used, reply, applied: [], patch: null })
+  }
 
   // Retrieval: pull a few relevant memory items by simple keyword match.
   const q = pickQueryTerms(message)

@@ -44,6 +44,7 @@ export default function AdminAssistantPage() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'inbox' | 'open' | 'all' | 'done'>('inbox')
   const [recording, setRecording] = useState(false)
+  const [gptMode, setGptMode] = useState(true)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<BlobPart[]>([])
   const chatScrollRef = useRef<HTMLDivElement | null>(null)
@@ -62,6 +63,8 @@ export default function AdminAssistantPage() {
         setPassword(saved)
         setIsAuthenticated(true)
       }
+      const m = localStorage.getItem('assistantMode') || ''
+      if (m) setGptMode(m !== 'exec')
     } catch {}
   }, [])
 
@@ -140,19 +143,38 @@ export default function AdminAssistantPage() {
     setLoading(true)
     setError('')
     setText('')
-    setMessages((prev) => [...prev, { id: Date.now(), role: 'user', content: msg } as any])
+    const userId = Date.now()
+    const assistantId = userId + 1
+    setMessages((prev) => [...prev, { id: userId, role: 'user', content: msg } as any, { id: assistantId, role: 'assistant', content: '' } as any])
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (authHeader.Authorization) headers.Authorization = authHeader.Authorization
-      const res = await fetch('/api/admin/assistant/chat', {
+      const mode = gptMode ? 'gpt' : 'exec'
+      const url = gptMode ? '/api/admin/assistant/chat?stream=1' : '/api/admin/assistant/chat'
+      const res = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tenantId, message: msg }),
+        body: JSON.stringify({ tenantId, message: msg, mode }),
       })
       if (!res.ok) throw new Error('chat_failed')
-      const j = await res.json()
-      const reply = String(j?.reply || '').trim()
-      if (reply) setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'assistant', content: reply } as any])
+      const ct = String(res.headers.get('content-type') || '').toLowerCase()
+      if (ct.includes('application/json')) {
+        const j = await res.json()
+        const reply = String(j?.reply || '').trim()
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? ({ ...m, content: reply || '(нет ответа)' } as any) : m)))
+      } else {
+        const reader = res.body?.getReader()
+        if (!reader) throw new Error('no_stream')
+        const decoder = new TextDecoder('utf-8')
+        let acc = ''
+        // Stream chunks and "type" them into the last assistant bubble.
+        while (true) {
+          const r = await reader.read()
+          if (r.done) break
+          acc += decoder.decode(r.value, { stream: true })
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? ({ ...m, content: acc } as any) : m)))
+        }
+      }
       await loadAll()
     } catch {
       setError('Помилка чату. Перевір ключ OpenAI / пароль ADMIN.')
@@ -189,6 +211,7 @@ export default function AdminAssistantPage() {
         try {
           const fd = new FormData()
           fd.append('tenantId', tenantId)
+          fd.append('mode', gptMode ? 'gpt' : 'exec')
           fd.append('audio', blob, 'voice.webm')
           const headers: Record<string, string> = {}
           if (authHeader.Authorization) headers.Authorization = authHeader.Authorization
@@ -248,9 +271,27 @@ export default function AdminAssistantPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="text-2xl font-bold">Ассистент</div>
-          <div className="text-slate-300 text-sm">Пиши всё, что у тебя в голове. Я сохраню и превращу в план/задачи/напоминания.</div>
+          <div className="text-slate-300 text-sm">
+            {gptMode ? 'Режим GPT: просто общайся как в ChatGPT. Всё сохраняю в память.' : 'Режим Executive: структурирую в план/задачи/напоминания.'}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            className={[
+              'text-xs px-3 py-2 rounded-lg border transition-colors',
+              gptMode ? 'bg-emerald-600/20 border-emerald-400/30 text-emerald-50' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10',
+            ].join(' ')}
+            onClick={() => {
+              const next = !gptMode
+              setGptMode(next)
+              try {
+                localStorage.setItem('assistantMode', next ? 'gpt' : 'exec')
+              } catch {}
+            }}
+            title="GPT mode"
+          >
+            GPT‑5.2
+          </button>
           <div className="text-xs text-slate-400">tenant</div>
           <input
             className="w-40 rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-white text-sm"
