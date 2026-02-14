@@ -260,7 +260,11 @@ async function transcribeAudio(params: { apiKey: string; buf: Buffer; mime?: str
 function wantsPlan(text: string) {
   const t = String(text || '').toLowerCase()
   if (!t) return false
-  return /(сделай|составь|раскидай|распиши|зафиксируй)\s+план|план\s+на|планир|раскидай/i.test(t)
+  if (/(сделай|составь|раскидай|распиши|зафиксируй)\s+план|план\s+на|планир|раскидай/i.test(t)) return true
+  // English triggers (useful when voice transcript or accidental EN input)
+  if (/\b(plan|schedule|roadmap|to-?do|todo)\b/.test(t)) return true
+  if (/(break|split).*(steps|tasks)/.test(t)) return true
+  return false
 }
 
 function isPatchUseful(p: any) {
@@ -696,6 +700,43 @@ export async function POST(request: NextRequest) {
   const fetched = await getAssistantItemsByIds({ tenantId, ids: fetchIds }).catch(() => [])
   const byId = new Map<number, any>()
   for (const it of Array.isArray(fetched) ? fetched : []) byId.set(Number(it?.id), it)
+
+  // If we have English items in the board, translate them once and persist (so UI stops showing English).
+  if (forceRussian) {
+    const translateIds = fetchIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id))
+      .filter((id) => {
+        const it = byId.get(id)
+        if (!it) return false
+        const title = String(it?.title || '')
+        const na = String(it?.meta?.next_action || '')
+        const hay = `${title}\n${na}`.trim()
+        if (!hay) return false
+        const hasLat = /[A-Za-z]/.test(hay)
+        return hasLat && !hasCyrillic(hay)
+      })
+      .slice(0, 8)
+    for (const id of translateIds) {
+      const it = byId.get(id)
+      if (!it) continue
+      const title = normalizeRuText(it?.title)
+      const body = normalizeRuText(it?.body)
+      const next_action = normalizeRuText(it?.meta?.next_action)
+      const tr = await translateFieldsToRussian({
+        apiKey,
+        model: chatModel,
+        fallbackModel,
+        title,
+        body,
+        next_action,
+      })
+      // Persist translation to storage for future UI rendering.
+      const nextMeta = { ...(it?.meta || {}), next_action: tr.next_action }
+      const updated = await updateAssistantItem(id, { title: tr.title, body: tr.body, meta: nextMeta } as any).catch(() => null)
+      if (updated) byId.set(id, updated)
+    }
+  }
 
   const changeLine = applied.length
     ? applied
