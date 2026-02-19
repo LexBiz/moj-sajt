@@ -16,6 +16,7 @@ import {
   applyPilotKickoffChecklist,
   applyPilotNudge,
   applyServicesRouter,
+  applyWebsiteOfferGuard,
   applyPackageGuidance,
   expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
@@ -95,8 +96,8 @@ function openAiKeyMeta(k: string) {
     : { len: 0, prefix: null as any, suffix: null as any }
 }
 
-const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
-const OPENAI_MODEL_INSTAGRAM = (process.env.OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o').trim()
+const OPENAI_MODEL_INSTAGRAM = (process.env.OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o').trim()
 const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
@@ -371,7 +372,7 @@ async function generatePublicCommentReply(params: { text: string; lang: Conversa
     params.lang === 'ru' ? 'Reply ONLY in Russian.' : params.lang === 'en' ? 'Reply ONLY in English.' : 'Reply ONLY in Ukrainian.'
 
   try {
-    const modelRaw = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const modelRaw = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o')
     const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
     const modelLower = model.toLowerCase()
     const messages = [
@@ -1133,7 +1134,7 @@ async function generateAiReply(params: {
         ] as any)
       : userText
 
-  const modelRaw = String(OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  const modelRaw = String(OPENAI_MODEL_INSTAGRAM || process.env.OPENAI_MODEL || 'gpt-4o')
   const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
   const modelLower = model.toLowerCase()
   const messages: any[] = [
@@ -1351,7 +1352,7 @@ async function generateLeadAiSummary(input: {
   const langLine = input.lang === 'ua' ? 'Пиши українською.' : 'Пиши по‑русски.'
 
   try {
-    const modelRaw = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const modelRaw = String(OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4o')
     const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
     const modelLower = model.toLowerCase()
     const messages = [
@@ -1925,6 +1926,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   if (lang === 'ru' || lang === 'ua') {
     if (!intent.isSupport) {
       reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
+      reply = applyWebsiteOfferGuard({ text: reply, lang, intent, userText: composedUserText || text || '' })
       const recentAssistantTextsForGuidance = history
         .filter((m) => m.role === 'assistant')
         .slice(-6)

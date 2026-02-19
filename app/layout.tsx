@@ -12,15 +12,25 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://temoweb.eu'),
-  title: 'Автоматичний прийом клієнтів без дзвінків | temoweb',
-  description: 'Система, яка автоматично приймає заявки, відповідає клієнтам і фіксує їх без менеджерів.',
-  keywords: ['автоматичний прийом клієнтів', 'автоматизація заявок', 'telegram бот', 'збір заявок', 'CRM', 'TemoWeb', 'temoweb'],
+  title: 'TemoWeb | Digital Systems Company for Client Automation',
+  description:
+    'TemoWeb builds digital systems that generate and process clients automatically: web systems, client automation, CRM integration, and business infrastructure for Europe.',
+  keywords: [
+    'digital systems',
+    'client automation',
+    'CRM integration',
+    'business automation Europe',
+    'web systems company',
+    'TemoWeb',
+    'temoweb.eu',
+  ],
   authors: [{ name: 'TemoWeb' }],
   openGraph: {
     type: 'website',
-    locale: 'uk_UA',
-    title: 'Автоматичний прийом клієнтів без дзвінків | temoweb',
-    description: 'Система, яка автоматично приймає заявки, відповідає клієнтам і фіксує їх без менеджерів.',
+    locale: 'en_GB',
+    title: 'TemoWeb | Digital Systems Company for Client Automation',
+    description:
+      'Digital systems for lead generation and client processing: high-converting web systems, automation workflows, CRM integration, and scalable infrastructure.',
     images: ['/logo.png'],
   },
   robots: {
@@ -49,7 +59,7 @@ export default function RootLayout({
   const cfToken = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN
 
   return (
-    <html lang="uk" className={inter.variable}>
+    <html lang="en" className={inter.variable}>
       <head>
         {/* Preconnect для ускорения загрузки */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

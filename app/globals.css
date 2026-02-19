@@ -4,7 +4,14 @@
 
 @layer base {
   :root {
-    --font-inter: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --c-bg:        #0A0D12;
+    --c-surface:   #0F1318;
+    --c-surface-2: #141920;
+    --c-border:    rgba(255, 255, 255, 0.07);
+    --c-accent:    #2563EB;
+    --c-text:      #E2E8F0;
+    --c-text-2:    #94A3B8;
+    --c-text-3:    #475569;
   }
 
   html {
@@ -13,180 +20,138 @@
   }
 
   body {
-    @apply antialiased text-white bg-slate-900;
+    @apply antialiased;
+    background-color: var(--c-bg);
+    color: var(--c-text);
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500;
-  }
-  
-  .gradient-border {
-    position: relative;
-    background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899) border-box;
-    border: 2px solid transparent;
-  }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
-  }
-  
-  .shine {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .shine::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
-  }
-  
-  .shine:hover::before {
-    left: 100%;
-  }
-  
-  @keyframes scroll {
-    0% {
-      transform: translateY(0);
-    }
-    100% {
-      transform: translateY(-50%);
-    }
-  }
-  
-  .animate-scroll-slow {
-    animation: scroll 20s linear infinite;
-  }
-  
-  @keyframes typing {
-    from {
-      width: 0;
-    }
-    to {
-      width: 100%;
-    }
-  }
-  
-  @keyframes blink {
-    50% {
-      border-color: transparent;
-    }
-  }
-  
-  .typing-animation {
-    overflow: hidden;
-    border-right: 2px solid #10b981;
-    white-space: nowrap;
-    animation: typing 3s steps(40) infinite, blink 0.75s step-end infinite;
-  }
-  
-  @keyframes click-pulse {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.2);
-      opacity: 0.8;
-    }
-  }
-  
-  .click-animation {
-    animation: click-pulse 2s ease-in-out infinite;
-  }
-  
-  @keyframes code-appear {
-    0% {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .code-line {
-    animation: code-appear 0.5s ease-out forwards;
+  /* ─── Scroll-reveal ─────────────────────────────────────────────── */
+  .reveal {
     opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  
-  .code-line:nth-child(1) { animation-delay: 0.1s; }
-  .code-line:nth-child(2) { animation-delay: 0.3s; }
-  .code-line:nth-child(3) { animation-delay: 0.5s; }
-  .code-line:nth-child(4) { animation-delay: 0.7s; }
-  .code-line:nth-child(5) { animation-delay: 0.9s; }
-  
-  .perspective-1000 {
-    perspective: 1000px;
-    transform-style: preserve-3d;
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  /* GPU acceleration for smooth animations */
-  .gpu-accelerated {
-    will-change: transform, opacity;
-    backface-visibility: hidden;
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
+
+  /* ─── Background patterns ───────────────────────────────────────── */
+  .dot-grid {
+    background-image: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.065) 1px,
+      transparent 1px
+    );
+    background-size: 28px 28px;
   }
-  
-  /* Smooth scrolling on all devices */
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+
+  .grid-pattern {
+    background-image:
+      linear-gradient(var(--c-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--c-border) 1px, transparent 1px);
+    background-size: 64px 64px;
   }
-  
-  /* Disable scrolling during animations */
-  .no-scroll {
-    overflow: hidden;
-    touch-action: none;
+
+  /* ─── Architecture diagram: pulse rings ─────────────────────────── */
+  @keyframes ping-slow {
+    0%   { transform: scale(1);   opacity: 0.75; }
+    70%  { transform: scale(2.4); opacity: 0;    }
+    100% { transform: scale(2.4); opacity: 0;    }
   }
-  
-  /* Fade in animation for calculator steps */
+  .ping-slow        { animation: ping-slow 2.6s ease-out infinite; }
+  .ping-slow-delay  { animation: ping-slow 2.6s ease-out 1.3s infinite; }
+
+  /* ─── Architecture diagram: animated SVG dashes ─────────────────── */
+  @keyframes svg-dash {
+    to { stroke-dashoffset: -20; }
+  }
+  .svg-dash   { animation: svg-dash 2s   linear        infinite; }
+  .svg-dash-2 { animation: svg-dash 2s   linear -0.5s  infinite; }
+  .svg-dash-3 { animation: svg-dash 2s   linear -1s    infinite; }
+  .svg-dash-4 { animation: svg-dash 2s   linear -1.5s  infinite; }
+
+  /* ─── Scroll-indicator bounce ───────────────────────────────────── */
+  @keyframes scroll-down {
+    0%, 100% { transform: translateY(0);   opacity: 0.5; }
+    50%       { transform: translateY(5px); opacity: 1;   }
+  }
+  .scroll-down { animation: scroll-down 1.8s ease-in-out infinite; }
+
+  /* ─── Status dot glow ───────────────────────────────────────────── */
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 3px 1px rgba(52, 211, 153, 0.35); }
+    50%       { box-shadow: 0 0 7px 3px rgba(52, 211, 153, 0.65); }
+  }
+  .glow-green { animation: glow-pulse 2.4s ease-in-out infinite; }
+
+  /* ─── Dashboard entry fade-in ───────────────────────────────────── */
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
   }
-  
-  .animate-fadeIn {
-    animation: fadeIn 0.4s ease-out;
+  .animate-fadeIn { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* ─── Button system ─────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-5 py-3
+           text-sm font-medium text-white
+           shadow-[0_4px_24px_-4px_rgba(37,99,235,0.4)]
+           transition-all duration-200
+           hover:bg-[#1d4ed8] hover:shadow-[0_4px_32px_-4px_rgba(37,99,235,0.6)]
+           active:scale-[0.97];
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg
+           border border-white/[0.12] px-5 py-3
+           text-sm font-medium text-[#94A3B8]
+           transition-all duration-200
+           hover:border-white/30 hover:text-white
+           active:scale-[0.97];
+  }
+
+  /* ─── Card base ─────────────────────────────────────────────────── */
+  .card {
+    @apply rounded-2xl border border-white/[0.07] bg-white/[0.02]
+           transition-all duration-300
+           hover:border-white/[0.13] hover:bg-white/[0.04];
+  }
+  .card-featured {
+    @apply rounded-2xl border border-[#2563EB]/40
+           bg-gradient-to-b from-[#2563EB]/[0.08] to-transparent
+           shadow-[0_0_48px_-12px_rgba(37,99,235,0.22)];
+  }
+
+  /* ─── Section labels ────────────────────────────────────────────── */
+  .label {
+    @apply text-[11px] font-medium uppercase tracking-[0.22em] text-[#2563EB];
+  }
+  .section-heading {
+    @apply mt-4 text-[36px] font-semibold leading-tight tracking-tight text-white sm:text-[44px];
+  }
+  .mono-tag {
+    @apply font-mono text-[11px] text-[#2563EB];
+  }
+
+  /* ─── Light section (cases) ─────────────────────────────────────── */
+  .section-light {
+    background-color: #F0F4F9;
+  }
+
+  /* ─── Scrollbar ─────────────────────────────────────────────────── */
+  .scrollbar-thin::-webkit-scrollbar       { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.14);
   }
 }
-
-/* Custom thin scrollbar for chat */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-

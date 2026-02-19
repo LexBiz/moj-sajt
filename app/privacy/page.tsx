@@ -107,7 +107,7 @@ export default function PrivacyPolicy() {
                 <li><strong>На отзыв согласия</strong> — в любой момент</li>
               </ul>
               <p className="mt-3">
-                Для реализации этих прав свяжитесь с нами: <a href="tel:+420723995896" className="text-indigo-400 hover:text-indigo-300">+420 723 995 896</a> или <a href="https://t.me/temoxa_1" className="text-indigo-400 hover:text-indigo-300">Telegram</a>
+                Для реализации этих прав свяжитесь с нами: <a href="tel:+420723995896" className="text-indigo-400 hover:text-indigo-300">+420 723 995 896</a> или <a href="https://t.me/temoweb" className="text-indigo-400 hover:text-indigo-300">Telegram</a>
               </p>
             </section>
 
@@ -146,12 +146,12 @@ export default function PrivacyPolicy() {
               <ul className="space-y-2">
                 <li>
                   ✉️ Email:{' '}
-                  <a href="mailto:lexbizai@gmail.com" className="text-indigo-400 hover:text-indigo-300">
-                    lexbizai@gmail.com
+                  <a href="mailto:info@temoweb.eu" className="text-indigo-400 hover:text-indigo-300">
+                    info@temoweb.eu
                   </a>
                 </li>
                 <li>📞 Телефон: <a href="tel:+420723995896" className="text-indigo-400 hover:text-indigo-300">+420 723 995 896</a></li>
-                <li>✈️ Telegram: <a href="https://t.me/temoxa_1" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">@temoxa_1</a></li>
+                <li>✈️ Telegram: <a href="https://t.me/temoweb" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">@temoweb</a></li>
                 <li>📱 WhatsApp: <a href="https://wa.me/380960494917" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">+380 96 049 49 17</a></li>
               </ul>
             </section>

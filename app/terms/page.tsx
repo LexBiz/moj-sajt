@@ -73,14 +73,14 @@ export default function TermsOfService() {
               <ul className="space-y-2">
                 <li>
                   Email:{' '}
-                  <a href="mailto:lexbizai@gmail.com" className="text-indigo-400 hover:text-indigo-300">
-                    lexbizai@gmail.com
+                  <a href="mailto:info@temoweb.eu" className="text-indigo-400 hover:text-indigo-300">
+                    info@temoweb.eu
                   </a>
                 </li>
                 <li>
                   Telegram:{' '}
-                  <a href="https://t.me/temoxa_1" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
-                    @temoxa_1
+                  <a href="https://t.me/temoweb" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
+                    @temoweb
                   </a>
                 </li>
               </ul>

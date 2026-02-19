@@ -11,6 +11,7 @@ import {
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
+  applyWebsiteOfferGuard,
   expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
   detectChosenPackageFromHistory,
@@ -253,7 +254,7 @@ async function callOpenAI(
   let response: Response
   let modelLowerForLog: string | null = null
   try {
-    const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o')
     // Normalize possible unicode hyphens (e.g. "gpt‑5") to ASCII "gpt-5"
     let model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
     let modelLower = model.toLowerCase()
@@ -261,7 +262,13 @@ async function callOpenAI(
     // in Chat Completions. For the website/flow chat we prefer a stable model.
     const ch = String(currentChannel || '')
     const isWebChannel = ch === 'website' || ch === 'flow'
-    if (isWebChannel && (modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5'))) {
+    if (
+      isWebChannel &&
+      (modelLower === 'gpt-5' ||
+        modelLower === 'gpt5' ||
+        (modelLower.startsWith('gpt-5') && !modelLower.startsWith('gpt-5.2')) ||
+        (modelLower.startsWith('gpt5') && !modelLower.startsWith('gpt5.2')))
+    ) {
       model = String(process.env.OPENAI_MODEL_WEB_FALLBACK || 'gpt-4o').trim().replace(/[‐‑‒–—−]/g, '-')
       modelLower = model.toLowerCase()
     }
@@ -467,6 +474,7 @@ export async function POST(request: NextRequest) {
       const channelForLimits = (channel === 'website' ? 'website' : channel) as any
       if (!intent.isSupport) {
         answer = applyServicesRouter(answer, lang, intent, hasChosenPackage)
+        answer = applyWebsiteOfferGuard({ text: answer, lang, intent, userText: lastUser || lastUserRaw || '' })
         answer = applyPackageGuidance({ text: answer, lang, intent, recentAssistantTexts: recentAssistantTextsForChoice })
         answer = applyIncompleteDetailsFix(answer, lang)
         answer = applyPilotNudge(answer, lang, intent)

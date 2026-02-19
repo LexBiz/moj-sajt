@@ -82,8 +82,8 @@ export type TemoWebProfile = {
 export const TEMOWEB_PROFILE: TemoWebProfile = {
   brandName: 'TemoWeb',
   siteUrl: 'https://temoweb.eu',
-  taglineRu: 'AI‑ассистенты, которые продают и записывают клиентов 24/7',
-  taglineUa: 'AI‑асистенти, які продають і записують клієнтів 24/7',
+  taglineRu: 'Сайты + AI‑менеджер 24/7, который отвечает и фиксирует заявки',
+  taglineUa: 'Сайти + AI‑менеджер 24/7, який відповідає і фіксує заявки',
   pilot: {
     durationMonths: 2,
     launchTime: '48–72 hours',
@@ -435,8 +435,10 @@ export const TEMOWEB_PROFILE: TemoWebProfile = {
       'TikTok буде додаватися як окремий модуль у міру доступності та обмежень API.',
     ],
   },
-  shortAboutRu: 'TemoWeb делает AI‑ассистентов и автоматизацию заявок/продаж для бизнеса (Instagram/WhatsApp/Telegram/Website) + CRM и интеграции.',
-  shortAboutUa: 'TemoWeb робить AI‑асистентів і автоматизацію заявок/продажів для бізнесу (Instagram/WhatsApp/Telegram/Website) + CRM та інтеграції.',
+  shortAboutRu:
+    'TemoWeb строит понятные клиентские системы для бизнеса: сайты/лендинги + AI‑менеджер в мессенджерах (Instagram/WhatsApp/Telegram/Website) + CRM и интеграции.',
+  shortAboutUa:
+    'TemoWeb будує зрозумілі клієнтські системи для бізнесу: сайти/лендинги + AI‑менеджер у месенджерах (Instagram/WhatsApp/Telegram/Website) + CRM та інтеграції.',
 }
 
 

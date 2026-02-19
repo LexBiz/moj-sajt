@@ -1,712 +1,861 @@
-export const translations = {
-  ru: {
-    // Header
-    services: "Услуги",
-    cases: "Кейсы",
-    reviews: "Отзывы",
-    faq: "FAQ",
-    discuss: "Обсудить проект",
-    
-    // Hero
-    openForProjects: "Открыт для новых проектов",
-    heroTitle: "Заявки теряются в чатах, а клиенты уходят к конкурентам?",
-    heroSubtitle: "Я наведу порядок в ваших заявках за 3-7 дней",
-    heroDesc: "Я, Артём, внедряю в ваш бизнес простые системы (чат-боты, понятные сайты), которые работают 24/7. Вы перестанете терять деньги, а ваши клиенты наконец смогут до вас дозвониться.",
-    heroOffer: "Первый бот — за 3 дня",
-    projects: "Внедрённых систем",
-    satisfied: "Клиентов видят рост заявок",
-    yearsExp: "К конверсии в среднем",
-    startProject: "Бесплатно покажу, где вы теряете заявки",
-    viewCases: "Посмотреть примеры работ",
-    
-    // Problems
-    problemsTitle: "С разработчиками часто сложно — и это бьёт по бизнесу",
-    problemsDesc: "Знакомые проблемы? Я решаю их иначе",
-    problem1: "Вы не обязаны разбираться в IT",
-    problem1Desc: "но вас заставляют принимать решения в непонятных терминах, а тем временем клиенты уходят, потому что не смогли дозвониться или заполнить сложную форму.",
-    problem2: "Слишком много сложности",
-    problem2Desc: "сроки «плывут», задачи размываются, результат непредсказуем. Пока вы ждёте «идеальный» сайт, вы теряете деньги каждый день на несовершенных процессах.",
-    problem3: "Заявки теряются в хаосе",
-    problem3Desc: "заявки есть, но они теряются в чатах, письмах и блокнотах. Вы не можете их посчитать и обработать вовремя. Половина клиентов просто не дожидается ответа.",
-    solution: "Я говорю на языке бизнеса, а не технологий",
-    solution2: "Фиксированные сроки и цены с первого дня",
-    solution3: "Создаю решения, которые окупаются за 1-2 месяца",
-    
-    // Approach
-    approachTitle: "Я работаю от бизнеса, а не от «технологий»",
-    goal: "Сначала цель",
-    goalDesc: "Что должно измениться в продажах, обслуживании, скорости, контроле — начинаем с бизнес-результата.",
-    clearLang: "Понятный язык",
-    clearLangDesc: "Без жаргона и «технической магии». Вы всегда понимаете, что делаем и зачем.",
-    result: "Результат > процесс",
-    resultDesc: "Не «сделать сайт», а получить обращения, порядок, автоматизацию и спокойствие.",
-    
-    // Services
-    servicesTitle: "Как я решаю вашу проблему",
-    servicesDesc: "Выбирайте свой уровень: базовое решение сегодня или AI-система будущего",
-    servicesClassic: "Классические решения",
-    servicesAI: "AI-возможности 2026+",
-    chatBotExpress: "Telegram-бот",
-    chatBotExpressDesc: "Классический чат-бот, который ловит заявки 24/7. Проверено временем.",
-    chatBotExpressAI: "+ AI-чат с памятью клиента",
-    chatBotExpressAIDesc: "Бот запоминает историю клиента, контекст прошлых диалогов. Персонализация каждого ответа.",
-    simpleWebsite: "Сайт-визитка / Лендинг",
-    simpleWebsiteDesc: "Простой сайт с формой заявки. Работает и приносит клиентов.",
-    simpleWebsiteAI: "+ Обработка голоса/фото в заявках",
-    simpleWebsiteAIDesc: "Клиент может отправить голосовое или фото. AI обработает и внесёт в систему.",
-    landingPage: "Готовый пакет (сайт + бот + CRM)",
-    landingPageDesc: "Всё включено: сайт, бот, интеграция с таблицами. Полный цикл.",
-    landingPageAI: "+ Оплата прямо в диалоге + AI-ассистент",
-    landingPageAIDesc: "Клиент платит в чате. AI-менеджер помогает обрабатывать заявки, генерирует контент.",
-    crmAuto: "Полная автоматизация",
-    crmAutoDesc: "Бот + сайт + подключение к вашей CRM или таблице. Все заявки в одном месте, с напоминаниями. Вы больше не теряете ни одного клиента.",
-    complexAI: "Полная автоматизация бизнес-процессов",
-    complexAIDesc: "Связываем все части вашего бизнеса: от первого касания клиента до повторной продажи. Максимальная автоматизация, минимум рутины.",
-    
-    // Evolution section
-    evolutionTitle: "Эволюция вашего бизнеса",
-    evolutionDesc: "Начните с базового, растите вместе с технологиями",
-    evolutionStage1: "Этап 1: Базовый (сейчас)",
-    evolutionStage1Items: "Простой сайт • Форма заявки • Ручная работа",
-    evolutionStage2: "Этап 2: Автоматизированный (3-6 мес)",
-    evolutionStage2Items: "Сайт + бот • Автоответы • CRM-интеграция",
-    evolutionStage3: "Этап 3: AI-управляемый (2026+)",
-    evolutionStage3Items: "Система с памятью • Голос/фото в заявках • A/B тесты диалогов • AI-генерация контента",
-    
-    // Tech Stack 2026
-    techStackTitle: "Tech Stack 2026",
-    techStackDesc: "Технологии, которые я использую для AI-систем",
-    techStackAI: "AI-ядро",
-    techStackAIDesc: "DeepSeek API с долгосрочной памятью (PostgreSQL + векторная БД)",
-    techStackMulti: "Мультимодальность",
-    techStackMultiDesc: "Whisper (голос), Vision API (фото), Claude 3.5 (документы)",
-    techStackIntegrations: "Интеграции",
-    techStackIntegrationsDesc: "Stripe/Fondy (оплата), Telegram API, Airtable как CRM",
-    techStackAuto: "Автоматизация",
-    techStackAutoDesc: "A/B тесты диалогов, генерация контента GPT-4, автонапоминания",
-    
-    // New Packages
-    packageStarter: "ПАКЕТ «СТАРТ» — Классика, которая работает",
-    packageStarterDesc: "Telegram-бот с кнопочным меню • Автоматическая запись в Google-таблицу • Уведомления в Telegram • Гарантия работы • Вы перестанете терять заявки ночью и в выходные • Все контакты в одной таблице • Система работает 24/7 • Срок: 5-7 дней • Поддержка 14 дней",
-    packagePro: "ПАКЕТ «PRO» — AI-система с выбором фич",
-    packageProDesc: "Всё из пакета «СТАРТ» + AI-ядро на DeepSeek API • Выбор 3 фич из 5: память клиента, голос/фото, оплата в чате, A/B тесты, генерация контента • Конверсия +30-50% • Средний чек +15% • Повторные продажи +25% • Срок: 10-14 дней • Поддержка 30 дней • Экономия 30% против заказа фич по отдельности",
-    packagePremium: "ПАКЕТ «ENTERPRISE» — Полный цикл AI",
-    packagePremiumDesc: "Всё из «PRO» + мультиканальная система (сайт, Telegram, Instagram, WhatsApp) • AI-ассистент менеджера • Полная CRM-интеграция • Автоматические воронки • Кастомный дашборд • Приоритетная поддержка • Полная автоматизация отдела продаж • Сокращение расходов на менеджеров на 40-60% • Рост повторных продаж на 50-70% • Срок: 21-28 дней • Поддержка 90 дней",
-    
-    // Cases
-    casesTitle: "Реальные кейсы и результаты",
-    casesDesc: "Не просто «сделали сайт», а конкретные измеримые результаты для бизнеса",
-    
-    // Live Projects
-    liveProjectsTitle: "Живые проекты",
-    liveProjectsDesc: "Откройте в новом окне и посмотрите, как работают реальные проекты",
-    viewLive: "Открыть проект",
-    openInNew: "Открыть в новом окне",
-    techStack: "Технологии",
-    allProjects: "Все",
-    ecommerce: "Интернет-магазины",
-    bots: "Telegram боты",
-    landing: "Сайты-визитки",
-    portfolio: "Портфолио",
-    openBot: "Открыть бота",
-    viewSite: "Смотреть сайт",
-    
-    // Reviews
-    reviewsTitle: "Что говорят клиенты",
-    reviewsDesc: "Реальные отзывы от реальных людей",
-    
-    // Trust
-    trustTitle: "Почему со мной — просто и понятно",
-    trustDesc: "Я сам через это прошёл. Тонул в бесконечных чатах, терял клиентов, потому что не успевал ответить. Теперь я помогаю таким же, как я, владельцам бизнеса. Я не буду заваливать вас терминами. Я спрошу: «Где болит?», а потом сделаю систему, которая эту боль снимет. Честно и без воды.",
-    
-    // Process
-    processTitle: "Процесс: от идеи до результата",
-    
-    // Trust cards
-    howIThink: "Я решаю проблемы, а не продаю технологии",
-    howIThinkDesc: "Мне не важно, будет это бот или сайт. Важно, чтобы у вас появился порядок в заявках и больше клиентов.",
-    howICommunicate: "Говорю на человеческом языке",
-    howICommunicateDesc: "Никаких «интеграций API» и «функционала». Только: «Вот что будет работать, вот сколько стоит, вот когда будет готово».",
-    howIWork: "Делаю быстро и по шагам",
-    howIWorkDesc: "Первый результат — через 3-7 дней. Дальше — по необходимости. Вы всегда понимаете, что происходит.",
-    honesty: "Если вам не нужно — скажу сразу",
-    honestyDesc: "Если вашу проблему решит простая гугл-форма — я вам так и скажу. Работаю только там, где могу принести реальную пользу.",
-    
-    // Service features
-    adaptiveDesign: "Адаптивный дизайн",
-    contactForm: "Форма обратной связи",
-    ready57days: "Готов за 5-7 дней",
-    sellingDesign: "Продающий дизайн",
-    seoOptimization: "SEO-оптимизация",
-    analyticsMetrics: "Аналитика и метрики",
-    ready710days: "Готов за 7-10 дней",
-    autoresponder: "Автоответчик 24/7",
-    collectRequests: "Сбор заявок",
-    integrations: "Интеграции",
-    clientAccounting: "Учёт клиентов",
-    autoRoutine: "Автоматизация рутины",
-    reporting: "Отчётность",
-    systemIntegration: "Интеграция систем",
-    aiAssistants: "AI-ассистенты",
-    dataAnalytics: "Аналитика данных",
-    individualApproach: "Индивидуальный подход",
-    
-    // Cases
-    businessConsultant: "Boss Detaling — AI-система заявок",
-    businessConsultantDesc: "ПРОБЛЕМА: Клиенты не могли записаться ночью. Менеджер тонул в чатах, теряя 40% записей.\n\nРЕШЕНИЕ: Внедрили AI-систему: чат запоминает клиентов, принимает фото авто через бота, интегрирован с оплатой.\n\nРЕЗУЛЬТАТ:",
-    conversionRate: "+340% онлайн-записей",
-    requestsPerMonth: "40% предоплат в чате",
-    devTime: "Менеджер освободил",
-    days: "15 часов/неделю",
-    eduPlatform: "Sphynx Dubai — Элитный питомник",
-    eduPlatformDesc: "ПРОБЛЕМА: Дорогие котята, но сайт выглядел дёшево. Покупатели не доверяли и уходили к конкурентам.\n\nРЕШЕНИЕ: Премиум-дизайн, интерактивная галерея котят, онлайн-бронирование с предоплатой.\n\nРЕЗУЛЬТАТ:",
-    timeSaved: "Средний чек вырос",
-    autoReplies: "+180%",
-    happyClients: "Конверсия в заявку 22%",
-    onlineStore: "TikTok Boost Lana",
-    onlineStoreDesc: "ПРОБЛЕМА: Заявки приходили в 5 разных мессенджеров. Владелица не успевала отвечать, теряла 60% тёплых лидов.\n\nРЕШЕНИЕ: Единый лендинг с автоматической квалификацией + CRM для отслеживания каждого клиента.\n\nРЕЗУЛЬТАТ:",
-    processingSpeed: "Время ответа с 3ч до",
-    errors: "5 минут",
-    roi: "+85% конверсия",
-    months: "в оплату",
-    legalCompany: "Anika Brand Lux — Премиум товары",
-    legalCompanyDesc: "ПРОБЛЕМА: Товары люкс-сегмента продавались через Instagram. Нулевая аналитика, невозможно масштабировать рекламу.\n\nРЕШЕНИЕ: Интернет-магазин с корзиной, онлайн-оплатой, настройкой пикселей для ретаргетинга.\n\nРЕЗУЛЬТАТ:",
-    requestsProcessed: "Систематизировали",
-    leadQuality: "500+ клиентов",
-    works247: "Средний чек +60%",
-    karenFinance: "KAREN Finance — Ипотеки и кредиты",
-    karenFinanceDesc: "ПРОБЛЕМА: Клиенты бросали заявки на половине, не понимая условия. Конверсия калькулятора в заявку была 8%.\n\nРЕШЕНИЕ: Интерактивный калькулятор + пошаговая форма с подсказками + автоматическая отправка в CRM.\n\nРЕЗУЛЬТАТ:",
-    approvedRequests: "Конверсия выросла до",
-    averageTime: "28%",
-    clientRating: "Заявок +250%",
-    discussYourProject: "Обсудить ваш проект",
-    
-    // Reviews
-    review1: "Обратился к Артёму с проблемой: клиенты писали в Инстаграм ночью, а утром уже были у конкурентов. За 4 дня он запустил бота, который ловит заявки 24/7 и сразу уточняет детали. Первую неделю поймали 11 заявок в нерабочее время. Раньше это были просто потерянные деньги. Общаться легко, без заумных слов — объяснил всё на пальцах.",
-    review1Name: "Максим Ковальчук",
-    review1Role: "Детейлинг-студия «Boss», Прага",
-    review2: "Мы — школа английского, у нас был сайт на Tilda, но заявки терялись в почте, мессенджерах, звонках. Артём сделал систему: теперь всё попадает в одну таблицу, бот напоминает менеджерам, кому не перезвонили. За месяц конверсия с сайта выросла с 3% до 12%. Я не технарь вообще, но всё поняла с первого раза. И главное — Артём сам предупредил, что нам не нужна 'навороченная CRM за 5000 евро', хватит таблицы. Редкая честность.",
-    review2Name: "Катерина Шевченко",
-    review2Role: "Основательница школы «English Lab», Киев",
-    review3: "Работаю SMM-щиком, веду клиентов в сфере услуг. Постоянно слышу: 'Лиды есть, но половина не доходит до сделки'. Артём сделал для двух моих клиентов (салон красоты и автосервис) связку: лендинг + бот + автоответы в Телеграм. У салона конверсия с рекламы выросла на 40%, у автосервиса — перестали терять заявки в выходные. Теперь рекомендую Артёма всем своим клиентам. Цены адекватные, сроки держит, главное — понимает бизнес, а не просто 'пишет код'.",
-    review3Name: "Андрей Лисовский",
-    review3Role: "SMM-специалист, Брно (Чехия)",
-    
-    // Process steps
-    step1Title: "Короткий созвон",
-    step1Desc: "Понимаю цель, текущую ситуацию и что мешает. 20-30 минут, чтобы определить, подходим ли друг другу.",
-    step2Title: "План и цена",
-    step2Desc: "Фиксируем объём работ, сроки и стоимость. Вы точно знаете, что получите и когда.",
-    step3Title: "Сборка решения",
-    step3Desc: "Делаю по этапам, показываю прогресс. Уточняю только то, что влияет на результат.",
-    step4Title: "Запуск и поддержка",
-    step4Desc: "Проверяем, что всё работает и даёт эффект. При необходимости — дорабатываем.",
-    
-    // FAQ
-    faq1Q: "Как формируется цена?",
-    faq1A: "Цена зависит от сложности и объёма работы. На первом созвоне я оцениваю задачу и даю диапазон «от и до». После согласования деталей фиксирую финальную цену — она не меняется в процессе работы, если не меняется сам объём.",
-    faq2Q: "Как долго делается проект?",
-    faq2A: "Простой сайт — 5-7 дней, landing page — 7-10 дней, Telegram-бот — 7-14 дней, CRM и автоматизация — от 2 недель. Точные сроки согласуем после обсуждения задачи.",
-    faq3Q: "Будет ли поддержка после запуска?",
-    faq3A: "Да. Первые 30 дней после запуска включены в стоимость — исправляю баги и помогаю с базовыми вопросами. Дальше можем обсудить поддержку по подписке или разовые правки.",
-    faq4Q: "Работаете с предоплатой?",
-    faq4A: "Да. Обычно 50% при старте, 50% при сдаче. Для небольших проектов могу договориться о других условиях.",
-    faq5Q: "А если мне нужно что-то очень специфическое?",
-    faq5A: "Давайте обсудим. Если задача выходит за рамки моих компетенций — честно скажу. Если могу помочь — предложу решение и оценю сроки.",
-    faq6Q: "Какие технологии используете?",
-    faq6A: "Next.js, React, Node.js, Python для backend и AI, Telegram Bot API, различные CRM и системы автоматизации. Выбираю технологии под задачу, а не ради технологий.",
-    faqTitle: "Частые вопросы",
-    
-    // CTA variants
-    ctaClassic: "Заказать сайт/бота",
-    ctaAIDemo: "Протестировать AI-демо",
-    ctaROI: "Рассчитать ROI автоматизации",
-    
-    // Footer
-    readyTitle: "Теряете заявки?",
-    readyDesc: "Напишите мне в Telegram или WhatsApp. Я бесплатно покажу, где у вас утечка клиентов, и что с этим можно сделать. Без воды, за 15 минут.",
-    footerTagline: "Работаем на стыке технологий 2024-2026: классическая разработка × AI-автоматизация",
-    writeEmail: "Написать на почту",
-    writeTelegram: "Написать в Telegram",
-    writeWhatsapp: "Написать в WhatsApp",
-    respondFast: "Отвечаю в течение часа",
-    freeConsult: "Бесплатная консультация",
-    untilAgree: "15 минут",
-    rights: "Все права защищены",
-  },
-  
-  ua: {
-    // Header
-    services: "Послуги",
-    cases: "Кейси",
-    reviews: "Відгуки",
-    faq: "FAQ",
-    discuss: "Обговорити проект",
-    
-    // Hero
-    openForProjects: "Відкритий для нових проектів",
-    heroTitle: "Заявки губляться в чатах, а клієнти йдуть до конкурентів?",
-    heroSubtitle: "Я наведу порядок у ваших заявках за 3-7 днів",
-    heroDesc: "Я, Артем, впроваджую у ваш бізнес прості системи (чат-боти, зрозумілі сайти), які працюють 24/7. Ви перестанете втрачати гроші, а ваші клієнти нарешті зможуть до вас додзвонитися.",
-    heroOffer: "Перший бот — за 3 дні",
-    projects: "Впроваджених систем",
-    satisfied: "Клієнтів бачать ріст заявок",
-    yearsExp: "До конверсії в середньому",
-    startProject: "Безкоштовно покажу, де ви втрачаєте заявки",
-    viewCases: "Переглянути приклади робіт",
-    
-    // Problems
-    problemsTitle: "З розробниками часто складно — і це б'є по бізнесу",
-    problemsDesc: "Знайомі проблеми? Я вирішую їх інакше",
-    problem1: "Ви не зобов'язані розбиратися в IT",
-    problem1Desc: "але вас змушують приймати рішення в незрозумілих термінах.",
-    problem2: "Забагато складності",
-    problem2Desc: "терміни «пливуть», завдання розмиваються, результат непередбачуваний.",
-    problem3: "Сайт є, але не працює на гроші",
-    problem3Desc: "немає заявок, немає контролю, немає зрозумілого наступного кроку.",
-    solution: "Я говорю мовою бізнесу, а не технологій",
-    solution2: "Фіксовані терміни та ціни з першого дня",
-    solution3: "Створюю рішення, які приносять результат",
-    
-    // Approach
-    approachTitle: "Я працюю від бізнесу, а не від «технологій»",
-    goal: "Спочатку мета",
-    goalDesc: "Що має змінитися в продажах, обслуговуванні, швидкості, контролі — починаємо з бізнес-результату.",
-    clearLang: "Зрозуміла мова",
-    clearLangDesc: "Без жаргону та «технічної магії». Ви завжди розумієте, що робимо і навіщо.",
-    result: "Результат > процес",
-    resultDesc: "Не «зробити сайт», а отримати звернення, порядок, автоматизацію та спокій.",
-    
-    // Services
-    servicesTitle: "Як я вирішую вашу проблему",
-    servicesDesc: "Обирайте свій рівень: базове рішення сьогодні або AI-система майбутнього",
-    servicesClassic: "Класичні рішення",
-    servicesAI: "AI-можливості 2026+",
-    chatBotExpress: "Telegram-бот",
-    chatBotExpressDesc: "Класичний чат-бот, який ловить заявки 24/7. Перевірено часом.",
-    chatBotExpressAI: "+ AI-чат з пам'яттю клієнта",
-    chatBotExpressAIDesc: "Бот запам'ятовує історію клієнта, контекст минулих діалогів. Персоналізація кожної відповіді.",
-    simpleWebsite: "Сайт-візитка / Лендінг",
-    simpleWebsiteDesc: "Простий сайт з формою заявки. Працює і приносить клієнтів.",
-    simpleWebsiteAI: "+ Обробка голосу/фото в заявках",
-    simpleWebsiteAIDesc: "Клієнт може відправити голосове або фото. AI обробить і внесе в систему.",
-    landingPage: "Готовий пакет (сайт + бот + CRM)",
-    landingPageDesc: "Все включено: сайт, бот, інтеграція з таблицями. Повний цикл.",
-    landingPageAI: "+ Оплата прямо в діалозі + AI-асистент",
-    landingPageAIDesc: "Клієнт платить в чаті. AI-менеджер допомагає обробляти заявки, генерує контент.",
-    crmAuto: "Повна автоматизація",
-    crmAutoDesc: "Бот + сайт + підключення до вашої CRM або таблиці. Всі заявки в одному місці, з нагадуваннями. Ви більше не втрачаєте жодного клієнта.",
-    complexAI: "Повна автоматизація бізнес-процесів",
-    complexAIDesc: "Зв'язуємо всі частини вашого бізнесу: від першого дотику клієнта до повторного продажу. Максимальна автоматизація, мінімум рутини.",
-    
-    // Evolution section
-    evolutionTitle: "Еволюція вашого бізнесу",
-    evolutionDesc: "Почніть з базового, ростіть разом з технологіями",
-    evolutionStage1: "Етап 1: Базовий (зараз)",
-    evolutionStage1Items: "Простий сайт • Форма заявки • Ручна робота",
-    evolutionStage2: "Етап 2: Автоматизований (3-6 міс)",
-    evolutionStage2Items: "Сайт + бот • Автовідповіді • CRM-інтеграція",
-    evolutionStage3: "Етап 3: AI-керований (2026+)",
-    evolutionStage3Items: "Система з пам'яттю • Голос/фото в заявках • A/B тести діалогів • AI-генерація контенту",
-    
-    // Tech Stack 2026
-    techStackTitle: "Tech Stack 2026",
-    techStackDesc: "Технології, які я використовую для AI-систем",
-    techStackAI: "AI-ядро",
-    techStackAIDesc: "DeepSeek API з довгостроковою пам'яттю (PostgreSQL + векторна БД)",
-    techStackMulti: "Мультимодальність",
-    techStackMultiDesc: "Whisper (голос), Vision API (фото), Claude 3.5 (документи)",
-    techStackIntegrations: "Інтеграції",
-    techStackIntegrationsDesc: "Stripe/Fondy (оплата), Telegram API, Airtable як CRM",
-    techStackAuto: "Автоматизація",
-    techStackAutoDesc: "A/B тести діалогів, генерація контенту GPT-4, автонагадування",
-    
-    // New Packages
-    packageStarter: "ПАКЕТ «СТАРТ» — Класика, яка працює",
-    packageStarterDesc: "Telegram-бот з кнопковим меню • Автоматичний запис в Google-таблицю • Сповіщення в Telegram • Гарантія роботи • Ви перестанете втрачати заявки вночі та у вихідні • Всі контакти в одній таблиці • Система працює 24/7 • Термін: 5-7 днів • Підтримка 14 днів",
-    packagePro: "ПАКЕТ «PRO» — AI-система з вибором фіч",
-    packageProDesc: "Все з пакету «СТАРТ» + AI-ядро на DeepSeek API • Вибір 3 фіч з 5: пам'ять клієнта, голос/фото, оплата в чаті, A/B тести, генерація контенту • Конверсія +30-50% • Середній чек +15% • Повторні продажі +25% • Термін: 10-14 днів • Підтримка 30 днів • Економія 30% проти замовлення фіч окремо",
-    packagePremium: "ПАКЕТ «ENTERPRISE» — Повний цикл AI",
-    packagePremiumDesc: "Все з «PRO» + мультиканальна система (сайт, Telegram, Instagram, WhatsApp) • AI-асистент менеджера • Повна CRM-інтеграція • Автоматичні воронки • Кастомний дашборд • Пріоритетна підтримка • Повна автоматизація відділу продажів • Скорочення витрат на менеджерів на 40-60% • Зростання повторних продажів на 50-70% • Термін: 21-28 днів • Підтримка 90 днів",
-    
-    // Cases
-    casesTitle: "Реальні кейси та результати",
-    casesDesc: "Не просто «зробили сайт», а конкретні вимірювані результати для бізнесу",
-    
-    // Live Projects
-    liveProjectsTitle: "Живі проекти",
-    liveProjectsDesc: "Відкрийте в новому вікні та подивіться, як працюють реальні проекти",
-    viewLive: "Відкрити проект",
-    openInNew: "Відкрити в новому вікні",
-    techStack: "Технології",
-    allProjects: "Всі",
-    ecommerce: "Інтернет-магазини",
-    bots: "Telegram боти",
-    landing: "Сайти-візитки",
-    portfolio: "Портфоліо",
-    openBot: "Відкрити бота",
-    viewSite: "Дивитись сайт",
-    
-    // Reviews
-    reviewsTitle: "Що говорять клієнти",
-    reviewsDesc: "Реальні відгуки від реальних людей",
-    
-    // Trust
-    trustTitle: "Чому зі мною — просто і зрозуміло",
-    trustDesc: "Я сам через це пройшов. Тонув у нескінченних чатах, втрачав клієнтів, бо не встигав відповісти. Тепер я допомагаю таким же, як я, власникам бізнесу. Я не буду заваллювати вас термінами. Я запитаю: «Де болить?», а потім зроблю систему, яка цей біль знімає. Чесно і без води.",
-    
-    // Process
-    processTitle: "Процес: від ідеї до результату",
-    
-    // Trust cards
-    howIThink: "Я вирішую проблеми, а не продаю технології",
-    howIThinkDesc: "Мені не важливо, чи це буде бот чи сайт. Важливо, щоб у вас з'явився порядок у заявках і більше клієнтів.",
-    howICommunicate: "Говорю людською мовою",
-    howICommunicateDesc: "Ніяких «інтеграцій API» і «функціоналу». Тільки: «Ось що буде працювати, ось скільки коштує, ось коли буде готово».",
-    howIWork: "Роблю швидко і по кроках",
-    howIWorkDesc: "Перший результат — через 3-7 днів. Далі — за необхідності. Ви завжди розумієте, що відбувається.",
-    honesty: "Якщо вам не потрібно — скажу одразу",
-    honestyDesc: "Якщо вашу проблему вирішить проста гугл-форма — я вам так і скажу. Працюю тільки там, де можу принести реальну користь.",
-    
-    // Service features
-    adaptiveDesign: "Адаптивний дизайн",
-    contactForm: "Форма зворотного зв'язку",
-    ready57days: "Готовий за 5-7 днів",
-    sellingDesign: "Продаючий дизайн",
-    seoOptimization: "SEO-оптимізація",
-    analyticsMetrics: "Аналітика та метрики",
-    ready710days: "Готовий за 7-10 днів",
-    autoresponder: "Автовідповідач 24/7",
-    collectRequests: "Збір заявок",
-    integrations: "Інтеграції",
-    clientAccounting: "Облік клієнтів",
-    autoRoutine: "Автоматизація рутини",
-    reporting: "Звітність",
-    systemIntegration: "Інтеграція систем",
-    aiAssistants: "AI-асистенти",
-    dataAnalytics: "Аналітика даних",
-    individualApproach: "Індивідуальний підхід",
-    
-    // Cases
-    businessConsultant: "Boss Detaling — Повний пакет",
-    businessConsultantDesc: "Сайт преміум детейлінгу авто + Telegram-бот для запису. Приклад виконаного пакета: клієнт отримав все під ключ.",
-    conversionRate: "Онлайн-запис",
-    requestsPerMonth: "Заявок через бот/міс",
-    devTime: "Термін розробки",
-    days: "днів",
-    eduPlatform: "Sphynx Dubai — Розплідник котів",
-    eduPlatformDesc: "Преміум сайт для розплідника котів породи Сфінкс у Дубаї з онлайн-записом та галереєю кошенят.",
-    timeSaved: "Швидкість завантаження",
-    autoReplies: "Відвідувачів/місяць",
-    happyClients: "Конверсія в контакт",
-    onlineStore: "TikTok Boost Lana",
-    onlineStoreDesc: "Сервіс просування в TikTok з автоматизацією заявок та аналітикою росту акаунтів клієнтів.",
-    processingSpeed: "Приріст заявок",
-    errors: "Нових клієнтів",
-    roi: "Термін окупності",
-    months: "місяці",
-    legalCompany: "Anika Brand Lux — E-commerce",
-    legalCompanyDesc: "Інтернет-магазин люксових брендових товарів з кошиком, онлайн-оплатою та системою управління замовленнями.",
-    requestsProcessed: "Перших замовлень",
-    leadQuality: "Середній чек",
-    works247: "Конверсія",
-    karenFinance: "KAREN Finance — Фінтех платформа",
-    karenFinanceDesc: "Сервіс іпотек, кредитів та лізингу в ЧР з калькулятором, автоматизацією заявок та роботою з іноземцями.",
-    approvedRequests: "Схвалених заявок",
-    averageTime: "Середній час відповіді",
-    clientRating: "Рейтинг клієнтів",
-    discussYourProject: "Обговорити ваш проект",
-    
-    // Reviews
-    review1: "Звернувся до Артема з проблемою: клієнти писали в Інстаграм вночі, а вранці вже були у конкурентів. За 4 дні він запустив бота, який ловить заявки 24/7 і одразу уточнює деталі. Перший тиждень зловили 11 заявок у неробочий час. Раніше це були просто втрачені гроші. Спілкуватися легко, без мудрих слів — пояснив все на пальцях.",
-    review1Name: "Максим Ковальчук",
-    review1Role: "Детейлінг-студія «Boss», Прага",
-    review2: "Ми — школа англійської, у нас був сайт на Tilda, але заявки губилися в пошті, месенджерах, дзвінках. Артем зробив систему: тепер все потрапляє в одну таблицю, бот нагадує менеджерам, кому не передзвонили. За місяць конверсія з сайту виросла з 3% до 12%. Я не технар взагалі, але все зрозуміла з першого разу. І головне — Артем сам попередив, що нам не потрібна 'навороченна CRM за 5000 євро', вистачить таблиці. Рідкісна чесність.",
-    review2Name: "Катерина Шевченко",
-    review2Role: "Засновниця школи «English Lab», Київ",
-    review3: "Працюю SMM-ником, веду клієнтів у сфері послуг. Постійно чую: 'Ліди є, але половина не доходить до угоди'. Артем зробив для двох моїх клієнтів (салон краси та автосервіс) зв'язку: лендінг + бот + автовідповіді в Телеграм. У салону конверсія з реклами виросла на 40%, у автосервісу — перестали втрачати заявки у вихідні. Тепер рекомендую Артема всім своїм клієнтам. Ціни адекватні, терміни тримає, головне — розуміє бізнес, а не просто 'пише код'.",
-    review3Name: "Андрій Лисовський",
-    review3Role: "SMM-спеціаліст, Брно (Чехія)",
-    
-    // Process steps
-    step1Title: "Короткий дзвінок",
-    step1Desc: "Розумію мету, поточну ситуацію та що заважає. 20-30 хвилин, щоб визначити, чи підходимо одне одному.",
-    step2Title: "План та ціна",
-    step2Desc: "Фіксуємо обсяг робіт, терміни та вартість. Ви точно знаєте, що отримаєте і коли.",
-    step3Title: "Збірка рішення",
-    step3Desc: "Роблю по етапах, показую прогрес. Уточнюю тільки те, що впливає на результат.",
-    step4Title: "Запуск та підтримка",
-    step4Desc: "Перевіряємо, що все працює і дає ефект. За необхідності — доробляємо.",
-    
-    // FAQ
-    faq1Q: "Як формується ціна?",
-    faq1A: "Ціна залежить від складності та обсягу роботи. На першому дзвінку я оцінюю задачу та даю діапазон «від і до». Після узгодження деталей фіксую фінальну ціну — вона не змінюється в процесі роботи, якщо не змінюється сам обсяг.",
-    faq2Q: "Скільки часу робиться проект?",
-    faq2A: "Простий сайт — 5-7 днів, landing page — 7-10 днів, Telegram-бот — 7-14 днів, CRM та автоматизація — від 2 тижнів. Точні терміни узгодимо після обговорення задачі.",
-    faq3Q: "Чи буде підтримка після запуску?",
-    faq3A: "Так. Перші 30 днів після запуску включені у вартість — виправляю баги та допомагаю з базовими питаннями. Далі можемо обговорити підтримку за підпискою або разові правки.",
-    faq4Q: "Працюєте з передоплатою?",
-    faq4A: "Так. Зазвичай 50% при старті, 50% при здачі. Для невеликих проектів можу домовитися про інші умови.",
-    faq5Q: "А якщо мені потрібно щось дуже специфічне?",
-    faq5A: "Давайте обговоримо. Якщо задача виходить за рамки моїх компетенцій — чесно скажу. Якщо можу допомогти — запропоную рішення та оціню терміни.",
-    faq6Q: "Які технології використовуєте?",
-    faq6A: "Next.js, React, Node.js, Python для backend та AI, Telegram Bot API, різні CRM та системи автоматизації. Обираю технології під задачу, а не заради технологій.",
-    faqTitle: "Часті питання",
-    
-    // CTA variants
-    ctaClassic: "Замовити сайт/бота",
-    ctaAIDemo: "Протестувати AI-демо",
-    ctaROI: "Розрахувати ROI автоматизації",
-    
-    // Footer
-    readyTitle: "Втрачаєте заявки?",
-    readyDesc: "Напишіть мені в Telegram або WhatsApp. Я безкоштовно покажу, де у вас витік клієнтів, і що з цим можна зробити. Без води, за 15 хвилин.",
-    footerTagline: "Працюємо на стику технологій 2024-2026: класична розробка × AI-автоматизація",
-    writeEmail: "Написати на пошту",
-    writeTelegram: "Написати в Telegram",
-    writeWhatsapp: "Написати в WhatsApp",
-    respondFast: "Відповідаю протягом години",
-    freeConsult: "Безкоштовна консультація",
-    untilAgree: "15 хвилин",
-    rights: "Усі права захищені",
-  },
-  
-  en: {
-    // Header
-    services: "Services",
-    cases: "Cases",
-    reviews: "Reviews",
-    faq: "FAQ",
-    discuss: "Discuss project",
-    
-    // Hero
-    openForProjects: "Open for new projects",
-    heroTitle: "Leads are lost in chats, and clients go to competitors?",
-    heroSubtitle: "I'll organize your leads in 3-7 days",
-    heroDesc: "I'm Artem, I implement simple systems (chatbots, clear websites) into your business that work 24/7. You'll stop losing money, and your clients will finally be able to reach you.",
-    heroOffer: "First bot — in 3 days",
-    projects: "Systems implemented",
-    satisfied: "Clients see lead growth",
-    yearsExp: "Avg conversion boost",
-    startProject: "I'll show you where you're losing leads for free",
-    viewCases: "View work examples",
-    
-    // Problems
-    problemsTitle: "Working with developers is often difficult — and it hurts business",
-    problemsDesc: "Familiar problems? I solve them differently",
-    problem1: "You're not required to understand IT",
-    problem1Desc: "but they force you to make decisions in incomprehensible terms.",
-    problem2: "Too much complexity",
-    problem2Desc: "deadlines slip, tasks blur, results are unpredictable.",
-    problem3: "Website exists but doesn't make money",
-    problem3Desc: "no requests, no control, no clear next step.",
-    solution: "I speak business language, not technology",
-    solution2: "Fixed deadlines and prices from day one",
-    solution3: "I create solutions that deliver results",
-    
-    // Approach
-    approachTitle: "I work from business, not from 'technologies'",
-    goal: "Goal first",
-    goalDesc: "What should change in sales, service, speed, control — we start with business results.",
-    clearLang: "Clear language",
-    clearLangDesc: "No jargon or 'technical magic'. You always understand what we're doing and why.",
-    result: "Result > process",
-    resultDesc: "Not 'make a website', but get inquiries, order, automation and peace of mind.",
-    
-    // Services
-    servicesTitle: "How I solve your problem",
-    servicesDesc: "Choose your level: basic solution today or AI system of the future",
-    servicesClassic: "Classic solutions",
-    servicesAI: "AI capabilities 2026+",
-    chatBotExpress: "Telegram bot",
-    chatBotExpressDesc: "Classic chatbot that catches leads 24/7. Time-tested.",
-    chatBotExpressAI: "+ AI chat with client memory",
-    chatBotExpressAIDesc: "Bot remembers client history, context of past dialogues. Personalization of every response.",
-    simpleWebsite: "Business card site / Landing",
-    simpleWebsiteDesc: "Simple site with request form. Works and brings clients.",
-    simpleWebsiteAI: "+ Voice/photo processing in requests",
-    simpleWebsiteAIDesc: "Client can send voice or photo. AI will process and enter into system.",
-    landingPage: "Ready package (site + bot + CRM)",
-    landingPageDesc: "All included: site, bot, spreadsheet integration. Full cycle.",
-    landingPageAI: "+ Payment in chat + AI assistant",
-    landingPageAIDesc: "Client pays in chat. AI manager helps process requests, generates content.",
-    crmAuto: "Full automation",
-    crmAutoDesc: "Bot + website + connection to your CRM or spreadsheet. All leads in one place, with reminders. You no longer lose a single client.",
-    complexAI: "Full business process automation",
-    complexAIDesc: "Connecting all parts of your business: from first touch to repeat sale. Maximum automation, minimum routine.",
-    
-    // Evolution section
-    evolutionTitle: "Your business evolution",
-    evolutionDesc: "Start basic, grow with technology",
-    evolutionStage1: "Stage 1: Basic (now)",
-    evolutionStage1Items: "Simple website • Contact form • Manual work",
-    evolutionStage2: "Stage 2: Automated (3-6 months)",
-    evolutionStage2Items: "Website + bot • Auto-replies • CRM integration",
-    evolutionStage3: "Stage 3: AI-powered (2026+)",
-    evolutionStage3Items: "System with memory • Voice/photo in requests • A/B testing dialogues • AI content generation",
-    
-    // Tech Stack 2026
-    techStackTitle: "Tech Stack 2026",
-    techStackDesc: "Technologies I use for AI systems",
-    techStackAI: "AI core",
-    techStackAIDesc: "DeepSeek API with long-term memory (PostgreSQL + vector DB)",
-    techStackMulti: "Multimodal",
-    techStackMultiDesc: "Whisper (voice), Vision API (photo), Claude 3.5 (documents)",
-    techStackIntegrations: "Integrations",
-    techStackIntegrationsDesc: "Stripe/Fondy (payment), Telegram API, Airtable as CRM",
-    techStackAuto: "Automation",
-    techStackAutoDesc: "A/B testing dialogues, GPT-4 content generation, auto-reminders",
-    
-    // New Packages
-    packageStarter: "PACKAGE «START» — Classic that works",
-    packageStarterDesc: "Telegram bot with button menu • Automatic recording to Google Sheets • Telegram notifications • Work guarantee • You'll stop losing leads at night and on weekends • All contacts in one table • System works 24/7 • Timeline: 5-7 days • 14 days support",
-    packagePro: "PACKAGE «PRO» — AI system with feature choice",
-    packageProDesc: "Everything from «START» + AI core on DeepSeek API • Choose 3 features from 5: client memory, voice/photo, chat payment, A/B tests, content generation • Conversion +30-50% • Average check +15% • Repeat sales +25% • Timeline: 10-14 days • 30 days support • 30% savings vs ordering features separately",
-    packagePremium: "PACKAGE «ENTERPRISE» — Full AI cycle",
-    packagePremiumDesc: "Everything from «PRO» + multi-channel system (website, Telegram, Instagram, WhatsApp) • Manager AI assistant • Full CRM integration • Automatic funnels • Custom dashboard • Priority support • Full sales department automation • Manager costs reduction by 40-60% • Repeat sales growth by 50-70% • Timeline: 21-28 days • 90 days support",
-    
-    // Cases
-    casesTitle: "Real cases and results",
-    casesDesc: "Not just 'made a website', but specific measurable results for business",
-    
-    // Live Projects
-    liveProjectsTitle: "Live projects",
-    liveProjectsDesc: "Open in a new window and see how real projects work",
-    viewLive: "Open project",
-    openInNew: "Open in new window",
-    techStack: "Tech stack",
-    allProjects: "All",
-    ecommerce: "Online stores",
-    bots: "Telegram bots",
-    landing: "Business cards",
-    portfolio: "Portfolio",
-    openBot: "Open bot",
-    viewSite: "View site",
-    
-    // Reviews
-    reviewsTitle: "What clients say",
-    reviewsDesc: "Real reviews from real people",
-    
-    // Trust
-    trustTitle: "Why it's simple and clear with me",
-    trustDesc: "I've been through it myself. I was drowning in endless chats, losing clients because I couldn't respond in time. Now I help business owners like me. I won't overwhelm you with jargon. I'll ask: 'What hurts?' and then build a system that fixes that pain. Honestly and without fluff.",
-    
-    // Process
-    processTitle: "Process: from idea to result",
-    
-    // Trust cards
-    howIThink: "I solve problems, not sell technology",
-    howIThinkDesc: "I don't care if it's a bot or a website. What matters is that you get order in your leads and more clients.",
-    howICommunicate: "I speak human language",
-    howICommunicateDesc: "No 'API integrations' and 'functionality'. Just: 'Here's what will work, here's the cost, here's when it'll be ready'.",
-    howIWork: "I work fast and step by step",
-    howIWorkDesc: "First result in 3-7 days. Then as needed. You always understand what's happening.",
-    honesty: "If you don't need it — I'll say it right away",
-    honestyDesc: "If your problem can be solved with a simple Google form — I'll tell you. I only work where I can bring real value.",
-    
-    // Service features
-    adaptiveDesign: "Adaptive design",
-    contactForm: "Contact form",
-    ready57days: "Ready in 5-7 days",
-    sellingDesign: "Selling design",
-    seoOptimization: "SEO optimization",
-    analyticsMetrics: "Analytics & metrics",
-    ready710days: "Ready in 7-10 days",
-    autoresponder: "Autoresponder 24/7",
-    collectRequests: "Collect requests",
-    integrations: "Integrations",
-    clientAccounting: "Client accounting",
-    autoRoutine: "Routine automation",
-    reporting: "Reporting",
-    systemIntegration: "System integration",
-    aiAssistants: "AI assistants",
-    dataAnalytics: "Data analytics",
-    individualApproach: "Individual approach",
-    
-    // Cases
-    businessConsultant: "Boss Detaling — Full Package",
-    businessConsultantDesc: "Premium car detailing website + Telegram bot for booking. Example of completed package: client got everything turnkey.",
-    conversionRate: "Online booking",
-    requestsPerMonth: "Requests via bot/month",
-    devTime: "Development time",
-    days: "days",
-    eduPlatform: "Sphynx Dubai — Cattery",
-    eduPlatformDesc: "Premium website for Sphynx cat cattery in Dubai with online booking and kitten gallery.",
-    timeSaved: "Loading speed",
-    autoReplies: "Visitors/month",
-    happyClients: "Contact conversion",
-    onlineStore: "TikTok Boost Lana",
-    onlineStoreDesc: "TikTok promotion service with automated requests and client account growth analytics.",
-    processingSpeed: "Request growth",
-    errors: "New clients",
-    roi: "Payback period",
-    months: "months",
-    legalCompany: "Anika Brand Lux — E-commerce",
-    legalCompanyDesc: "Luxury brand online store with cart, online payment and order management system.",
-    requestsProcessed: "First orders",
-    leadQuality: "Average check",
-    works247: "Conversion",
-    karenFinance: "KAREN Finance — Fintech Platform",
-    karenFinanceDesc: "Mortgage, loan and leasing service in CZ with calculator, request automation and work with foreigners.",
-    approvedRequests: "Approved requests",
-    averageTime: "Average response time",
-    clientRating: "Client rating",
-    discussYourProject: "Discuss your project",
-    
-    // Reviews
-    review1: "Contacted Artem with a problem: clients were writing on Instagram at night, and by morning they were already with competitors. In 4 days he launched a bot that catches leads 24/7 and immediately clarifies details. First week we caught 11 leads after hours. Before, that was just lost money. Easy to communicate with, no fancy words — explained everything simply.",
-    review1Name: "Maxim Kovalchuk",
-    review1Role: "Detailing studio «Boss», Prague",
-    review2: "We're an English school, had a Tilda website, but leads got lost in email, messengers, calls. Artem made a system: now everything goes into one spreadsheet, bot reminds managers who hasn't been called back. In a month, conversion from the site grew from 3% to 12%. I'm not technical at all, but understood everything the first time. And most importantly — Artem himself warned that we don't need a 'fancy CRM for 5000 euros', a spreadsheet is enough. Rare honesty.",
-    review2Name: "Kateryna Shevchenko",
-    review2Role: "Founder of «English Lab» school, Kyiv",
-    review3: "I work as an SMM specialist, manage clients in the service industry. Constantly hear: 'We have leads, but half don't convert to deals'. Artem made a combo for two of my clients (beauty salon and car service): landing + bot + auto-replies in Telegram. The salon's ad conversion grew by 40%, car service stopped losing weekend leads. Now I recommend Artem to all my clients. Reasonable prices, keeps deadlines, most importantly — understands business, not just 'writes code'.",
-    review3Name: "Andrey Lisovsky",
-    review3Role: "SMM specialist, Brno (Czech Republic)",
-    
-    // Process steps
-    step1Title: "Short call",
-    step1Desc: "I understand the goal, current situation and what's preventing. 20-30 minutes to determine if we're a good fit.",
-    step2Title: "Plan and price",
-    step2Desc: "We fix the scope of work, deadlines and cost. You know exactly what you'll get and when.",
-    step3Title: "Building solution",
-    step3Desc: "I do it in stages, show progress. I clarify only what affects the result.",
-    step4Title: "Launch and support",
-    step4Desc: "We check that everything works and gives effect. If necessary — we finalize.",
-    
-    // FAQ
-    faq1Q: "How is the price formed?",
-    faq1A: "The price depends on the complexity and volume of work. On the first call I evaluate the task and give a range 'from and to'. After agreeing on details I fix the final price — it doesn't change during work if the scope doesn't change.",
-    faq2Q: "How long does a project take?",
-    faq2A: "Simple website — 5-7 days, landing page — 7-10 days, Telegram bot — 7-14 days, CRM and automation — from 2 weeks. We'll agree on exact deadlines after discussing the task.",
-    faq3Q: "Will there be support after launch?",
-    faq3A: "Yes. The first 30 days after launch are included in the cost — I fix bugs and help with basic questions. Then we can discuss subscription support or one-time fixes.",
-    faq4Q: "Do you work with prepayment?",
-    faq4A: "Yes. Usually 50% at start, 50% at delivery. For small projects I can agree on other terms.",
-    faq5Q: "What if I need something very specific?",
-    faq5A: "Let's discuss. If the task is beyond my competencies — I'll say honestly. If I can help — I'll suggest a solution and estimate deadlines.",
-    faq6Q: "What technologies do you use?",
-    faq6A: "Next.js, React, Node.js, Python for backend and AI, Telegram Bot API, various CRM and automation systems. I choose technologies for the task, not for the sake of technologies.",
-    faqTitle: "Frequently asked questions",
-    
-    // CTA variants
-    ctaClassic: "Order site/bot",
-    ctaAIDemo: "Test AI demo",
-    ctaROI: "Calculate ROI of automation",
-    
-    // Footer
-    readyTitle: "Losing leads?",
-    readyDesc: "Message me on Telegram or WhatsApp. I'll show you for free where your client leak is and what can be done about it. No fluff, 15 minutes.",
-    footerTagline: "Working at the intersection of 2024-2026 technologies: classical development × AI automation",
-    writeEmail: "Email me",
-    writeTelegram: "Message on Telegram",
-    writeWhatsapp: "Message on WhatsApp",
-    respondFast: "Reply within an hour",
-    freeConsult: "Free consultation",
-    untilAgree: "15 minutes",
-    rights: "All rights reserved",
-  }
+export type Lang = 'en' | 'ru' | 'ua'
+
+type SiteCopy = {
+  navServices: string
+  navPackages: string
+  navCases: string
+  navAbout: string
+  navContact: string
+
+  heroHeadline: string
+  heroSubheadline: string
+  heroPrimaryCta: string
+  heroSecondaryCta: string
+  heroBadge: string
+  heroMicro: string
+  coreCore: string
+  coreEngine: string
+  coreLanding: string
+  coreAutomation: string
+  coreCrm: string
+  coreAnalytics: string
+
+  eyebrowProblem: string
+  problemTitle: string
+  problemLead: string
+  problemItems: string[]
+
+  eyebrowSolution: string
+  solutionTitle: string
+  solutionLead: string
+  solutionFlowLabel: string
+  solutionFlow: string[]
+  solutionFooter: string
+  flowCta: string
+
+  dashTitle: string
+  dashLive: string
+  dashLead: string
+  dashReply: string
+  dashCrm: string
+  dashQualified: string
+  dashAwaiting: string
+
+  eyebrowServices: string
+  servicesTitle: string
+  servicesLead: string
+  serviceWebTitle: string
+  serviceWebDesc: string
+  serviceAutomationTitle: string
+  serviceAutomationDesc: string
+  serviceInfraTitle: string
+  serviceInfraDesc: string
+  serviceLayer1: string
+  serviceLayer2: string
+  serviceLayer3: string
+
+  stat1Val: string
+  stat1Label: string
+  stat2Val: string
+  stat2Label: string
+  stat3Val: string
+  stat3Label: string
+  stat4Val: string
+  stat4Label: string
+
+  eyebrowPilot: string
+  pilotTitle: string
+  pilotDesc: string
+  pilotCta: string
+
+  eyebrowPackages: string
+  packagesTitle: string
+  packagesLead: string
+  packagesMicro: string
+  packageStarterTitle: string
+  packageStarterPrice: string
+  packageStarterDesc: string
+  packageStarterItems: string[]
+  packageGrowthTitle: string
+  packageGrowthPrice: string
+  packageGrowthDesc: string
+  packageGrowthItems: string[]
+  packageScaleTitle: string
+  packageScalePrice: string
+  packageScaleDesc: string
+  packageScaleItems: string[]
+
+  eyebrowEstimate: string
+  calcTitle: string
+  calcLead: string
+  demoIndustryLabel: string
+  demoIndustryPlaceholder: string
+  demoRun: string
+  demoReset: string
+  demoClientPrefix: string
+  demoAiPrefix: string
+  demoLoading: string
+  demoError: string
+  demoScenario: string
+  demoOrManual: string
+  demoPresets: string[]
+  demoBookCta: string
+  selectedIndustryLabel: string
+  demoMessagePlaceholder: string
+  demoSend: string
+
+  eyebrowCases: string
+  casesTitle: string
+  casesLead: string
+  caseMetrics: Array<{ value: number; suffix: string; label: string }>
+  caseChallenge: string
+  caseSolution: string
+  caseImpact: string
+  case1Title: string
+  case1Challenge: string
+  case1Solution: string
+  case1Impact: string
+  case2Title: string
+  case2Challenge: string
+  case2Solution: string
+  case2Impact: string
+  case3Title: string
+  case3Challenge: string
+  case3Solution: string
+  case3Impact: string
+  case4Title: string
+  case4Challenge: string
+  case4Solution: string
+  case4Impact: string
+  case5Title: string
+  case5Challenge: string
+  case5Solution: string
+  case5Impact: string
+  case6Title: string
+  case6Challenge: string
+  case6Solution: string
+  case6Impact: string
+
+  faqTitle: string
+  faqItems: Array<{ q: string; a: string }>
+
+  eyebrowAbout: string
+  aboutTitle: string
+  aboutLead: string
+  founderRole: string
+  aboutBody: string
+  archCaption: string
+  archActive: string
+  archOperational: string
+  archLayer1Title: string
+  archLayer1Stack: string
+  archLayer2Title: string
+  archLayer2Stack: string
+  archLayer3Title: string
+  archLayer3Stack: string
+  archLayer4Title: string
+  archLayer4Stack: string
+  archLayer5Title: string
+  archLayer5Stack: string
+
+  eyebrowContact: string
+  finalTitle: string
+  finalLead: string
+  finalPrimaryCta: string
+  contactEmail: string
+  contactTelegram: string
+  contactWhatsapp: string
+
+  formTitle: string
+  formLead: string
+  formName: string
+  formPhone: string
+  formConsent: string
+  formSubmit: string
+  formSubmitting: string
+  formSuccess: string
+  formError: string
+
+  footerTagline: string
+  footerMicro: string
+  legalPrivacy: string
+  legalTerms: string
+  legalDeletion: string
+  topAria: string
+  stackBadges: string[]
+  rights: string
 }
 
-export type Lang = 'ru' | 'ua' | 'en'
+export const translations: Record<Lang, SiteCopy> = {
+  en: {
+    navServices: 'How It Works',
+    navPackages: 'Packages',
+    navCases: 'Cases',
+    navAbout: 'About',
+    navContact: 'Contact',
 
+    heroHeadline: 'Turn visitors into paying clients on autopilot.',
+    heroSubheadline:
+      'This gives your business one clear path: client comes in, gets a fast reply, and moves to booking without getting lost.',
+    heroPrimaryCta: 'Get My Client System',
+    heroSecondaryCta: 'See It In 2 Minutes',
+    heroBadge: 'TemoWeb · Digital Systems Company',
+    heroMicro: 'Why this matters: every missed reply is lost revenue.',
+    coreCore: 'Core',
+    coreEngine: 'Engine',
+    coreLanding: 'Landing',
+    coreAutomation: 'Automation',
+    coreCrm: 'CRM',
+    coreAnalytics: 'Analytics',
+
+    eyebrowProblem: 'What Is Broken',
+    problemTitle: 'Why businesses lose clients every day',
+    problemLead: 'Most leads are not lost because of ads. They are lost because of process.',
+    problemItems: [
+      'Client writes, but nobody answers quickly',
+      'Leads are spread across WhatsApp, Instagram, and forms',
+      'The same questions are answered manually every day',
+      'Managers forget follow-ups and warm leads go cold',
+      'You cannot clearly see where money is leaking',
+    ],
+
+    eyebrowSolution: 'The Fix',
+    solutionTitle: 'One simple client system',
+    solutionLead:
+      'Not just a website. A practical system that collects leads, replies quickly, and sends everything to one place.',
+    solutionFlowLabel: 'How it works',
+    solutionFlow: ['Traffic', 'Landing', 'Automation', 'CRM', 'Analytics', 'Scale'],
+    solutionFooter: 'You always know what happens with every lead.',
+    flowCta: 'Try Live Demo Flow',
+
+    dashTitle: 'Live Example',
+    dashLive: 'Live',
+    dashLead: 'Lead received',
+    dashReply: 'Auto-reply sent',
+    dashCrm: 'CRM entry created',
+    dashQualified: 'Lead marked as ready',
+    dashAwaiting: 'Waiting for next lead...',
+
+    eyebrowServices: 'What You Get',
+    servicesTitle: 'Three parts that make sales easier',
+    servicesLead: 'Everything is built around one goal: no lost clients.',
+    serviceWebTitle: 'Website That Converts',
+    serviceWebDesc: 'A clear page where people understand your offer and leave contacts.',
+    serviceAutomationTitle: 'Auto Replies and CRM',
+    serviceAutomationDesc: 'Instant replies, lead sorting, and all requests saved in one system.',
+    serviceInfraTitle: 'Control and Growth',
+    serviceInfraDesc: 'Simple analytics, clear reports, and next-step improvements every month.',
+    serviceLayer1: 'Layer 01',
+    serviceLayer2: 'Layer 02',
+    serviceLayer3: 'Layer 03',
+
+    stat1Val: '24/7',
+    stat1Label: 'Leads accepted',
+    stat2Val: '< 5s',
+    stat2Label: 'First response',
+    stat3Val: '1 flow',
+    stat3Label: 'For all channels',
+    stat4Val: '14 days',
+    stat4Label: 'First launch',
+
+    eyebrowPilot: 'Start Fast',
+    pilotTitle: 'Pilot launch in 14 days',
+    pilotDesc:
+      'We launch one working flow first, show real result, then expand step by step.',
+    pilotCta: 'Start Pilot',
+
+    eyebrowPackages: 'Packages',
+    packagesTitle: 'Packages',
+    packagesLead: 'Choose the package that matches your current stage.',
+    packagesMicro: 'No overpaying. Start from what you really need.',
+    packageStarterTitle: 'Starter — Get Order',
+    packageStarterPrice: 'EUR 1,900 + EUR 290/mo · min 2 months',
+    packageStarterDesc: 'For businesses that need to stop losing leads and respond faster.',
+    packageStarterItems: [
+      'Simple website offer + contact form',
+      'New leads sent straight to Telegram',
+      'Basic lead tracking by source',
+      'Launch plan and setup support',
+    ],
+    packageGrowthTitle: 'Growth — Sales Flow',
+    packageGrowthPrice: 'EUR 3,900 + EUR 490/mo · min 2 months',
+    packageGrowthDesc: 'For teams with traffic who need faster handling and better conversion.',
+    packageGrowthItems: [
+      'Everything from Starter',
+      'Automatic first replies and lead qualification',
+      'CRM pipeline with statuses and notes',
+      'Manager dashboard and response control',
+    ],
+    packageScaleTitle: 'Scale — Full System',
+    packageScalePrice: 'EUR 6,900 + EUR 790/mo · min 2 months',
+    packageScaleDesc: 'For growing companies that need one system across all channels.',
+    packageScaleItems: [
+      'Everything from Growth',
+      'One flow for site, WhatsApp, Telegram, and Instagram',
+      'Advanced conversion analytics',
+      'Monthly optimization and growth roadmap',
+    ],
+
+    eyebrowEstimate: 'Live Demo',
+    calcTitle: 'Test the System',
+    calcLead: 'See how the AI manager would respond to your clients.',
+    demoIndustryLabel: 'What industry are you in?',
+    demoIndustryPlaceholder: 'For example: Auto service',
+    demoRun: 'Run Live Demo',
+    demoReset: 'Reset Demo',
+    demoClientPrefix: 'Client',
+    demoAiPrefix: 'AI Manager',
+    demoLoading: 'AI manager is typing...',
+    demoError: 'Could not load demo response. Please try again.',
+    demoScenario: 'Demo scenario: New lead inquiry',
+    demoOrManual: 'Or enter your industry manually',
+    demoPresets: ['Auto service', 'Dental clinic', 'Law firm', 'Real estate and mortgage'],
+    demoBookCta: 'Get this for my business',
+    selectedIndustryLabel: 'Selected industry',
+    demoMessagePlaceholder: 'Type a client message...',
+    demoSend: 'Send',
+
+    eyebrowCases: 'Real Results',
+    casesTitle: 'What changed for real businesses',
+    casesLead: 'Every case shows the same path: problem → solution → result.',
+    caseMetrics: [
+      { value: 37, suffix: '%', label: 'more booked calls in 8 weeks' },
+      { value: 52, suffix: '%', label: 'fewer missed incoming requests' },
+      { value: 31, suffix: '%', label: 'higher lead-to-sale conversion' },
+      { value: 43, suffix: '%', label: 'faster callback speed' },
+      { value: 2.4, suffix: 'x', label: 'cleaner CRM pipeline quality' },
+      { value: 46, suffix: '%', label: 'faster first manager response' },
+    ],
+    caseChallenge: 'Challenge',
+    caseSolution: 'Solution',
+    caseImpact: 'Impact',
+    case1Title: 'Automotive Service, Prague',
+    case1Challenge: 'Leads were lost outside working hours and follow-up was inconsistent.',
+    case1Solution: 'Implemented a conversion landing flow with automated qualification and CRM routing.',
+    case1Impact: 'Faster response cycle and consistent lead processing across all daily inquiries.',
+    case2Title: 'Education Business, EU',
+    case2Challenge: 'Requests arrived from multiple channels with no operational visibility.',
+    case2Solution: 'Built a single intake architecture with automation rules and manager workflows.',
+    case2Impact: 'Clear pipeline control, fewer missed requests, and smoother handoff to sales.',
+    case3Title: 'Retail Brand, Central Europe',
+    case3Challenge: 'Traffic was growing but conversion and tracking were fragmented.',
+    case3Solution: 'Rebuilt web front-end, connected analytics events, and standardized CRM attribution.',
+    case3Impact: 'Improved conversion clarity and a more reliable base for paid acquisition scaling.',
+    case4Title: 'Dental Clinic, Brno',
+    case4Challenge: 'High ad spend but slow callback speed and many missed consultations.',
+    case4Solution: 'Introduced structured intake flow with auto-prioritization of urgent requests.',
+    case4Impact: 'Faster processing and higher booking consistency across working hours.',
+    case5Title: 'Legal Services, Prague',
+    case5Challenge: 'Leads from web and messengers were duplicated and manually sorted.',
+    case5Solution: 'Unified capture pipeline and CRM deduplication rules with status automation.',
+    case5Impact: 'Cleaner pipeline and better visibility over lead-to-consultation conversion.',
+    case6Title: 'E-commerce Support Team, EU',
+    case6Challenge: 'Support and sales conversations mixed in one inbox with no ownership logic.',
+    case6Solution: 'Built channel routing, intent tagging, and queue-based assignment workflow.',
+    case6Impact: 'Reduced response chaos and improved handling quality at scale.',
+
+    faqTitle: 'Common Questions',
+    faqItems: [
+      { q: 'I am not technical. Is this for me?', a: 'Yes. We explain everything in plain business language and build the system for you end to end.' },
+      { q: 'How fast can we start?', a: 'Pilot starts in about 14 days. You get the first working flow fast, then we scale it.' },
+      { q: 'Will website leads go to Telegram?', a: 'Yes. New requests can go directly to Telegram and also to CRM if needed.' },
+      { q: 'Can we keep our current tools?', a: 'Usually yes. We connect your current tools first and replace only when necessary.' },
+      { q: 'What happens after launch?', a: 'We support the launch, check how it works, and improve weak points.' },
+    ],
+
+    eyebrowAbout: 'About',
+    aboutTitle: 'About',
+    aboutLead: 'Founder',
+    founderRole: 'Novikov',
+    aboutBody:
+      'I help business owners build a clear lead system: clients come in, get a quick reply, and move to sale without chaos.',
+    archCaption: 'System Architecture',
+    archActive: 'Active',
+    archOperational: 'All systems operational',
+    archLayer1Title: 'Web Layer',
+    archLayer1Stack: 'Next.js · TypeScript · Tailwind',
+    archLayer2Title: 'Automation',
+    archLayer2Stack: 'Webhooks · OpenAI · Scheduler',
+    archLayer3Title: 'CRM and Data',
+    archLayer3Stack: 'PostgreSQL · REST API · Pipelines',
+    archLayer4Title: 'Channels',
+    archLayer4Stack: 'WhatsApp · Telegram · Instagram',
+    archLayer5Title: 'Analytics',
+    archLayer5Stack: 'Plausible · Clarity · Events',
+
+    eyebrowContact: 'Contact',
+    finalTitle: 'Want this system in your business?',
+    finalLead: 'Leave your contact and we will show exactly what to launch first for your case.',
+    finalPrimaryCta: 'Get My Plan',
+    contactEmail: 'info@temoweb.eu',
+    contactTelegram: '@temoweb',
+    contactWhatsapp: '+380 96 049 49 17',
+
+    formTitle: 'Leave contact and get a clear plan',
+    formLead: 'No complicated briefing. We contact you and show the next practical step.',
+    formName: 'Your name',
+    formPhone: 'Phone number',
+    formConsent: 'I agree to the privacy policy and consent to personal data processing.',
+    formSubmit: 'Send and Get Plan',
+    formSubmitting: 'Sending...',
+    formSuccess: 'Request sent. We will contact you shortly.',
+    formError: 'Could not send. Please try again.',
+
+    footerTagline: 'Simple client systems for real businesses.',
+    footerMicro: 'Infrastructure before growth.',
+    legalPrivacy: 'Privacy',
+    legalTerms: 'Terms',
+    legalDeletion: 'Data Deletion',
+    topAria: 'Top',
+    stackBadges: ['Next.js', 'TypeScript', 'OpenAI', 'PostgreSQL', 'WhatsApp API', 'Telegram Bot'],
+    rights: 'All rights reserved',
+  },
+
+  ru: {
+    navServices: 'Как это работает',
+    navPackages: 'Пакеты',
+    navCases: 'Кейсы',
+    navAbout: 'О нас',
+    navContact: 'Контакты',
+
+    heroHeadline: 'Превращайте входящие обращения в оплативших клиентов на автопилоте.',
+    heroSubheadline:
+      'На сайте это нужно, чтобы у вас был один понятный путь: заявка пришла, быстрый ответ ушел, клиент дошел до записи и оплаты.',
+    heroPrimaryCta: 'Получить систему для моего бизнеса',
+    heroSecondaryCta: 'Показать за 2 минуты',
+    heroBadge: 'TemoWeb · Digital Systems Company',
+    heroMicro: 'Почему это важно: каждый пропущенный ответ — это потерянные деньги.',
+    coreCore: 'Ядро',
+    coreEngine: 'Движок',
+    coreLanding: 'Лендинг',
+    coreAutomation: 'Автоматизация',
+    coreCrm: 'CRM',
+    coreAnalytics: 'Аналитика',
+
+    eyebrowProblem: 'Проблема',
+    problemTitle: 'Почему бизнес теряет заявки каждый день',
+    problemLead: 'Чаще всего проблема не в рекламе, а в том, что внутри нет порядка.',
+    problemItems: [
+      'Клиент пишет, а ответа долго нет',
+      'Заявки разбросаны по WhatsApp, Instagram и формам',
+      'Одни и те же вопросы отвечаются вручную',
+      'Теплые лиды теряются, потому что нет follow-up',
+      'Непонятно, где реально теряются деньги',
+    ],
+
+    eyebrowSolution: 'Что мы делаем',
+    solutionTitle: 'Одна понятная система заявок',
+    solutionLead:
+      'Это не просто сайт. Это рабочий процесс: заявка пришла, ответ ушел, клиент не потерялся.',
+    solutionFlowLabel: 'Как это работает',
+    solutionFlow: ['Traffic', 'Landing', 'Automation', 'CRM', 'Analytics', 'Scale'],
+    solutionFooter: 'Вы видите путь каждой заявки от первого касания до сделки.',
+    flowCta: 'Открыть живой flow',
+
+    dashTitle: 'Пример в реальном времени',
+    dashLive: 'Live',
+    dashLead: 'Заявка получена',
+    dashReply: 'Автоответ отправлен',
+    dashCrm: 'Запись создана в CRM',
+    dashQualified: 'Лид отмечен как готовый',
+    dashAwaiting: 'Ожидание следующей заявки...',
+
+    eyebrowServices: 'Что вы получаете',
+    servicesTitle: 'Три части, которые упрощают продажи',
+    servicesLead: 'Всё строится вокруг одной цели — не терять клиентов.',
+    serviceWebTitle: 'Сайт, который приводит заявки',
+    serviceWebDesc: 'Простая и понятная страница, где человек быстро понимает офер и оставляет контакт.',
+    serviceAutomationTitle: 'Автоответы и CRM',
+    serviceAutomationDesc: 'Быстрый первый ответ, сортировка заявок и хранение всех данных в одном месте.',
+    serviceInfraTitle: 'Контроль и рост',
+    serviceInfraDesc: 'Понятная аналитика и регулярные улучшения, чтобы продажи росли стабильно.',
+    serviceLayer1: 'Слой 01',
+    serviceLayer2: 'Слой 02',
+    serviceLayer3: 'Слой 03',
+
+    stat1Val: '24/7',
+    stat1Label: 'Приём заявок',
+    stat2Val: '< 5s',
+    stat2Label: 'Первый ответ',
+    stat3Val: '1 поток',
+    stat3Label: 'Для всех каналов',
+    stat4Val: '14 дней',
+    stat4Label: 'Первый запуск',
+
+    eyebrowPilot: 'Пилотная программа',
+    pilotTitle: 'Пилот за 14 дней',
+    pilotDesc:
+      'Сначала запускаем один рабочий поток заявок, показываем результат и только потом масштабируем.',
+    pilotCta: 'Запустить пилот',
+
+    eyebrowPackages: 'Пакеты',
+    packagesTitle: 'Пакеты',
+    packagesLead: 'Выберите пакет под текущий этап вашего бизнеса.',
+    packagesMicro: 'Без лишних услуг. Только то, что реально нужно сейчас.',
+    packageStarterTitle: 'Starter — Навести порядок',
+    packageStarterPrice: '1 900 EUR + 290 EUR/мес · минимум 2 месяца',
+    packageStarterDesc: 'Для бизнеса, которому нужно перестать терять заявки и отвечать быстрее.',
+    packageStarterItems: [
+      'Понятный сайт с офером и формой',
+      'Заявки сразу уходят в Telegram',
+      'Базовый учет источников заявок',
+      'План запуска и поддержка на старте',
+    ],
+    packageGrowthTitle: 'Growth — Система продаж',
+    packageGrowthPrice: '3 900 EUR + 490 EUR/мес · минимум 2 месяца',
+    packageGrowthDesc: 'Для тех, у кого уже есть трафик, но теряются лиды и не хватает скорости обработки.',
+    packageGrowthItems: [
+      'Все из Starter',
+      'Автоответы и первичная квалификация',
+      'CRM-воронка со статусами',
+      'Панель контроля работы менеджеров',
+    ],
+    packageScaleTitle: 'Scale — Полная система',
+    packageScalePrice: '6 900 EUR + 790 EUR/мес · минимум 2 месяца',
+    packageScaleDesc: 'Для растущих компаний, где нужен единый процесс во всех каналах.',
+    packageScaleItems: [
+      'Все из Growth',
+      'Единый поток для сайта, WhatsApp, Telegram и Instagram',
+      'Глубокая аналитика конверсии',
+      'Ежемесячные улучшения под рост',
+    ],
+
+    eyebrowEstimate: 'Оценка стоимости',
+    calcTitle: 'Проверьте систему',
+    calcLead: 'Посмотрите, как AI-менеджер отвечает вашим клиентам.',
+    demoIndustryLabel: 'В какой вы нише?',
+    demoIndustryPlaceholder: 'Например: Автосервис',
+    demoRun: 'Запустить live demo',
+    demoReset: 'Сбросить demo',
+    demoClientPrefix: 'Клиент',
+    demoAiPrefix: 'AI-менеджер',
+    demoLoading: 'AI-менеджер печатает...',
+    demoError: 'Не удалось получить ответ demo. Попробуйте еще раз.',
+    demoScenario: 'Сценарий demo: новый входящий лид',
+    demoOrManual: 'Или введи свою нишу вручную',
+    demoPresets: ['Автосервис', 'Стоматология', 'Юристы', 'Недвижимость и ипотека'],
+    demoBookCta: 'Хочу это в свой бизнес',
+    selectedIndustryLabel: 'Выбранная ниша',
+    demoMessagePlaceholder: 'Введите сообщение клиента...',
+    demoSend: 'Отправить',
+
+    eyebrowCases: 'Кейсы',
+    casesTitle: 'Реальные результаты бизнеса',
+    casesLead: 'Во всех кейсах один путь: проблема → решение → результат.',
+    caseMetrics: [
+      { value: 37, suffix: '%', label: 'роста записей за 8 недель' },
+      { value: 52, suffix: '%', label: 'меньше потерянных обращений' },
+      { value: 31, suffix: '%', label: 'рост конверсии лида в продажу' },
+      { value: 43, suffix: '%', label: 'быстрее обратный звонок' },
+      { value: 2.4, suffix: 'x', label: 'чище воронка в CRM' },
+      { value: 46, suffix: '%', label: 'быстрее первый ответ менеджера' },
+    ],
+    caseChallenge: 'Задача',
+    caseSolution: 'Решение',
+    caseImpact: 'Эффект',
+    case1Title: 'Автосервис, Прага',
+    case1Challenge: 'Заявки терялись в нерабочее время, менеджеры отвечали несистемно.',
+    case1Solution: 'Внедрили конверсионный лендинг, автоматическую квалификацию и маршрутизацию в CRM.',
+    case1Impact: 'Сократился цикл ответа и стабилизировалась обработка входящих обращений.',
+    case2Title: 'Образовательный бизнес, ЕС',
+    case2Challenge: 'Обращения приходили из разных каналов без управляемого процесса.',
+    case2Solution: 'Построили единый intake-поток, правила автоматизации и сценарии работы менеджеров.',
+    case2Impact: 'Появился контроль воронки, снизились потери лидов, улучшилась передача в продажи.',
+    case3Title: 'Retail-бренд, Центральная Европа',
+    case3Challenge: 'Трафик рос, но конверсия и атрибуция были фрагментированы.',
+    case3Solution: 'Перестроили web-фронт, связали события аналитики и стандартизировали CRM-атрибуцию.',
+    case3Impact: 'Улучшилась прозрачность конверсии и база для масштабирования рекламы.',
+    case4Title: 'Стоматология, Брно',
+    case4Challenge: 'Высокие расходы на рекламу и медленный обратный контакт по заявкам.',
+    case4Solution: 'Внедрили структурированный intake-поток и приоритизацию срочных обращений.',
+    case4Impact: 'Скорость обработки выросла, запись на консультации стала стабильнее.',
+    case5Title: 'Юридические услуги, Прага',
+    case5Challenge: 'Лиды из сайта и мессенджеров дублировались и сортировались вручную.',
+    case5Solution: 'Собрали единый поток, добавили дедупликацию и автостатусы в CRM.',
+    case5Impact: 'Воронка стала чище, контроль конверсии до консультации — прозрачнее.',
+    case6Title: 'E-commerce support, ЕС',
+    case6Challenge: 'Поддержка и продажи смешивались в одном inbox без маршрутизации.',
+    case6Solution: 'Построили routing по каналам, intent-теги и очередь назначения.',
+    case6Impact: 'Снизился хаос в коммуникации и улучшилось качество обработки на масштабе.',
+
+    faqTitle: 'FAQ',
+    faqItems: [
+      { q: 'Я не технарь. Мне подойдет?', a: 'Да. Мы объясняем всё простым языком и делаем систему под ключ.' },
+      { q: 'Как быстро можно стартовать?', a: 'Пилот обычно запускаем за 14 дней. Потом масштабируем по шагам.' },
+      { q: 'Заявки с сайта точно идут в Telegram?', a: 'Да. Новые заявки уходят в Telegram и при необходимости в CRM.' },
+      { q: 'Можно оставить текущие сервисы?', a: 'Да, чаще всего. Сначала подключаем то, что уже есть, и только потом меняем, если это реально нужно.' },
+      { q: 'Что после запуска?', a: 'После запуска сопровождаем, смотрим цифры и улучшаем слабые места.' },
+    ],
+
+    eyebrowAbout: 'О компании',
+    aboutTitle: 'О нас',
+    aboutLead: 'Основатель',
+    founderRole: 'Новиков',
+    aboutBody:
+      'Я помогаю владельцам бизнеса выстроить понятную систему заявок: клиент пишет, получает быстрый ответ и доходит до сделки.',
+    archCaption: 'Архитектура системы',
+    archActive: 'Активна',
+    archOperational: 'Все модули работают',
+    archLayer1Title: 'Web-слой',
+    archLayer1Stack: 'Next.js · TypeScript · Tailwind',
+    archLayer2Title: 'Автоматизация',
+    archLayer2Stack: 'Webhooks · OpenAI · Scheduler',
+    archLayer3Title: 'CRM и данные',
+    archLayer3Stack: 'PostgreSQL · REST API · Pipelines',
+    archLayer4Title: 'Каналы',
+    archLayer4Stack: 'WhatsApp · Telegram · Instagram',
+    archLayer5Title: 'Аналитика',
+    archLayer5Stack: 'Plausible · Clarity · Events',
+
+    eyebrowContact: 'Контакты',
+    finalTitle: 'Хотите такую систему в своем бизнесе?',
+    finalLead: 'Оставьте контакт — покажем, что нужно запустить в первую очередь именно вам.',
+    finalPrimaryCta: 'Получить план запуска',
+    contactEmail: 'info@temoweb.eu',
+    contactTelegram: '@temoweb',
+    contactWhatsapp: '+380 96 049 49 17',
+
+    formTitle: 'Оставьте контакт и получите понятный план',
+    formLead: 'Без сложных брифов и лишних слов. Свяжемся и покажем следующий практический шаг.',
+    formName: 'Ваше имя',
+    formPhone: 'Телефон',
+    formConsent: 'Я согласен с политикой конфиденциальности и обработкой персональных данных.',
+    formSubmit: 'Отправить и получить план',
+    formSubmitting: 'Отправка...',
+    formSuccess: 'Заявка отправлена. Мы скоро свяжемся с вами.',
+    formError: 'Не удалось отправить. Попробуйте ещё раз.',
+
+    footerTagline: 'Понятные системы заявок для реального бизнеса.',
+    footerMicro: 'Инфраструктура — до роста.',
+    legalPrivacy: 'Конфиденциальность',
+    legalTerms: 'Условия',
+    legalDeletion: 'Удаление данных',
+    topAria: 'Наверх',
+    stackBadges: ['Next.js', 'TypeScript', 'OpenAI', 'PostgreSQL', 'WhatsApp API', 'Telegram Bot'],
+    rights: 'Все права защищены',
+  },
+
+  ua: {
+    navServices: 'Jak to funguje',
+    navPackages: 'Balíčky',
+    navCases: 'Případy',
+    navAbout: 'O nás',
+    navContact: 'Kontakt',
+
+    heroHeadline: 'Proměňte poptávky v platící klienty na autopilotu.',
+    heroSubheadline:
+      'Na webu to dává smysl proto, že máte jeden jasný proces: poptávka přijde, rychlá odpověď odejde, klient jde k rezervaci a platbě.',
+    heroPrimaryCta: 'Chci systém pro byznys',
+    heroSecondaryCta: 'Ukázat za 2 minuty',
+    heroBadge: 'TemoWeb · Digital Systems Company',
+    heroMicro: 'Proč je to důležité: každá zmeškaná odpověď znamená ztracené tržby.',
+    coreCore: 'Jádro',
+    coreEngine: 'Engine',
+    coreLanding: 'Landing',
+    coreAutomation: 'Automatizace',
+    coreCrm: 'CRM',
+    coreAnalytics: 'Analytika',
+
+    eyebrowProblem: 'Problém',
+    problemTitle: 'Proč firmy každý den ztrácejí poptávky',
+    problemLead: 'Nejčastěji není problém v reklamě, ale v chaosu uvnitř procesu.',
+    problemItems: [
+      'Klient napíše, ale odpověď přijde pozdě',
+      'Poptávky jsou rozhozené mezi WhatsApp, Instagram a formuláře',
+      'Stejné otázky se řeší ručně každý den',
+      'Teplé leady se ztrácí bez follow-upu',
+      'Není jasné, kde reálně utíkají peníze',
+    ],
+
+    eyebrowSolution: 'Řešení',
+    solutionTitle: 'Jeden jednoduchý systém poptávek',
+    solutionLead:
+      'Ne jen web. Fungující proces: poptávka přijde, odpověď odejde, klient se neztratí.',
+    solutionFlowLabel: 'Jak to funguje',
+    solutionFlow: ['Traffic', 'Landing', 'Automation', 'CRM', 'Analytics', 'Scale'],
+    solutionFooter: 'Vidíte cestu každé poptávky od prvního kontaktu až po obchod.',
+    flowCta: 'Otevřít živý flow',
+
+    dashTitle: 'Živý systém',
+    dashLive: 'Live',
+    dashLead: 'Lead přijat',
+    dashReply: 'Automatická odpověď odeslána',
+    dashCrm: 'Záznam vytvořen v CRM',
+    dashQualified: 'Lead kvalifikován · WARM',
+    dashAwaiting: 'Čeká na další lead...',
+
+    eyebrowServices: 'Systémové moduly',
+    servicesTitle: 'Tři části, které zjednoduší prodej',
+    servicesLead: 'Vše je postavené na jednom cíli: neztrácet klienty.',
+    serviceWebTitle: 'Web, který sbírá poptávky',
+    serviceWebDesc: 'Jasná stránka, kde klient rychle pochopí nabídku a nechá kontakt.',
+    serviceAutomationTitle: 'Automatické odpovědi a CRM',
+    serviceAutomationDesc: 'Rychlá první odpověď, třídění leadů a vše na jednom místě.',
+    serviceInfraTitle: 'Kontrola a růst',
+    serviceInfraDesc: 'Přehledná analytika a pravidelné zlepšování, aby výsledky rostly.',
+    serviceLayer1: 'Vrstva 01',
+    serviceLayer2: 'Vrstva 02',
+    serviceLayer3: 'Vrstva 03',
+
+    stat1Val: '24/7',
+    stat1Label: 'Provoz systému',
+    stat2Val: '< 5s',
+    stat2Label: 'Doba odezvy',
+    stat3Val: '3-vrstvá',
+    stat3Label: 'Architektura',
+    stat4Val: '14 dní',
+    stat4Label: 'Pilotní spuštění',
+
+    eyebrowPilot: 'Pilotní program',
+    pilotTitle: 'Pilotní implementační program',
+    pilotDesc:
+      'Spustíme jeden klíčový klientský tok během 14 dní, ověříme dopad na konverze a systém rozšiřitelně nasadíme.',
+    pilotCta: 'Požádat o pilot',
+
+    eyebrowPackages: 'Balíčky',
+    packagesTitle: 'Balíčky',
+    packagesLead: 'Vyberte balíček podle aktuální fáze vašeho podnikání.',
+    packagesMicro: 'Bez zbytečností. Jen to, co teď opravdu potřebujete.',
+    packageStarterTitle: 'Starter — Digitální základ',
+    packageStarterPrice: '1 900 EUR + 290 EUR/měs. · minimum 2 měsíce',
+    packageStarterDesc: 'Základní webový systém, lead capture flow a výchozí analytika.',
+    packageStarterItems: [
+      'Struktura konverzního webu',
+      'Směrování poptávek do Telegramu a CRM-ready formát',
+      'Základní tracking událostí a zdrojů',
+      'Plán spuštění a kontrolní checklist',
+    ],
+    packageGrowthTitle: 'Growth — Klientský systém',
+    packageGrowthPrice: '3 900 EUR + 490 EUR/měs. · minimum 2 měsíce',
+    packageGrowthDesc: 'Webový systém, automatizace, CRM integrace a reportovací workflow.',
+    packageGrowthItems: [
+      'Vše ze Starter',
+      'Scénáře automatických odpovědí a kvalifikace leadů',
+      'CRM integrace se status pipeline',
+      'Operační dashboard a SLA logika odpovědi',
+    ],
+    packageScaleTitle: 'Scale — Plná infrastruktura',
+    packageScalePrice: '6 900 EUR + 790 EUR/měs. · minimum 2 měsíce',
+    packageScaleDesc: 'Multikanálová architektura, pokročilá automatizace a infrastruktura pro růst.',
+    packageScaleItems: [
+      'Vše z Growth',
+      'Multikanálová orchestrace (web, WhatsApp, Telegram, Instagram)',
+      'Pokročilá analytika a diagnostika konverzí',
+      'Škálovatelná architektura a měsíční optimalizační cyklus',
+    ],
+
+    eyebrowEstimate: 'Odhad ceny',
+    calcTitle: 'Otestujte systém',
+    calcLead: 'Podívejte se, jak by AI manager odpovídal vašim klientům.',
+    demoIndustryLabel: 'V jakém oboru podnikáte?',
+    demoIndustryPlaceholder: 'Například: Autoservis',
+    demoRun: 'Spustit live demo',
+    demoReset: 'Resetovat demo',
+    demoClientPrefix: 'Klient',
+    demoAiPrefix: 'AI manager',
+    demoLoading: 'AI manager píše...',
+    demoError: 'Demo odpověď se nepodařilo načíst. Zkuste to prosím znovu.',
+    demoScenario: 'Demo scénář: nový příchozí lead',
+    demoOrManual: 'Nebo zadejte svůj obor ručně',
+    demoPresets: ['Autoservis', 'Stomatologie', 'Právní služby', 'Reality a hypotéky'],
+    demoBookCta: 'Chci to i pro svůj byznys',
+    selectedIndustryLabel: 'Vybraný obor',
+    demoMessagePlaceholder: 'Napište zprávu klienta...',
+    demoSend: 'Odeslat',
+
+    eyebrowCases: 'Případové studie',
+    casesTitle: 'Reálné výsledky firem',
+    casesLead: 'V každém případu stejná logika: problém → řešení → výsledek.',
+    caseMetrics: [
+      { value: 37, suffix: '%', label: 'více rezervací za 8 týdnů' },
+      { value: 52, suffix: '%', label: 'méně ztracených poptávek' },
+      { value: 31, suffix: '%', label: 'vyšší konverze leadu na prodej' },
+      { value: 43, suffix: '%', label: 'rychlejší callback' },
+      { value: 2.4, suffix: 'x', label: 'čistší CRM pipeline' },
+      { value: 46, suffix: '%', label: 'rychlejší první odpověď' },
+    ],
+    caseChallenge: 'Výzva',
+    caseSolution: 'Řešení',
+    caseImpact: 'Dopad',
+    case1Title: 'Autoservis, Praha',
+    case1Challenge: 'Leady se ztrácely mimo pracovní dobu a follow-up nebyl konzistentní.',
+    case1Solution: 'Nasadili jsme konverzní landing flow, automatickou kvalifikaci a CRM routing.',
+    case1Impact: 'Rychlejší reakce a stabilní proces zpracování poptávek.',
+    case2Title: 'Vzdělávací firma, EU',
+    case2Challenge: 'Poptávky chodily z více kanálů bez provozního systému.',
+    case2Solution: 'Vytvořili jsme jednotný intake systém s automatizacemi a prací managerů.',
+    case2Impact: 'Lepší kontrola pipeline a menší ztráty leadů.',
+    case3Title: 'Retail značka, střední Evropa',
+    case3Challenge: 'Růst návštěvnosti bez jasné konverze a sledování.',
+    case3Solution: 'Přestavba web front-endu, analytických událostí a CRM atribuce.',
+    case3Impact: 'Vyšší přehled o výkonu a stabilní základ pro škálování kampaní.',
+    case4Title: 'Stomatologická klinika, Brno',
+    case4Challenge: 'Vysoké náklady na reklamu a pomalý callback k poptávkám.',
+    case4Solution: 'Nasadili jsme intake flow s prioritizací urgentních leadů.',
+    case4Impact: 'Rychlejší zpracování poptávek a stabilnější booking konzultací.',
+    case5Title: 'Právní služby, Praha',
+    case5Challenge: 'Leady z webu a messengerů se duplikovaly a třídily ručně.',
+    case5Solution: 'Sjednotili jsme capture pipeline, deduplikaci a auto-statusy v CRM.',
+    case5Impact: 'Čistší pipeline a lepší kontrola konverze na konzultaci.',
+    case6Title: 'E-commerce support, EU',
+    case6Challenge: 'Support a sales chaty byly v jednom inboxu bez routing logiky.',
+    case6Solution: 'Postavili jsme channel routing, intent tagy a queue assignment.',
+    case6Impact: 'Méně chaosu v komunikaci a vyšší kvalita zpracování na škále.',
+
+    faqTitle: 'FAQ',
+    faqItems: [
+      { q: 'Nejsem technický člověk. Je to pro mě?', a: 'Ano. Vše vysvětlujeme jednoduchým jazykem a systém postavíme za vás.' },
+      { q: 'Jak rychle se dá začít?', a: 'Pilot spouštíme obvykle do 14 dní. Pak systém rozšiřujeme po krocích.' },
+      { q: 'Půjdou poptávky z webu do Telegramu?', a: 'Ano. Nové poptávky jdou přímo do Telegramu a podle potřeby i do CRM.' },
+      { q: 'Můžeme nechat současné nástroje?', a: 'Ve většině případů ano. Nejprve napojíme to, co už používáte.' },
+      { q: 'Co po spuštění?', a: 'Po startu systém stabilizujeme a průběžně zlepšujeme podle výsledků.' },
+    ],
+
+    eyebrowAbout: 'O nás',
+    aboutTitle: 'O nás',
+    aboutLead: 'Zakladatel',
+    founderRole: 'Novikov',
+    aboutBody:
+      'Pomáhám majitelům firem postavit jasný systém poptávek: klient napíše, dostane rychlou odpověď a jde dál k objednávce.',
+    archCaption: 'Architektura systému',
+    archActive: 'Aktivní',
+    archOperational: 'Všechny moduly běží',
+    archLayer1Title: 'Web vrstva',
+    archLayer1Stack: 'Next.js · TypeScript · Tailwind',
+    archLayer2Title: 'Automatizace',
+    archLayer2Stack: 'Webhooks · OpenAI · Scheduler',
+    archLayer3Title: 'CRM a data',
+    archLayer3Stack: 'PostgreSQL · REST API · Pipelines',
+    archLayer4Title: 'Kanály',
+    archLayer4Stack: 'WhatsApp · Telegram · Instagram',
+    archLayer5Title: 'Analytika',
+    archLayer5Stack: 'Plausible · Clarity · Events',
+
+    eyebrowContact: 'Kontakt',
+    finalTitle: 'Chcete takový systém i ve své firmě?',
+    finalLead: 'Nechte kontakt a ukážeme vám, co spustit jako první krok.',
+    finalPrimaryCta: 'Získat plán spuštění',
+    contactEmail: 'info@temoweb.eu',
+    contactTelegram: '@temoweb',
+    contactWhatsapp: '+380 96 049 49 17',
+
+    formTitle: 'Nechte kontakt a dostanete jasný plán',
+    formLead: 'Bez složitých briefingů. Ozveme se a ukážeme první praktický krok.',
+    formName: 'Vaše jméno',
+    formPhone: 'Telefon',
+    formConsent: 'Souhlasím se zpracováním osobních údajů a podmínkami ochrany soukromí.',
+    formSubmit: 'Odeslat a získat plán',
+    formSubmitting: 'Odesílání...',
+    formSuccess: 'Poptávka odeslána. Brzy se ozveme.',
+    formError: 'Odeslání se nezdařilo. Zkuste to prosím znovu.',
+
+    footerTagline: 'Srozumitelné systémy poptávek pro reálný byznys.',
+    footerMicro: 'Infrastruktura před růstem.',
+    legalPrivacy: 'Soukromí',
+    legalTerms: 'Podmínky',
+    legalDeletion: 'Smazání dat',
+    topAria: 'Nahoru',
+    stackBadges: ['Next.js', 'TypeScript', 'OpenAI', 'PostgreSQL', 'WhatsApp API', 'Telegram Bot'],
+    rights: 'Všechna práva vyhrazena',
+  },
+}

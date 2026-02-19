@@ -12,6 +12,7 @@ import {
   applyNoPaymentPolicy,
   applyPilotNudge,
   applyServicesRouter,
+  applyWebsiteOfferGuard,
   detectAiIntent,
   expandNumericChoiceFromRecentAssistant,
   detectChosenPackageFromHistory,
@@ -66,7 +67,7 @@ const WHATSAPP_API_VERSION = (process.env.WHATSAPP_API_VERSION || 'v22.0').trim(
 const IGNORE_TEST_EVENTS = (process.env.WHATSAPP_IGNORE_TEST_EVENTS || 'true').trim() !== 'false'
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
-const OPENAI_MODEL = (process.env.OPENAI_MODEL_WHATSAPP || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_MODEL = (process.env.OPENAI_MODEL_WHATSAPP || process.env.OPENAI_MODEL || 'gpt-4o').trim()
 const OPENAI_TIMEOUT_MS_GLOBAL = Math.max(5000, Math.min(90000, Number(process.env.OPENAI_TIMEOUT_MS || 18000) || 18000))
 // WhatsApp webhook must return quickly to Meta (10s-ish). Prefer shorter timeout + fallback.
 const OPENAI_TIMEOUT_MS_WA = Math.max(
@@ -344,7 +345,7 @@ async function generateAiReply(params: {
   const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS_WA)
   let resp: Response
   try {
-    let model = String(OPENAI_MODEL || 'gpt-4o-mini')
+    let model = String(OPENAI_MODEL || 'gpt-4o')
       .trim()
       .replace(/[‐‑‒–—−]/g, '-')
     let modelLower = model.toLowerCase()
@@ -422,6 +423,7 @@ async function generateAiReply(params: {
   )
   if (!intent.isSupport) {
     out = applyServicesRouter(out, lang, intent, hasChosenPackage)
+    out = applyWebsiteOfferGuard({ text: out, lang, intent, userText: composedUserText || rawUserText || '' })
     const recentAssistantTexts = hist.filter((m) => m.role === 'assistant').slice(-6).map((m) => String(m.content || ''))
     out = applyPackageGuidance({ text: out, lang, intent, recentAssistantTexts })
     out = enforcePackageConsistency({ reply: out, lang, userText: composedUserText, recentAssistantTexts })

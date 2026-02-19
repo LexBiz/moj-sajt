@@ -21,10 +21,10 @@ export function computeReadinessScoreHeuristic(text: string, userTurns: number) 
   if (t.length >= 12) score += 5
   // Direct contact provided => very hot signal
   if (/\S+@\S+\.\S+/.test(t) || /(\+?\d[\d\s().-]{7,}\d)/.test(t)) score += 40
-  if (/(у\s+меня|мы\s+|клиент|заявк|заказ|продаж|ниша|бизнес|салон|кофейн|ремонт|стомат|барбершоп|школа)/i.test(t)) score += 15
+  if (/(у\s+меня|мы\s+|клиент|заявк|заказ|продаж|ниша|бизнес|салон|кофейн|ремонт|стомат|барбершоп|школа|сайт|веб\s*сайт|website|web\s*site|landing|лендинг)/i.test(t)) score += 15
   if (/(как|почему|зачем|что|як|чому|що)\b/i.test(t)) score += 8
   if (/(срок|сроки|время|термин|інтеграц|integration|процесс|как\s+это\s+работает)/i.test(t)) score += 10
-  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|услуг|услуги|послуг|послуги|service|services|offerings|оплат|поддержк|setup|внедрен)/i.test(t)) score += 18
+  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|услуг|услуги|послуг|послуги|service|services|offerings|оплат|поддержк|setup|внедрен|сайт|веб\s*сайт|website|landing|лендинг)/i.test(t)) score += 18
   if (/(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) score += 28
   // Warm confirmations / agreement signals (often appear when user is ready to proceed)
   if (/(ок(ей)?|ok|понял|зрозуміл|супер|класс|топ|подходит|підходить|давай|домовились|домовилися|поехали|поїхали|хочу|хочемо|готов|готові|беру|берем)/i.test(t))
@@ -45,7 +45,7 @@ export function computeStageHeuristic(text: string, readinessScore: number): Tem
   // If user directly provided contact details, jump to ASK_CONTACT to confirm & proceed.
   if (/\S+@\S+\.\S+/.test(t) || /(\+?\d[\d\s().-]{7,}\d)/.test(t)) return 'ASK_CONTACT'
   if (readinessScore >= 55 && /(как\s+начать|что\s+дальше|созвон|call|встреч|готов|подключ|старт|оплач)/i.test(t)) return 'ASK_CONTACT'
-  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|услуг|услуги|послуг|послуги|service|services|offerings|пілот|пилот|pilot|поддержк|setup|внедрен|оплат|stripe|календар|calendar|модул)/i.test(t)) return 'OFFER'
+  if (/(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|услуг|услуги|послуг|послуги|service|services|offerings|пілот|пилот|pilot|поддержк|setup|внедрен|оплат|stripe|календар|calendar|модул|сайт|веб\s*сайт|website|web\s*site|landing|лендинг)/i.test(t)) return 'OFFER'
   if (/(интеграц|integration|процесс|срок|сроки|гарант|надеж|безопас)/i.test(t)) return 'TRUST'
   if (/(интерес|цікав|покажи|пример|як\s+це\s+допоможе|how\s+it\s+helps)/i.test(t)) return 'VALUE'
   return 'DISCOVERY'
@@ -63,7 +63,7 @@ function renderPricing(lang: 'ru' | 'ua') {
   const p = TEMOWEB_PROFILE.packages
   if (lang === 'ua') {
     return [
-      'Пакети:',
+      'Пакети AI-асистентів:',
       `— START: впровадження ${fmtMoneyEur(p.start.setupEur)}, підтримка ${fmtMoneyEur(p.start.supportEurPerMonth)}/міс (мін. ${p.start.supportMinMonths} міс), до ${p.start.channelsUpTo} каналів`,
       `  Що дає: ${p.start.whatYouGetUa.slice(0, 3).join(' • ')}`,
       `— BUSINESS: впровадження ${fmtMoneyEur(p.business.setupEur)}, підтримка ${fmtMoneyEur(p.business.supportEurPerMonth)}/міс (мін. ${p.business.supportMinMonths} міс), до ${p.business.channelsUpTo} каналів`,
@@ -78,7 +78,7 @@ function renderPricing(lang: 'ru' | 'ua') {
     ].join('\n')
   }
   return [
-    'Пакеты:',
+    'Пакеты AI-ассистентов:',
     `— START: внедрение ${fmtMoneyEur(p.start.setupEur)}, поддержка ${fmtMoneyEur(p.start.supportEurPerMonth)}/мес (мин. ${p.start.supportMinMonths} мес), до ${p.start.channelsUpTo} каналов`,
     `  Что даёт: ${p.start.whatYouGetRu.slice(0, 3).join(' • ')}`,
     `— BUSINESS: внедрение ${fmtMoneyEur(p.business.setupEur)}, поддержка ${fmtMoneyEur(p.business.supportEurPerMonth)}/мес (мин. ${p.business.supportMinMonths} мес), до ${p.business.channelsUpTo} каналов`,
@@ -141,7 +141,7 @@ function renderPackageFacts(lang: 'ru' | 'ua') {
   const p = TEMOWEB_PROFILE.packages
   if (lang === 'ua') {
     return [
-      'PACKAGE FACTS (never change):',
+      'AI ASSISTANT PACKAGE FACTS (never change):',
       `START: ${fmtMoneyEur(p.start.setupEur)} + ${fmtMoneyEur(p.start.supportEurPerMonth)}/міс, мін. ${p.start.supportMinMonths} міс, до ${p.start.channelsUpTo} каналів.`,
       `BUSINESS: ${fmtMoneyEur(p.business.setupEur)} + ${fmtMoneyEur(p.business.supportEurPerMonth)}/міс, мін. ${p.business.supportMinMonths} міс, до ${p.business.channelsUpTo} каналів.`,
       `PRO: ${fmtMoneyEur(p.pro.setupEur)} + ${fmtMoneyEur(p.pro.supportEurPerMonth)}/міс, мін. ${p.pro.supportMinMonths} міс, до ${p.pro.channelsUpTo} каналів.`,
@@ -149,7 +149,7 @@ function renderPackageFacts(lang: 'ru' | 'ua') {
     ].join('\n')
   }
   return [
-    'PACKAGE FACTS (never change):',
+    'AI ASSISTANT PACKAGE FACTS (never change):',
     `START: ${fmtMoneyEur(p.start.setupEur)} + ${fmtMoneyEur(p.start.supportEurPerMonth)}/мес, мин. ${p.start.supportMinMonths} мес, до ${p.start.channelsUpTo} каналов.`,
     `BUSINESS: ${fmtMoneyEur(p.business.setupEur)} + ${fmtMoneyEur(p.business.supportEurPerMonth)}/мес, мин. ${p.business.supportMinMonths} мес, до ${p.business.channelsUpTo} каналов.`,
     `PRO: ${fmtMoneyEur(p.pro.setupEur)} + ${fmtMoneyEur(p.pro.supportEurPerMonth)}/мес, мин. ${p.pro.supportMinMonths} мес, до ${p.pro.channelsUpTo} каналов.`,
@@ -161,6 +161,31 @@ function renderFaq(lang: 'ru' | 'ua') {
   const title = lang === 'ua' ? 'FAQ (коротко):' : 'FAQ (коротко):'
   const items = TEMOWEB_PROFILE.faq.slice(0, 6).map((x) => (lang === 'ua' ? `— ${x.qUa}: ${x.aUa}` : `— ${x.qRu}: ${x.aRu}`))
   return [title, ...items].join('\n')
+}
+
+function renderWebsiteServiceFacts(lang: 'ru' | 'ua') {
+  if (lang === 'ua') {
+    return [
+      'WEBSITE SERVICE FACTS (never change):',
+      '— Створення сайту/лендингу: від 700€ до 1300€ залежно від цілей, структури, контенту, інтеграцій та дедлайнів.',
+      '— Регіональний орієнтир: Україна частіше 700–1000€; ЄС частіше 900–1300€ (через обсяг, вимоги та SLA).',
+      '— Що входить у базу: структура сторінок, адаптив, форми заявок, базове SEO, базова аналітика.',
+      '— Що впливає на ціну: кількість сторінок, мультимовність, дизайн-рівень, інтеграції (CRM/платежі/календар), складність логіки.',
+      '— Типовий запуск: 7–21 день (залежно від обсягу).',
+      '— Якщо регіон клієнта неясний (ЄС чи Україна): поставити 1 уточнювальне питання про регіон, і лише потім фіксувати точніший діапазон.',
+      '— Якщо клієнт хоче тільки сайт: не переводити розмову в AI-асистентів. Спочатку закрити запит по сайту, потім опційно запропонувати автоматизацію як апгрейд.',
+    ].join('\n')
+  }
+  return [
+    'WEBSITE SERVICE FACTS (never change):',
+    '— Разработка сайта/лендинга: от 700€ до 1300€ в зависимости от целей, структуры, контента, интеграций и дедлайна.',
+    '— Региональный ориентир: Украина чаще 700–1000€; ЕС чаще 900–1300€ (из-за объема, требований и SLA).',
+    '— Что входит в базу: структура страниц, адаптив, формы заявок, базовое SEO, базовая аналитика.',
+    '— Что влияет на цену: количество страниц, мультиязычность, уровень дизайна, интеграции (CRM/оплаты/календарь), сложность логики.',
+    '— Типовой запуск: 7–21 день (в зависимости от объема).',
+      '— Если регион клиента неясен (ЕС или Украина): задать 1 уточняющий вопрос про регион и только потом фиксировать более точный диапазон.',
+    '— Если клиент просит только сайт: не уводить разговор в AI-ассистентов. Сначала закрыть запрос по сайту, затем опционально предложить автоматизацию как апгрейд.',
+  ].join('\n')
 }
 
 function renderAiSalesManagerCore(lang: 'ru' | 'ua') {
@@ -603,11 +628,17 @@ export function buildTemoWebSystemPrompt(params: {
       : 'Address the client respectfully. Do not use slang.',
     'ASKING RULE: ask максимум 1 уточняющий вопрос за сообщение (исключение: когда собираете контакт — можно попросить телефон+email в одном сообщении).',
     'SALES RULE: do NOT push the most expensive package. Recommend the minimal suitable option based on the client needs.',
-    'PACKAGE GUIDANCE RULE (CRITICAL): Never say “выбирайте сами/смотрите сами”. If you mention packages/prices, you MUST:',
+    'SERVICE ROUTING RULE (CRITICAL): First detect what client actually wants and answer strictly in that context.',
+    '— If user asks about website/landing/web development (сайт/веб-сайт/лендинг/website), respond as website sales manager: scope, timeline, price range 700–1300€, next step for brief/contact.',
+    '— If user asks about AI assistants/chat automation, respond in AI assistant context (START/BUSINESS/PRO + pilot logic).',
+    '— If user asks about integrations/CRM/process automation without asking AI assistant directly, respond in automation/integration context with practical options and next step.',
+    'CONTEXT MATCH RULE: Never give AI-assistant pricing/details when user asks only about website. Keep reply aligned with user intent.',
+    'UPSELL RULE: After fully answering the requested service, you may offer one relevant add-on (e.g., AI automation for leads) in 1 short line.',
+    'PACKAGE GUIDANCE RULE (CRITICAL, AI-assistant service only): Never say “выбирайте сами/смотрите сами”. If you mention packages/prices, you MUST:',
     '— either recommend ONE package (START/BUSINESS/PRO) and briefly explain why it fits the client,',
     '— or, if information is missing, ask ONE clarifying question and explain what you will recommend depending on the answer (so the client feels supported).',
     'CONSISTENCY RULE: If you already leaned toward a package earlier in the chat, do NOT jump to another package unless the client adds a new requirement. If you change the recommendation — explain the reason in 1 sentence.',
-    'If client clearly says: "нужен только 1 канал" — recommend START (and mention optional add-ons like payments/calendar as modules).',
+    'If client clearly says: "нужен только 1 канал" — recommend START (and mention optional add-ons like payments/calendar as modules). This rule applies to AI-assistant service, not website-only requests.',
     'Do NOT mention contracts/documents/legal steps unless the client explicitly asks.',
     'PRICE RULE: never drop the biggest number by default. If user did NOT ask price — do not list prices; just say you will recommend after 1 clarifying question.',
     'PILOT RULE: if user wants to “try/test”, fears big внедрение, asks for cheaper start, or wants quick results — offer PILOT PROGRAM (2 months). Always mention: it is a 2-month pilot.',
@@ -668,11 +699,14 @@ export function buildTemoWebSystemPrompt(params: {
     '— Save time and money',
     '',
     'Products:',
+    '— Website development (landing pages, business websites)',
     '— AI assistants (Instagram, WhatsApp, Telegram, Website)',
     '— CRM & lead automation',
     '— Custom integrations',
     '',
     lang === 'ua' || lang === 'ru' ? renderPilot(lang === 'ua' ? 'ua' : 'ru') : '',
+    '',
+    lang === 'ua' || lang === 'ru' ? renderWebsiteServiceFacts(lang === 'ua' ? 'ua' : 'ru') : '',
     '',
     // Pricing is useful ONLY when the user is in OFFER stage (asking about price/packages).
     stage === 'OFFER'
@@ -682,8 +716,8 @@ export function buildTemoWebSystemPrompt(params: {
         ? renderPricing('ru')
         : renderPricing('ru')
       : lang === 'ua'
-      ? 'Пакети: START / BUSINESS / PRO (підберемо після 1 уточнення).'
-      : 'Пакеты: START / BUSINESS / PRO (подберём после 1 уточнения).',
+      ? 'Пакети AI-асистентів: START / BUSINESS / PRO (підберемо після 1 уточнення, якщо запит саме про AI-автоматизацію).'
+      : 'Пакеты AI-ассистентов: START / BUSINESS / PRO (подберём после 1 уточнения, если запрос именно про AI-автоматизацию).',
     '',
     stage === 'OFFER' ? (lang === 'ua' ? renderAddons('ua') : lang === 'ru' ? renderAddons('ru') : renderAddons('ru')) : '',
     '',
@@ -713,6 +747,7 @@ export function buildTemoWebSystemPrompt(params: {
     '— Friendly',
     '— Respectful',
     '— Professional',
+    '— Warm and proactive (human manager style, not dry support bot)',
     '',
     'Format:',
     '— Short blocks',
@@ -728,6 +763,13 @@ export function buildTemoWebSystemPrompt(params: {
     '',
     'No dry corporate talk.',
     'No chatbot style.',
+    '',
+    'CLIENT CARE RULE (CRITICAL):',
+    '— In each reply, first mirror client context in 1 short line (pain/goal/urgency), then give practical guidance.',
+    '— Speak like a caring manager: reassure, reduce anxiety, and simplify next step.',
+    '— Avoid cold generic phrases like "зависит от запроса" without specifics.',
+    '— Always give 1 concrete action the client can do right now (what to send / what will happen next / timeline).',
+    '— Keep it concise, but make the client feel supported and understood.',
     '',
     'BRAND MENTIONS',
     'Mention "TemoWeb" naturally and regularly (especially when describing value, process, or next steps), but do not spam it in every single line.',

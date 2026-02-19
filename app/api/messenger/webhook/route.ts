@@ -9,6 +9,7 @@ import {
   applyIncompleteDetailsFix,
   applyPilotNudge,
   applyServicesRouter,
+  applyWebsiteOfferGuard,
   applyPackageGuidance,
   expandNumericChoiceFromRecentAssistant,
   detectAiIntent,
@@ -106,8 +107,8 @@ const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim()
 const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_CHAT_ID || '').trim()
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
-const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
-const OPENAI_MODEL_MESSENGER = (process.env.OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o').trim()
+const OPENAI_MODEL_MESSENGER = (process.env.OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o').trim()
 const OPENAI_TRANSCRIBE_MODEL = (process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1').trim()
 const OPENAI_TRANSCRIBE_TIMEOUT_MS = Math.max(
   3000,
@@ -296,7 +297,7 @@ async function generateLeadAiSummary(input: { lang: 'ru' | 'ua'; contact: string
     clientMessages: input.clientMessages.slice(0, 20),
   }
   try {
-    const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    const modelRaw = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o')
     const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
     const modelLower = model.toLowerCase()
     const messages = [
@@ -483,7 +484,7 @@ async function generateAiReply(userText: string, opts?: { lang?: 'ru' | 'ua' }) 
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
   })
-  let model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  let model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o')
     .trim()
     .replace(/[‐‑‒–—−]/g, '-')
   let modelLower = model.toLowerCase()
@@ -584,7 +585,7 @@ async function generateAiReplyWithHistory(input: {
         ] as any)
       : userText
 
-  let model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o-mini')
+  let model = String(OPENAI_MODEL_MESSENGER || process.env.OPENAI_MODEL || 'gpt-4o')
     .trim()
     .replace(/[‐‑‒–—−]/g, '-')
   let modelLower = model.toLowerCase()
@@ -910,6 +911,7 @@ export async function POST(request: NextRequest) {
       if (preferredLang === 'ru' || preferredLang === 'ua') {
         if (!intent.isSupport) {
           reply = applyServicesRouter(reply, preferredLang, intent, hasChosenPackage)
+          reply = applyWebsiteOfferGuard({ text: reply, lang: preferredLang, intent, userText: effectiveUserText || msgText || '' })
           reply = applyPackageGuidance({ text: reply, lang: preferredLang, intent, recentAssistantTexts: recentAssistantTextsForChoice })
           reply = enforcePackageConsistency({
             reply,

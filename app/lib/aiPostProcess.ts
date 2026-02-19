@@ -11,14 +11,15 @@ export function buildTemoWebFirstMessage() {
   return [
     'Добрий день! Я персональний AI‑асистент TemoWeb.',
     '',
-    'Ми впроваджуємо AI‑асистента та автоматизацію заявок (Instagram / WhatsApp / Telegram / сайт) + CRM, щоб заявки не губились і відповіді приходили швидко.',
+    'Ми робимо 2 ключові речі для бізнесу: сайт/лендинг, який приносить заявки — і AI‑менеджера, який відповідає 24/7 у месенджерах + фіксує контакт у CRM.',
+    'Якщо вам потрібен саме сайт: орієнтир 700–1300€ (залежить від сторінок, дизайну, мультимови та інтеграцій).',
     '',
     'За замовчуванням далі відповідаю українською 🇺🇦. Якщо хочете змінити мову — просто напишіть: «російською».',
     '',
     'Якщо хочете — оберіть варіант:',
-    '— 1) Я підберу оптимальний пакет і 1–2 канали для старту під вашу задачу',
-    '— 2) Я складу план запуску на 48–72 години + що потрібно від вас',
-    '— 3) Я покажу приклад діалогу та як заявка фіксується в CRM/Telegram',
+    '— 1) Мені потрібен сайт/лендинг — підберіть формат і терміни',
+    '— 2) Мені потрібен AI‑менеджер у чатах — підберіть пакет і 1–2 канали',
+    '— 3) Я не впевнений — коротко опишу нішу і задачу',
     'Можна відповісти цифрою.',
   ].join('\n')
 }
@@ -30,6 +31,7 @@ export type AiIntent = {
   isPilotTrigger: boolean
   isContactIntent: boolean
   isSupport: boolean
+  isWebsite: boolean
 }
 
 const CONTACT_HINT_RE =
@@ -40,6 +42,8 @@ const SUPPORT_RE =
 const SERVICES_RE =
   /(услуг|услуги|послуг|послуги|service|services|offerings|what\s+do\s+you\s+offer|что\s+вы\s+предлагаете|що\s+ви\s+пропонуєте|прайс|каталог)/i
 const PRICING_RE = /(цена|ціна|стоим|сколько|вартість|скільки|пакет|тариф|pricing|price)/i
+const WEBSITE_RE =
+  /(сайт|веб\s*сайт|website|web\s*site|лендинг|landing|одностранич|односторін|corporate\s+site|корпоративн\w*\s+сайт)/i
 const PILOT_RE = /(пілот|пилот|pilot|попробовать|спробуват|тест|быстро|швидко|дешевле|дешевш|дорого|дорога|дороговато|малый\s+бюджет|малий\s+бюджет)/i
 // IMPORTANT: do NOT block normal discussion of payments as a module ("оплата/Stripe"),
 // only block direct "pay now / invoice / send payment link" requests.
@@ -269,6 +273,7 @@ export function detectAiIntent(text: string): AiIntent {
     isPilotTrigger: PILOT_RE.test(t),
     isContactIntent: CONTACT_HINT_RE.test(t),
     isSupport: SUPPORT_RE.test(t),
+    isWebsite: WEBSITE_RE.test(t),
   }
 }
 
@@ -326,10 +331,11 @@ export function buildAddonsList(lang: AiLang) {
 
 export function applyServicesRouter(text: string, lang: AiLang, intent: AiIntent, hasChosenPackage: boolean) {
   let out = text
-  if (!hasChosenPackage && (intent.isCompare || intent.isPricing || intent.isServices)) {
+  // Only for AI-assistant service. Website requests should NOT be forced into packages.
+  if (!intent.isWebsite && !hasChosenPackage && (intent.isCompare || intent.isPricing || intent.isServices)) {
     out = ensureAllPackagesMentioned(out, lang)
   }
-  if (!hasChosenPackage && intent.isServices) {
+  if (!intent.isWebsite && !hasChosenPackage && intent.isServices) {
     const addons = buildAddonsList(lang)
     if (!out.includes(addons.split('\n')[0])) {
       out = `${out}\n\n${addons}`.trim()
@@ -355,6 +361,7 @@ export function applyPackageGuidance(params: { text: string; lang: AiLang; inten
   const { text, lang, intent } = params
   const out = String(text || '').trim()
   if (!out) return out
+  if (intent.isWebsite) return out
   // Only when it's actually relevant (services/pricing/compare). Otherwise it reads like a шаблон.
   if (!(intent.isPricing || intent.isCompare || intent.isServices)) return out
   // Only when packages are mentioned in the answer (otherwise we don't spam).
@@ -373,6 +380,7 @@ export function applyPackageGuidance(params: { text: string; lang: AiLang; inten
 }
 
 export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
+  if (intent.isWebsite) return text
   // Offer pilot not only when explicitly asked, but also on pricing interest (common entry point).
   const oneChannel = /(1\s*канал|один\s+канал|1\s*channel)/i.test(text)
   const mentionsModules = /(оплат|stripe|календар|calendar|crm|аналітик|аналитик|module|модул)/i.test(text)
@@ -385,6 +393,57 @@ export function applyPilotNudge(text: string, lang: AiLang, intent: AiIntent) {
       ? `Можна почати з PILOT PROGRAM (2 місяці): ${fmtMoneyEur(p.setupEur)} + ${fmtMoneyEur(p.supportEurPerMonth)}/міс ×${p.durationMonths}, 1–${p.includedChannelsUpTo} канали на вибір.`
       : `Можно начать с PILOT PROGRAM (2 месяца): ${fmtMoneyEur(p.setupEur)} + ${fmtMoneyEur(p.supportEurPerMonth)}/мес ×${p.durationMonths}, 1–${p.includedChannelsUpTo} канала на выбор.`
   return `${text}\n\n${line}`.trim()
+}
+
+function buildWebsiteOffer(lang: AiLang, userText: string) {
+  const wantsLanding = /(лендинг|landing|одностранич|односторін)/i.test(userText)
+  const wantsMulti = /(многостранич|багатосторін|корпоративн)/i.test(userText)
+  const kindHint = wantsLanding ? (lang === 'ua' ? 'лендинг' : 'лендинг') : wantsMulti ? (lang === 'ua' ? 'багатосторінковий сайт' : 'многостраничный сайт') : lang === 'ua' ? 'сайт/лендинг' : 'сайт/лендинг'
+
+  if (lang === 'ua') {
+    return [
+      `Зрозумів — вам потрібен ${kindHint}. Зробимо так, щоб людина зайшла і одразу зрозуміла офер → залишила заявку.`,
+      '',
+      'Орієнтир по бюджету: 700–1300€ (Україна частіше 700–1000€, ЄС частіше 900–1300€).',
+      'Терміни: зазвичай 7–21 день (залежить від обсягу і контенту).',
+      '',
+      'Один уточнювальний момент: ви в Україні чи в ЄС?',
+      'Після цього я зафіксую заявку і скажу точну оцінку під ваш формат (сторінки/мультимова/дизайн/CRM‑інтеграції).',
+      '',
+      'Якщо зручно — залиште телефон або email.',
+    ].join('\n')
+  }
+
+  return [
+    `Понял — вам нужен ${kindHint}. Сделаем так, чтобы человек зашел и сразу понял оффер → оставил заявку.`,
+    '',
+    'Ориентир по бюджету: 700–1300€ (Украина чаще 700–1000€, ЕС чаще 900–1300€).',
+    'Сроки: обычно 7–21 день (зависит от объёма и контента).',
+    '',
+    'Один уточняющий момент: вы в Украине или в ЕС?',
+    'После этого зафиксирую заявку и дам точную оценку под ваш формат (страницы/мультиязычность/дизайн/интеграции с CRM).',
+    '',
+    'Если удобно — оставьте телефон или email.',
+  ].join('\n')
+}
+
+export function applyWebsiteOfferGuard(params: { text: string; lang: AiLang; intent: AiIntent; userText: string }) {
+  if (!params.intent.isWebsite) return params.text
+  const out = String(params.text || '').trim()
+  const user = String(params.userText || '')
+  if (!out) return buildWebsiteOffer(params.lang, user)
+
+  const looksMisrouted =
+    /(ai[\s-]*ассист|ai[\s-]*асист|автоматизац|crm|пакет\w*\s+start|start\b|business\b|pro\b)/i.test(out) &&
+    !/(сайт|website|лендинг|landing)/i.test(out)
+  const explicitRefusal =
+    /(рекомендую\s+(обратиться|звернутися)|мы\s+не\s+делаем\s+сайт|ми\s+не\s+робимо\s+сайт|не\s+займаємось\s+сайт|не\s+занимаемся\s+сайт)/i.test(out)
+  const saysOnlyAi = /(специализ|спеціаліз)\w*[\s\S]{0,120}(ai|асистент|ассистент)/i.test(out)
+
+  if (looksMisrouted || explicitRefusal || saysOnlyAi) {
+    return buildWebsiteOffer(params.lang, user)
+  }
+  return out
 }
 
 type PackageCode = 'START' | 'BUSINESS' | 'PRO'
@@ -644,6 +703,33 @@ export function applyNextSteps(params: {
         ? 'Залиште телефон або email — я зафіксую заявку і передам менеджеру'
         : 'Оставьте телефон или email — я зафиксирую заявку и передам менеджеру',
     )
+  }
+
+  // WEBSITE path: give website-specific next steps instead of AI packages/pilot
+  if (intent.isWebsite) {
+    const header = lang === 'ua' ? 'Якщо хочете — оберіть варіант:' : 'Если хотите — выберите вариант:'
+    const footer = lang === 'ua' ? 'Можна відповісти цифрою.' : 'Можно ответить цифрой.'
+    const lines: string[] = []
+    if (sig.needsContactNow && !sig.contactAskedRecently) {
+      lines.push(
+        lang === 'ua'
+          ? 'Залиште телефон або email — я зафіксую заявку на сайт і передам менеджеру'
+          : 'Оставьте телефон или email — я зафиксирую заявку на сайт и передам менеджеру',
+      )
+    }
+    lines.push(
+      lang === 'ua'
+        ? 'Я підберу формат сайту (лендинг чи багатосторінковий) і дам оцінку 700–1300€'
+        : 'Я подберу формат сайта (лендинг или многостраничный) и дам оценку 700–1300€',
+    )
+    lines.push(
+      lang === 'ua'
+        ? 'Я надішлю короткий чек‑лист контенту і покажу терміни запуску 7–21 день'
+        : 'Я пришлю короткий чек‑лист контента и покажу сроки запуска 7–21 день',
+    )
+    const uniq = Array.from(new Set(lines)).slice(0, 3)
+    const numbered = uniq.map((x, i) => `${i + 1}) ${x}`)
+    return `${out}\n\n${header}\n${numbered.map((x) => `— ${x}`).join('\n')}\n${footer}`.trim()
   }
 
   // Priority 2: offer/pricing guidance, but avoid repeating if already discussed
