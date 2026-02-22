@@ -1658,7 +1658,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   // Hard requirement: first assistant message is a fixed intro.
   const hasAnyAssistant = Array.isArray(conversation.history) ? conversation.history.some((m: any) => m?.role === 'assistant') : false
   if (!hasAnyAssistant) {
-    const intro = buildTemoWebFirstMessage()
+    const intro = buildTemoWebFirstMessage(lang === 'ru' ? 'ru' : 'ua')
     const nextHistory: ConversationMessage[] = [...(conversation.history || []), { role: 'assistant' as const, content: intro }].slice(-24) as any
     updateConversation(senderId, { stage: 'qualify', history: nextHistory, lastAssistantAt: nowIso() } as any)
     await sendInstagramMessage(senderId, intro)

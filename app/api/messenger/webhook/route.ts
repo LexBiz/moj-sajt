@@ -884,7 +884,7 @@ export async function POST(request: NextRequest) {
       // Hard requirement: first assistant message is a fixed intro.
       const hasAnyAssistant = history.some((m) => m.role === 'assistant')
       if (!hasAnyAssistant) {
-        const intro = buildTemoWebFirstMessage()
+        const intro = buildTemoWebFirstMessage(preferredLang === 'ru' ? 'ru' : 'ua')
         await sendMessengerText({ pageAccessToken, recipientId: senderId, text: intro })
         appendMessage(pageId, senderId, { role: 'assistant', content: intro })
         recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `intro_sent pageId=${pageId || '—'}` })

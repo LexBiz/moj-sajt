@@ -6,6 +6,9 @@ type DemoMessage = {
 }
 
 type UiLang = 'en' | 'ru' | 'ua' | 'cz'
+type IndustryArchetype = 'auto' | 'dental' | 'law' | 'mortgage' | 'general'
+type DealStage = 'qualification' | 'urgency' | 'offer' | 'commitment' | 'conversion'
+type PaymentState = 'none' | 'pending' | 'paid'
 
 function getOpenAiKey() {
   const key = String(process.env.OPENAI_API_KEY || '').trim()
@@ -25,12 +28,111 @@ function languageInstruction(lang: UiLang) {
   return 'Reply in English.'
 }
 
-function getIndustrySeed(industry: string, lang: UiLang) {
-  const i = industry.toLowerCase()
+function normalizeStage(input: unknown): DealStage {
+  const raw = String(input || '').trim().toLowerCase()
+  if (raw === 'urgency' || raw === 'offer' || raw === 'commitment' || raw === 'conversion') return raw
+  return 'qualification'
+}
+
+function stagePromptHint(stage: DealStage) {
+  if (stage === 'qualification') return 'Current stage: Qualification. Identify lead quality quickly and ask only high-signal questions.'
+  if (stage === 'urgency') return 'Current stage: Urgency / Need clarity. Confirm urgency and collect 1-2 details needed to proceed.'
+  if (stage === 'offer') return 'Current stage: Offer concrete option. Offer 2 concrete options (slots/prices/actions) and push for a decision.'
+  if (stage === 'commitment') return 'Current stage: Commitment. Lock intent into a concrete action (slot, documents, payment link).'
+  return 'Current stage: Conversion step. Finalize booking/payment/data capture with one clear action.'
+}
+
+function industryBehaviorHint(archetype: IndustryArchetype) {
+  if (archetype === 'dental')
+    return 'Industry behavior: urgency + medical tone, triage risk quickly, push to nearest clinical slot.'
+  if (archetype === 'auto')
+    return 'Industry behavior: focus on availability, same-day windows, part/service availability, and exact time windows.'
+  if (archetype === 'law')
+    return 'Industry behavior: push to consultation slot and request documents required for legal assessment.'
+  if (archetype === 'mortgage')
+    return 'Industry behavior: run eligibility screening and request concise document checklist.'
+  return 'Industry behavior: operate like a decisive sales/operations manager for local services.'
+}
+
+function normalizePaymentState(input: unknown): PaymentState {
+  const raw = String(input || '').trim().toLowerCase()
+  if (raw === 'pending' || raw === 'paid') return raw
+  return 'none'
+}
+
+function normalizeAction(input: unknown): string {
+  return String(input || '').trim().toLowerCase().slice(0, 64)
+}
+
+function fixedActionReply(params: {
+  action: string
+  paymentState: PaymentState
+  slotLabel: string
+  lang: UiLang
+}): string | null {
+  const { action, paymentState, slotLabel, lang } = params
+  const t = (en: string, ru: string, cz: string) => (lang === 'ru' ? ru : lang === 'cz' ? cz : en)
+  const slot = slotLabel || t('nearest available slot', 'ближайший доступный слот', 'nejbližší dostupný termín')
+
+  // No stage regression: paid state must never mention sending link.
+  if (paymentState === 'paid' || action === 'payment_confirmed') {
+    return t(
+      `Payment received. Slot ${slot} is locked. Should I send confirmation by SMS or email?`,
+      `Оплата получена. Слот ${slot} закреплен. Подтверждение отправить в SMS или email?`,
+      `Platba přijata. Termín ${slot} je uzamčen. Poslat potvrzení SMS nebo e‑mailem?`
+    )
+  }
+
+  if (action === 'payment_requested') {
+    return t(
+      `Sending a prepayment link for EUR 20 now. After payment, the slot is locked automatically.`,
+      `Отправляю ссылку на предоплату 20 EUR. После оплаты слот закрепляется автоматически.`,
+      `Posílám odkaz na zálohu 20 EUR. Po platbě se termín uzamkne automaticky.`
+    )
+  }
+
+  if (action === 'slot_confirmed') {
+    return t(
+      `Great. Slot ${slot} is reserved. Send your phone and I’ll confirm immediately.`,
+      `Отлично. Слот ${slot} забронирован. Напишите номер, и сразу подтвержу.`,
+      `Skvěle. Termín ${slot} je rezervován. Pošlete telefon a hned potvrdím.`
+    )
+  }
+
+  if (action === 'booking_confirmed') {
+    return t(
+      `Booked. Slot ${slot} is confirmed. Should I send details by SMS or email?`,
+      `Запись оформлена. Слот ${slot} подтвержден. Отправить детали в SMS или email?`,
+      `Rezervace hotova. Termín ${slot} je potvrzen. Poslat detaily SMS nebo e‑mailem?`
+    )
+  }
+
+  return null
+}
+
+function normalizeIndustry(raw: string, lang: UiLang): { display: string; normalized: string; archetype: IndustryArchetype } {
+  const display = raw.trim().slice(0, 80) || (lang === 'ru' ? 'ваш бизнес' : lang === 'cz' ? 'váš byznys' : 'your business')
+  const i = display.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ').trim()
+
+  const autoRe =
+    /(auto|авто|car|garage|mechanic|service station|autoservis|servis|sto|шин|brake|mot|detailing|кузов|тормоз|масл)/i
+  const dentalRe = /(dental|dentist|стомат|зуб|clinic|klinika|ortho|ортодонт|implant)/i
+  const lawRe = /(law|legal|юрист|адвокат|práv|smlouv|contract|court|суд|notary|нотари)/i
+  const mortgageRe =
+    /(mortgage|hypot|estate|real estate|недвиж|ипот|realt|broker|property|byt|apartment|квартир|дом)/i
+
+  if (autoRe.test(i)) return { display, normalized: i, archetype: 'auto' }
+  if (dentalRe.test(i)) return { display, normalized: i, archetype: 'dental' }
+  if (lawRe.test(i)) return { display, normalized: i, archetype: 'law' }
+  if (mortgageRe.test(i)) return { display, normalized: i, archetype: 'mortgage' }
+  return { display, normalized: i, archetype: 'general' }
+}
+
+function getIndustrySeed(industry: string, archetype: IndustryArchetype, lang: UiLang) {
   const isRu = lang === 'ru'
   const isCz = lang === 'cz'
 
-  if (i.includes('auto') || i.includes('авто') || i.includes('autoservis')) {
+  if (archetype === 'auto') {
     if (isRu) {
       return {
         firstClient:
@@ -57,7 +159,7 @@ function getIndustrySeed(industry: string, lang: UiLang) {
       thirdClient: 'Yes, please book me for today. I can arrive around 17:30.',
     }
   }
-  if (i.includes('dental') || i.includes('стомат') || i.includes('stomat')) {
+  if (archetype === 'dental') {
     if (isRu) {
       return {
         firstClient:
@@ -84,7 +186,7 @@ function getIndustrySeed(industry: string, lang: UiLang) {
       thirdClient: 'Please book the earliest available appointment today.',
     }
   }
-  if (i.includes('law') || i.includes('юрист') || i.includes('práv')) {
+  if (archetype === 'law') {
     if (isRu) {
       return {
         firstClient:
@@ -111,7 +213,7 @@ function getIndustrySeed(industry: string, lang: UiLang) {
       thirdClient: 'Yes, please schedule a consultation call tomorrow morning.',
     }
   }
-  if (i.includes('estate') || i.includes('mortgage') || i.includes('недвиж') || i.includes('hypot')) {
+  if (archetype === 'mortgage') {
     if (isRu) {
       return {
         firstClient:
@@ -159,43 +261,222 @@ function getIndustrySeed(industry: string, lang: UiLang) {
   }
 }
 
-function fallbackMessages(industry: string, lang: UiLang): DemoMessage[] {
-  const seed = getIndustrySeed(industry, lang)
+function fallbackMessages(industry: string, archetype: IndustryArchetype, lang: UiLang): DemoMessage[] {
+  const seed = getIndustrySeed(industry, archetype, lang)
   return [
     { role: 'client', content: seed.firstClient },
     {
       role: 'assistant',
       content:
         lang === 'ru'
-          ? `Спасибо за детали. По направлению "${industry}" обычно начинаем с короткой диагностики (10-15 минут), чтобы подтвердить объем и приоритет. Напишите удобное время и номер телефона — поставлю в ближайшее окно на сегодня.`
+          ? `Принял запрос по "${industry}". Для быстрого старта нужны: удобное время и контакт. После этого сразу предложу ближайший слот на сегодня.`
           : lang === 'cz'
-            ? `Děkujeme za upřesnění. U oboru "${industry}" obvykle začínáme krátkou diagnostikou (10-15 minut), abychom potvrdili rozsah a prioritu. Pošlete vhodný čas a telefon a zařadím vás do nejbližšího volného slotu dnes.`
-            : `Thanks for the details. For ${industry}, we usually start with a quick diagnostic step (10-15 minutes) to confirm scope and priority. If you share your preferred time and contact number, I can place you into the nearest available slot today.`,
+            ? `Rozumím požadavku pro "${industry}". Pro rychlý start potřebuji vhodný čas a kontakt. Poté hned nabídnu nejbližší termín ještě dnes.`
+            : `Request received for "${industry}". To move fast, share preferred time and contact; I will immediately offer the nearest slot today.`,
     },
     { role: 'client', content: seed.secondClient },
     {
       role: 'assistant',
       content:
         lang === 'ru'
-          ? 'Понял. Типовой процесс: короткий intake, проверка приоритета, затем подтверждающий звонок с точным временем и следующим шагом. Подтвердите, нужен ли запуск сегодня и в какое окно удобно принять звонок.'
+          ? 'Ок, беру в приоритет. Подтвердите: запуск нужен сегодня? Если да, даю два окна на выбор и закрепляю одно сразу.'
           : lang === 'cz'
-            ? 'Rozumím. Typický postup: krátký intake, kontrola priority, potom potvrzovací hovor s přesným časem a dalším krokem. Potvrďte prosím, zda je nutné řešení ještě dnes a kdy vám vyhovuje callback.'
-            : 'Understood. Typical workflow is: quick intake, priority check, then confirmation call with exact timing and next action. Please confirm whether same-day handling is required and the best callback window.',
+            ? 'Rozumím, beru to prioritně. Potvrďte: potřebujete řešení dnes? Pokud ano, pošlu dva termíny a jeden hned zamknu.'
+            : 'Understood, I am setting this as priority. Confirm if same-day handling is required; if yes, I will send two slot options and lock one immediately.',
     },
     { role: 'client', content: seed.thirdClient },
     {
       role: 'assistant',
       content:
         lang === 'ru'
-          ? 'Отлично, заявку на запись зарегистрировал. Следующий шаг: оставьте номер телефона и удобный интервал времени, менеджер подтвердит слот и пришлет короткий чек-лист.'
+          ? 'Отлично, фиксируем. Пришлите номер и удобный интервал — подтвержу слот и отправлю короткий чек-лист перед визитом.'
           : lang === 'cz'
-            ? 'Skvělé, požadavek na rezervaci je zaregistrován. Další krok: pošlete telefon a preferovaný časový interval, manager potvrdí termín a pošle krátký checklist.'
-            : 'Great, booking request registered. Next step: leave your phone number and preferred time range, and our manager will confirm the slot and checklist shortly.',
+            ? 'Skvělé, jdeme na potvrzení. Pošlete telefon a preferovaný interval, termín potvrdím a pošlu krátký checklist před návštěvou.'
+            : 'Great, let us finalize. Share your phone and preferred time range; I will confirm the slot and send a short pre-visit checklist.',
     },
   ]
 }
 
-function sanitizeMessages(input: unknown, industry: string, lang: UiLang): DemoMessage[] {
+function buildAssistantFallback(params: {
+  industry: string
+  archetype: IndustryArchetype
+  stage: DealStage
+  scenarioType: string
+  lang: UiLang
+}) {
+  const { industry, archetype, stage, scenarioType, lang } = params
+  const t = (en: string, ru: string, cz: string) => (lang === 'ru' ? ru : lang === 'cz' ? cz : en)
+
+  const slots =
+    archetype === 'dental'
+      ? ['17:40', '18:20']
+      : archetype === 'auto'
+        ? ['16:30', '17:10']
+        : archetype === 'law'
+          ? ['10:30', '13:10']
+          : archetype === 'mortgage'
+            ? ['12:40', '17:20']
+            : ['16:20', '18:00']
+
+  const priceRange =
+    archetype === 'dental'
+      ? t('EUR 50–120', 'EUR 50–120', 'EUR 50–120')
+      : archetype === 'auto'
+        ? t('EUR 40–90', 'EUR 40–90', 'EUR 40–90')
+        : archetype === 'law'
+          ? t('EUR 90–180', 'EUR 90–180', 'EUR 90–180')
+          : archetype === 'mortgage'
+            ? t('EUR 0–60', 'EUR 0–60', 'EUR 0–60')
+            : t('EUR 50–150', 'EUR 50–150', 'EUR 50–150')
+
+  if (scenarioType === 'payment_requested') {
+    return t(
+      `Sending a prepayment link for EUR 20 now. After payment, the slot is locked automatically. Should I send confirmation by SMS or email?`,
+      `Отправляю ссылку на предоплату 20 EUR. После оплаты слот закрепляется автоматически. Подтверждение отправить в SMS или на email?`,
+      `Posílám odkaz na zálohu 20 EUR. Po platbě se termín uzamkne automaticky. Potvrzení poslat SMS nebo e‑mailem?`
+    )
+  }
+  if (scenarioType === 'payment_confirmed') {
+    return t(
+      `Payment received. Slot is locked. Should I send confirmation by SMS or email?`,
+      `Оплата получена. Слот закреплен. Подтверждение отправить в SMS или email?`,
+      `Platba přijata. Termín je uzamčen. Poslat potvrzení SMS nebo e‑mailem?`
+    )
+  }
+
+  // Stage-specific, no narration, decisive.
+  if (stage === 'qualification') {
+    if (archetype === 'dental') {
+      return t(
+        `Understood. I can offer 17:40 or 18:20 today. Which slot should I lock?`,
+        `Понял. Могу дать 17:40 или 18:20 сегодня. Какой слот зафиксировать?`,
+        `Rozumím. Mohu nabídnout 17:40 nebo 18:20 dnes. Který termín mám uzamknout?`
+      )
+    }
+    if (archetype === 'auto') {
+      return t(
+        `Ok. Make/model + symptom + when you can arrive today. I will confirm the nearest window.`,
+        `Ок. Марка/модель + симптом + когда можете подъехать сегодня. Подтвержу ближайшее окно.`,
+        `Ok. Značka/model + symptom + kdy můžete dnes dorazit. Potvrdím nejbližší okno.`
+      )
+    }
+    if (archetype === 'law') {
+      return t(
+        `Understood. Deadline date + what documents you have. Then I will lock a consult slot.`,
+        `Принял. Дата дедлайна + какие документы уже есть. После этого закреплю слот консультации.`,
+        `Rozumím. Termín (deadline) + jaké dokumenty už máte. Pak zamknu termín konzultace.`
+      )
+    }
+    if (archetype === 'mortgage') {
+      return t(
+        `Quick check: income type, residency status, down payment. Then I will book a call.`,
+        `Быстрая проверка: тип дохода, резидентство, первый взнос. Дальше бронирую звонок.`,
+        `Rychlá kontrola: typ příjmu, rezidence, akontace. Pak zarezervuji call.`
+      )
+    }
+    return t(
+      `Ok. What’s the main request + how urgent + best contact time today?`,
+      `Ок. Что именно нужно + насколько срочно + когда удобно для связи сегодня?`,
+      `Ok. Co přesně potřebujete + jak je to urgentní + kdy se vám dnes hodí kontakt?`
+    )
+  }
+
+  if (stage === 'urgency') {
+    if (archetype === 'dental') {
+      return t(
+        `Understood. I can offer ${slots[0]} or ${slots[1]} today. Quick intake takes about 10 minutes. Which slot do you take?`,
+        `Понял. Есть окно сегодня в ${slots[0]} или ${slots[1]}. Быстрый приём займет около 10 минут. Какой слот берём?`,
+        `Rozumím. Mám dnes termín ${slots[0]} nebo ${slots[1]}. Rychlý intake trvá asi 10 minut. Který berete?`
+      )
+    }
+    return t(
+      `Got it. I can offer ${slots[0]} or ${slots[1]} today. Which one should I hold?`,
+      `Понял. Есть окно сегодня в ${slots[0]} или ${slots[1]}. Какое держу за вами?`,
+      `Rozumím. Mám dnes okno v ${slots[0]} nebo ${slots[1]}. Které vám mám podržet?`
+    )
+  }
+
+  if (stage === 'offer') {
+    if (scenarioType === 'price') {
+      return t(
+        `Range is ${priceRange}. I can hold ${slots[0]} or ${slots[1]} today — which slot do you take?`,
+        `По цене ориентир ${priceRange}. Могу удержать ${slots[0]} или ${slots[1]} сегодня — какой слот берём?`,
+        `Cena orientačně ${priceRange}. Mohu podržet ${slots[0]} nebo ${slots[1]} dnes — který termín berete?`
+      )
+    }
+    if (scenarioType === 'docs' && (archetype === 'law' || archetype === 'mortgage')) {
+      return t(
+        `Send the key docs and I’ll confirm the slot: contract + invoices (law) / income + ID (mortgage).`,
+        `Пришлите ключевые документы — и подтверждаю слот: договор+счета (юристы) / доход+ID (ипотека).`,
+        `Pošlete klíčové dokumenty a potvrdím termín: smlouva+faktury (právo) / příjem+ID (hypo).`
+      )
+    }
+    if (archetype === 'auto') {
+      return t(
+        `I can take you at ${slots[0]} or ${slots[1]} today. Inspection is ~15 minutes. Which slot do you take?`,
+        `Могу принять в ${slots[0]} или ${slots[1]} сегодня. Осмотр ~15 минут. Какой слот берём?`,
+        `Mohu vás vzít v ${slots[0]} nebo ${slots[1]} dnes. Kontrola ~15 minut. Který termín berete?`
+      )
+    }
+    if (archetype === 'law') {
+      return t(
+        `I can book a consult at ${slots[0]} or ${slots[1]}. Send the contract + key emails before the call.`,
+        `Могу поставить консультацию на ${slots[0]} или ${slots[1]}. До звонка пришлите договор и ключевую переписку.`,
+        `Mohu domluvit konzultaci v ${slots[0]} nebo ${slots[1]}. Před callem pošlete smlouvu a klíčové e-maily.`
+      )
+    }
+    if (archetype === 'mortgage') {
+      return t(
+        `I can schedule a call at ${slots[0]} or ${slots[1]}. Bring: income proof + ID + down payment amount.`,
+        `Могу поставить звонок на ${slots[0]} или ${slots[1]}. Подготовьте: доход + ID + размер первого взноса.`,
+        `Mohu naplánovat call v ${slots[0]} nebo ${slots[1]}. Připravte: příjem + ID + výši akontace.`
+      )
+    }
+    return t(
+      `Option A: ${slots[0]} today. Option B: ${slots[1]} today. Pick one and I’ll confirm.`,
+      `Вариант A: ${slots[0]} сегодня. Вариант B: ${slots[1]} сегодня. Выберите — подтвержу.`,
+      `Varianta A: ${slots[0]} dnes. Varianta B: ${slots[1]} dnes. Vyberte — potvrdím.`
+    )
+  }
+
+  if (stage === 'commitment') {
+    if (scenarioType === 'call') {
+      return t(
+        `Send your phone + a 30‑minute window. I’ll confirm the call time.`,
+        `Напишите номер + окно 30 минут. Подтвержу время звонка.`,
+        `Pošlete telefon + 30min okno. Potvrdím čas hovoru.`
+      )
+    }
+    if (scenarioType === 'payment') {
+      return t(
+        `I can send a payment link now to lock the slot. Card payment ok?`,
+        `Могу отправить ссылку на оплату, чтобы закрепить слот. Карта подходит?`,
+        `Mohu poslat platební odkaz pro zajištění termínu. Platba kartou ok?`
+      )
+    }
+    return t(
+      `Confirm ${slots[0]} or ${slots[1]} and share contact — I’ll lock it.`,
+      `Подтвердите ${slots[0]} или ${slots[1]} и оставьте контакт — закреплю.`,
+      `Potvrďte ${slots[0]} nebo ${slots[1]} a kontakt — zamknu to.`
+    )
+  }
+
+  // conversion
+  if (scenarioType === 'payment') {
+    return t(
+      `Payment received. Booking confirmed. Want the confirmation by SMS or email?`,
+      `Оплата прошла. Запись подтверждена. Подтверждение прислать SMS или на email?`,
+      `Platba přijata. Rezervace potvrzena. Poslat potvrzení SMS nebo e‑mailem?`
+    )
+  }
+  return t(
+    `Booked. Send your name + phone, and I’ll send confirmation.`,
+    `Записал. Имя + номер — и отправляю подтверждение.`,
+    `Zarezervováno. Jméno + telefon a pošlu potvrzení.`
+  )
+}
+
+function sanitizeMessages(input: unknown, industry: string, archetype: IndustryArchetype, lang: UiLang): DemoMessage[] {
   const rows = Array.isArray(input) ? input : []
   const normalized: DemoMessage[] = rows
     .map((row) => {
@@ -207,9 +488,9 @@ function sanitizeMessages(input: unknown, industry: string, lang: UiLang): DemoM
       return { role, content: c } as DemoMessage
     })
     .filter((x): x is DemoMessage => Boolean(x))
-    .slice(0, 8)
+    .slice(0, 10)
 
-  if (!normalized.length) return fallbackMessages(industry, lang)
+  if (!normalized.length) return []
 
   let aiCount = 0
   const limited: DemoMessage[] = []
@@ -222,7 +503,7 @@ function sanitizeMessages(input: unknown, industry: string, lang: UiLang): DemoM
     if (limited.length >= 6) break
   }
 
-  return limited.length ? limited : fallbackMessages(industry, lang)
+  return limited
 }
 
 function parseJsonObject(raw: string) {
@@ -246,28 +527,26 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.json().catch(() => ({}))
   const industryRaw = typeof rawBody?.industry === 'string' ? rawBody.industry : ''
   const industryClean = industryRaw.trim().slice(0, 80)
-  const industry = industryClean || 'your business'
   const lang = normalizeLang(rawBody?.lang)
+  const normalizedIndustry = normalizeIndustry(industryClean, lang)
+  const industry = normalizedIndustry.display
+  const archetype = normalizedIndustry.archetype
+  const stage = normalizeStage(rawBody?.stage)
+  const scenarioType = typeof rawBody?.scenarioType === 'string' ? rawBody.scenarioType.trim().slice(0, 40) : ''
+  const action = normalizeAction(rawBody?.action)
+  const paymentState = normalizePaymentState(rawBody?.paymentState)
+  const slotLabel = typeof rawBody?.slotLabel === 'string' ? rawBody.slotLabel.trim().slice(0, 20) : ''
   const inputMessages = Array.isArray(rawBody?.messages) ? rawBody.messages : null
+
+  const criticalText = fixedActionReply({ action, paymentState, slotLabel, lang })
+  if (criticalText) return NextResponse.json({ messages: [{ role: 'assistant', content: criticalText }] }, { status: 200 })
 
   try {
     const key = getOpenAiKey()
     if (!key) {
       // Keep the demo usable even when env/key is temporarily unavailable.
-      if (inputMessages?.length) {
-        const last = [...inputMessages].reverse().find(
-          (m: any) => m && m.role === 'client' && typeof m.content === 'string' && m.content.trim()
-        )
-        const text =
-          lang === 'ru'
-            ? 'Принял. Следующий шаг: оставьте номер телефона и удобное время звонка, и менеджер подтвердит запись.'
-            : lang === 'cz'
-              ? 'Rozumím. Další krok: pošlete telefon a vhodný čas hovoru, manager rezervaci potvrdí.'
-              : 'Understood. Next step: share your phone and preferred call time, and the manager will confirm booking.'
-        const assistantMessage = last ? text : text
-        return NextResponse.json({ assistantMessage }, { status: 200 })
-      }
-      return NextResponse.json({ messages: fallbackMessages(industry, lang) }, { status: 200 })
+      const content = buildAssistantFallback({ industry, archetype, stage, scenarioType, lang })
+      return NextResponse.json({ messages: [{ role: 'assistant', content }] }, { status: 200 })
     }
 
     if (!industryClean) {
@@ -278,35 +557,37 @@ export async function POST(req: NextRequest) {
     const modelLower = model.toLowerCase()
     const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
     const systemPrompt =
-      `You are a professional AI client manager for a ${industry} business.
-Your goal: turn an inbound message into a booked appointment or captured contact.
-Rules:
-- Keep responses short (max 80–120 words).
-- Ask up to 2 clarifying questions.
-- Provide a clear next step (booking / call / leave phone + preferred time).
-- Include practical details (time estimate, first process step, typical workflow).
-- Sound like a real business manager (not an AI, no disclaimers, no jargon).
-- Be polite, confident, and structured.
+      `You are a high-performing client manager in ${industry}.
+Your goal is to push the client to a concrete next step immediately.
+Each reply must:
+- Move conversation forward.
+- Offer specific options (time slots, price range, document action, or payment).
+- Avoid explanations and theory.
+- Avoid checklist-style questioning.
+- First offer a concrete slot/option, then ask at most 1 clarification if needed.
+- Sound like a decisive business operator.
+- Keep reply to 2-4 short sentences.
+- Do not narrate workflow or internal systems.
+- Avoid repeating previous wording.
+${stagePromptHint(stage)}
+${industryBehaviorHint(archetype)}
 ${languageInstruction(lang)}`
 
-    const continuationInput: DemoMessage[] = sanitizeMessages(inputMessages, industry, lang).slice(0, 8)
-    const isContinuation = continuationInput.length > 0
-
-    const userPrompt = isContinuation
-      ? [
-          'Continue this business chat with ONE assistant reply only.',
-          'Return ONLY valid JSON: {"assistantMessage":"..."}',
-          'Your reply must include one practical next step and at most 2 clarifying questions.',
-          `Conversation: ${JSON.stringify(continuationInput)}`,
-        ].join(' ')
-      : [
-          'Create a short demo conversation as JSON.',
-          'Return ONLY valid JSON with this exact shape: {"messages":[{"role":"client"|"assistant","content":"..."}]}.',
-          'Rules: max 6 total messages, exactly 3 assistant replies max, business tone, no emoji,',
-          'show qualification questions and booking next step.',
-          'Client messages must sound real and specific (problem + context + urgency).',
-          'Assistant replies must be concrete and practical, not generic.',
-        ].join(' ')
+    const continuationInput: DemoMessage[] = sanitizeMessages(inputMessages, industry, archetype, lang).slice(0, 6)
+    const userPrompt = [
+      'Return ONLY valid JSON with this exact shape: {"messages":[{"role":"assistant","content":"..."}]}.',
+      'Generate ONE assistant reply only.',
+      `Stage: ${stage}.`,
+      `Scenario type: ${scenarioType || 'generic'}.`,
+      `Resolved action: ${action || 'none'}.`,
+      `Payment state: ${paymentState}.`,
+      `Slot label: ${slotLabel || '-'}.`,
+      'Do not reuse wording patterns from prior assistant replies in this chat.',
+      'Each reply must move the deal forward with a concrete next step.',
+      'Offer specific options (time slots / price range / required document list / payment).',
+      'No internal process narration. No CRM/system mentions.',
+      `Conversation: ${JSON.stringify(continuationInput)}`,
+    ].join(' ')
 
     const payload: Record<string, unknown> = {
       model,
@@ -329,44 +610,22 @@ ${languageInstruction(lang)}`
     })
 
     if (!resp.ok) {
-      if (isContinuation) {
-        const assistantMessage =
-          lang === 'ru'
-            ? 'Принял. Давайте зафиксируем заявку: пришлите номер телефона и удобный интервал времени для звонка, и менеджер подтвердит следующий шаг.'
-            : lang === 'cz'
-              ? 'Rozumím. Pojďme rezervaci dokončit: pošlete telefon a vhodný čas hovoru, manager potvrdí další krok.'
-              : 'Understood. Let us finalize this request: share your phone and preferred callback window, and the manager will confirm next steps.'
-        return NextResponse.json({ assistantMessage }, { status: 200 })
-      }
-      return NextResponse.json({ messages: fallbackMessages(industry, lang) }, { status: 200 })
+      const content = buildAssistantFallback({ industry, archetype, stage, scenarioType, lang })
+      return NextResponse.json({ messages: [{ role: 'assistant', content }] }, { status: 200 })
     }
 
     const json = await resp.json()
     const content = String(json?.choices?.[0]?.message?.content || '').trim()
     const parsed = parseJsonObject(content)
-    if (isContinuation) {
-      const assistantMessageRaw = String(parsed?.assistantMessage || '').trim()
-      const assistantMessage =
-        assistantMessageRaw ||
-        (lang === 'ru'
-          ? 'Спасибо. Оставьте номер и удобное время звонка, и мы подтвердим запись.'
-          : lang === 'cz'
-            ? 'Děkujeme. Pošlete telefon a vhodný čas hovoru, a rezervaci potvrdíme.'
-            : 'Thanks. Share your phone and preferred call time, and we will confirm your booking.')
-      return NextResponse.json({ assistantMessage }, { status: 200 })
+    const safe = sanitizeMessages(parsed?.messages, industry, archetype, lang)
+    const assistantOnly = safe.filter((m) => m.role === 'assistant').slice(0, 1)
+    if (!assistantOnly.length) {
+      const fallback = buildAssistantFallback({ industry, archetype, stage, scenarioType, lang })
+      return NextResponse.json({ messages: [{ role: 'assistant', content: fallback }] }, { status: 200 })
     }
-    const safe = sanitizeMessages(parsed?.messages, industry, lang)
-    return NextResponse.json({ messages: safe }, { status: 200 })
+    return NextResponse.json({ messages: assistantOnly }, { status: 200 })
   } catch {
-    if (inputMessages?.length) {
-      const assistantMessage =
-        lang === 'ru'
-          ? 'Понял вас. Оставьте номер и удобное время для звонка, и менеджер свяжется для подтверждения.'
-          : lang === 'cz'
-            ? 'Rozumím. Pošlete telefon a vhodný čas hovoru, manager vás kontaktuje pro potvrzení.'
-            : 'Got it. Share your phone and preferred callback time, and the manager will confirm shortly.'
-      return NextResponse.json({ assistantMessage }, { status: 200 })
-    }
-    return NextResponse.json({ messages: fallbackMessages(industry, lang) }, { status: 200 })
+    const content = buildAssistantFallback({ industry, archetype, stage, scenarioType, lang })
+    return NextResponse.json({ messages: [{ role: 'assistant', content }] }, { status: 200 })
   }
 }

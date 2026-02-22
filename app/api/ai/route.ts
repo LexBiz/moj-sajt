@@ -407,7 +407,8 @@ export async function POST(request: NextRequest) {
     const isFirstAssistant = rawHistory.filter((m) => m.role === 'assistant').length === 0
     // Hard requirement: first assistant message is a fixed intro.
     if (isFirstAssistant) {
-      const answer = buildTemoWebFirstMessage()
+      const lng = getLang(body.lang)
+      const answer = buildTemoWebFirstMessage(lng === 'ru' ? 'ru' : 'ua')
       return NextResponse.json({
         answer,
         recommendation: answer,

@@ -596,7 +596,7 @@ export async function POST(request: NextRequest) {
         // Hard requirement: first assistant message is a fixed intro (then default UA afterwards).
         const hasAnyAssistant = (afterUser?.messages || []).some((x) => x.role === 'assistant')
         if (!hasAnyAssistant) {
-          const intro = buildTemoWebFirstMessage()
+          const intro = buildTemoWebFirstMessage(/[іїєґ]/i.test(effectiveText) ? 'ua' : 'ru')
           await sendWhatsAppText(from, intro, { phoneNumberId: metaPhoneNumberId })
           appendMessage(from, { role: 'assistant', content: intro })
           // Do NOT return: after intro we still answer the user's first message (text or voice).
