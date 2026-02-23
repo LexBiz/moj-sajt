@@ -72,9 +72,10 @@ const channelMeta: Record<
   },
 }
 
-function getThumb(url: string) {
+function getThumb(url: string, mode: 'card' | 'modal' = 'card') {
   // External thumbnail service (fast + stable enough for portfolio previews).
-  return `https://image.thum.io/get/width/1400/${url}`
+  const width = mode === 'card' ? 960 : 1280
+  return `https://image.thum.io/get/width/${width}/${url}`
 }
 
 export function PortfolioCarousel({ lang }: { lang: Lang }) {
@@ -231,11 +232,12 @@ export function PortfolioCarousel({ lang }: { lang: Lang }) {
               <div className="relative aspect-[16/10] bg-[#0A0D12]">
                 <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent" />
                 <Image
-                  src={getThumb(p.url)}
+                  src={getThumb(p.url, 'card')}
                   alt={p.title}
                   fill
                   sizes="(max-width: 640px) 86vw, 520px"
                   className="object-cover opacity-[0.98] transition duration-300 group-hover:scale-[1.015]"
+                  unoptimized
                   onLoadingComplete={() => {
                     const el = scrollerRef.current?.querySelector('.animate-pulse')
                     if (el) el.classList.remove('animate-pulse')
@@ -308,15 +310,16 @@ export function PortfolioCarousel({ lang }: { lang: Lang }) {
               </button>
             </div>
 
-            <div className="grid gap-0 lg:grid-cols-[1.35fr_0.65fr]">
-              <div className="relative aspect-[16/10] bg-black">
+            <div className="grid gap-0 xl:grid-cols-[1.45fr_0.55fr]">
+              <div className="relative h-[48vh] min-h-[320px] bg-black sm:h-[56vh]">
                 <Image
-                  src={getThumb(active.url)}
+                  src={getThumb(active.url, 'modal')}
                   alt={active.title}
                   fill
-                  sizes="(max-width: 1024px) 100vw, 980px"
-                  className="object-cover"
+                  sizes="(max-width: 1280px) 100vw, 980px"
+                  className="object-contain"
                   priority
+                  unoptimized
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
               </div>
