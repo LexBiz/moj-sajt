@@ -25,6 +25,7 @@ import {
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '@/app/api/temowebPrompt'
 import { appendMessage, getConversation, updateConversation } from '../conversationStore'
 import { startTelegramFollowupScheduler } from '../followupScheduler'
+import { createLead, hasRecentLeadByContact } from '@/app/lib/storage'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -33,6 +34,8 @@ startTelegramFollowupScheduler()
 
 const BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim()
 const WEBHOOK_SECRET = (process.env.TELEGRAM_WEBHOOK_SECRET || '').trim()
+const OWNER_CHAT_ID = (process.env.TELEGRAM_OWNER_CHAT_ID || process.env.TELEGRAM_CHAT_ID || '').trim()
+const TENANT_ID = (process.env.TENANT_ID || 'temoweb').trim() || 'temoweb'
 
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = (process.env.OPENAI_MODEL_TELEGRAM || process.env.OPENAI_MODEL || 'gpt-4o').trim()
@@ -65,6 +68,18 @@ function inferLang(text: string): 'ru' | 'ua' {
   return /[іїєґ]/i.test(t) ? 'ua' : 'ru'
 }
 
+function extractContact(text: string) {
+  const s = String(text || '').trim()
+  if (!s) return null
+  const email = s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)
+  if (email) return email[0]
+  const phone = s.match(/(\+?\d[\d\s().-]{7,}\d)/)
+  if (phone) return phone[1].replace(/\s+/g, ' ').trim()
+  const tg = s.match(/(^|\s)@([a-zA-Z0-9_]{4,32})\b/)
+  if (tg) return `@${tg[2]}`
+  return null
+}
+
 async function tgApi(method: string, body: any) {
   if (!BOT_TOKEN) return { ok: false as const, data: null as any }
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
@@ -77,6 +92,16 @@ async function sendTelegramText(chatId: string, text: string) {
   const s = String(text || '').trim()
   if (!s) return
   await tgApi('sendMessage', { chat_id: chatId, text: clip(s, 3500), disable_web_page_preview: true })
+}
+
+async function sendLeadToOwner(text: string) {
+  if (!OWNER_CHAT_ID) return false
+  const r = await tgApi('sendMessage', {
+    chat_id: OWNER_CHAT_ID,
+    text: clip(text, 3900),
+    disable_web_page_preview: true,
+  })
+  return Boolean(r.ok)
 }
 
 async function getFileUrl(fileId: string) {
@@ -345,6 +370,11 @@ export async function POST(request: NextRequest) {
   const afterUser = appendMessage(chatId, { role: 'user', content: userContentForHistory }) || baseConv
   const history = (afterUser.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
 
+  const contactFromText = extractContact(text) || extractContact(effectiveText)
+  const username = msg?.from?.username ? String(msg.from.username).trim() : ''
+  const fallbackContact = username ? `@${username}` : null
+  const contact = contactFromText || fallbackContact
+
   // Intro.
   const hasAnyAssistant = history.some((m) => m.role === 'assistant')
   if (!hasAnyAssistant) {
@@ -370,6 +400,63 @@ export async function POST(request: NextRequest) {
 
   const pendingIds = Array.isArray((afterUser as any).pendingImageFileIds) ? ((afterUser as any).pendingImageFileIds as any[]).map(String) : pendingDedup
   const images = pendingIds.length > 0 ? await prepareImagesAsDataUrls(pendingIds) : []
+
+  // Lead capture for Telegram channel (parity with legacy tg-ai-bot):
+  // - send a short lead summary to owner chat
+  // - save lead to CRM storage (dedup by contact)
+  const alreadyCaptured = Boolean((afterUser as any)?.leadCapturedAt) || Boolean(baseConv.leadCapturedAt)
+  const intent = detectAiIntent(effectiveText || text || '')
+  const userTurns = Math.max(1, history.filter((m) => m.role === 'user').length)
+  const readinessScore = computeReadinessScoreHeuristic(effectiveText || text || '', userTurns)
+  const stageGuess = computeStageHeuristic(effectiveText || text || '', readinessScore)
+  const shouldCapture =
+    !alreadyCaptured &&
+    Boolean(contact) &&
+    !intent.isSupport &&
+    (Boolean(contactFromText) || stageGuess === 'ASK_CONTACT' || userTurns >= 6)
+
+  if (shouldCapture && contact) {
+    try {
+      const exists = await hasRecentLeadByContact({ contact, source: 'telegram', withinMs: 24 * 60 * 60 * 1000 })
+      if (!exists) {
+        const clientMessages = history.filter((m) => m.role === 'user').map((m) => m.content).slice(-12)
+        await createLead({
+          id: Date.now(),
+          tenantId: TENANT_ID,
+          name: null,
+          contact,
+          email: /\S+@\S+\.\S+/.test(contact) ? contact : null,
+          businessType: null,
+          channel: 'Telegram',
+          pain: null,
+          question: effectiveText || text || null,
+          clientMessages,
+          aiSummary: null,
+          source: 'telegram',
+          lang: preferredLang,
+          notes: `telegramChatId:${chatId}${username ? ` username:@${username}` : ''}`,
+          status: 'new',
+        })
+      }
+
+      const leadText = [
+        '📥 НОВАЯ ЗАЯВКА (TELEGRAM)',
+        '',
+        `👤 user: ${username ? `@${username}` : '—'}`,
+        `🆔 chatId: ${chatId}`,
+        `📩 контакт: ${contact || '—'}`,
+        '',
+        '🗣 последнее сообщение:',
+        `— ${clip(effectiveText || text || '[message]', 900)}`,
+        '',
+        `🕒 ${new Date().toISOString()}`,
+      ].join('\n')
+      await sendLeadToOwner(leadText)
+      updateConversation(chatId, { leadCapturedAt: nowIso(), followUpSentAt: nowIso() })
+    } catch (e) {
+      console.error('Telegram lead capture failed', { msg: String((e as any)?.message || e) })
+    }
+  }
 
   const reply = await generateAiReply({
     userText: effectiveText,
