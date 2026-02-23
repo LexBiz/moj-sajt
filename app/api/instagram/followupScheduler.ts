@@ -1,14 +1,15 @@
 import { getAllConversations, updateConversation, type ConversationLang, type ConversationMessage } from './conversationStore'
-import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
 import { readTokenFile } from './oauth/_store'
 
-const FOLLOWUP_AFTER_MS = Number(process.env.INSTAGRAM_FOLLOWUP_AFTER_MS || '') || 3 * 60 * 60 * 1000 // 3h
+const FOLLOWUP_AFTER_MS = Number(process.env.INSTAGRAM_FOLLOWUP_AFTER_MS || '') || 20 * 60 * 1000 // 20m
 const POLL_MS = Number(process.env.INSTAGRAM_FOLLOWUP_POLL_MS || '') || 60 * 1000 // 60s
-const ENABLED = (process.env.INSTAGRAM_FOLLOWUP_ENABLED || '').trim() === 'true'
+// Enabled by default; disable explicitly if needed.
+const ENABLED = (process.env.INSTAGRAM_FOLLOWUP_ENABLED || '').trim() !== 'false'
 
 const IG_USER_ID = (process.env.INSTAGRAM_IG_USER_ID || '').trim()
 const IG_API_HOST = (process.env.INSTAGRAM_API_HOST || 'graph.facebook.com').trim()
 const IG_API_VERSION = (process.env.INSTAGRAM_API_VERSION || 'v24.0').trim()
+const FOLLOWUP_MAX_DELAY_MS = Number(process.env.INSTAGRAM_FOLLOWUP_MAX_DELAY_MS || '') || 90 * 60 * 1000 // 90m
 
 function nowIso() {
   return new Date().toISOString()
@@ -61,64 +62,27 @@ function lastUserText(history: ConversationMessage[]) {
   return ''
 }
 
-async function generateFollowUp(params: { lang: ConversationLang; history: ConversationMessage[] }) {
-  const apiKey = (process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || '').trim()
-  if (!apiKey) return null
-
-  const userTurns = params.history.filter((m) => m.role === 'user').length
-  const lastUser = lastUserText(params.history)
-  const readinessScore = computeReadinessScoreHeuristic(lastUser, userTurns)
-  const stage = 'FOLLOW_UP'
-
-  const system = buildTemoWebSystemPrompt({
-    lang: params.lang,
-    channel: 'instagram',
-    stage,
-    readinessScore,
-  })
-
-  const instruction =
-    params.lang === 'ua'
-      ? 'Клієнт мовчить ~3 години після Вашого останнього повідомлення. Напишіть ОДНЕ коротке follow‑up повідомлення (2–5 рядків), без спаму і БЕЗ прохання контакту. 1 людська фраза + 1 чітке питання по бізнесу/потребі. Обовʼязково на "Ви".'
-      : params.lang === 'en'
-      ? 'Client has been silent ~3 hours after your last message. Write ONE short follow-up (2–5 lines), no spam and NO contact request. 1 human line + 1 clear business question.'
-      : 'Клиент молчит ~3 часа после вашего последнего сообщения. Напишите ОДНО короткое follow‑up сообщение (2–5 строк), без спама и БЕЗ просьбы контакта. 1 человеческая фраза + 1 четкий вопрос по бизнесу/потребности. Обязательно на "Вы".'
-
-  const historyMsgs = params.history.slice(-10).map((m) => ({ role: m.role, content: clip(m.content, 420) }))
-  const modelRaw = String(process.env.OPENAI_MODEL || 'gpt-4o-mini')
-  const model = modelRaw.trim().replace(/[‐‑‒–—−]/g, '-')
-  const modelLower = model.toLowerCase()
-  const messages = [{ role: 'system', content: system }, { role: 'system', content: instruction }, ...historyMsgs]
-
-  const isGpt5 = modelLower.startsWith('gpt-5') || modelLower.startsWith('gpt5')
-  const maxKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens'
-  const body: any = { model, messages }
-  if (!isGpt5) body.temperature = 0.55
-  body[maxKey] = 160
-
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-  })
-  if (!resp.ok) return null
-  const json = (await resp.json()) as any
-  const cc = json?.choices?.[0]?.message?.content
-  const content =
-    typeof json?.output_text === 'string'
-      ? json.output_text
-      : typeof cc === 'string'
-        ? cc
-        : Array.isArray(cc)
-          ? cc
-              .map((p: any) =>
-                typeof p === 'string' ? p : typeof p?.text === 'string' ? p.text : typeof p?.text?.value === 'string' ? p.text.value : '',
-              )
-              .filter(Boolean)
-              .join('')
-          : null
-  const out = typeof content === 'string' ? content.trim() : ''
-  return out ? out.slice(0, 800) : null
+function buildFollowUp(params: { lang: ConversationLang; lastUser: string }) {
+  const last = clip(String(params.lastUser || ''), 120)
+  if (params.lang === 'ua') {
+    return [
+      'Повернусь на хвилинку 🙂',
+      last ? `Я правильно зрозумів: ${last}?` : 'Я правильно зрозумів запит?',
+      'Якщо зручніше — залиште номер, я напишу вам у WhatsApp.',
+    ].join('\n')
+  }
+  if (params.lang === 'en') {
+    return [
+      'Quick follow‑up 🙂',
+      last ? `Did I get it right: ${last}?` : 'Did I get it right?',
+      'If it’s easier, drop your phone number and I’ll message you on WhatsApp.',
+    ].join('\n')
+  }
+  return [
+    'Вернусь на минуту 🙂',
+    last ? `Правильно понял: ${last}?` : 'Правильно понял запрос?',
+    'Если удобнее — оставьте номер, я напишу вам в WhatsApp.',
+  ].join('\n')
 }
 
 async function tickOnce() {
@@ -145,9 +109,11 @@ async function tickOnce() {
     if (now - lastUserMs > 23 * 60 * 60 * 1000) continue
 
     if (now - lastAssistantMs < FOLLOWUP_AFTER_MS) continue
+    if (now - lastAssistantMs > FOLLOWUP_MAX_DELAY_MS) continue
 
-    const msg = await generateFollowUp({ lang: c.lang, history: Array.isArray(c.history) ? c.history : [] })
-    if (!msg) continue
+    const lastUser = lastUserText(Array.isArray(c.history) ? c.history : [])
+    const msg = buildFollowUp({ lang: c.lang, lastUser })
+    if (!msg.trim()) continue
 
     const sent = await sendInstagramMessage(senderId, msg)
     if (!sent.ok) continue

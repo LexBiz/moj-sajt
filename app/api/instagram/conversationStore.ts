@@ -20,6 +20,10 @@ export type ConversationState = {
   stage: ConversationStage
   lang: ConversationLang | null
   pendingText: string | null
+  // When client sends multiple photos over a few minutes, we collect them here
+  // and use in the next meaningful text turn (prevents "lost context").
+  pendingImageUrls?: string[]
+  lastMediaAt?: string | null
   history: ConversationMessage[]
   leadId: number | null
   contactDraft: ConversationContactDraft | null
@@ -54,6 +58,8 @@ function loadAll(): Record<string, ConversationState> {
       if (typeof c.contactDraft === 'undefined') c.contactDraft = null
       if (typeof c.lastPlusDmAt === 'undefined') c.lastPlusDmAt = null
       if (typeof c.resendArmed === 'undefined') c.resendArmed = false
+      if (typeof c.pendingImageUrls === 'undefined') c.pendingImageUrls = []
+      if (typeof c.lastMediaAt === 'undefined') c.lastMediaAt = null
       parsed[k] = c
     }
     return parsed as Record<string, ConversationState>
@@ -77,6 +83,8 @@ export function getConversation(senderId: string): ConversationState {
     stage: 'new',
     lang: null,
     pendingText: null,
+    pendingImageUrls: [],
+    lastMediaAt: null,
     history: [],
     leadId: null,
     contactDraft: null,

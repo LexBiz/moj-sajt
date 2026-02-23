@@ -24,14 +24,17 @@ import {
   enforcePackageConsistency,
 } from '@/app/lib/aiPostProcess'
 import { recordMessengerPost, recordMessengerWebhook } from '../state'
-import { appendMessage, getConversation, setConversationLang } from '../conversationStore'
+import { appendMessage, getConversation, setConversationLang, updateConversationMeta } from '../conversationStore'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import fs from 'fs'
 import path from 'path'
 import { createLead, hasRecentLeadByContact, getTenantProfile } from '@/app/lib/storage'
+import { startMessengerFollowupScheduler } from '../followupScheduler'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+startMessengerFollowupScheduler()
 
 // Deduplicate incoming messages: Meta can deliver the same event multiple times.
 const SEEN_MIDS_TTL_MS = 6 * 60 * 60 * 1000
@@ -550,6 +553,7 @@ async function generateAiReplyWithHistory(input: {
   lang: 'ru' | 'ua'
   images?: string[]
   apiKey?: string | null
+  pageAccessToken?: string
 }) {
   const userText = input.userText
   const apiKey = (input.apiKey || OPENAI_API_KEY || '').trim()
@@ -576,7 +580,27 @@ async function generateAiReplyWithHistory(input: {
       : 'Это первое сообщение: представьтесь как "персональный AI‑ассистент TemoWeb". Задай максимум 1 вопрос.'
     : null
 
-  const images = Array.isArray(input.images) ? input.images.filter(Boolean).slice(0, 2) : []
+  async function prepareImagesForOpenAI(urls: string[]) {
+    const out: string[] = []
+    for (let i = 0; i < Math.min(urls.length, 2); i += 1) {
+      const u = String(urls[i] || '').trim()
+      if (!u) continue
+      const buf = await fetchBinary(u, { pageAccessToken: input.pageAccessToken })
+      if (buf && buf.length > 0 && buf.length <= 900_000) {
+        out.push(`data:image/jpeg;base64,${buf.toString('base64')}`)
+      } else {
+        out.push(u)
+      }
+    }
+    for (let i = out.length; i < Math.min(urls.length, 3); i += 1) {
+      const u = String(urls[i] || '').trim()
+      if (u) out.push(u)
+    }
+    return out
+  }
+
+  const imagesRaw = Array.isArray(input.images) ? input.images.filter(Boolean).slice(0, 3) : []
+  const images = await prepareImagesForOpenAI(imagesRaw)
   const userContent =
     images.length > 0
       ? ([
@@ -816,8 +840,11 @@ export async function POST(request: NextRequest) {
       })
       const conv = getConversation(pageId, senderId)
       const explicitLang = parseLangSwitch(msgText || '')
+      const baseTextForLang = String(msgText || '').trim()
+      const inferredLang: 'ru' | 'ua' = /[іїєґ]/i.test(baseTextForLang) ? 'ua' : 'ru'
       if (explicitLang) setConversationLang(pageId, senderId, explicitLang)
-      const preferredLang = explicitLang || conv.lang || 'ua'
+      if (!explicitLang && !conv.lang && baseTextForLang) setConversationLang(pageId, senderId, inferredLang)
+      const preferredLang = explicitLang || conv.lang || (baseTextForLang ? inferredLang : 'ua')
       const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
       const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
 
@@ -830,6 +857,18 @@ export async function POST(request: NextRequest) {
             ? `${baseText}\n\n[Voice message transcript]: ${transcript.trim()}`
             : `[Voice message transcript]: ${transcript.trim()}`
           : baseText || (imageUrls.length ? (preferredLang === 'ua' ? '[Надіслано зображення]' : '[Отправлено изображение]') : audioUrl ? '[Voice message]' : '')
+
+      // Media burst buffering: store images for the next meaningful turn.
+      const now = Date.now()
+      const prevPending: string[] = Array.isArray((conv as any).pendingImageUrls) ? ((conv as any).pendingImageUrls as any[]).map(String) : []
+      const lastMediaAtIso = typeof (conv as any).lastMediaAt === 'string' ? String((conv as any).lastMediaAt) : ''
+      const lastMediaAt = lastMediaAtIso ? Date.parse(lastMediaAtIso) : NaN
+      const pendingFresh = Number.isFinite(lastMediaAt) && now - lastMediaAt < 10 * 60 * 1000 ? prevPending : []
+      const pendingAll = [...pendingFresh, ...imageUrls].filter(Boolean)
+      const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
+      if (pendingDedup.length > 0) {
+        updateConversationMeta(pageId, senderId, { pendingImageUrls: pendingDedup, lastMediaAt: new Date().toISOString() })
+      }
 
       appendMessage(pageId, senderId, { role: 'user', content: composedUserText })
       const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
@@ -867,6 +906,7 @@ export async function POST(request: NextRequest) {
             : 'Готово ✅ Зафиксировал заявку. Напишем/созвонимся для следующего шага.'
         await sendMessengerText({ pageAccessToken, recipientId: senderId, text: okMsg })
         appendMessage(pageId, senderId, { role: 'assistant', content: okMsg })
+        updateConversationMeta(pageId, senderId, { leadCapturedAt: new Date().toISOString(), followUpSentAt: new Date().toISOString(), pendingImageUrls: [], lastMediaAt: null })
         recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `lead_saved tenant=${String(conn.tenantId)} leadId=${leadId ?? 'dup'}` })
         continue
       }
@@ -891,7 +931,31 @@ export async function POST(request: NextRequest) {
         // Do NOT return: after intro we still answer the user's first message (text or voice).
       }
 
-      let reply = await generateAiReplyWithHistory({ userText: effectiveUserText || '', history, lang: preferredLang, images: imageUrls, apiKey })
+      // If user only sends images (no text/voice), acknowledge once and wait for a clarifying line.
+      if (!baseText && !transcript && pendingDedup.length > 0) {
+        const lastAssistantAt = [...(conv.messages || [])].reverse().find((m) => m.role === 'assistant')?.at || null
+        const lastAssistantMs = lastAssistantAt ? Date.parse(String(lastAssistantAt)) : NaN
+        if (!Number.isFinite(lastAssistantMs) || now - lastAssistantMs > 2 * 60 * 1000) {
+          const ack =
+            preferredLang === 'ua'
+              ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
+              : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
+          await sendMessengerText({ pageAccessToken, recipientId: senderId, text: ack })
+          appendMessage(pageId, senderId, { role: 'assistant', content: ack })
+        }
+        recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `images_only buffered=${pendingDedup.length}` })
+        continue
+      }
+
+      const imagesForAi = pendingDedup.slice(0, 3)
+      let reply = await generateAiReplyWithHistory({
+        userText: effectiveUserText || '',
+        history,
+        lang: preferredLang,
+        images: imagesForAi,
+        apiKey,
+        pageAccessToken,
+      })
       const intent = detectAiIntent(effectiveUserText || '')
       const userTurns = history.filter((m) => m.role === 'user').length || 1
       const readinessScore = computeReadinessScoreHeuristic(effectiveUserText || '', userTurns)
@@ -959,6 +1023,7 @@ export async function POST(request: NextRequest) {
       }
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
       appendMessage(pageId, senderId, { role: 'assistant', content: reply })
+      if (pendingDedup.length > 0) updateConversationMeta(pageId, senderId, { pendingImageUrls: [], lastMediaAt: null })
       recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })
     }
   }

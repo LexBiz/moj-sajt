@@ -17,6 +17,13 @@ export type MessengerConversation = {
   updatedAt: string
   // language preference for this conversation (default: ua)
   lang: 'ru' | 'ua' | null
+  // media bursts (users often send multiple photos in a row)
+  pendingImageUrls?: string[]
+  lastMediaAt?: string | null
+  // follow-up (avoid repeated nudges)
+  followUpSentAt?: string | null
+  // set when we already created a CRM lead (prevents follow-up spam)
+  leadCapturedAt?: string | null
   messages: MessengerMessage[]
 }
 
@@ -34,7 +41,15 @@ function readAll(): MessengerConversation[] {
     ensureFile()
     const raw = fs.readFileSync(FILE, 'utf8')
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as MessengerConversation[]) : []
+    const list = Array.isArray(parsed) ? (parsed as MessengerConversation[]) : []
+    // Backward-compatible normalization.
+    for (const c of list) {
+      if (typeof (c as any).pendingImageUrls === 'undefined') (c as any).pendingImageUrls = []
+      if (typeof (c as any).lastMediaAt === 'undefined') (c as any).lastMediaAt = null
+      if (typeof (c as any).followUpSentAt === 'undefined') (c as any).followUpSentAt = null
+      if (typeof (c as any).leadCapturedAt === 'undefined') (c as any).leadCapturedAt = null
+    }
+    return list
   } catch {
     return []
   }
@@ -105,5 +120,29 @@ export function setConversationLang(pageId: string, senderId: string, lang: 'ru'
   else all.unshift(next)
   writeAll(all.slice(0, 5000))
   return next
+}
+
+export function updateConversationMeta(
+  pageId: string,
+  senderId: string,
+  patch: Partial<Pick<MessengerConversation, 'pendingImageUrls' | 'lastMediaAt' | 'followUpSentAt' | 'leadCapturedAt' | 'lang'>>,
+) {
+  const pid = String(pageId || '').trim()
+  const sid = String(senderId || '').trim()
+  if (!pid || !sid) return
+  const id = `${pid}:${sid}`
+  const all = readAll()
+  const now = new Date().toISOString()
+  const idx = all.findIndex((c) => c.id === id)
+  const base = idx >= 0 ? all[idx] : getConversation(pid, sid)
+  const next: MessengerConversation = { ...base, ...patch, updatedAt: now }
+  if (idx >= 0) all[idx] = next
+  else all.unshift(next)
+  writeAll(all.slice(0, 5000))
+  return next
+}
+
+export function getAllConversations() {
+  return readAll()
 }
 

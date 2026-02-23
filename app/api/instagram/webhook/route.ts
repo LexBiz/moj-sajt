@@ -1631,21 +1631,35 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
   const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
   const conversation = getConversation(senderId)
-  const maybeLang = parseLangChoice(text)
-  const requestedLang = parseLangSwitch(text) || maybeLang
-  // Start ALWAYS in Ukrainian by default. Switch only when user explicitly asks.
-  const lang: ConversationLang | null = conversation.lang || requestedLang || 'ua'
+  const rawText = String(text || '')
+  const trimmed = rawText.trim()
+  const now = Date.now()
+  const IG_SYSTEM_MEDIA_NOTICE_RE =
+    /(это\s+фото\s+можно\s+просмотреть\s+только\s+один\s+раз|воспользуйтесь\s+для\s+этого\s+мобильным\s+приложением|this\s+photo\s+can\s+only\s+be\s+viewed\s+once|use\s+the\s+mobile\s+app\s+to\s+view\s+it)/i
+  // IG Web sometimes injects system notices for "view once" media. Do NOT treat them as user intent.
+  if (trimmed && IG_SYSTEM_MEDIA_NOTICE_RE.test(trimmed) && (!media || media.length === 0)) {
+    updateConversation(senderId, { lastUserAt: nowIso() })
+    return
+  }
+
+  const maybeLang = parseLangChoice(trimmed)
+  const requestedLang = parseLangSwitch(trimmed) || maybeLang
+  // Improve default language: if user writes in Russian, answer in Russian even without explicit switch.
+  const inferred = detectLangFromText(trimmed)
+  const lang: ConversationLang | null = conversation.lang || requestedLang || inferred || 'ua'
 
   // Hard reset: user asks to "start over" -> clear conversation state and restart language selection.
-  if (detectResetIntent(text)) {
+  if (detectResetIntent(trimmed)) {
     updateConversation(senderId, {
       stage: 'new',
       lang: null,
       pendingText: null,
       history: [],
       leadId: null,
+      pendingImageUrls: [],
+      lastMediaAt: null,
     })
-    await sendInstagramMessage(senderId, t(detectLangFromText(text), 'chooseLang'))
+    await sendInstagramMessage(senderId, t(detectLangFromText(trimmed), 'chooseLang'))
     updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
@@ -1677,7 +1691,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   }
 
   // Allow switching language at any time.
-  const switchLang = parseLangSwitch(text)
+  const switchLang = parseLangSwitch(trimmed)
   if (switchLang && switchLang !== lang) {
     updateConversation(senderId, { lang: switchLang })
     const ai = await generateAiReply({
@@ -1693,14 +1707,14 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       channel: 'instagram',
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-    const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: ai.reply }].slice(-24) as any
+    const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: trimmed }, { role: 'assistant' as const, content: ai.reply }].slice(-24) as any
     updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso() })
     await sendInstagramMessage(senderId, ai.reply)
     return
   }
 
   // Handle "are you real AI/bot" type questions early (do NOT jump to contact request)
-  if (detectAiIdentityQuestion(text)) {
+  if (detectAiIdentityQuestion(trimmed)) {
     const reply =
       lang === 'ua'
         ? [
@@ -1716,17 +1730,32 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
             'Чтобы подсказать точнее: какая у тебя ниша и откуда сейчас приходят клиенты?',
           ].join('\n')
 
-    const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-24) as ConversationMessage[]
+    const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: trimmed }, { role: 'assistant' as const, content: reply }].slice(-24) as ConversationMessage[]
     updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history })
     await sendInstagramMessage(senderId, reply)
     updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
-  const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: text }].slice(-24) as ConversationMessage[]
+  // Media burst handling: users often send multiple photos over a few minutes.
+  // We collect photos and only respond once, then use them in the next meaningful text turn.
+  const incomingImages = (media || []).filter((m) => m.kind === 'image' && m.url).map((m) => String(m.url))
+  const prevPending: string[] = Array.isArray((conversation as any).pendingImageUrls) ? ((conversation as any).pendingImageUrls as any[]).map(String) : []
+  const lastMediaAtIso = typeof (conversation as any).lastMediaAt === 'string' ? String((conversation as any).lastMediaAt) : ''
+  const lastMediaAt = lastMediaAtIso ? Date.parse(lastMediaAtIso) : NaN
+  const pendingFresh =
+    Number.isFinite(lastMediaAt) && now - lastMediaAt < 10 * 60 * 1000 ? prevPending : [] // 10 min TTL
+  const pendingAll = [...pendingFresh, ...incomingImages].filter(Boolean)
+  const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
+  if (pendingDedup.length > 0) {
+    updateConversation(senderId, { pendingImageUrls: pendingDedup, lastMediaAt: nowIso() } as any)
+  }
+
+  const userContentForHistory = trimmed || (incomingImages.length > 0 ? '[Image]' : '')
+  const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: userContentForHistory }].slice(-24) as ConversationMessage[]
   const userTurns = history.filter((m) => m.role === 'user').length
-  const draftFromText = extractContactDraft(text)
-  const readinessScore = computeReadinessScoreHeuristic(text, userTurns)
+  const draftFromText = extractContactDraft(trimmed)
+  const readinessScore = computeReadinessScoreHeuristic(trimmed, userTurns)
 
   // Always store the message first
   updateConversation(senderId, { history, lastUserAt: nowIso() })
@@ -1736,12 +1765,27 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
+  // If user only sends images (no text), acknowledge ONCE and wait for a clarifying line.
+  if (!trimmed && pendingDedup.length > 0) {
+    const lastAssistantAtIso = typeof (conversation as any).lastAssistantAt === 'string' ? String((conversation as any).lastAssistantAt) : ''
+    const lastAssistantAt = lastAssistantAtIso ? Date.parse(lastAssistantAtIso) : NaN
+    if (Number.isFinite(lastAssistantAt) && now - lastAssistantAt < 2 * 60 * 1000) return
+    const ack =
+      lang === 'ua'
+        ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
+        : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
+    const nextHistory: ConversationMessage[] = [...history, { role: 'assistant' as const, content: ack }].slice(-24) as any
+    updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso(), stage: conversation.stage === 'new' ? 'qualify' : conversation.stage } as any)
+    await sendInstagramMessage(senderId, ack)
+    return
+  }
+
   // Resend mode: if lead already created, we resend ONLY after explicit agreement.
   // 1) User asks to resend -> arm mode, ask for contact again.
   // 2) Next message contains contact -> create & send NEW lead + notify Telegram, then disarm.
   if (conversation.leadId != null) {
     const resendArmed = Boolean((conversation as any).resendArmed)
-    if (detectResendContactIntent(text) && !resendArmed) {
+    if (detectResendContactIntent(trimmed) && !resendArmed) {
       updateConversation(senderId, { resendArmed: true, stage: 'ask_contact' } as any)
       await sendInstagramMessage(
         senderId,
@@ -1771,7 +1815,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
             phone: mergedDraft.phone,
             email: mergedDraft.email,
             clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
-            lastMessage: text,
+            lastMessage: trimmed,
             lang,
             aiSummary,
             aiReadiness: readiness,
@@ -1783,7 +1827,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         // Always disarm after one attempt (prevents spam loops)
         updateConversation(senderId, { resendArmed: false, leadId: leadId ?? conversation.leadId } as any)
         const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
-        await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null, aiSummary, leadId })
+        await sendTelegramLead({ senderId, messageText: trimmed, contactHint: hint || null, aiSummary, leadId })
         await sendInstagramMessage(senderId, lang === 'ua' ? 'Готово ✅ Зафіксував повторно. Дякую!' : 'Готово ✅ Зафиксировал повторно. Спасибо!')
         updateConversation(senderId, { lastAssistantAt: nowIso() })
         return
@@ -1818,7 +1862,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
           phone: mergedDraft.phone || null,
           email: mergedDraft.email || null,
           clientMessages: history.filter((m) => m.role === 'user').map((m) => m.content),
-          lastMessage: text,
+          lastMessage: trimmed,
           lang,
           aiSummary,
           aiReadiness: readiness,
@@ -1836,7 +1880,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       }
       updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
       const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
-      const tgOk = await sendTelegramLead({ senderId, messageText: text, contactHint: hint || null, aiSummary, leadId })
+      const tgOk = await sendTelegramLead({ senderId, messageText: trimmed, contactHint: hint || null, aiSummary, leadId })
       console.log('IG lead telegram status', { leadId, ok: Boolean(tgOk) })
       const ai = await generateAiReply({
         userText:
@@ -1857,12 +1901,12 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   }
 
-  if (hasInvalidContactHint(text)) {
+  if (hasInvalidContactHint(trimmed)) {
     updateConversation(senderId, { stage: 'ask_contact', history })
     // Ask to resend contact (prefer AI, fallback to a short deterministic hint)
     const ai = await generateAiReply({
       userText:
-        `Client tried to send contact but it looks invalid: "${clip(text, 120)}". ` +
+        `Client tried to send contact but it looks invalid: "${clip(trimmed, 120)}". ` +
         `Ask them to resend ONLY one of: email / phone / Telegram @username.`,
       lang,
       stage: 'ask_contact',
@@ -1878,16 +1922,16 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     return
   }
 
-  const nextStage = shouldAskForContact(conversation.stage, text, userTurns, readinessScore) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
+  const nextStage = shouldAskForContact(conversation.stage, trimmed, userTurns, readinessScore) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
   updateConversation(senderId, { stage: nextStage, history })
 
-  const images = media.filter((m) => m.kind === 'image').map((m) => m.url)
+  const imagesRaw = pendingDedup.slice(0, 3)
   const audio = media.find((m) => m.kind === 'audio')?.url || null
   const transcript = audio ? await transcribeAudio(audio) : null
   let composedUserText =
     transcript && transcript.length > 0
-      ? `${text}\n\n[Voice message transcript]: ${transcript}`
-      : text || (images.length > 0 ? '[Image sent]' : '')
+      ? `${trimmed}\n\n[Voice message transcript]: ${transcript}`
+      : trimmed || (imagesRaw.length > 0 ? `[Client sent ${imagesRaw.length} image(s)]` : '')
 
   // If user replies with a digit (1/2), treat it as choosing an option from the previous "Если хотите" block.
   const recentAssistantTextsForChoice = history
@@ -1900,6 +1944,29 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     recentAssistantTexts: recentAssistantTextsForChoice,
   })
   const intent = detectAiIntent(composedUserText || '')
+
+  async function prepareImagesForOpenAI(urls: string[]) {
+    // For IG attachments, URLs can be short-lived or require auth.
+    // We try to fetch and convert 1–2 images to data URLs; the rest stays as URL.
+    const out: string[] = []
+    for (let i = 0; i < Math.min(urls.length, 2); i += 1) {
+      const u = String(urls[i] || '').trim()
+      if (!u) continue
+      const buf = await fetchBinary(u)
+      if (buf && buf.length > 0 && buf.length <= 900_000) {
+        out.push(`data:image/jpeg;base64,${buf.toString('base64')}`)
+      } else {
+        out.push(u)
+      }
+    }
+    for (let i = out.length; i < Math.min(urls.length, 3); i += 1) {
+      const u = String(urls[i] || '').trim()
+      if (u) out.push(u)
+    }
+    return out
+  }
+
+  const images = await prepareImagesForOpenAI(imagesRaw)
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
   const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram', apiKey })
@@ -1919,14 +1986,14 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     reply = stripContactAskBlock(reply)
   }
   reply = enforceIgDirectGuardrails({ reply, lang, nextStage, readinessScore, recentContactAsk: recentAsks })
-  const hasChosenPackage = Boolean(detectChosenPackage(text || '') || detectChosenPackageFromHistory(history))
-  if (!hasChosenPackage && isPackageCompareRequest(text)) {
+  const hasChosenPackage = Boolean(detectChosenPackage(trimmed || '') || detectChosenPackageFromHistory(history))
+  if (!hasChosenPackage && isPackageCompareRequest(trimmed)) {
     reply = ensureAllPackagesMentioned(reply, lang === 'ru' ? 'ru' : 'ua')
   }
   if (lang === 'ru' || lang === 'ua') {
     if (!intent.isSupport) {
       reply = applyServicesRouter(reply, lang, intent, hasChosenPackage)
-      reply = applyWebsiteOfferGuard({ text: reply, lang, intent, userText: composedUserText || text || '' })
+      reply = applyWebsiteOfferGuard({ text: reply, lang, intent, userText: composedUserText || trimmed || '' })
       const recentAssistantTextsForGuidance = history
         .filter((m) => m.role === 'assistant')
         .slice(-6)
@@ -1935,14 +2002,14 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       reply = enforcePackageConsistency({
         reply,
         lang: lang === 'ru' ? 'ru' : 'ua',
-        userText: composedUserText || text || '',
+        userText: composedUserText || trimmed || '',
         recentAssistantTexts: recentAssistantTextsForGuidance,
       })
       reply = applyIncompleteDetailsFix(reply, lang)
       reply = applyPilotNudge(reply, lang, intent)
       reply = applyNoPaymentPolicy(reply, lang)
       reply = applyPackageFactsGuard(reply, lang)
-      reply = applyManagerInitiative({ text: reply, lang, stage: (nextStage || 'DISCOVERY') as any, intent, userText: text || '' })
+      reply = applyManagerInitiative({ text: reply, lang, stage: (nextStage || 'DISCOVERY') as any, intent, userText: trimmed || '' })
       reply = applyPilotKickoffChecklist({ text: reply, lang, intent })
       const recentAssistantTexts = history
         .filter((m) => m.role === 'assistant')
@@ -1971,8 +2038,13 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     }
   }
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
-  updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
-  await sendInstagramMessage(senderId, reply)
+  const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant')?.content || ''
+  if (reply.trim() && reply.trim() !== String(lastAssistant || '').trim()) {
+    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24), pendingImageUrls: [], lastMediaAt: null } as any)
+    await sendInstagramMessage(senderId, reply)
+    updateConversation(senderId, { lastAssistantAt: nowIso() })
+    return
+  }
   updateConversation(senderId, { lastAssistantAt: nowIso() })
 }
 

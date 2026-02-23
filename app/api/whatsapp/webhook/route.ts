@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import { createLead, getTenantProfile, hasRecentLeadByContact, resolveTenantIdByConnection } from '@/app/lib/storage'
-import { appendMessage, getConversation } from '../conversationStore'
+import { appendMessage, getConversation, updateConversation } from '../conversationStore'
 import {
   applyChannelLimits,
   applyPackageGuidance,
@@ -27,9 +27,12 @@ import {
   ensureCta,
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
+import { startWhatsAppFollowupScheduler } from '../followupScheduler'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+startWhatsAppFollowupScheduler()
 
 type WaTextMessage = {
   from?: string
@@ -38,6 +41,17 @@ type WaTextMessage = {
   type?: string
   text?: { body?: string }
   audio?: { id?: string; mime_type?: string; voice?: boolean }
+  image?: { id?: string; mime_type?: string }
+}
+
+function parseLangSwitch(text: string): 'ru' | 'ua' | null {
+  const t = String(text || '').trim().toLowerCase()
+  if (!t) return null
+  if (/(говори|говорите|разговаривай|пиши|пишіть|пиши)\s+.*(рус|рос|russian)/i.test(t)) return 'ru'
+  if (/(говори|говорите|разговаривай|розмовляй|пиши|пишіть|пиши)\s+.*(укр|укра|ukrain)/i.test(t)) return 'ua'
+  if (/\bрус(ский|ском)\b/i.test(t)) return 'ru'
+  if (/\bукра(їнськ|инск|їнською)\b/i.test(t)) return 'ua'
+  return null
 }
 
 type WaChangeValue = {
@@ -288,16 +302,20 @@ async function generateAiReply(params: {
   userText: string
   history?: Array<{ role: 'user' | 'assistant'; content: string }>
   apiKey?: string | null
+  lang?: 'ru' | 'ua'
+  images?: string[]
 }) {
   const rawUserText = params.userText
   const key = (params.apiKey || OPENAI_API_KEY || '').trim()
-  // Default UA across channels. Switch only when user explicitly asks.
+  const hist = Array.isArray(params.history) ? params.history : []
+  // Persist language per conversation when possible; fall back to heuristic.
+  const hinted = params.lang === 'ru' ? 'ru' : params.lang === 'ua' ? 'ua' : null
   const t = String(rawUserText || '').trim().toLowerCase()
   const wantsRu = /\b(рус|русский|по-русски|російськ|російською|ru)\b/i.test(t)
   const wantsUa = /\b(укр|укра|українськ|українською|ua)\b/i.test(t) || /[іїєґ]/i.test(String(rawUserText || ''))
-  const isUa = wantsUa || !wantsRu
-  const hist = Array.isArray(params.history) ? params.history : []
-  const lang: 'ua' | 'ru' = isUa ? 'ua' : 'ru'
+  const inferred: 'ru' | 'ua' = wantsUa ? 'ua' : wantsRu ? 'ru' : /[іїєґ]/i.test(String(rawUserText || '')) ? 'ua' : 'ru'
+  const lang: 'ua' | 'ru' = hinted || inferred
+  const isUa = lang === 'ua'
 
   // If user replies with a digit (1/2/3), treat it as choosing an option from the previous next-steps block.
   const recentAssistantTextsForChoice = hist
@@ -355,10 +373,18 @@ async function generateAiReply(params: {
       model = fb || model
       modelLower = model.toLowerCase()
     }
+    const images = Array.isArray(params.images) ? params.images.filter(Boolean).slice(0, 3) : []
+    const userContent =
+      images.length > 0
+        ? ([
+            { type: 'text', text: composedUserText || (isUa ? '[Надіслано зображення]' : '[Отправлено изображение]') },
+            ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
+          ] as any)
+        : composedUserText
     const messages = [
       { role: 'system', content: system },
       ...hist.slice(-12).map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: composedUserText },
+      { role: 'user', content: userContent },
     ]
 
     // Use Chat Completions. For gpt-5 use `max_completion_tokens` and avoid non-default temperature.
@@ -543,15 +569,18 @@ export async function POST(request: NextRequest) {
         const type = (m.type || '').toLowerCase()
         const text = m.text?.body?.trim()
         const audioId = m.audio?.id ? String(m.audio.id).trim() : null
-        const preview = text ? clip(text, 120) : audioId ? '[audio]' : null
+        const imageId = m.image?.id ? String(m.image.id).trim() : null
+        const preview = text ? clip(text, 120) : imageId ? '[image]' : audioId ? '[audio]' : null
         recordWhatsAppWebhook({ from: from || null, type: type || null, textPreview: preview })
         if (!from) continue
-        if (type !== 'text' && type !== 'audio') continue
+        if (type !== 'text' && type !== 'audio' && type !== 'image') continue
         if (type === 'text' && !text) continue
         if (type === 'audio' && !audioId) continue
+        if (type === 'image' && !imageId) continue
 
         if (type === 'text') console.log('WA webhook: incoming text', { from, text: clip(text || '', 200) })
         if (type === 'audio' && audioId) console.log('WA webhook: incoming audio', { from, audioIdLast6: audioId.slice(-6) })
+        if (type === 'image' && imageId) console.log('WA webhook: incoming image', { from, imageIdLast6: imageId.slice(-6) })
         // Meta "Test" webhook often sends a dummy message from 16315551181 with body "this is a text message".
         if (type === 'text' && IGNORE_TEST_EVENTS && (from === '16315551181' || (text || '').toLowerCase() === 'this is a text message')) {
           console.log('WA webhook: ignoring test event', {
@@ -579,14 +608,34 @@ export async function POST(request: NextRequest) {
             ? transcript && transcript.trim()
               ? `[Voice message transcript]: ${transcript.trim()}`
               : '[Voice message]'
-            : (text || '').trim()
+            : type === 'image'
+              ? ''
+              : (text || '').trim()
 
         const baseConv = getConversation(from)
-        const afterUser = appendMessage(from, { role: 'user', content: effectiveText }) || baseConv
+        const explicitLang = parseLangSwitch(effectiveText || '')
+        const inferredLang: 'ru' | 'ua' = /[іїєґ]/i.test(effectiveText || '') ? 'ua' : 'ru'
+        const preferredLang = explicitLang || (baseConv as any).lang || (effectiveText ? inferredLang : inferredLang)
+        if (explicitLang && explicitLang !== (baseConv as any).lang) updateConversation(from, { lang: explicitLang } as any)
+        if (!explicitLang && !(baseConv as any).lang && effectiveText) updateConversation(from, { lang: inferredLang } as any)
+
+        const now = Date.now()
+        const prevPending: string[] = Array.isArray((baseConv as any).pendingImageUrls)
+          ? ((baseConv as any).pendingImageUrls as any[]).map(String)
+          : []
+        const lastMediaAtIso = typeof (baseConv as any).lastMediaAt === 'string' ? String((baseConv as any).lastMediaAt) : ''
+        const lastMediaAt = lastMediaAtIso ? Date.parse(lastMediaAtIso) : NaN
+        const pendingFresh = Number.isFinite(lastMediaAt) && now - lastMediaAt < 10 * 60 * 1000 ? prevPending : []
+        const pendingAll = [...pendingFresh, ...(imageId ? [imageId] : [])].filter(Boolean)
+        const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
+        if (pendingDedup.length > 0) updateConversation(from, { pendingImageUrls: pendingDedup, lastMediaAt: new Date().toISOString() } as any)
+
+        const userContentForHistory = effectiveText || (imageId ? '[Image]' : '')
+        const afterUser = appendMessage(from, { role: 'user', content: userContentForHistory }) || baseConv
         const recentAssistantTexts = (afterUser?.messages || []).filter((x) => x.role === 'assistant').slice(-6).map((x) => x.content)
         const expandedUserText = expandNumericChoiceFromRecentAssistant({
-          userText: effectiveText,
-          lang: /[іїєґ]/i.test(effectiveText) ? 'ua' : 'ru',
+          userText: effectiveText || userContentForHistory,
+          lang: preferredLang === 'ua' ? 'ua' : 'ru',
           recentAssistantTexts,
         })
         const history = (afterUser?.messages || [])
@@ -596,10 +645,25 @@ export async function POST(request: NextRequest) {
         // Hard requirement: first assistant message is a fixed intro (then default UA afterwards).
         const hasAnyAssistant = (afterUser?.messages || []).some((x) => x.role === 'assistant')
         if (!hasAnyAssistant) {
-          const intro = buildTemoWebFirstMessage(/[іїєґ]/i.test(effectiveText) ? 'ua' : 'ru')
+          const intro = buildTemoWebFirstMessage(preferredLang === 'ua' ? 'ua' : 'ru')
           await sendWhatsAppText(from, intro, { phoneNumberId: metaPhoneNumberId })
           appendMessage(from, { role: 'assistant', content: intro })
           // Do NOT return: after intro we still answer the user's first message (text or voice).
+        }
+
+        // Images-only: acknowledge once and wait for a clarifying line (while buffering images).
+        if (type === 'image' && pendingDedup.length > 0) {
+          const lastAssistantAt = (afterUser?.messages || []).slice().reverse().find((x) => x.role === 'assistant')?.at || null
+          const lastAssistantMs = lastAssistantAt ? Date.parse(String(lastAssistantAt)) : NaN
+          if (!Number.isFinite(lastAssistantMs) || now - lastAssistantMs > 2 * 60 * 1000) {
+            const ack =
+              preferredLang === 'ua'
+                ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
+                : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
+            await sendWhatsAppText(from, ack, { phoneNumberId: metaPhoneNumberId })
+            appendMessage(from, { role: 'assistant', content: ack })
+          }
+          continue
         }
 
         // Lead capture (unified CRM): WhatsApp always has a sender number, so we create a lead
@@ -657,9 +721,30 @@ export async function POST(request: NextRequest) {
           console.error('WA lead capture failed', { error: String((e as any)?.message || e) })
         }
 
-        const reply = await generateAiReply({ userText: expandedUserText, history, apiKey })
+        async function prepareImageDataUrls(ids: string[]) {
+          const out: string[] = []
+          for (let i = 0; i < Math.min(ids.length, 2); i += 1) {
+            const id = String(ids[i] || '').trim()
+            if (!id) continue
+            const media = await waFetchMediaUrl(id)
+            if (!media?.url) continue
+            const buf = await waDownloadMediaBinary(media.url)
+            if (!buf || buf.length === 0 || buf.length > 900_000) continue
+            const mime = (media.mime || 'image/jpeg').includes('/') ? media.mime! : 'image/jpeg'
+            out.push(`data:${mime};base64,${buf.toString('base64')}`)
+          }
+          return out
+        }
+
+        const pendingIds = Array.isArray((afterUser as any)?.pendingImageUrls)
+          ? ((afterUser as any).pendingImageUrls as any[]).map(String).filter(Boolean)
+          : pendingDedup
+        const images = await prepareImageDataUrls(pendingIds)
+
+        const reply = await generateAiReply({ userText: expandedUserText, history, apiKey, lang: preferredLang === 'ua' ? 'ua' : 'ru', images })
         await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
         appendMessage(from, { role: 'assistant', content: reply })
+        if (pendingIds.length > 0) updateConversation(from, { pendingImageUrls: [], lastMediaAt: null } as any)
       }
     }
   }

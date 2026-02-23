@@ -12,6 +12,10 @@ export function AiChatWidget() {
   const [input, setInput] = useState('')
   const [history, setHistory] = useState<ChatMsg[]>([])
   const listRef = useRef<HTMLDivElement | null>(null)
+  const lastUserAtRef = useRef<number>(0)
+  const lastAssistantAtRef = useRef<number>(0)
+  const followUpShownRef = useRef<boolean>(false)
+  const followUpTimerRef = useRef<number | null>(null)
 
   const lang: 'ru' = 'ru'
   const basePayload = useMemo(
@@ -41,6 +45,42 @@ export function AiChatWidget() {
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }
 
+  const buildFollowUp = (lastUserText: string) => {
+    const last = String(lastUserText || '').trim().slice(0, 120)
+    return [
+      'Вернусь на минуту 🙂',
+      last ? `Правильно понял: ${last}?` : 'Правильно понял запрос?',
+      'Если удобнее — оставьте номер, я напишу вам в WhatsApp.',
+    ].join('\n')
+  }
+
+  const maybeScheduleFollowUp = () => {
+    if (!open) return
+    if (followUpTimerRef.current) {
+      window.clearTimeout(followUpTimerRef.current)
+      followUpTimerRef.current = null
+    }
+    if (followUpShownRef.current) return
+    const lastUserAt = lastUserAtRef.current
+    const lastAssistantAt = lastAssistantAtRef.current
+    if (!lastAssistantAt || lastAssistantAt <= lastUserAt) return
+    const remaining = 20 * 60 * 1000 - (Date.now() - lastAssistantAt)
+    if (remaining <= 0) {
+      const lastUser = [...history].reverse().find((m) => m.role === 'user')?.content || ''
+      followUpShownRef.current = true
+      setHistory((prev) => [...prev, { role: 'assistant', content: buildFollowUp(lastUser) }])
+      return
+    }
+    followUpTimerRef.current = window.setTimeout(() => {
+      if (!open) return
+      if (followUpShownRef.current) return
+      if (lastAssistantAtRef.current <= lastUserAtRef.current) return
+      const lastUser = [...history].reverse().find((m) => m.role === 'user')?.content || ''
+      followUpShownRef.current = true
+      setHistory((prev) => [...prev, { role: 'assistant', content: buildFollowUp(lastUser) }])
+    }, remaining)
+  }
+
   const fetchIntroIfNeeded = async () => {
     if (history.length > 0) return
     setLoading(true)
@@ -59,7 +99,10 @@ export function AiChatWidget() {
       })
       const data = await res.json()
       const answer = String(data?.answer || '').trim()
-      if (answer) setHistory([{ role: 'assistant', content: answer }])
+      if (answer) {
+        lastAssistantAtRef.current = Date.now()
+        setHistory([{ role: 'assistant', content: answer }])
+      }
       if (String(data?.provider || '') === 'fallback') {
         setNotice('AI сейчас работает в упрощённом режиме (ключ OpenAI не подключён).')
       }
@@ -81,11 +124,25 @@ export function AiChatWidget() {
     scrollToBottom()
   }, [open, history.length])
 
+  useEffect(() => {
+    if (!open) return
+    maybeScheduleFollowUp()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, history.length])
+
+  useEffect(() => {
+    return () => {
+      if (followUpTimerRef.current) window.clearTimeout(followUpTimerRef.current)
+    }
+  }, [])
+
   const send = async (text: string) => {
     const q = String(text || '').trim()
     if (!q || loading) return
     setError('')
     setNotice('')
+    followUpShownRef.current = false
+    lastUserAtRef.current = Date.now()
     const nextHistory: ChatMsg[] = [...history, { role: 'user', content: q }]
     setHistory(nextHistory)
     setInput('')
@@ -103,7 +160,10 @@ export function AiChatWidget() {
       })
       const data = await res.json()
       const answer = String(data?.answer || '').trim()
-      if (answer) setHistory((prev) => [...prev, { role: 'assistant', content: answer }])
+      if (answer) {
+        lastAssistantAtRef.current = Date.now()
+        setHistory((prev) => [...prev, { role: 'assistant', content: answer }])
+      }
       if (String(data?.provider || '') === 'fallback') {
         setNotice('AI сейчас работает в упрощённом режиме (ключ OpenAI не подключён).')
       }
@@ -144,6 +204,9 @@ export function AiChatWidget() {
                 setHistory([])
                 setError('')
                 setNotice('')
+                followUpShownRef.current = false
+                lastUserAtRef.current = 0
+                lastAssistantAtRef.current = 0
               }}
               className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-[#94A3B8] transition hover:border-white/[0.16] hover:text-white"
             >

@@ -1,31 +1,31 @@
 import fs from 'fs'
 import path from 'path'
 
-export type WhatsAppRole = 'user' | 'assistant'
+export type TelegramRole = 'user' | 'assistant'
 
-export type WhatsAppMessage = {
-  role: WhatsAppRole
+export type TelegramMessage = {
+  role: TelegramRole
   content: string
   at: string
 }
 
-export type WhatsAppConversation = {
-  from: string // wa_id
+export type TelegramConversation = {
+  chatId: string
   createdAt: string
   updatedAt: string
-  lang?: 'ru' | 'ua' | null
-  pendingImageUrls?: string[]
-  lastMediaAt?: string | null
-  followUpSentAt?: string | null
-  leadCapturedAt?: string | null
-  messages: WhatsAppMessage[]
+  lang: 'ru' | 'ua' | null
+  pendingImageFileIds: string[]
+  lastMediaAt: string | null
+  followUpSentAt: string | null
+  leadCapturedAt: string | null
+  messages: TelegramMessage[]
 }
 
 const FILE =
-  (process.env.WHATSAPP_CONVERSATIONS_FILE || '').trim() ||
-  path.join(process.cwd(), 'data', 'whatsapp-conversations.json')
+  (process.env.TELEGRAM_CONVERSATIONS_FILE || '').trim() ||
+  path.join(process.cwd(), 'data', 'telegram-conversations.json')
 
-const MAX_MESSAGES = Number(process.env.WHATSAPP_MAX_MESSAGES || 24)
+const MAX_MESSAGES = Number(process.env.TELEGRAM_MAX_MESSAGES || 30)
 
 function ensureFile() {
   const dir = path.dirname(FILE)
@@ -33,20 +33,21 @@ function ensureFile() {
   if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, JSON.stringify({}), 'utf8')
 }
 
-function readAll(): Record<string, WhatsAppConversation> {
+function readAll(): Record<string, TelegramConversation> {
   try {
     ensureFile()
     const raw = fs.readFileSync(FILE, 'utf8')
     const parsed = JSON.parse(raw)
-    const obj = parsed && typeof parsed === 'object' ? (parsed as Record<string, WhatsAppConversation>) : {}
+    const obj = parsed && typeof parsed === 'object' ? (parsed as Record<string, TelegramConversation>) : {}
     // Backward-compatible normalization.
     for (const k of Object.keys(obj)) {
       const c: any = obj[k] || {}
       if (typeof c.lang === 'undefined') c.lang = null
-      if (typeof c.pendingImageUrls === 'undefined') c.pendingImageUrls = []
+      if (!Array.isArray(c.pendingImageFileIds)) c.pendingImageFileIds = []
       if (typeof c.lastMediaAt === 'undefined') c.lastMediaAt = null
       if (typeof c.followUpSentAt === 'undefined') c.followUpSentAt = null
       if (typeof c.leadCapturedAt === 'undefined') c.leadCapturedAt = null
+      if (!Array.isArray(c.messages)) c.messages = []
       obj[k] = c
     }
     return obj
@@ -55,25 +56,25 @@ function readAll(): Record<string, WhatsAppConversation> {
   }
 }
 
-function writeAll(all: Record<string, WhatsAppConversation>) {
+function writeAll(all: Record<string, TelegramConversation>) {
   ensureFile()
   const tmp = `${FILE}.${Date.now()}.tmp`
   fs.writeFileSync(tmp, JSON.stringify(all, null, 2), 'utf8')
   fs.renameSync(tmp, FILE)
 }
 
-export function getConversation(from: string): WhatsAppConversation {
-  const key = String(from || '').trim()
+export function getConversation(chatId: string): TelegramConversation {
+  const key = String(chatId || '').trim()
   const all = readAll()
   const existing = all[key] || null
   if (existing) return existing
   const now = new Date().toISOString()
-  const conv: WhatsAppConversation = {
-    from: key,
+  const conv: TelegramConversation = {
+    chatId: key,
     createdAt: now,
     updatedAt: now,
     lang: null,
-    pendingImageUrls: [],
+    pendingImageFileIds: [],
     lastMediaAt: null,
     followUpSentAt: null,
     leadCapturedAt: null,
@@ -84,13 +85,13 @@ export function getConversation(from: string): WhatsAppConversation {
   return conv
 }
 
-export function appendMessage(from: string, msg: { role: WhatsAppRole; content: string }) {
-  const key = String(from || '').trim()
+export function appendMessage(chatId: string, msg: { role: TelegramRole; content: string }) {
+  const key = String(chatId || '').trim()
   if (!key) return null
   const all = readAll()
   const base = all[key] || getConversation(key)
   const now = new Date().toISOString()
-  const next: WhatsAppConversation = {
+  const next: TelegramConversation = {
     ...base,
     updatedAt: now,
     messages: [...(Array.isArray(base.messages) ? base.messages : []), { role: msg.role, content: String(msg.content || ''), at: now }]
@@ -98,26 +99,17 @@ export function appendMessage(from: string, msg: { role: WhatsAppRole; content: 
       .slice(-Math.max(6, Math.min(80, MAX_MESSAGES))),
   }
   all[key] = next
-  // Keep file bounded (avoid unbounded growth if many unknown senders)
-  const keys = Object.keys(all)
-  if (keys.length > 6000) {
-    // crude pruning: keep newest by updatedAt
-    keys
-      .sort((a, b) => String(all[b]?.updatedAt || '').localeCompare(String(all[a]?.updatedAt || '')))
-      .slice(5000)
-      .forEach((k) => delete all[k])
-  }
   writeAll(all)
   return next
 }
 
-export function updateConversation(from: string, patch: Partial<WhatsAppConversation>) {
-  const key = String(from || '').trim()
+export function updateConversation(chatId: string, patch: Partial<TelegramConversation>) {
+  const key = String(chatId || '').trim()
   if (!key) return null
   const all = readAll()
   const base = all[key] || getConversation(key)
   const now = new Date().toISOString()
-  const next: WhatsAppConversation = { ...base, ...patch, from: key, updatedAt: now }
+  const next: TelegramConversation = { ...base, ...patch, chatId: key, updatedAt: now }
   all[key] = next
   writeAll(all)
   return next
