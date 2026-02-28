@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { recordWhatsAppWebhook } from '../state'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
-import { createLead, getTenantProfile, hasRecentLeadByContact, resolveTenantIdByConnection } from '@/app/lib/storage'
+import { createLead, getTenantProfile, hasRecentLeadByContact, resolveTenantAssistantRules, resolveTenantIdByConnection } from '@/app/lib/storage'
 import { appendMessage, getConversation, updateConversation } from '../conversationStore'
 import {
   applyChannelLimits,
@@ -306,6 +306,7 @@ async function generateAiReply(params: {
   apiKey?: string | null
   lang?: 'ru' | 'ua'
   images?: string[]
+  extraRules?: string[]
 }) {
   const rawUserText = params.userText
   const key = (params.apiKey || OPENAI_API_KEY || '').trim()
@@ -359,7 +360,7 @@ async function generateAiReply(params: {
     channel: 'whatsapp',
     stage,
     readinessScore,
-    extraRules: supportRules,
+    extraRules: [...(Array.isArray(params.extraRules) ? params.extraRules : []), ...supportRules],
   })
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS_WA)
@@ -607,6 +608,7 @@ export async function POST(request: NextRequest) {
         // - enables digit-only selections for "next steps" options
         const tenantId = metaPhoneNumberId ? await resolveTenantIdByConnection('whatsapp', metaPhoneNumberId).catch(() => null) : null
         const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
+        const tenantExtraRules = tenantId ? await resolveTenantAssistantRules(String(tenantId)).catch(() => []) : []
         const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
 
         // Voice/audio: transcribe to text so AI can handle it like a normal message.
@@ -752,7 +754,7 @@ export async function POST(request: NextRequest) {
           : pendingDedup
         const images = await prepareImageDataUrls(pendingIds)
 
-        const reply = await generateAiReply({ userText: expandedUserText, history, apiKey, lang: preferredLang === 'ua' ? 'ua' : 'ru', images })
+        const reply = await generateAiReply({ userText: expandedUserText, history, apiKey, lang: preferredLang === 'ua' ? 'ua' : 'ru', images, extraRules: tenantExtraRules })
         await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
         await appendMessage(from, { role: 'assistant', content: reply })
         if (pendingIds.length > 0) await updateConversation(from, { pendingImageUrls: [], lastMediaAt: null } as any)

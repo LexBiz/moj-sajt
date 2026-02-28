@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
-import { getTenantProfile } from '@/app/lib/storage'
+import { getTenantProfile, resolveTenantAssistantRules } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import { hitRateLimit } from '@/app/lib/apiRateLimit'
 import { getRequestIdentity } from '@/app/lib/requestIdentity'
@@ -459,6 +459,7 @@ export async function POST(request: NextRequest) {
 
     const tenantId = String(body.tenantId || 'temoweb').trim().toLowerCase()
     const profile = tenantId ? await getTenantProfile(tenantId).catch(() => null) : null
+    const templateRules = tenantId ? await resolveTenantAssistantRules(tenantId).catch(() => []) : []
     const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : ''
 
     // If user replied with a digit, rewrite the last user turn for the model so it can follow the chosen option.
@@ -471,7 +472,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const aiResult = await callOpenAI(context, historyForAi, body.lang, body.currentChannel, body.sourceHint, supportRules, apiKey)
+    const aiResult = await callOpenAI(context, historyForAi, body.lang, body.currentChannel, body.sourceHint, [...templateRules, ...supportRules], apiKey)
     let answer = aiResult?.content ? aiResult.content : normalizeAnswer(buildFallback(body))
     // Remove repeated "I am AI assistant..." intro after first assistant message.
     answer = stripRepeatedIntro(answer, isFirstAssistant)

@@ -7,7 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
-import { createLead, getTenantProfile, resolveTenantIdByConnection } from '@/app/lib/storage'
+import { createLead, getTenantProfile, resolveTenantAssistantRules, resolveTenantIdByConnection } from '@/app/lib/storage'
 import {
   applyChannelLimits,
   applyNextSteps,
@@ -1088,8 +1088,9 @@ async function generateAiReply(params: {
   readinessScore?: number
   channel?: 'instagram'
   apiKey?: string | null
+  extraRules?: string[]
 }) {
-  const { userText, lang, stage, history, images = [], readinessScore = 0, apiKey } = params
+  const { userText, lang, stage, history, images = [], readinessScore = 0, apiKey, extraRules = [] } = params
   const OPENAI_API_KEY = getOpenAiKey()
   const key = (apiKey || OPENAI_API_KEY || '').trim()
   if (!key) {
@@ -1116,7 +1117,7 @@ async function generateAiReply(params: {
     channel: 'instagram',
     stage: computeStageHeuristic(userText, readinessScore),
     readinessScore,
-    extraRules: supportRules,
+    extraRules: [...extraRules, ...supportRules],
   })
   const historyMsgs = history.slice(-16).map((m) => ({ role: m.role, content: m.content }))
   const isFirstAssistantMsg = history.filter((m) => m.role === 'assistant').length === 0
@@ -1631,6 +1632,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const rid = String(recipientId || '').trim()
   const tenantId = rid ? await resolveTenantIdByConnection('instagram', rid).catch(() => null) : null
   const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
+  const tenantExtraRules = tenantId ? await resolveTenantAssistantRules(String(tenantId)).catch(() => []) : []
   const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
   const conversation = await getConversation(senderId)
   const rawText = String(text || '')
@@ -1707,6 +1709,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       images: [],
       readinessScore: 35,
       channel: 'instagram',
+      extraRules: tenantExtraRules,
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
     const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: trimmed }, { role: 'assistant' as const, content: ai.reply }].slice(-24) as any
@@ -1892,6 +1895,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         history,
         images: [],
         apiKey,
+        extraRules: tenantExtraRules,
       })
       recordInstagramAi({ provider: ai.provider, detail: ai.detail })
       const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
@@ -1915,6 +1919,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       history,
       images: [],
       apiKey,
+      extraRules: tenantExtraRules,
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
     const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactFix')
@@ -1971,7 +1976,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const images = await prepareImagesForOpenAI(imagesRaw)
 
   // Main rule: after language selection, NO hard-coded templates — all replies are from OpenAI.
-  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram', apiKey })
+  const ai = await generateAiReply({ userText: composedUserText, lang, stage: nextStage, history, images, readinessScore, channel: 'instagram', apiKey, extraRules: tenantExtraRules })
   // Guardrails for IG Direct:
   // - Avoid nagging: don't repeat contact ask every turn.
   // - But also avoid "резина": keep replies short and lead to next step when warm/hot.

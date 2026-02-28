@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { listChannelConnections } from '@/app/lib/storage'
+import { createLead, getTenantProfile, hasRecentLeadByContact, listChannelConnections, resolveTenantAssistantRules } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
 import {
   applyChannelLimits,
@@ -28,7 +28,6 @@ import { appendMessage, getConversation, setConversationLang, updateConversation
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../../temowebPrompt'
 import fs from 'fs'
 import path from 'path'
-import { createLead, hasRecentLeadByContact, getTenantProfile } from '@/app/lib/storage'
 import { startMessengerFollowupScheduler } from '../followupScheduler'
 import { hitRateLimit } from '@/app/lib/apiRateLimit'
 import { getRequestIdentity } from '@/app/lib/requestIdentity'
@@ -556,6 +555,7 @@ async function generateAiReplyWithHistory(input: {
   images?: string[]
   apiKey?: string | null
   pageAccessToken?: string
+  extraRules?: string[]
 }) {
   const userText = input.userText
   const apiKey = (input.apiKey || OPENAI_API_KEY || '').trim()
@@ -574,7 +574,8 @@ async function generateAiReplyWithHistory(input: {
           : 'SUPPORT MODE: клиент сообщает о проблеме или уже подключенной системе. Перейдите в режим поддержки. Спросите: канал, что сломалось, когда началось. Не продавайте пакеты.',
       ]
     : []
-  const system = buildTemoWebSystemPrompt({ lang, channel: 'messenger', stage, readinessScore, extraRules: supportRules })
+  const tenantRules = Array.isArray(input.extraRules) ? input.extraRules : []
+  const system = buildTemoWebSystemPrompt({ lang, channel: 'messenger', stage, readinessScore, extraRules: [...tenantRules, ...supportRules] })
   const isFirstAssistant = hist.filter((m) => m.role === 'assistant').length === 0
   const firstMsgRule = isFirstAssistant
     ? lang === 'ua'
@@ -857,6 +858,7 @@ export async function POST(request: NextRequest) {
       if (!explicitLang && !conv.lang && baseTextForLang) await setConversationLang(pageId, senderId, inferredLang)
       const preferredLang = explicitLang || conv.lang || (baseTextForLang ? inferredLang : 'ua')
       const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
+      const tenantExtraRules = conn?.tenantId ? await resolveTenantAssistantRules(String(conn.tenantId)).catch(() => []) : []
       const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
 
       const audioUrl = audioUrls[0] || null
@@ -966,6 +968,7 @@ export async function POST(request: NextRequest) {
         images: imagesForAi,
         apiKey,
         pageAccessToken,
+        extraRules: tenantExtraRules,
       })
       const intent = detectAiIntent(effectiveUserText || '')
       const userTurns = history.filter((m) => m.role === 'user').length || 1

@@ -52,6 +52,8 @@ next-env.d.ts
 
 /мой нетифай/data/
 /мой нетифай/data/*.json
+/dialogue-lab/reports/
+/dialogue-lab/reports/*.json
 
 # server/local helpers (not source code)
 /.pult/

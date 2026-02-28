@@ -6,6 +6,25 @@ export type Tenant = { id: string; name: string; plan: string; notes?: string | 
 export type TenantProfile = any
 export type ChannelConnection = any
 export type Lead = any
+export type AssistantTemplate = {
+  id: string
+  slug: string
+  name: string
+  description?: string | null
+  payload: any
+  isActive: boolean
+  version: number
+  createdAt?: string
+  updatedAt?: string
+}
+export type TenantAssistantConfig = {
+  tenantId: string
+  templateId: string | null
+  templateVersion?: number | null
+  overrides?: any
+  createdAt?: string
+  updatedAt?: string
+}
 
 const TENANTS_FILE = path.join(process.cwd(), 'data', 'tenants.json')
 const PROFILES_FILE = path.join(process.cwd(), 'data', 'tenant-profiles.json')
@@ -13,6 +32,8 @@ const CONNECTIONS_FILE = path.join(process.cwd(), 'data', 'channel-connections.j
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 const ASSISTANT_ITEMS_FILE = path.join(process.cwd(), 'data', 'assistant-items.json')
 const ASSISTANT_MESSAGES_FILE = path.join(process.cwd(), 'data', 'assistant-messages.json')
+const ASSISTANT_TEMPLATES_FILE = path.join(process.cwd(), 'data', 'assistant-templates.json')
+const TENANT_ASSISTANT_CONFIG_FILE = path.join(process.cwd(), 'data', 'tenant-assistant-config.json')
 
 function storageMode() {
   const mode = String(process.env.STORAGE_MODE || '').trim().toLowerCase()
@@ -34,6 +55,11 @@ async function pgQuery<T = any>(sql: string, params?: any[]) {
     setTimeout(() => rej(new Error(`pg_timeout_${PG_QUERY_TIMEOUT_MS}ms`)), PG_QUERY_TIMEOUT_MS),
   )
   return (await Promise.race([p, timeout])) as T
+}
+
+function normalizeTemplateId(input: unknown) {
+  const raw = String(input || '').trim().toLowerCase()
+  return raw.replace(/[^a-z0-9_-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 }
 
 // TENANTS
@@ -68,6 +94,229 @@ export async function upsertTenant(t: Tenant) {
     [t.id, t.name, t.plan || 'START', t.notes || null],
   )
   return res.rows[0]
+}
+
+// ASSISTANT TEMPLATES
+export async function listAssistantTemplates(): Promise<AssistantTemplate[]> {
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_TEMPLATES_FILE, []) as any[]
+    return (Array.isArray(all) ? all : []).map((x) => ({
+      id: String(x?.id || ''),
+      slug: String(x?.slug || ''),
+      name: String(x?.name || ''),
+      description: x?.description ?? null,
+      payload: x?.payload ?? {},
+      isActive: x?.isActive !== false,
+      version: Number(x?.version || 1) || 1,
+      createdAt: x?.createdAt,
+      updatedAt: x?.updatedAt,
+    }))
+  }
+  const res = await pgQuery(
+    `SELECT
+      id, slug, name, description,
+      payload,
+      is_active as "isActive",
+      version,
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+     FROM assistant_templates
+     ORDER BY updated_at DESC`,
+  )
+  return res.rows || []
+}
+
+export async function getAssistantTemplateById(id: string): Promise<AssistantTemplate | null> {
+  const tid = normalizeTemplateId(id)
+  if (!tid) return null
+  if (!isPostgresEnabled()) {
+    const all = (readJsonFile(ASSISTANT_TEMPLATES_FILE, []) as any[]) || []
+    const found = all.find((x: any) => String(x?.id || '') === tid || String(x?.slug || '') === tid) || null
+    return found
+      ? {
+          id: String(found.id || ''),
+          slug: String(found.slug || ''),
+          name: String(found.name || ''),
+          description: found.description ?? null,
+          payload: found.payload ?? {},
+          isActive: found.isActive !== false,
+          version: Number(found.version || 1) || 1,
+          createdAt: found.createdAt,
+          updatedAt: found.updatedAt,
+        }
+      : null
+  }
+  const res = await pgQuery(
+    `SELECT
+      id, slug, name, description,
+      payload,
+      is_active as "isActive",
+      version,
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+     FROM assistant_templates
+     WHERE id=$1 OR slug=$1
+     LIMIT 1`,
+    [tid],
+  )
+  return res.rows?.[0] || null
+}
+
+export async function upsertAssistantTemplate(input: Partial<AssistantTemplate> & { id?: string; slug?: string; name: string; payload?: any }) {
+  const id = normalizeTemplateId(input.id || input.slug || input.name)
+  if (!id) throw new Error('template id is required')
+  const slug = normalizeTemplateId(input.slug || id)
+  if (!slug) throw new Error('template slug is required')
+  const name = String(input.name || '').trim()
+  if (!name) throw new Error('template name is required')
+  const description = input.description == null ? null : String(input.description).trim() || null
+  const payload = input.payload && typeof input.payload === 'object' ? input.payload : {}
+  const isActive = input.isActive !== false
+  const nextVersion = Math.max(1, Number(input.version || 1) || 1)
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(ASSISTANT_TEMPLATES_FILE, []) as any[]
+    const idx = all.findIndex((x) => String(x?.id || '') === id)
+    const prev = idx >= 0 ? all[idx] : null
+    const now = new Date().toISOString()
+    const next = {
+      id,
+      slug,
+      name,
+      description,
+      payload,
+      isActive,
+      version: prev ? Math.max(nextVersion, Number(prev?.version || 1) + 1) : nextVersion,
+      createdAt: prev?.createdAt || now,
+      updatedAt: now,
+    }
+    if (idx >= 0) all[idx] = next
+    else all.unshift(next)
+    writeJsonFile(ASSISTANT_TEMPLATES_FILE, all)
+    return next
+  }
+
+  const current = await getAssistantTemplateById(id)
+  const version = current ? Math.max(nextVersion, Number(current.version || 1) + 1) : nextVersion
+  const res = await pgQuery(
+    `INSERT INTO assistant_templates (id, slug, name, description, payload, is_active, version)
+     VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7)
+     ON CONFLICT (id) DO UPDATE SET
+      slug=EXCLUDED.slug,
+      name=EXCLUDED.name,
+      description=EXCLUDED.description,
+      payload=EXCLUDED.payload,
+      is_active=EXCLUDED.is_active,
+      version=EXCLUDED.version,
+      updated_at=now()
+     RETURNING
+      id, slug, name, description,
+      payload,
+      is_active as "isActive",
+      version,
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [id, slug, name, description, JSON.stringify(payload), isActive, version],
+  )
+  return res.rows?.[0] || null
+}
+
+export async function getTenantAssistantConfig(tenantId: string): Promise<TenantAssistantConfig | null> {
+  const tid = String(tenantId || '').trim().toLowerCase()
+  if (!tid) return null
+  if (!isPostgresEnabled()) {
+    const all = (readJsonFile(TENANT_ASSISTANT_CONFIG_FILE, []) as any[]) || []
+    const found = all.find((x: any) => String(x?.tenantId || '').toLowerCase() === tid) || null
+    return found
+      ? {
+          tenantId: tid,
+          templateId: found.templateId ? String(found.templateId) : null,
+          templateVersion: found.templateVersion == null ? null : Number(found.templateVersion),
+          overrides: found.overrides && typeof found.overrides === 'object' ? found.overrides : {},
+          createdAt: found.createdAt,
+          updatedAt: found.updatedAt,
+        }
+      : null
+  }
+  const res = await pgQuery(
+    `SELECT
+      tenant_id as "tenantId",
+      template_id as "templateId",
+      template_version as "templateVersion",
+      overrides,
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+     FROM tenant_assistant_config
+     WHERE tenant_id=$1
+     LIMIT 1`,
+    [tid],
+  )
+  return res.rows?.[0] || null
+}
+
+export async function upsertTenantAssistantConfig(input: TenantAssistantConfig) {
+  const tenantId = String(input.tenantId || '').trim().toLowerCase()
+  if (!tenantId) throw new Error('tenantId is required')
+  const templateId = input.templateId ? normalizeTemplateId(input.templateId) : null
+  const overrides = input.overrides && typeof input.overrides === 'object' ? input.overrides : {}
+  let templateVersion = input.templateVersion == null ? null : Number(input.templateVersion)
+  if (templateId && !templateVersion) {
+    const tpl = await getAssistantTemplateById(templateId)
+    templateVersion = tpl?.version ? Number(tpl.version) : null
+  }
+
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(TENANT_ASSISTANT_CONFIG_FILE, []) as any[]
+    const idx = all.findIndex((x) => String(x?.tenantId || '').toLowerCase() === tenantId)
+    const prev = idx >= 0 ? all[idx] : null
+    const now = new Date().toISOString()
+    const next = {
+      tenantId,
+      templateId,
+      templateVersion: templateVersion == null ? null : templateVersion,
+      overrides,
+      createdAt: prev?.createdAt || now,
+      updatedAt: now,
+    }
+    if (idx >= 0) all[idx] = next
+    else all.unshift(next)
+    writeJsonFile(TENANT_ASSISTANT_CONFIG_FILE, all)
+    return next
+  }
+
+  const res = await pgQuery(
+    `INSERT INTO tenant_assistant_config (tenant_id, template_id, template_version, overrides)
+     VALUES ($1,$2,$3,$4::jsonb)
+     ON CONFLICT (tenant_id) DO UPDATE SET
+      template_id=EXCLUDED.template_id,
+      template_version=EXCLUDED.template_version,
+      overrides=EXCLUDED.overrides,
+      updated_at=now()
+     RETURNING
+      tenant_id as "tenantId",
+      template_id as "templateId",
+      template_version as "templateVersion",
+      overrides,
+      created_at as "createdAt",
+      updated_at as "updatedAt"`,
+    [tenantId, templateId, templateVersion, JSON.stringify(overrides)],
+  )
+  return res.rows?.[0] || null
+}
+
+export async function resolveTenantAssistantRules(tenantId: string): Promise<string[]> {
+  const tid = String(tenantId || '').trim().toLowerCase()
+  if (!tid) return []
+  const cfg = await getTenantAssistantConfig(tid).catch(() => null)
+  const template = cfg?.templateId ? await getAssistantTemplateById(cfg.templateId).catch(() => null) : null
+  const baseRules = Array.isArray((template as any)?.payload?.extraRules)
+    ? ((template as any).payload.extraRules as any[]).map((x) => String(x || '').trim()).filter(Boolean)
+    : []
+  const overrideRules = Array.isArray((cfg as any)?.overrides?.extraRules)
+    ? ((cfg as any).overrides.extraRules as any[]).map((x) => String(x || '').trim()).filter(Boolean)
+    : []
+  const merged = [...baseRules, ...overrideRules]
+  return Array.from(new Set(merged)).slice(0, 60)
 }
 
 // PROFILES

@@ -25,7 +25,7 @@ import {
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '@/app/api/temowebPrompt'
 import { appendMessage, getConversation, updateConversation } from '../conversationStore'
 import { startTelegramFollowupScheduler } from '../followupScheduler'
-import { createLead, hasRecentLeadByContact } from '@/app/lib/storage'
+import { createLead, hasRecentLeadByContact, resolveTenantAssistantRules } from '@/app/lib/storage'
 import { hitRateLimit } from '@/app/lib/apiRateLimit'
 import { getRequestIdentity } from '@/app/lib/requestIdentity'
 
@@ -174,6 +174,7 @@ async function generateAiReply(params: {
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   lang: 'ru' | 'ua'
   images?: string[]
+  extraRules?: string[]
 }) {
   const rawUserText = params.userText
   const key = OPENAI_API_KEY
@@ -208,7 +209,13 @@ async function generateAiReply(params: {
     .some((m) => /\b(телефон|email|почт|контакт|скиньте|надішліть|залиште)\b/i.test(String(m.content || '')))
   let stage = computeStageHeuristic(composedUserText, readinessScore)
   if (!hasContactAlready && userTurns >= 6 && !contactAskedRecently && !intent.isSupport) stage = 'ASK_CONTACT'
-  const system = buildTemoWebSystemPrompt({ lang, channel: 'telegram', stage, readinessScore })
+  const system = buildTemoWebSystemPrompt({
+    lang,
+    channel: 'telegram',
+    stage,
+    readinessScore,
+    extraRules: Array.isArray(params.extraRules) ? params.extraRules : [],
+  })
 
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS)
@@ -469,11 +476,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const tenantExtraRules = await resolveTenantAssistantRules(TENANT_ID).catch(() => [])
   const reply = await generateAiReply({
     userText: effectiveText,
     history,
     lang: preferredLang === 'ua' ? 'ua' : 'ru',
     images,
+    extraRules: tenantExtraRules,
   })
   await sendTelegramText(chatId, reply)
   await appendMessage(chatId, { role: 'assistant', content: reply })

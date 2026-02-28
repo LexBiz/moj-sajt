@@ -41,6 +41,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <NavLink href="/admin/tenants" label="Клиенты" />
             <NavLink href="/admin/profiles" label="Профили" />
             <NavLink href="/admin/connections" label="Подключения" />
+            <NavLink href="/admin/templates" label="Шаблоны" />
             <NavLink href="/admin/integrations" label="Интеграции" />
             <NavLink href="/admin/netlify" label="Мой нетифай" />
           </div>
