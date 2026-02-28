@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { requireAdmin } from '@/app/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-function requireAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const password = (process.env.ADMIN_PASSWORD || 'admin123').trim()
-  return authHeader === `Bearer ${password}`
-}
 
 function nowStamp() {
   const d = new Date()

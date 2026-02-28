@@ -200,10 +200,23 @@ export async function resolveTenantIdByConnection(channel: string, externalId: s
 }
 
 // LEADS (kept minimal for now; we’ll switch API gradually)
-export async function listLeads(): Promise<Lead[]> {
-  if (!isPostgresEnabled()) return readJsonFile(LEADS_FILE, []) as any
-  const res = await pgQuery('SELECT * FROM leads ORDER BY created_at DESC LIMIT 500')
-  return res.rows.map((r: any) => ({
+export async function listLeads(input?: { tenantId?: string | null; limit?: number }): Promise<Lead[]> {
+  const tenantId = String(input?.tenantId || '').trim().toLowerCase()
+  const limit = Math.max(1, Math.min(2000, Number(input?.limit || 500) || 500))
+  if (!isPostgresEnabled()) {
+    const all = readJsonFile(LEADS_FILE, []) as any
+    if (!tenantId) return all
+    return (Array.isArray(all) ? all : []).filter((x: any) => String(x?.tenantId || x?.tenant_id || '').trim().toLowerCase() === tenantId)
+  }
+  const params: any[] = []
+  let where = ''
+  if (tenantId) {
+    params.push(tenantId)
+    where = `WHERE LOWER(tenant_id) = $${params.length}`
+  }
+  params.push(limit)
+  const res = await pgQuery(`SELECT * FROM leads ${where} ORDER BY created_at DESC LIMIT $${params.length}`, params)
+  return (res.rows || []).map((r: any) => ({
     ...r,
     createdAt: r.created_at ? new Date(r.created_at).toISOString() : r.createdAt || r.created_at || null,
   }))
@@ -238,9 +251,10 @@ export async function hasRecentLeadByContact(input: { contact: string; source?: 
 
 export async function createLead(input: any) {
   const nowIso = new Date().toISOString()
+  const tenantId = String(input?.tenantId || '').trim().toLowerCase()
   const lead = {
     id: typeof input?.id === 'number' ? input.id : Date.now(),
-    tenantId: input?.tenantId || null,
+    tenantId: tenantId || 'temoweb',
     name: input?.name || null,
     contact: input?.contact || input?.phone || null,
     email: input?.email || null,

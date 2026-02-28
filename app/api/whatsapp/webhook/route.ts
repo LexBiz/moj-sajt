@@ -28,6 +28,8 @@ import {
   evaluateQuality,
 } from '@/app/lib/aiPostProcess'
 import { startWhatsAppFollowupScheduler } from '../followupScheduler'
+import { hitRateLimit } from '@/app/lib/apiRateLimit'
+import { getRequestIdentity } from '@/app/lib/requestIdentity'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -531,6 +533,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = await hitRateLimit({
+    scope: 'whatsapp_webhook',
+    identity: getRequestIdentity(request),
+    windowSec: 60,
+    limit: Number(process.env.RATE_LIMIT_WHATSAPP_WEBHOOK_PER_MIN || 600),
+  })
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } })
+  }
   const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
   const contentEncoding = request.headers.get('content-encoding')
@@ -612,12 +623,12 @@ export async function POST(request: NextRequest) {
               ? ''
               : (text || '').trim()
 
-        const baseConv = getConversation(from)
+        const baseConv = await getConversation(from)
         const explicitLang = parseLangSwitch(effectiveText || '')
         const inferredLang: 'ru' | 'ua' = /[іїєґ]/i.test(effectiveText || '') ? 'ua' : 'ru'
         const preferredLang = explicitLang || (baseConv as any).lang || (effectiveText ? inferredLang : inferredLang)
-        if (explicitLang && explicitLang !== (baseConv as any).lang) updateConversation(from, { lang: explicitLang } as any)
-        if (!explicitLang && !(baseConv as any).lang && effectiveText) updateConversation(from, { lang: inferredLang } as any)
+        if (explicitLang && explicitLang !== (baseConv as any).lang) await updateConversation(from, { lang: explicitLang } as any)
+        if (!explicitLang && !(baseConv as any).lang && effectiveText) await updateConversation(from, { lang: inferredLang } as any)
 
         const now = Date.now()
         const prevPending: string[] = Array.isArray((baseConv as any).pendingImageUrls)
@@ -628,10 +639,10 @@ export async function POST(request: NextRequest) {
         const pendingFresh = Number.isFinite(lastMediaAt) && now - lastMediaAt < 10 * 60 * 1000 ? prevPending : []
         const pendingAll = [...pendingFresh, ...(imageId ? [imageId] : [])].filter(Boolean)
         const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
-        if (pendingDedup.length > 0) updateConversation(from, { pendingImageUrls: pendingDedup, lastMediaAt: new Date().toISOString() } as any)
+        if (pendingDedup.length > 0) await updateConversation(from, { pendingImageUrls: pendingDedup, lastMediaAt: new Date().toISOString() } as any)
 
         const userContentForHistory = effectiveText || (imageId ? '[Image]' : '')
-        const afterUser = appendMessage(from, { role: 'user', content: userContentForHistory }) || baseConv
+        const afterUser = (await appendMessage(from, { role: 'user', content: userContentForHistory })) || baseConv
         const recentAssistantTexts = (afterUser?.messages || []).filter((x) => x.role === 'assistant').slice(-6).map((x) => x.content)
         const expandedUserText = expandNumericChoiceFromRecentAssistant({
           userText: effectiveText || userContentForHistory,
@@ -647,7 +658,7 @@ export async function POST(request: NextRequest) {
         if (!hasAnyAssistant) {
           const intro = buildTemoWebFirstMessage(preferredLang === 'ua' ? 'ua' : 'ru')
           await sendWhatsAppText(from, intro, { phoneNumberId: metaPhoneNumberId })
-          appendMessage(from, { role: 'assistant', content: intro })
+          await appendMessage(from, { role: 'assistant', content: intro })
           // Do NOT return: after intro we still answer the user's first message (text or voice).
         }
 
@@ -661,7 +672,7 @@ export async function POST(request: NextRequest) {
                 ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
                 : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
             await sendWhatsAppText(from, ack, { phoneNumberId: metaPhoneNumberId })
-            appendMessage(from, { role: 'assistant', content: ack })
+            await appendMessage(from, { role: 'assistant', content: ack })
           }
           continue
         }
@@ -743,8 +754,8 @@ export async function POST(request: NextRequest) {
 
         const reply = await generateAiReply({ userText: expandedUserText, history, apiKey, lang: preferredLang === 'ua' ? 'ua' : 'ru', images })
         await sendWhatsAppText(from, reply, { phoneNumberId: metaPhoneNumberId })
-        appendMessage(from, { role: 'assistant', content: reply })
-        if (pendingIds.length > 0) updateConversation(from, { pendingImageUrls: [], lastMediaAt: null } as any)
+        await appendMessage(from, { role: 'assistant', content: reply })
+        if (pendingIds.length > 0) await updateConversation(from, { pendingImageUrls: [], lastMediaAt: null } as any)
       }
     }
   }

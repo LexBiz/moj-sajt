@@ -26,6 +26,8 @@ import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageH
 import { appendMessage, getConversation, updateConversation } from '../conversationStore'
 import { startTelegramFollowupScheduler } from '../followupScheduler'
 import { createLead, hasRecentLeadByContact } from '@/app/lib/storage'
+import { hitRateLimit } from '@/app/lib/apiRateLimit'
+import { getRequestIdentity } from '@/app/lib/requestIdentity'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -312,6 +314,15 @@ async function generateAiReply(params: {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = await hitRateLimit({
+    scope: 'telegram_webhook',
+    identity: getRequestIdentity(request),
+    windowSec: 60,
+    limit: Number(process.env.RATE_LIMIT_TELEGRAM_WEBHOOK_PER_MIN || 600),
+  })
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } })
+  }
   if (WEBHOOK_SECRET) {
     const secret = String(request.headers.get('x-telegram-bot-api-secret-token') || '').trim()
     if (!secret || secret !== WEBHOOK_SECRET) {
@@ -324,7 +335,7 @@ export async function POST(request: NextRequest) {
   const chatId = msg?.chat?.id != null ? String(msg.chat.id) : ''
   if (!chatId) return NextResponse.json({ ok: true })
 
-  const baseConv = getConversation(chatId)
+  const baseConv = await getConversation(chatId)
 
   const text = String(msg?.text || msg?.caption || '').trim()
   const voiceFileId = msg?.voice?.file_id ? String(msg.voice.file_id).trim() : null
@@ -338,8 +349,8 @@ export async function POST(request: NextRequest) {
   const explicitLang = parseLangSwitch(text)
   const inferredLang = inferLang(text)
   const preferredLang = explicitLang || baseConv.lang || (text ? inferredLang : inferredLang)
-  if (explicitLang && explicitLang !== baseConv.lang) updateConversation(chatId, { lang: explicitLang })
-  if (!explicitLang && !baseConv.lang && text) updateConversation(chatId, { lang: inferredLang })
+  if (explicitLang && explicitLang !== baseConv.lang) await updateConversation(chatId, { lang: explicitLang })
+  if (!explicitLang && !baseConv.lang && text) await updateConversation(chatId, { lang: inferredLang })
 
   // Media burst buffering.
   const now = Date.now()
@@ -348,7 +359,7 @@ export async function POST(request: NextRequest) {
   const pendingFresh = Number.isFinite(lastMediaAt) && now - lastMediaAt < 10 * 60 * 1000 ? prevPending : []
   const pendingAll = [...pendingFresh, ...(photoFileId ? [photoFileId] : [])].filter(Boolean)
   const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
-  if (pendingDedup.length > 0) updateConversation(chatId, { pendingImageFileIds: pendingDedup, lastMediaAt: nowIso() })
+  if (pendingDedup.length > 0) await updateConversation(chatId, { pendingImageFileIds: pendingDedup, lastMediaAt: nowIso() })
 
   // Voice/audio: transcribe to text.
   let transcript: string | null = null
@@ -367,7 +378,7 @@ export async function POST(request: NextRequest) {
 
   // Store user message.
   const userContentForHistory = effectiveText || (photoFileId ? '[Image]' : '')
-  const afterUser = appendMessage(chatId, { role: 'user', content: userContentForHistory }) || baseConv
+  const afterUser = (await appendMessage(chatId, { role: 'user', content: userContentForHistory })) || baseConv
   const history = (afterUser.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
 
   const contactFromText = extractContact(text) || extractContact(effectiveText)
@@ -380,7 +391,7 @@ export async function POST(request: NextRequest) {
   if (!hasAnyAssistant) {
     const intro = buildTemoWebFirstMessage(preferredLang === 'ua' ? 'ua' : 'ru')
     await sendTelegramText(chatId, intro)
-    appendMessage(chatId, { role: 'assistant', content: intro })
+    await appendMessage(chatId, { role: 'assistant', content: intro })
   }
 
   // Images-only: acknowledge once and wait.
@@ -393,7 +404,7 @@ export async function POST(request: NextRequest) {
           ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
           : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
       await sendTelegramText(chatId, ack)
-      appendMessage(chatId, { role: 'assistant', content: ack })
+      await appendMessage(chatId, { role: 'assistant', content: ack })
     }
     return NextResponse.json({ ok: true })
   }
@@ -452,7 +463,7 @@ export async function POST(request: NextRequest) {
         `🕒 ${new Date().toISOString()}`,
       ].join('\n')
       await sendLeadToOwner(leadText)
-      updateConversation(chatId, { leadCapturedAt: nowIso(), followUpSentAt: nowIso() })
+      await updateConversation(chatId, { leadCapturedAt: nowIso(), followUpSentAt: nowIso() })
     } catch (e) {
       console.error('Telegram lead capture failed', { msg: String((e as any)?.message || e) })
     }
@@ -465,8 +476,8 @@ export async function POST(request: NextRequest) {
     images,
   })
   await sendTelegramText(chatId, reply)
-  appendMessage(chatId, { role: 'assistant', content: reply })
-  if (pendingIds.length > 0) updateConversation(chatId, { pendingImageFileIds: [], lastMediaAt: null })
+  await appendMessage(chatId, { role: 'assistant', content: reply })
+  if (pendingIds.length > 0) await updateConversation(chatId, { pendingImageFileIds: [], lastMediaAt: null })
 
   return NextResponse.json({ ok: true })
 }

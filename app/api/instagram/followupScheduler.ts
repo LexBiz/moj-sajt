@@ -86,7 +86,7 @@ function buildFollowUp(params: { lang: ConversationLang; lastUser: string }) {
 }
 
 async function tickOnce() {
-  const all = getAllConversations()
+  const all = await getAllConversations()
   const now = Date.now()
 
   for (const senderId of Object.keys(all)) {
@@ -119,7 +119,7 @@ async function tickOnce() {
     if (!sent.ok) continue
 
     const nextHistory: ConversationMessage[] = [...(Array.isArray(c.history) ? c.history : []), { role: 'assistant' as const, content: msg }].slice(-12) as any
-    updateConversation(senderId, {
+    await updateConversation(senderId, {
       followUpSentAt: nowIso(),
       lastAssistantAt: nowIso(),
       history: nextHistory,

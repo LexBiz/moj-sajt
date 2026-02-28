@@ -30,6 +30,8 @@ import {
   enforcePackageConsistency,
 } from '@/app/lib/aiPostProcess'
 import { startInstagramFollowupScheduler } from '../followupScheduler'
+import { hitRateLimit } from '@/app/lib/apiRateLimit'
+import { getRequestIdentity } from '@/app/lib/requestIdentity'
 
 // Start follow-up scheduler once per server process (enabled via env).
 startInstagramFollowupScheduler()
@@ -541,10 +543,10 @@ async function handleIncomingCommentChange(change: IgWebhookChange) {
       await sendInstagramMessage(fromId, dmText)
       if (plus) {
         // Seed conversation so next DM continues with main system (and avoid re-sending).
-        const c = getConversation(fromId)
+        const c = await getConversation(fromId)
         const seededHistory = Array.isArray(c.history) ? c.history : []
         const nextHistory: ConversationMessage[] = [...seededHistory, { role: 'assistant' as const, content: dmText }].slice(-24) as any
-        updateConversation(fromId, {
+        await updateConversation(fromId, {
           lang,
           stage: 'qualify',
           history: nextHistory,
@@ -1630,7 +1632,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const tenantId = rid ? await resolveTenantIdByConnection('instagram', rid).catch(() => null) : null
   const profile = tenantId ? await getTenantProfile(String(tenantId)).catch(() => null) : null
   const apiKey = profile && typeof (profile as any).openAiKey === 'string' ? String((profile as any).openAiKey).trim() : null
-  const conversation = getConversation(senderId)
+  const conversation = await getConversation(senderId)
   const rawText = String(text || '')
   const trimmed = rawText.trim()
   const now = Date.now()
@@ -1638,7 +1640,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     /(это\s+фото\s+можно\s+просмотреть\s+только\s+один\s+раз|воспользуйтесь\s+для\s+этого\s+мобильным\s+приложением|this\s+photo\s+can\s+only\s+be\s+viewed\s+once|use\s+the\s+mobile\s+app\s+to\s+view\s+it)/i
   // IG Web sometimes injects system notices for "view once" media. Do NOT treat them as user intent.
   if (trimmed && IG_SYSTEM_MEDIA_NOTICE_RE.test(trimmed) && (!media || media.length === 0)) {
-    updateConversation(senderId, { lastUserAt: nowIso() })
+    await updateConversation(senderId, { lastUserAt: nowIso() })
     return
   }
 
@@ -1650,7 +1652,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
 
   // Hard reset: user asks to "start over" -> clear conversation state and restart language selection.
   if (detectResetIntent(trimmed)) {
-    updateConversation(senderId, {
+    await updateConversation(senderId, {
       stage: 'new',
       lang: null,
       pendingText: null,
@@ -1660,13 +1662,13 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       lastMediaAt: null,
     })
     await sendInstagramMessage(senderId, t(detectLangFromText(trimmed), 'chooseLang'))
-    updateConversation(senderId, { lastAssistantAt: nowIso() })
+    await updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
   // language selection gate
   if (!conversation.lang) {
-    updateConversation(senderId, { lang, pendingText: null })
+    await updateConversation(senderId, { lang, pendingText: null })
   }
 
   // Hard requirement: first assistant message is a fixed intro.
@@ -1674,7 +1676,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   if (!hasAnyAssistant) {
     const intro = buildTemoWebFirstMessage(lang === 'ru' ? 'ru' : 'ua')
     const nextHistory: ConversationMessage[] = [...(conversation.history || []), { role: 'assistant' as const, content: intro }].slice(-24) as any
-    updateConversation(senderId, { stage: 'qualify', history: nextHistory, lastAssistantAt: nowIso() } as any)
+    await updateConversation(senderId, { stage: 'qualify', history: nextHistory, lastAssistantAt: nowIso() } as any)
     await sendInstagramMessage(senderId, intro)
     return
   }
@@ -1693,7 +1695,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   // Allow switching language at any time.
   const switchLang = parseLangSwitch(trimmed)
   if (switchLang && switchLang !== lang) {
-    updateConversation(senderId, { lang: switchLang })
+    await updateConversation(senderId, { lang: switchLang })
     const ai = await generateAiReply({
       userText:
         switchLang === 'ua'
@@ -1708,7 +1710,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
     const nextHistory: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: trimmed }, { role: 'assistant' as const, content: ai.reply }].slice(-24) as any
-    updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso() })
+    await updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso() })
     await sendInstagramMessage(senderId, ai.reply)
     return
   }
@@ -1731,9 +1733,9 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
           ].join('\n')
 
     const history: ConversationMessage[] = [...conversation.history, { role: 'user' as const, content: trimmed }, { role: 'assistant' as const, content: reply }].slice(-24) as ConversationMessage[]
-    updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history })
+    await updateConversation(senderId, { stage: conversation.stage === 'new' ? 'qualify' : conversation.stage, history })
     await sendInstagramMessage(senderId, reply)
-    updateConversation(senderId, { lastAssistantAt: nowIso() })
+    await updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
@@ -1748,7 +1750,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const pendingAll = [...pendingFresh, ...incomingImages].filter(Boolean)
   const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
   if (pendingDedup.length > 0) {
-    updateConversation(senderId, { pendingImageUrls: pendingDedup, lastMediaAt: nowIso() } as any)
+    await updateConversation(senderId, { pendingImageUrls: pendingDedup, lastMediaAt: nowIso() } as any)
   }
 
   const userContentForHistory = trimmed || (incomingImages.length > 0 ? '[Image]' : '')
@@ -1758,7 +1760,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   const readinessScore = computeReadinessScoreHeuristic(trimmed, userTurns)
 
   // Always store the message first
-  updateConversation(senderId, { history, lastUserAt: nowIso() })
+  await updateConversation(senderId, { history, lastUserAt: nowIso() })
 
   if (!isAllowedSender(senderId)) {
     console.log('IG webhook: sender not in allowlist; skipping auto-reply', { senderId })
@@ -1775,7 +1777,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
         ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
         : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
     const nextHistory: ConversationMessage[] = [...history, { role: 'assistant' as const, content: ack }].slice(-24) as any
-    updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso(), stage: conversation.stage === 'new' ? 'qualify' : conversation.stage } as any)
+    await updateConversation(senderId, { history: nextHistory, lastAssistantAt: nowIso(), stage: conversation.stage === 'new' ? 'qualify' : conversation.stage } as any)
     await sendInstagramMessage(senderId, ack)
     return
   }
@@ -1786,14 +1788,14 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   if (conversation.leadId != null) {
     const resendArmed = Boolean((conversation as any).resendArmed)
     if (detectResendContactIntent(trimmed) && !resendArmed) {
-      updateConversation(senderId, { resendArmed: true, stage: 'ask_contact' } as any)
+      await updateConversation(senderId, { resendArmed: true, stage: 'ask_contact' } as any)
       await sendInstagramMessage(
         senderId,
         lang === 'ua'
           ? 'Ок ✅ Домовились. Надішліть, будь ласка, контакт ще раз (телефон або email) — і я зафіксую повторно.'
           : 'Ок ✅ Договорились. Пришлите, пожалуйста, контакт ещё раз (телефон или email) — и я зафиксирую повторно.',
       )
-      updateConversation(senderId, { lastAssistantAt: nowIso() })
+      await updateConversation(senderId, { lastAssistantAt: nowIso() })
       return
     }
     if (resendArmed && draftFromText) {
@@ -1825,11 +1827,11 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
           console.error('IG lead resend save failed', { senderIdLast4: senderId.slice(-4), error: String(e) })
         }
         // Always disarm after one attempt (prevents spam loops)
-        updateConversation(senderId, { resendArmed: false, leadId: leadId ?? conversation.leadId } as any)
+        await updateConversation(senderId, { resendArmed: false, leadId: leadId ?? conversation.leadId } as any)
         const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
         await sendTelegramLead({ senderId, messageText: trimmed, contactHint: hint || null, aiSummary, leadId })
         await sendInstagramMessage(senderId, lang === 'ua' ? 'Готово ✅ Зафіксував повторно. Дякую!' : 'Готово ✅ Зафиксировал повторно. Спасибо!')
-        updateConversation(senderId, { lastAssistantAt: nowIso() })
+        await updateConversation(senderId, { lastAssistantAt: nowIso() })
         return
       }
     }
@@ -1844,7 +1846,7 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     }
     const hasAny = Boolean(mergedDraft.phone || mergedDraft.email)
 
-    if (hasAny) updateConversation(senderId, { contactDraft: mergedDraft })
+    if (hasAny) await updateConversation(senderId, { contactDraft: mergedDraft })
 
     if (hasAny) {
       const readiness = { score: readinessScore, label: readinessLabel(readinessScore), stage: computeStageHeuristic(text, readinessScore) }
@@ -1873,12 +1875,12 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       }
 
       if (leadId == null) {
-        updateConversation(senderId, { stage: 'ask_contact', history })
+        await updateConversation(senderId, { stage: 'ask_contact', history })
         await sendInstagramMessage(senderId, t(lang, 'askContact'))
-        updateConversation(senderId, { lastAssistantAt: nowIso() })
+        await updateConversation(senderId, { lastAssistantAt: nowIso() })
         return
       }
-      updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
+      await updateConversation(senderId, { stage: 'collected', leadId, history, contactDraft: null })
       const hint = [mergedDraft.phone || null, mergedDraft.email || null].filter(Boolean).join(' | ')
       const tgOk = await sendTelegramLead({ senderId, messageText: trimmed, contactHint: hint || null, aiSummary, leadId })
       console.log('IG lead telegram status', { leadId, ok: Boolean(tgOk) })
@@ -1893,16 +1895,16 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
       })
       recordInstagramAi({ provider: ai.provider, detail: ai.detail })
       const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactOk')
-      updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
+      await updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
       await sendInstagramMessage(senderId, reply)
-      updateConversation(senderId, { lastAssistantAt: nowIso() })
+      await updateConversation(senderId, { lastAssistantAt: nowIso() })
       return
     }
 
   }
 
   if (hasInvalidContactHint(trimmed)) {
-    updateConversation(senderId, { stage: 'ask_contact', history })
+    await updateConversation(senderId, { stage: 'ask_contact', history })
     // Ask to resend contact (prefer AI, fallback to a short deterministic hint)
     const ai = await generateAiReply({
       userText:
@@ -1916,14 +1918,14 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
     })
     recordInstagramAi({ provider: ai.provider, detail: ai.detail })
     const reply = ai.provider === 'openai' ? ai.reply : t(lang, 'contactFix')
-    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
+    await updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24) })
     await sendInstagramMessage(senderId, reply)
-    updateConversation(senderId, { lastAssistantAt: nowIso() })
+    await updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
 
   const nextStage = shouldAskForContact(conversation.stage, trimmed, userTurns, readinessScore) ? 'ask_contact' : conversation.stage === 'new' ? 'qualify' : conversation.stage
-  updateConversation(senderId, { stage: nextStage, history })
+  await updateConversation(senderId, { stage: nextStage, history })
 
   const imagesRaw = pendingDedup.slice(0, 3)
   const audio = media.find((m) => m.kind === 'audio')?.url || null
@@ -2040,12 +2042,12 @@ async function handleIncomingMessage(senderId: string, text: string, media: Inco
   recordInstagramAi({ provider: ai.provider, detail: ai.detail })
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant')?.content || ''
   if (reply.trim() && reply.trim() !== String(lastAssistant || '').trim()) {
-    updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24), pendingImageUrls: [], lastMediaAt: null } as any)
+    await updateConversation(senderId, { history: [...history, { role: 'assistant' as const, content: reply }].slice(-24), pendingImageUrls: [], lastMediaAt: null } as any)
     await sendInstagramMessage(senderId, reply)
-    updateConversation(senderId, { lastAssistantAt: nowIso() })
+    await updateConversation(senderId, { lastAssistantAt: nowIso() })
     return
   }
-  updateConversation(senderId, { lastAssistantAt: nowIso() })
+  await updateConversation(senderId, { lastAssistantAt: nowIso() })
 }
 
 export async function GET(request: NextRequest) {
@@ -2061,6 +2063,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = await hitRateLimit({
+    scope: 'instagram_webhook',
+    identity: getRequestIdentity(request),
+    windowSec: 60,
+    limit: Number(process.env.RATE_LIMIT_INSTAGRAM_WEBHOOK_PER_MIN || 600),
+  })
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } })
+  }
   const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
   const IG_ACCESS_TOKEN = getAccessToken()

@@ -30,6 +30,8 @@ import fs from 'fs'
 import path from 'path'
 import { createLead, hasRecentLeadByContact, getTenantProfile } from '@/app/lib/storage'
 import { startMessengerFollowupScheduler } from '../followupScheduler'
+import { hitRateLimit } from '@/app/lib/apiRateLimit'
+import { getRequestIdentity } from '@/app/lib/requestIdentity'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -757,6 +759,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = await hitRateLimit({
+    scope: 'messenger_webhook',
+    identity: getRequestIdentity(request),
+    windowSec: 60,
+    limit: Number(process.env.RATE_LIMIT_MESSENGER_WEBHOOK_PER_MIN || 600),
+  })
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } })
+  }
   const rawBuffer = Buffer.from(await request.arrayBuffer())
   const signature = request.headers.get('x-hub-signature-256')
 
@@ -838,12 +849,12 @@ export async function POST(request: NextRequest) {
         imageCount: imageUrls.length,
         audioCount: audioUrls.length,
       })
-      const conv = getConversation(pageId, senderId)
+      const conv = await getConversation(pageId, senderId)
       const explicitLang = parseLangSwitch(msgText || '')
       const baseTextForLang = String(msgText || '').trim()
       const inferredLang: 'ru' | 'ua' = /[іїєґ]/i.test(baseTextForLang) ? 'ua' : 'ru'
-      if (explicitLang) setConversationLang(pageId, senderId, explicitLang)
-      if (!explicitLang && !conv.lang && baseTextForLang) setConversationLang(pageId, senderId, inferredLang)
+      if (explicitLang) await setConversationLang(pageId, senderId, explicitLang)
+      if (!explicitLang && !conv.lang && baseTextForLang) await setConversationLang(pageId, senderId, inferredLang)
       const preferredLang = explicitLang || conv.lang || (baseTextForLang ? inferredLang : 'ua')
       const tenantProfile = conn?.tenantId ? await getTenantProfile(String(conn.tenantId)).catch(() => null) : null
       const apiKey = tenantProfile && typeof (tenantProfile as any).openAiKey === 'string' ? String((tenantProfile as any).openAiKey).trim() : null
@@ -867,10 +878,10 @@ export async function POST(request: NextRequest) {
       const pendingAll = [...pendingFresh, ...imageUrls].filter(Boolean)
       const pendingDedup = Array.from(new Set(pendingAll)).slice(0, 6)
       if (pendingDedup.length > 0) {
-        updateConversationMeta(pageId, senderId, { pendingImageUrls: pendingDedup, lastMediaAt: new Date().toISOString() })
+        await updateConversationMeta(pageId, senderId, { pendingImageUrls: pendingDedup, lastMediaAt: new Date().toISOString() })
       }
 
-      appendMessage(pageId, senderId, { role: 'user', content: composedUserText })
+      await appendMessage(pageId, senderId, { role: 'user', content: composedUserText })
       const history = (conv.messages || []).slice(-14).map((m) => ({ role: m.role, content: m.content }))
 
       // Lead capture: if user sent phone/email -> save lead to CRM and notify Telegram.
@@ -905,8 +916,8 @@ export async function POST(request: NextRequest) {
             ? 'Готово ✅ Зафіксував заявку. Напишемо/зателефонуємо для наступного кроку.'
             : 'Готово ✅ Зафиксировал заявку. Напишем/созвонимся для следующего шага.'
         await sendMessengerText({ pageAccessToken, recipientId: senderId, text: okMsg })
-        appendMessage(pageId, senderId, { role: 'assistant', content: okMsg })
-        updateConversationMeta(pageId, senderId, { leadCapturedAt: new Date().toISOString(), followUpSentAt: new Date().toISOString(), pendingImageUrls: [], lastMediaAt: null })
+        await appendMessage(pageId, senderId, { role: 'assistant', content: okMsg })
+        await updateConversationMeta(pageId, senderId, { leadCapturedAt: new Date().toISOString(), followUpSentAt: new Date().toISOString(), pendingImageUrls: [], lastMediaAt: null })
         recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `lead_saved tenant=${String(conn.tenantId)} leadId=${leadId ?? 'dup'}` })
         continue
       }
@@ -926,7 +937,7 @@ export async function POST(request: NextRequest) {
       if (!hasAnyAssistant) {
         const intro = buildTemoWebFirstMessage(preferredLang === 'ru' ? 'ru' : 'ua')
         await sendMessengerText({ pageAccessToken, recipientId: senderId, text: intro })
-        appendMessage(pageId, senderId, { role: 'assistant', content: intro })
+        await appendMessage(pageId, senderId, { role: 'assistant', content: intro })
         recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `intro_sent pageId=${pageId || '—'}` })
         // Do NOT return: after intro we still answer the user's first message (text or voice).
       }
@@ -941,7 +952,7 @@ export async function POST(request: NextRequest) {
               ? `Бачу ${pendingDedup.length} фото ✅ Напишіть одним рядком, що саме перевірити/порадити (і можете докинути ще фото, якщо треба).`
               : `Вижу ${pendingDedup.length} фото ✅ Напишите одним рядком, что именно проверить/подсказать (и можете докинуть ещё фото, если надо).`
           await sendMessengerText({ pageAccessToken, recipientId: senderId, text: ack })
-          appendMessage(pageId, senderId, { role: 'assistant', content: ack })
+          await appendMessage(pageId, senderId, { role: 'assistant', content: ack })
         }
         recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `images_only buffered=${pendingDedup.length}` })
         continue
@@ -1022,8 +1033,8 @@ export async function POST(request: NextRequest) {
         }
       }
       await sendMessengerText({ pageAccessToken, recipientId: senderId, text: reply })
-      appendMessage(pageId, senderId, { role: 'assistant', content: reply })
-      if (pendingDedup.length > 0) updateConversationMeta(pageId, senderId, { pendingImageUrls: [], lastMediaAt: null })
+      await appendMessage(pageId, senderId, { role: 'assistant', content: reply })
+      if (pendingDedup.length > 0) await updateConversationMeta(pageId, senderId, { pendingImageUrls: [], lastMediaAt: null })
       recordMessengerPost({ length: rawBuffer.length, hasSignature: Boolean(signature), result: 'ok', note: `replied pageId=${pageId || '—'}` })
     }
   }

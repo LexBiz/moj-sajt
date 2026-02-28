@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createLead, deleteAllLeads, deleteLeadById, deleteLeadsByIds, deleteLeadsByTenant, listLeads } from '@/app/lib/storage'
 import { requireAdmin } from '@/app/lib/adminAuth'
+import { hitRateLimit } from '@/app/lib/apiRateLimit'
+import { getRequestIdentity } from '@/app/lib/requestIdentity'
 const DEFAULT_TENANT_ID = 'temoweb'
 
 function normalizeTenantId(input: unknown) {
@@ -233,17 +235,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const tenantId = normalizeTenantId(searchParams.get('tenantId'))
 
-  const leadsArr = await listLeads()
-  const leads = (Array.isArray(leadsArr) ? leadsArr : [])
-    .map((l: any) => ({
-      ...l,
-      tenantId: l?.tenantId ? normalizeTenantId(l.tenantId) : l?.tenant_id ? normalizeTenantId(l.tenant_id) : DEFAULT_TENANT_ID,
-      createdAt: l?.createdAt || l?.created_at || l?.createdAt || null,
-    }))
-    .filter((l: any) => {
-      if (tenantId === DEFAULT_TENANT_ID) return l.tenantId === DEFAULT_TENANT_ID
-      return l.tenantId === tenantId
-    })
+  const leadsArr = await listLeads({ tenantId, limit: 800 })
+  const leads = (Array.isArray(leadsArr) ? leadsArr : []).map((l: any) => ({
+    ...l,
+    tenantId: l?.tenantId ? normalizeTenantId(l.tenantId) : l?.tenant_id ? normalizeTenantId(l.tenant_id) : DEFAULT_TENANT_ID,
+    createdAt: l?.createdAt || l?.created_at || l?.createdAt || null,
+  }))
   
   return NextResponse.json(leads)
 }
@@ -285,6 +282,18 @@ export async function DELETE(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const rl = await hitRateLimit({
+      scope: 'api_leads_post',
+      identity: getRequestIdentity(request),
+      windowSec: 60,
+      limit: Number(process.env.RATE_LIMIT_LEADS_POST_PER_MIN || 30),
+    })
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+      )
+    }
     const body = (await request.json()) as LeadPayload
     const { tenantId, name, contact, email, businessType, channel, pain, question, clientMessages, aiRecommendation, aiSummary, source, lang, notes, phone } = body
 

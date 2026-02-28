@@ -88,7 +88,7 @@ async function sendWhatsAppText(to: string, text: string) {
 
 async function tickOnce() {
   const now = Date.now()
-  const all = getAllConversations()
+  const all = await getAllConversations()
   for (const from of Object.keys(all)) {
     const c = all[from]
     if (!c) continue
@@ -106,8 +106,8 @@ async function tickOnce() {
     const msg = buildFollowUp(lang, lastU)
     const ok = await sendWhatsAppText(from, msg)
     if (!ok) continue
-    appendMessage(from, { role: 'assistant', content: msg })
-    updateConversation(from, { followUpSentAt: nowIso() } as any)
+    await appendMessage(from, { role: 'assistant', content: msg })
+    await updateConversation(from, { followUpSentAt: nowIso() } as any)
     console.log('WhatsApp followup sent', { fromLast4: from.slice(-4) })
   }
 }

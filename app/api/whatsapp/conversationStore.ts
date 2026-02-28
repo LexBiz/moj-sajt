@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { getConversationState, listConversationState, setConversationState } from '@/app/lib/conversationStateDb'
 
 export type WhatsAppRole = 'user' | 'assistant'
 
@@ -26,6 +27,7 @@ const FILE =
   path.join(process.cwd(), 'data', 'whatsapp-conversations.json')
 
 const MAX_MESSAGES = Number(process.env.WHATSAPP_MAX_MESSAGES || 24)
+const SCOPE = 'whatsapp'
 
 function ensureFile() {
   const dir = path.dirname(FILE)
@@ -62,33 +64,41 @@ function writeAll(all: Record<string, WhatsAppConversation>) {
   fs.renameSync(tmp, FILE)
 }
 
-export function getConversation(from: string): WhatsAppConversation {
+function hydrate(conv: Partial<WhatsAppConversation> | null | undefined, key: string): WhatsAppConversation {
+  const now = new Date().toISOString()
+  return {
+    from: key,
+    createdAt: String(conv?.createdAt || now),
+    updatedAt: String(conv?.updatedAt || now),
+    lang: conv?.lang === 'ru' ? 'ru' : conv?.lang === 'ua' ? 'ua' : null,
+    pendingImageUrls: Array.isArray(conv?.pendingImageUrls) ? conv.pendingImageUrls : [],
+    lastMediaAt: typeof conv?.lastMediaAt === 'string' ? conv.lastMediaAt : null,
+    followUpSentAt: typeof conv?.followUpSentAt === 'string' ? conv.followUpSentAt : null,
+    leadCapturedAt: typeof conv?.leadCapturedAt === 'string' ? conv.leadCapturedAt : null,
+    messages: Array.isArray(conv?.messages) ? conv.messages.filter((m: any) => m && typeof m.content === 'string').slice(-Math.max(6, Math.min(80, MAX_MESSAGES))) : [],
+  }
+}
+
+export async function getConversation(from: string): Promise<WhatsAppConversation> {
   const key = String(from || '').trim()
+  const fromDb = await getConversationState<WhatsAppConversation>(SCOPE, key)
+  if (fromDb) return hydrate(fromDb, key)
   const all = readAll()
   const existing = all[key] || null
-  if (existing) return existing
-  const now = new Date().toISOString()
-  const conv: WhatsAppConversation = {
-    from: key,
-    createdAt: now,
-    updatedAt: now,
-    lang: null,
-    pendingImageUrls: [],
-    lastMediaAt: null,
-    followUpSentAt: null,
-    leadCapturedAt: null,
-    messages: [],
-  }
+  if (existing) return hydrate(existing, key)
+  const conv: WhatsAppConversation = hydrate(null, key)
   all[key] = conv
   writeAll(all)
+  await setConversationState(SCOPE, key, conv)
   return conv
 }
 
-export function appendMessage(from: string, msg: { role: WhatsAppRole; content: string }) {
+export async function appendMessage(from: string, msg: { role: WhatsAppRole; content: string }) {
   const key = String(from || '').trim()
   if (!key) return null
-  const all = readAll()
-  const base = all[key] || getConversation(key)
+  const current = (await getConversationState<WhatsAppConversation>(SCOPE, key)) || null
+  const all = current ? null : readAll()
+  const base = current ? hydrate(current, key) : all?.[key] ? hydrate(all[key], key) : await getConversation(key)
   const now = new Date().toISOString()
   const next: WhatsAppConversation = {
     ...base,
@@ -97,33 +107,47 @@ export function appendMessage(from: string, msg: { role: WhatsAppRole; content: 
       .filter((m) => m.content && m.content.trim())
       .slice(-Math.max(6, Math.min(80, MAX_MESSAGES))),
   }
-  all[key] = next
-  // Keep file bounded (avoid unbounded growth if many unknown senders)
-  const keys = Object.keys(all)
-  if (keys.length > 6000) {
-    // crude pruning: keep newest by updatedAt
-    keys
-      .sort((a, b) => String(all[b]?.updatedAt || '').localeCompare(String(all[a]?.updatedAt || '')))
-      .slice(5000)
-      .forEach((k) => delete all[k])
+  if (all) {
+    all[key] = next
+    // Keep file bounded (avoid unbounded growth if many unknown senders)
+    const keys = Object.keys(all)
+    if (keys.length > 6000) {
+      // crude pruning: keep newest by updatedAt
+      keys
+        .sort((a, b) => String(all[b]?.updatedAt || '').localeCompare(String(all[a]?.updatedAt || '')))
+        .slice(5000)
+        .forEach((k) => delete all[k])
+    }
+    writeAll(all)
   }
-  writeAll(all)
+  await setConversationState(SCOPE, key, next)
   return next
 }
 
-export function updateConversation(from: string, patch: Partial<WhatsAppConversation>) {
+export async function updateConversation(from: string, patch: Partial<WhatsAppConversation>) {
   const key = String(from || '').trim()
   if (!key) return null
-  const all = readAll()
-  const base = all[key] || getConversation(key)
+  const current = (await getConversationState<WhatsAppConversation>(SCOPE, key)) || null
+  const all = current ? null : readAll()
+  const base = current ? hydrate(current, key) : all?.[key] ? hydrate(all[key], key) : await getConversation(key)
   const now = new Date().toISOString()
   const next: WhatsAppConversation = { ...base, ...patch, from: key, updatedAt: now }
-  all[key] = next
-  writeAll(all)
+  if (all) {
+    all[key] = next
+    writeAll(all)
+  }
+  await setConversationState(SCOPE, key, next)
   return next
 }
 
-export function getAllConversations() {
+export async function getAllConversations() {
+  const fromDb = await listConversationState<WhatsAppConversation>(SCOPE)
+  const keys = Object.keys(fromDb || {})
+  if (keys.length > 0) {
+    const out: Record<string, WhatsAppConversation> = {}
+    for (const k of keys) out[k] = hydrate(fromDb[k], k)
+    return out
+  }
   return readAll()
 }
 

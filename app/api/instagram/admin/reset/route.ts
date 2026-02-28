@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing senderId (and no lastSenderId in state)' }, { status: 400 })
   }
 
-  const reset = resetConversation(senderId)
+  const reset = await resetConversation(senderId)
   return NextResponse.json({ ok: true, senderId, conversation: reset }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
 

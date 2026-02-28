@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { deleteConversationState, getConversationState, listConversationState, setConversationState } from '@/app/lib/conversationStateDb'
 
 export type MessengerRole = 'user' | 'assistant'
 
@@ -29,6 +30,7 @@ export type MessengerConversation = {
 
 const FILE = path.join(process.cwd(), 'data', 'messenger-conversations.json')
 const MAX_MESSAGES = Number(process.env.MESSENGER_MAX_MESSAGES || 30)
+const SCOPE = 'messenger'
 
 function ensureFile() {
   const dir = path.dirname(FILE)
@@ -62,37 +64,49 @@ function writeAll(all: MessengerConversation[]) {
   fs.renameSync(tmp, FILE)
 }
 
-export function getConversation(pageId: string, senderId: string): MessengerConversation {
+function hydrate(conv: Partial<MessengerConversation> | null | undefined, pid: string, sid: string): MessengerConversation {
+  const now = new Date().toISOString()
+  return {
+    id: `${pid}:${sid}`,
+    pageId: pid,
+    senderId: sid,
+    createdAt: String(conv?.createdAt || now),
+    updatedAt: String(conv?.updatedAt || now),
+    lang: conv?.lang === 'ru' ? 'ru' : conv?.lang === 'ua' ? 'ua' : null,
+    pendingImageUrls: Array.isArray(conv?.pendingImageUrls) ? conv!.pendingImageUrls : [],
+    lastMediaAt: typeof conv?.lastMediaAt === 'string' ? conv.lastMediaAt : null,
+    followUpSentAt: typeof conv?.followUpSentAt === 'string' ? conv.followUpSentAt : null,
+    leadCapturedAt: typeof conv?.leadCapturedAt === 'string' ? conv.leadCapturedAt : null,
+    messages: Array.isArray(conv?.messages) ? conv!.messages.filter((m: any) => m && typeof m.content === 'string').slice(-Math.max(6, Math.min(60, MAX_MESSAGES))) : [],
+  }
+}
+
+export async function getConversation(pageId: string, senderId: string): Promise<MessengerConversation> {
   const pid = String(pageId || '').trim()
   const sid = String(senderId || '').trim()
   const id = `${pid}:${sid}`
+  const fromDb = await getConversationState<MessengerConversation>(SCOPE, id)
+  if (fromDb) return hydrate(fromDb, pid, sid)
   const all = readAll()
-  const now = new Date().toISOString()
   const existing = all.find((c) => c.id === id) || null
-  if (existing) return existing
-  const conv: MessengerConversation = {
-    id,
-    pageId: pid,
-    senderId: sid,
-    createdAt: now,
-    updatedAt: now,
-    lang: null,
-    messages: [],
-  }
+  if (existing) return hydrate(existing, pid, sid)
+  const conv: MessengerConversation = hydrate(null, pid, sid)
   all.unshift(conv)
   writeAll(all.slice(0, 5000))
+  await setConversationState(SCOPE, id, conv)
   return conv
 }
 
-export function appendMessage(pageId: string, senderId: string, msg: { role: MessengerRole; content: string }) {
+export async function appendMessage(pageId: string, senderId: string, msg: { role: MessengerRole; content: string }) {
   const pid = String(pageId || '').trim()
   const sid = String(senderId || '').trim()
   if (!pid || !sid) return
   const id = `${pid}:${sid}`
-  const all = readAll()
+  const current = (await getConversationState<MessengerConversation>(SCOPE, id)) || null
+  const all = current ? null : readAll()
   const now = new Date().toISOString()
-  const idx = all.findIndex((c) => c.id === id)
-  const base = idx >= 0 ? all[idx] : getConversation(pid, sid)
+  const idx = all ? all.findIndex((c) => c.id === id) : -1
+  const base = current ? hydrate(current, pid, sid) : idx >= 0 ? hydrate(all![idx], pid, sid) : await getConversation(pid, sid)
   const next: MessengerConversation = {
     ...base,
     updatedAt: now,
@@ -100,29 +114,36 @@ export function appendMessage(pageId: string, senderId: string, msg: { role: Mes
       .filter((m) => m.content && m.content.trim())
       .slice(-Math.max(6, Math.min(60, MAX_MESSAGES))),
   }
-  if (idx >= 0) all[idx] = next
-  else all.unshift(next)
-  writeAll(all.slice(0, 5000))
+  if (all) {
+    if (idx >= 0) all[idx] = next
+    else all.unshift(next)
+    writeAll(all.slice(0, 5000))
+  }
+  await setConversationState(SCOPE, id, next)
   return next
 }
 
-export function setConversationLang(pageId: string, senderId: string, lang: 'ru' | 'ua' | null) {
+export async function setConversationLang(pageId: string, senderId: string, lang: 'ru' | 'ua' | null) {
   const pid = String(pageId || '').trim()
   const sid = String(senderId || '').trim()
   if (!pid || !sid) return
   const id = `${pid}:${sid}`
-  const all = readAll()
+  const current = (await getConversationState<MessengerConversation>(SCOPE, id)) || null
+  const all = current ? null : readAll()
   const now = new Date().toISOString()
-  const idx = all.findIndex((c) => c.id === id)
-  const base = idx >= 0 ? all[idx] : getConversation(pid, sid)
+  const idx = all ? all.findIndex((c) => c.id === id) : -1
+  const base = current ? hydrate(current, pid, sid) : idx >= 0 ? hydrate(all![idx], pid, sid) : await getConversation(pid, sid)
   const next: MessengerConversation = { ...base, updatedAt: now, lang }
-  if (idx >= 0) all[idx] = next
-  else all.unshift(next)
-  writeAll(all.slice(0, 5000))
+  if (all) {
+    if (idx >= 0) all[idx] = next
+    else all.unshift(next)
+    writeAll(all.slice(0, 5000))
+  }
+  await setConversationState(SCOPE, id, next)
   return next
 }
 
-export function updateConversationMeta(
+export async function updateConversationMeta(
   pageId: string,
   senderId: string,
   patch: Partial<Pick<MessengerConversation, 'pendingImageUrls' | 'lastMediaAt' | 'followUpSentAt' | 'leadCapturedAt' | 'lang'>>,
@@ -131,18 +152,47 @@ export function updateConversationMeta(
   const sid = String(senderId || '').trim()
   if (!pid || !sid) return
   const id = `${pid}:${sid}`
-  const all = readAll()
+  const current = (await getConversationState<MessengerConversation>(SCOPE, id)) || null
+  const all = current ? null : readAll()
   const now = new Date().toISOString()
-  const idx = all.findIndex((c) => c.id === id)
-  const base = idx >= 0 ? all[idx] : getConversation(pid, sid)
+  const idx = all ? all.findIndex((c) => c.id === id) : -1
+  const base = current ? hydrate(current, pid, sid) : idx >= 0 ? hydrate(all![idx], pid, sid) : await getConversation(pid, sid)
   const next: MessengerConversation = { ...base, ...patch, updatedAt: now }
-  if (idx >= 0) all[idx] = next
-  else all.unshift(next)
-  writeAll(all.slice(0, 5000))
+  if (all) {
+    if (idx >= 0) all[idx] = next
+    else all.unshift(next)
+    writeAll(all.slice(0, 5000))
+  }
+  await setConversationState(SCOPE, id, next)
   return next
 }
 
-export function getAllConversations() {
+export async function getAllConversations() {
+  const fromDb = await listConversationState<MessengerConversation>(SCOPE)
+  const keys = Object.keys(fromDb || {})
+  if (keys.length > 0) {
+    const list: MessengerConversation[] = []
+    for (const id of keys) {
+      const v = fromDb[id]
+      const [pid, sid] = String(id).split(':')
+      if (!pid || !sid) continue
+      list.push(hydrate(v, pid, sid))
+    }
+    return list
+  }
   return readAll()
+}
+
+export async function deleteConversation(pageId: string, senderId: string) {
+  const pid = String(pageId || '').trim()
+  const sid = String(senderId || '').trim()
+  const id = `${pid}:${sid}`
+  const all = readAll()
+  const idx = all.findIndex((c) => c.id === id)
+  if (idx >= 0) {
+    all.splice(idx, 1)
+    writeAll(all.slice(0, 5000))
+  }
+  await deleteConversationState(SCOPE, id)
 }
 

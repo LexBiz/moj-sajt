@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildTemoWebSystemPrompt, computeReadinessScoreHeuristic, computeStageHeuristic } from '../temowebPrompt'
 import { getTenantProfile } from '@/app/lib/storage'
 import { ensureAllPackagesMentioned, isPackageCompareRequest } from '@/app/lib/packageGuard'
+import { hitRateLimit } from '@/app/lib/apiRateLimit'
+import { getRequestIdentity } from '@/app/lib/requestIdentity'
 import {
   applyChannelLimits,
   applyPackageGuidance,
@@ -401,6 +403,18 @@ async function callOpenAI(
 
 export async function POST(request: NextRequest) {
   try {
+    const rl = await hitRateLimit({
+      scope: 'api_ai',
+      identity: getRequestIdentity(request),
+      windowSec: 60,
+      limit: Number(process.env.RATE_LIMIT_API_AI_PER_MIN || 90),
+    })
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+      )
+    }
     const body = (await request.json()) as AiRequest
     const context = `${buildContext(body)}\nFAST_MODE: ${body.fast === true ? 'true' : 'false'}`
     const rawHistory = Array.isArray(body.history) ? body.history : []

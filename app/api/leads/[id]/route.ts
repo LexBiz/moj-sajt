@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { requireAdmin } from '@/app/lib/adminAuth'
 
 const LEADS_FILE = path.join(process.cwd(), 'data', 'leads.json')
 const DEFAULT_TENANT_ID = 'temoweb'
@@ -18,14 +19,8 @@ function ensureDataDir() {
   if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, JSON.stringify([]))
 }
 
-function isAuthorized(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const password = process.env.ADMIN_PASSWORD || 'admin123'
-  return authHeader === `Bearer ${password}`
-}
-
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!requireAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   ensureDataDir()
 
   const idNum = Number(params.id)

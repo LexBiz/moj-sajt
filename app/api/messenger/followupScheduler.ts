@@ -126,7 +126,7 @@ async function sendMessengerText(opts: { pageAccessToken: string; recipientId: s
 
 async function tickOnce() {
   const now = Date.now()
-  const all = getAllConversations()
+  const all = await getAllConversations()
   for (const c of all) {
     if (!c) continue
     if (c.leadCapturedAt) continue
@@ -144,8 +144,8 @@ async function tickOnce() {
     if (!token) continue
     const ok = await sendMessengerText({ pageAccessToken: token, recipientId: c.senderId, text: msg })
     if (!ok) continue
-    appendMessage(c.pageId, c.senderId, { role: 'assistant', content: msg })
-    updateConversationMeta(c.pageId, c.senderId, { followUpSentAt: nowIso() })
+    await appendMessage(c.pageId, c.senderId, { role: 'assistant', content: msg })
+    await updateConversationMeta(c.pageId, c.senderId, { followUpSentAt: nowIso() })
     console.log('Messenger followup sent', { pageId: c.pageId, senderIdLast4: c.senderId.slice(-4) })
   }
 }

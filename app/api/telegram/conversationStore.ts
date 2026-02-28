@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { getConversationState, listConversationState, setConversationState } from '@/app/lib/conversationStateDb'
 
 export type TelegramRole = 'user' | 'assistant'
 
@@ -26,6 +27,7 @@ const FILE =
   path.join(process.cwd(), 'data', 'telegram-conversations.json')
 
 const MAX_MESSAGES = Number(process.env.TELEGRAM_MAX_MESSAGES || 30)
+const SCOPE = 'telegram'
 
 function ensureFile() {
   const dir = path.dirname(FILE)
@@ -63,33 +65,41 @@ function writeAll(all: Record<string, TelegramConversation>) {
   fs.renameSync(tmp, FILE)
 }
 
-export function getConversation(chatId: string): TelegramConversation {
+function hydrate(conv: Partial<TelegramConversation> | null | undefined, key: string): TelegramConversation {
+  const now = new Date().toISOString()
+  return {
+    chatId: key,
+    createdAt: String(conv?.createdAt || now),
+    updatedAt: String(conv?.updatedAt || now),
+    lang: conv?.lang === 'ru' ? 'ru' : conv?.lang === 'ua' ? 'ua' : null,
+    pendingImageFileIds: Array.isArray(conv?.pendingImageFileIds) ? conv.pendingImageFileIds : [],
+    lastMediaAt: typeof conv?.lastMediaAt === 'string' ? conv.lastMediaAt : null,
+    followUpSentAt: typeof conv?.followUpSentAt === 'string' ? conv.followUpSentAt : null,
+    leadCapturedAt: typeof conv?.leadCapturedAt === 'string' ? conv.leadCapturedAt : null,
+    messages: Array.isArray(conv?.messages) ? conv.messages.filter((m: any) => m && typeof m.content === 'string').slice(-Math.max(6, Math.min(80, MAX_MESSAGES))) : [],
+  }
+}
+
+export async function getConversation(chatId: string): Promise<TelegramConversation> {
   const key = String(chatId || '').trim()
+  const fromDb = await getConversationState<TelegramConversation>(SCOPE, key)
+  if (fromDb) return hydrate(fromDb, key)
   const all = readAll()
   const existing = all[key] || null
-  if (existing) return existing
-  const now = new Date().toISOString()
-  const conv: TelegramConversation = {
-    chatId: key,
-    createdAt: now,
-    updatedAt: now,
-    lang: null,
-    pendingImageFileIds: [],
-    lastMediaAt: null,
-    followUpSentAt: null,
-    leadCapturedAt: null,
-    messages: [],
-  }
+  if (existing) return hydrate(existing, key)
+  const conv: TelegramConversation = hydrate(null, key)
   all[key] = conv
   writeAll(all)
+  await setConversationState(SCOPE, key, conv)
   return conv
 }
 
-export function appendMessage(chatId: string, msg: { role: TelegramRole; content: string }) {
+export async function appendMessage(chatId: string, msg: { role: TelegramRole; content: string }) {
   const key = String(chatId || '').trim()
   if (!key) return null
-  const all = readAll()
-  const base = all[key] || getConversation(key)
+  const current = (await getConversationState<TelegramConversation>(SCOPE, key)) || null
+  const all = current ? null : readAll()
+  const base = current ? hydrate(current, key) : all?.[key] ? hydrate(all[key], key) : await getConversation(key)
   const now = new Date().toISOString()
   const next: TelegramConversation = {
     ...base,
@@ -98,24 +108,38 @@ export function appendMessage(chatId: string, msg: { role: TelegramRole; content
       .filter((m) => m.content && m.content.trim())
       .slice(-Math.max(6, Math.min(80, MAX_MESSAGES))),
   }
-  all[key] = next
-  writeAll(all)
+  if (all) {
+    all[key] = next
+    writeAll(all)
+  }
+  await setConversationState(SCOPE, key, next)
   return next
 }
 
-export function updateConversation(chatId: string, patch: Partial<TelegramConversation>) {
+export async function updateConversation(chatId: string, patch: Partial<TelegramConversation>) {
   const key = String(chatId || '').trim()
   if (!key) return null
-  const all = readAll()
-  const base = all[key] || getConversation(key)
+  const current = (await getConversationState<TelegramConversation>(SCOPE, key)) || null
+  const all = current ? null : readAll()
+  const base = current ? hydrate(current, key) : all?.[key] ? hydrate(all[key], key) : await getConversation(key)
   const now = new Date().toISOString()
   const next: TelegramConversation = { ...base, ...patch, chatId: key, updatedAt: now }
-  all[key] = next
-  writeAll(all)
+  if (all) {
+    all[key] = next
+    writeAll(all)
+  }
+  await setConversationState(SCOPE, key, next)
   return next
 }
 
-export function getAllConversations() {
+export async function getAllConversations() {
+  const fromDb = await listConversationState<TelegramConversation>(SCOPE)
+  const keys = Object.keys(fromDb || {})
+  if (keys.length > 0) {
+    const out: Record<string, TelegramConversation> = {}
+    for (const k of keys) out[k] = hydrate(fromDb[k], k)
+    return out
+  }
   return readAll()
 }
 

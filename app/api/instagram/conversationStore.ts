@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { deleteConversationState, getConversationState, listConversationState, setConversationState } from '@/app/lib/conversationStateDb'
 
 export type ConversationStage = 'new' | 'qualify' | 'offer' | 'ask_contact' | 'collected' | 'done'
 
@@ -38,6 +39,7 @@ export type ConversationState = {
 }
 
 const FILE = (process.env.INSTAGRAM_CONVERSATIONS_FILE || '').trim() || path.join(process.cwd(), 'data', 'instagram-conversations.json')
+const SCOPE = 'instagram'
 
 function ensureDir() {
   const dir = path.dirname(FILE)
@@ -73,34 +75,44 @@ function saveAll(data: Record<string, ConversationState>) {
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2), 'utf8')
 }
 
-export function getConversation(senderId: string): ConversationState {
-  const all = loadAll()
-  const existing = all[senderId]
-  if (existing) return existing
+function hydrate(conv: Partial<ConversationState> | null | undefined, senderId: string): ConversationState {
   const now = new Date().toISOString()
   return {
     senderId,
-    stage: 'new',
-    lang: null,
-    pendingText: null,
-    pendingImageUrls: [],
-    lastMediaAt: null,
-    history: [],
-    leadId: null,
-    contactDraft: null,
-    resendArmed: false,
-    lastUserAt: null,
-    lastAssistantAt: null,
-    followUpSentAt: null,
-    lastPlusDmAt: null,
-    createdAt: now,
-    updatedAt: now,
+    stage: (conv?.stage as any) || 'new',
+    lang: conv?.lang || null,
+    pendingText: conv?.pendingText || null,
+    pendingImageUrls: Array.isArray(conv?.pendingImageUrls) ? conv.pendingImageUrls : [],
+    lastMediaAt: typeof conv?.lastMediaAt === 'string' ? conv.lastMediaAt : null,
+    history: Array.isArray(conv?.history) ? conv.history.filter((m: any) => m && typeof m.content === 'string').slice(-24) : [],
+    leadId: Number.isFinite(Number(conv?.leadId)) ? Number(conv?.leadId) : null,
+    contactDraft: conv?.contactDraft || null,
+    resendArmed: Boolean(conv?.resendArmed),
+    lastUserAt: typeof conv?.lastUserAt === 'string' ? conv.lastUserAt : null,
+    lastAssistantAt: typeof conv?.lastAssistantAt === 'string' ? conv.lastAssistantAt : null,
+    followUpSentAt: typeof conv?.followUpSentAt === 'string' ? conv.followUpSentAt : null,
+    lastPlusDmAt: typeof conv?.lastPlusDmAt === 'string' ? conv.lastPlusDmAt : null,
+    createdAt: String(conv?.createdAt || now),
+    updatedAt: String(conv?.updatedAt || now),
   }
 }
 
-export function updateConversation(senderId: string, next: Partial<ConversationState>) {
+export async function getConversation(senderId: string): Promise<ConversationState> {
+  const fromDb = await getConversationState<ConversationState>(SCOPE, senderId)
+  if (fromDb) return hydrate(fromDb, senderId)
   const all = loadAll()
-  const current = all[senderId] || getConversation(senderId)
+  const existing = all[senderId]
+  if (existing) return hydrate(existing, senderId)
+  const base = hydrate(null, senderId)
+  all[senderId] = base
+  saveAll(all)
+  await setConversationState(SCOPE, senderId, base)
+  return base
+}
+
+export async function updateConversation(senderId: string, next: Partial<ConversationState>) {
+  const all = loadAll()
+  const current = all[senderId] || (await getConversation(senderId))
   const merged: ConversationState = {
     ...current,
     ...next,
@@ -109,23 +121,31 @@ export function updateConversation(senderId: string, next: Partial<ConversationS
   }
   all[senderId] = merged
   saveAll(all)
+  await setConversationState(SCOPE, senderId, merged)
   return merged
 }
 
-export function getAllConversations() {
+export async function getAllConversations() {
+  const fromDb = await listConversationState<ConversationState>(SCOPE)
+  if (Object.keys(fromDb || {}).length > 0) {
+    const out: Record<string, ConversationState> = {}
+    for (const k of Object.keys(fromDb)) out[k] = hydrate(fromDb[k], k)
+    return out
+  }
   return loadAll()
 }
 
-export function deleteConversation(senderId: string) {
+export async function deleteConversation(senderId: string) {
   const all = loadAll()
   if (all[senderId]) {
     delete all[senderId]
     saveAll(all)
   }
+  await deleteConversationState(SCOPE, senderId)
 }
 
-export function resetConversation(senderId: string) {
-  deleteConversation(senderId)
+export async function resetConversation(senderId: string) {
+  await deleteConversation(senderId)
   return getConversation(senderId)
 }
 

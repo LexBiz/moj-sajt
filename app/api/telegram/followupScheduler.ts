@@ -81,7 +81,7 @@ async function sendTelegramText(chatId: string, text: string) {
 async function tickOnce() {
   if (!BOT_TOKEN) return
   const now = Date.now()
-  const all = getAllConversations()
+  const all = await getAllConversations()
   for (const chatId of Object.keys(all)) {
     const c = all[chatId]
     if (!c) continue
@@ -99,8 +99,8 @@ async function tickOnce() {
     const msg = buildFollowUp(lang, lastU)
     const ok = await sendTelegramText(chatId, msg)
     if (!ok) continue
-    appendMessage(chatId, { role: 'assistant', content: msg })
-    updateConversation(chatId, { followUpSentAt: nowIso() })
+    await appendMessage(chatId, { role: 'assistant', content: msg })
+    await updateConversation(chatId, { followUpSentAt: nowIso() })
     console.log('Telegram followup sent', { chatIdLast4: chatId.slice(-4) })
   }
 }
