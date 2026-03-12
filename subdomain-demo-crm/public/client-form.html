@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Informační formulář</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #05101E;
+        --surface: #0C1B31;
+        --card: #101F3A;
+        --line: #1A3258;
+        --line2: #254A80;
+        --text: #E8F1FF;
+        --muted: #6E92BC;
+        --blue: #4490EE;
+        --ok: #30CC8E;
+        --err: #E85858;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: Inter, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        background-image:
+          radial-gradient(ellipse 1200px 600px at 0% 0%, rgba(20,50,130,.26) 0%, transparent 55%);
+      }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 64px; }
+      .page-header {
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 28px; padding-bottom: 22px; border-bottom: 1px solid var(--line);
+      }
+      .logo-icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: linear-gradient(145deg, #1C4090, #112C68);
+        border: 1px solid rgba(68,144,238,.3);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 18px rgba(28,64,144,.35); flex-shrink: 0;
+      }
+      .logo-text h1 { font-size: 18px; font-weight: 700; color: var(--text); }
+      .logo-text p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+      .card {
+        border: 1px solid var(--line); border-radius: 16px;
+        background: var(--surface);
+        box-shadow: 0 12px 40px rgba(0,0,0,.4);
+        overflow: hidden;
+      }
+      .head {
+        padding: 22px 26px; border-bottom: 1px solid var(--line);
+        background: linear-gradient(90deg, rgba(68,144,238,.07), rgba(70,200,222,.04));
+      }
+      .head h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+      .hint { margin-top: 6px; color: var(--muted); font-size: 14px; }
+      form { padding: 22px 26px; display: grid; gap: 16px; }
+      .section {
+        border: 1px solid var(--line); border-radius: 12px;
+        background: var(--card); padding: 18px;
+      }
+      .section h2 { margin: 0 0 12px; font-size: 16px; font-weight: 700; letter-spacing: -.2px; }
+      .sub { margin-bottom: 12px; color: var(--muted); font-size: 13px; }
+      .grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .full { grid-column: 1 / -1; }
+      label { display: block; color: var(--muted); font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px; margin: 0 0 7px; }
+      input[type="text"], input[type="email"], input[type="tel"], textarea {
+        width: 100%; border: 1px solid var(--line2); border-radius: 10px;
+        background: rgba(8,16,36,.6); color: var(--text);
+        padding: 12px 14px; font-size: 14px; font-family: inherit; outline: none;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      input:focus, textarea:focus {
+        border-color: var(--blue); box-shadow: 0 0 0 4px rgba(68,144,238,.12);
+      }
+      input::placeholder, textarea::placeholder { color: #3A5880; }
+      textarea { min-height: 110px; resize: vertical; }
+      .choice-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
+      .choice {
+        display: flex; align-items: flex-start; gap: 10px;
+        border: 1px solid var(--line2); border-radius: 10px;
+        background: rgba(8,16,36,.6); padding: 11px 12px; font-size: 14px;
+        cursor: pointer; transition: border-color .15s, background .15s;
+      }
+      .choice:has(input:checked) {
+        border-color: var(--blue); background: rgba(68,144,238,.08);
+      }
+      .choice input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+      .actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+      button[type="submit"] {
+        border: none; border-radius: 10px; padding: 14px 28px;
+        font-weight: 700; font-family: inherit; font-size: 15px;
+        color: #fff; cursor: pointer;
+        background: linear-gradient(135deg, #2558BC, #3670D8);
+        box-shadow: 0 4px 20px rgba(37,88,188,.4);
+        transition: all .18s;
+      }
+      button[type="submit"]:hover {
+        background: linear-gradient(135deg, #2C64CC, #3E7CEE);
+        box-shadow: 0 6px 26px rgba(37,88,188,.52);
+      }
+      .msg { font-size: 14px; display: none; font-weight: 500; }
+      .msg.ok { color: var(--ok); display: flex; align-items: center; gap: 8px; }
+      .msg.err { color: var(--err); display: flex; align-items: center; gap: 8px; }
+      @media (max-width: 800px) {
+        .grid, .choice-list { grid-template-columns: 1fr; }
+        form, .head { padding-left: 16px; padding-right: 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="page-header">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="rgba(160,200,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 21V13h6v8" stroke="rgba(160,200,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>O&amp;L Master Dom</h1>
+          <p>Naše práce — vaše spokojenost</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="head">
+          <h1>INFORMAČNÍ FORMULÁŘ</h1>
+          <div class="hint">Vyplňte prosím formulář. Zabere to 2–4 minuty a pomůže nám rychle připravit nabídku.</div>
+        </div>
+        <form id="f">
+          <section class="section">
+            <h2>1) Kontaktní údaje</h2>
+            <div class="sub">(abychom vás mohli kontaktovat a zaevidovat do systému)</div>
+            <div class="grid">
+              <div>
+                <label for="clientName">Jméno a příjmení / Název firmy *</label>
+                <input id="clientName" type="text" required />
+              </div>
+              <div>
+                <label for="companyIco">IČO (pokud se jedná o firmu)</label>
+                <input id="companyIco" type="text" />
+              </div>
+              <div>
+                <label for="companyAddress">Adresa / sídlo firmy</label>
+                <input id="companyAddress" type="text" />
+              </div>
+              <div>
+                <label for="phone">Telefon</label>
+                <input id="phone" type="tel" placeholder="+420XXXXXXXXX" />
+              </div>
+              <div class="full">
+                <label for="clientEmail">E-mail *</label>
+                <input id="clientEmail" type="email" required />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>2) Lokalita realizace</h2>
+            <label for="realizationAddress">Adresa realizace (město, ulice)</label>
+            <input id="realizationAddress" type="text" />
+          </section>
+
+          <section class="section">
+            <h2>3) Co chcete řešit?</h2>
+            <div class="choice-list">
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Rekonstrukce bytu" />Rekonstrukce bytu</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Rekonstrukce domu" />Rekonstrukce domu</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Výstavba RD" />Výstavba RD</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Elektroinstalace" />Elektroinstalace</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Zabezpečení (AJAX / alarm)" />Zabezpečení (AJAX / alarm)</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Kamerový systém" />Kamerový systém</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Přístupový systém" />Přístupový systém</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Smart Home" />Smart Home</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Projektová dokumentace" />Projektová dokumentace</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Revize elektro" />Revize elektro</label>
+              <label class="choice"><input type="checkbox" name="requestTypes" value="Servis" />Servis</label>
+            </div>
+            <label for="requestOther" style="margin-top:10px;">Jiné</label>
+            <input id="requestOther" type="text" />
+          </section>
+
+          <section class="section">
+            <h2>4) Typ objektu</h2>
+            <div class="choice-list">
+              <label class="choice"><input type="radio" name="objectType" value="Byt" />Byt</label>
+              <label class="choice"><input type="radio" name="objectType" value="Rodinný dům" />Rodinný dům</label>
+              <label class="choice"><input type="radio" name="objectType" value="Komerční objekt" />Komerční objekt</label>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>5) Podklady k dispozici</h2>
+            <div class="sub">(pokud máte, prosím nahrajte nebo popište)</div>
+            <div class="choice-list">
+              <label class="choice"><input type="checkbox" name="documents" value="Projektová dokumentace" />Projektová dokumentace</label>
+              <label class="choice"><input type="checkbox" name="documents" value="Fotografie" />Fotografie</label>
+              <label class="choice"><input type="checkbox" name="documents" value="Půdorysy" />Půdorysy</label>
+              <label class="choice"><input type="checkbox" name="documents" value="Zadání / popis od architekta" />Zadání / popis od architekta</label>
+              <label class="choice"><input type="checkbox" name="documents" value="Nemám žádné podklady" />Nemám žádné podklady</label>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>6) Požadovaný termín realizace</h2>
+            <div class="choice-list">
+              <label class="choice"><input type="radio" name="requestedTerm" value="Ihned" />Ihned</label>
+              <label class="choice"><input type="radio" name="requestedTerm" value="Do 30 dnů" />Do 30 dnů</label>
+              <label class="choice"><input type="radio" name="requestedTerm" value="1-3 měsíce" />1-3 měsíce</label>
+              <label class="choice"><input type="radio" name="requestedTerm" value="3-6 měsíců" />3-6 měsíců</label>
+              <label class="choice"><input type="radio" name="requestedTerm" value="Zatím neřešeno" />Zatím neřešeno</label>
+              <label class="choice"><input type="radio" name="requestedTerm" value="Jiné" />Jiné</label>
+            </div>
+            <label for="termOther" style="margin-top:10px;">Jiné (upřesnění)</label>
+            <input id="termOther" type="text" />
+          </section>
+
+          <section class="section">
+            <h2>7) Rozsah zakázky / orientace</h2>
+            <div class="choice-list">
+              <label class="choice"><input type="radio" name="scopeType" value="Kompletní" />Kompletní</label>
+              <label class="choice"><input type="radio" name="scopeType" value="Dílčí" />Dílčí</label>
+            </div>
+            <div class="grid" style="margin-top:10px;">
+              <div>
+                <label for="scopePartialDetails">Dílčí (upřesnění)</label>
+                <input id="scopePartialDetails" type="text" />
+              </div>
+              <div>
+                <label for="area">Plocha (m²) – pokud je relevantní</label>
+                <input id="area" type="text" />
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>8) Rozpočet</h2>
+            <div class="sub">(pokud máte představu)</div>
+            <div class="choice-list">
+              <label class="choice"><input type="radio" name="hasBudget" value="yes" />Ano, orientační rozpočet</label>
+              <label class="choice"><input type="radio" name="hasBudget" value="no" />Ne, chci návrh řešení</label>
+            </div>
+            <label for="budgetAmount" style="margin-top:10px;">Orientační rozpočet (Kč)</label>
+            <input id="budgetAmount" type="text" />
+          </section>
+
+          <section class="section">
+            <h2>9) Jak jste se o nás dozvěděli?</h2>
+            <div class="choice-list">
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Google vyhledávání" />Google vyhledávání</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Google Ads" />Google Ads</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Instagram" />Instagram</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="TikTok" />TikTok</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Poptávkový web" />Poptávkový web</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Doporučení" />Doporučení</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Webový formulář" />Webový formulář</label>
+              <label class="choice"><input type="checkbox" name="sourceChannels" value="Telefon" />Telefon</label>
+            </div>
+            <label for="sourceOther" style="margin-top:10px;">Jiné</label>
+            <input id="sourceOther" type="text" />
+          </section>
+
+          <section class="section">
+            <h2>10) Poznámka</h2>
+            <div class="sub">(specifika, požadavky, doplňující informace)</div>
+            <textarea id="note"></textarea>
+            <label class="choice" style="margin-top:10px;">
+              <input id="consentGiven" type="checkbox" required />
+              Odesláním formuláře souhlasím se zpracováním osobních údajů za účelem vyřízení poptávky.
+            </label>
+          </section>
+
+          <div class="actions">
+            <button type="submit">Odeslat formulář →</button>
+            <div id="ok" class="msg ok">Děkujeme, formulář byl odeslán.</div>
+            <div id="err" class="msg err">Nepodařilo se odeslat formulář. Zkuste to prosím znovu.</div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      const form = document.getElementById('f')
+      const ok = document.getElementById('ok')
+      const err = document.getElementById('err')
+      const params = new URLSearchParams(window.location.search)
+      const leadId = params.get('leadId') || ''
+      const leadEmail = params.get('leadEmail') || ''
+      const pathModeBase = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+      const apiUrl = (p) => `${pathModeBase}${p}`
+
+      function checkedValues(name) {
+        return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((x) => String(x.value || '').trim()).filter(Boolean)
+      }
+      function checkedSingle(name) {
+        const x = document.querySelector(`input[name="${name}"]:checked`)
+        return x ? String(x.value || '').trim() : ''
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        ok.style.display = 'none'
+        err.style.display = 'none'
+
+        const payload = {
+          leadId,
+          leadEmail: leadEmail || document.getElementById('clientEmail').value.trim().toLowerCase(),
+          clientName: document.getElementById('clientName').value.trim(),
+          clientEmail: document.getElementById('clientEmail').value.trim().toLowerCase(),
+          phone: document.getElementById('phone').value.trim(),
+          companyIco: document.getElementById('companyIco').value.trim(),
+          companyAddress: document.getElementById('companyAddress').value.trim(),
+          realizationAddress: document.getElementById('realizationAddress').value.trim(),
+          requestTypes: checkedValues('requestTypes'),
+          requestOther: document.getElementById('requestOther').value.trim(),
+          objectType: checkedSingle('objectType'),
+          documents: checkedValues('documents'),
+          requestedTerm: checkedSingle('requestedTerm'),
+          termOther: document.getElementById('termOther').value.trim(),
+          scopeType: checkedSingle('scopeType'),
+          scopePartialDetails: document.getElementById('scopePartialDetails').value.trim(),
+          area: document.getElementById('area').value.trim(),
+          hasBudget: checkedSingle('hasBudget'),
+          budgetAmount: document.getElementById('budgetAmount').value.trim(),
+          budgetNeedsProposal: checkedSingle('hasBudget') === 'no',
+          sourceChannels: checkedValues('sourceChannels'),
+          sourceOther: document.getElementById('sourceOther').value.trim(),
+          note: document.getElementById('note').value.trim(),
+          consentGiven: document.getElementById('consentGiven').checked,
+        }
+
+        try {
+          const r = await fetch(apiUrl('/api/client-brief'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          const d = await r.json().catch(() => null)
+          if (!r.ok || !d?.ok) throw new Error(d?.error || 'send_failed')
+          ok.style.display = 'block'
+          form.reset()
+        } catch {
+          err.style.display = 'block'
+        }
+      })
+    </script>
+  </body>
+</html>
