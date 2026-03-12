@@ -3,116 +3,202 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>O&L Master Dom · Karta klienta</title>
+    <title>O&L Master Dom · Kartka klienta</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
+      /* ── O&L Master Dom · Kartka klienta ── */
       :root {
-        --bg:#05101E; --bg2:#081526; --surface:#0C1B31; --card:#101F3A; --card2:#142548;
-        --line:#1A3258; --line2:#254A80;
-        --txt:#E8F1FF; --muted:#6E92BC; --muted2:#47648C;
-        --blue:#4490EE; --cyan:#46C8DE; --green:#30CC8E; --orange:#EE8C3A; --red:#E85858;
-        --r:14px; --r2:10px; --shadow:0 8px 40px rgba(0,4,20,.55);
+        --bg:#020C18; --s:#071626; --c:#0C1E38; --c2:#0F2442;
+        --b:rgba(255,255,255,.06); --b2:rgba(255,255,255,.11); --b3:rgba(255,255,255,.18);
+        --ink:#E6F0FF; --ink2:#7AA2C4; --ink3:#3D618A;
+        --blue:#1A6AE8; --blue2:#3D87F8; --blue3:#60A5FF;
+        --green:#14C98A; --orange:#E8921A; --red:#E83A3A;
+        --r:10px; --r-md:14px; --r-lg:18px;
+        --sh:0 8px 32px rgba(0,0,0,.45); --sh2:0 20px 60px rgba(0,0,0,.6);
       }
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;
-        background-image:radial-gradient(ellipse 1400px 600px at -5% -15%,rgba(20,50,130,.22) 0%,transparent 58%)}
-      .wrap{max-width:1440px;margin:0 auto;padding:36px 28px 72px}
-      .top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:36px;
-        padding-bottom:26px;border-bottom:1px solid var(--line)}
-      .page-logo{display:flex;align-items:center;gap:14px}
-      .page-logo-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#1C4090,#112C68);
-        border:1px solid rgba(68,144,238,.3);display:flex;align-items:center;justify-content:center;
-        box-shadow:0 4px 18px rgba(28,64,144,.35);flex-shrink:0}
-      .title{font-size:28px;font-weight:700;letter-spacing:-.4px}
-      .sub{color:var(--muted);font-size:13px;margin-top:4px}
-      .actions{display:flex;gap:10px;flex-wrap:wrap}
-      .btn{border:1px solid var(--line2);background:var(--card);color:var(--txt);padding:11px 18px;
-        border-radius:var(--r2);font-weight:600;cursor:pointer;text-decoration:none;
-        display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:14px;transition:all .18s}
-      .btn:hover{background:var(--card2);border-color:var(--line2)}
-      .btn.primary{background:linear-gradient(135deg,#2558BC,#3670D8);color:#fff;border:none;
-        box-shadow:0 4px 20px rgba(37,88,188,.4)}
-      .btn.primary:hover{background:linear-gradient(135deg,#2C64CC,#3E7CEE);box-shadow:0 6px 26px rgba(37,88,188,.52)}
-      .grid{display:grid;grid-template-columns:1.4fr .9fr;gap:20px}
-      .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-        padding:24px;box-shadow:var(--shadow)}
-      .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
-      .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;
-        transition:border-color .18s}
-      .stat:hover{border-color:var(--line2)}
-      .stat .k{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
-      .stat .v{font-size:24px;font-weight:700;letter-spacing:-.5px}
-      .section-title{font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px}
-      .meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-      .meta{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px}
-      .meta b{display:block;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-      .meta div{font-size:14px;line-height:1.4}
-      .timeline{display:grid;gap:14px}
-      .timeline-item{display:grid;grid-template-columns:20px 1fr;gap:12px;align-items:start}
-      .dot{width:12px;height:12px;border-radius:999px;background:var(--blue);margin-top:5px;
-        box-shadow:0 0 0 4px rgba(68,144,238,.14)}
-      .timeline-item .t{font-weight:700;font-size:14px}
-      .timeline-item .d{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
-      .brief{display:grid;gap:10px}
-      .brief-row{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px}
-      .brief-row b{display:block;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-      .brief-row div{font-size:14px;line-height:1.5}
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+      html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;
+        background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
+
+      /* ── HEADER ── */
+      .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+      .header-inner{max-width:1600px;margin:0 auto;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+      .logo{display:flex;align-items:center;gap:12px}
+      .logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(145deg,#1A4EA0,#0F3070);border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 12px rgba(26,106,232,.3)}
+      .logo-name{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.4px;line-height:1.1}
+      .logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+      .header-pill{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--green);background:rgba(20,201,138,.08);border:1px solid rgba(20,201,138,.2);border-radius:999px;padding:6px 14px}
+      .header-pill::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pd 2s ease infinite}
+      @keyframes pd{0%,100%{opacity:1}50%{opacity:.35}}
+
+      /* ── LAYOUT ── */
+      .wrap{max-width:1600px;margin:0 auto;padding:32px 32px 80px}
+      .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;padding:10px 18px;transition:all .18s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
+      .btn:hover{background:var(--c2);border-color:var(--b3)}
+      .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;box-shadow:0 4px 16px rgba(26,106,232,.4)}
+      .btn.primary:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF);box-shadow:0 6px 22px rgba(26,106,232,.55)}
+
+      /* ── PAGE TOP ── */
+      .page-top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--b2)}
+      .page-identity{display:flex;align-items:center;gap:14px}
+      .page-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(145deg,#1A4EA0,#0D3270);border:1px solid rgba(61,135,248,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;font-weight:800;color:rgba(200,225,255,.9)}
+      .page-title{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
+      .page-sub{font-size:13px;color:var(--ink2);margin-top:4px}
+      .page-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+      /* ── KPI ROW ── */
+      .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
+      .kpi-card{background:var(--c);border:1px solid var(--b);border-top:2px solid transparent;border-radius:var(--r-md);padding:18px 20px;transition:all .18s}
+      .kpi-card:hover{border-color:var(--b2);transform:translateY(-2px)}
+      .kpi-card.blue{border-top-color:var(--blue2)}
+      .kpi-card.green{border-top-color:var(--green)}
+      .kpi-card.orange{border-top-color:var(--orange)}
+      .kpi-card.red{border-top-color:var(--red)}
+      .kpi-card .k{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+      .kpi-card .v{font-size:26px;font-weight:800;letter-spacing:-1px}
+      .kpi-card.blue .v{color:var(--blue3)}
+      .kpi-card.green .v{color:var(--green)}
+      .kpi-card.orange .v{color:var(--orange)}
+
+      /* ── TWO-COL GRID ── */
+      .grid{display:grid;grid-template-columns:1.45fr .9fr;gap:20px}
+      .section-stack{display:grid;gap:20px}
+
+      /* ── CARD ── */
+      .card{background:var(--s);border:1px solid var(--b2);border-radius:var(--r-lg);padding:24px;box-shadow:var(--sh)}
+      .section-title{font-size:16px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px;color:var(--ink);display:flex;align-items:center;gap:8px}
+      .section-title::before{content:'';width:3px;height:16px;border-radius:2px;background:var(--blue);flex-shrink:0}
+
+      /* ── META GRID ── */
+      .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .meta{background:var(--c);border:1px solid var(--b);border-radius:var(--r);padding:13px 14px;transition:border-color .15s}
+      .meta:hover{border-color:var(--b2)}
+      .meta b{display:block;color:var(--ink3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+      .meta .val{font-size:14px;color:var(--ink);line-height:1.4}
+
+      /* ── TIMELINE ── */
+      .timeline{display:grid;gap:16px}
+      .tl-item{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+      .tl-dot{width:12px;height:12px;border-radius:50%;background:var(--blue);margin-top:5px;box-shadow:0 0 0 4px rgba(26,106,232,.15);justify-self:center}
+      .tl-dot.done{background:var(--green);box-shadow:0 0 0 4px rgba(20,201,138,.15)}
+      .tl-dot.warn{background:var(--orange);box-shadow:0 0 0 4px rgba(232,146,26,.15)}
+      .tl-line{width:2px;background:var(--b2);height:20px;justify-self:center;margin-top:4px}
+      .tl-title{font-size:14px;font-weight:700;color:var(--ink)}
+      .tl-meta{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.4}
+
+      /* ── BRIEF ROWS ── */
+      .brief-grid{display:grid;gap:10px}
+      .brief-item{background:var(--c);border:1px solid var(--b);border-radius:var(--r);padding:13px 14px}
+      .brief-item b{display:block;color:var(--ink3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+      .brief-item .val{font-size:14px;color:var(--ink);line-height:1.5}
+
+      /* ── ESTIMATE LIST ── */
       .estimate-list{display:grid;gap:12px}
-      .estimate{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;transition:border-color .18s}
-      .estimate:hover{border-color:var(--line2)}
-      .estimate .sub{margin-top:6px;color:var(--muted);font-size:13px}
-      .empty{padding:24px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);font-size:14px}
-      @media(max-width:1060px){.grid{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}}
-      @media(max-width:680px){.meta-grid,.kpi{grid-template-columns:1fr}}
+      .estimate-card{background:var(--c);border:1px solid var(--b);border-left:3px solid var(--blue);border-radius:var(--r-md);padding:16px 18px;transition:all .18s}
+      .estimate-card:hover{border-color:var(--b2);border-left-color:var(--blue2)}
+      .estimate-card .title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px}
+      .estimate-card .sub{font-size:13px;color:var(--ink2)}
+      .estimate-card .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+
+      /* ── EMPTY ── */
+      .empty{padding:32px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:14px}
+      .loading{padding:32px;text-align:center;color:var(--ink2);font-size:14px}
+
+      @media(max-width:1100px){.grid{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}}
+      @media(max-width:680px){.meta-grid{grid-template-columns:1fr}.kpi{grid-template-columns:1fr}.header-inner,.wrap{padding-left:16px;padding-right:16px}}
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="top">
-        <div class="page-logo">
-          <div class="page-logo-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z" stroke="rgba(160,200,255,.9)" stroke-width="1.5"/>
-              <path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z" stroke="rgba(160,200,255,.9)" stroke-width="1.5"/>
+
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1v-10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
           <div>
-            <div class="title" id="pageTitle">Kartka klienta</div>
-            <div class="sub" id="pageSub">Načítání...</div>
+            <div class="logo-name">O&amp;L Master Dom</div>
+            <div class="logo-sub">Enterprise CRM</div>
           </div>
         </div>
-        <div class="actions">
-          <a class="btn" href="./index.html">← Zpět do CRM</a>
-          <a class="btn primary" id="goEstimate" href="./estimate-builder.html">Přejít do rozpočtu →</a>
+        <div class="header-pill">Kartka klienta</div>
+      </div>
+    </header>
+
+    <div class="wrap">
+
+      <div class="page-top">
+        <div class="page-identity">
+          <div class="page-avatar" id="pageAvatar">?</div>
+          <div>
+            <div class="page-title" id="pageTitle">Завантаження...</div>
+            <div class="page-sub" id="pageSub"></div>
+          </div>
+        </div>
+        <div class="page-actions">
+          <a class="btn" href="./index.html">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Zpět do CRM
+          </a>
+          <a class="btn primary" id="goEstimate" href="./estimate-builder.html">
+            Přejít do rozpočtu
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
         </div>
       </div>
 
-      <div class="kpi" id="kpis"></div>
+      <!-- KPI -->
+      <div class="kpi" id="kpis">
+        <div class="kpi-card blue"><div class="k">Хвиля</div><div class="v" id="kpiWave">—</div></div>
+        <div class="kpi-card green"><div class="k">Номер клієнта</div><div class="v" id="kpiNum" style="font-size:18px">—</div></div>
+        <div class="kpi-card orange"><div class="k">Подій</div><div class="v" id="kpiEvents">—</div></div>
+        <div class="kpi-card"><div class="k">Розрахунків</div><div class="v" id="kpiEstimates" style="color:var(--ink)">—</div></div>
+      </div>
 
-      <div class="grid" style="margin-top:16px;">
-        <div style="display:grid;gap:16px;">
+      <div class="grid">
+        <!-- LEFT COLUMN -->
+        <div class="section-stack">
+
           <section class="card">
-            <div class="section-title">Повна інформація про клієнта</div>
-            <div class="meta-grid" id="clientMeta"></div>
+            <div class="section-title">Інформація про клієнта</div>
+            <div class="meta-grid" id="clientMeta">
+              <div class="meta"><b>Завантаження...</b></div>
+            </div>
           </section>
+
           <section class="card">
-            <div class="section-title">Формуляр клієнта</div>
-            <div class="brief" id="briefBox"></div>
+            <div class="section-title">Заповнений формуляр</div>
+            <div class="brief-grid" id="briefBox">
+              <div class="empty">Формуляр ще не отримано</div>
+            </div>
           </section>
+
           <section class="card">
-            <div class="section-title">Розрахунки та повʼязані записи</div>
-            <div class="estimate-list" id="estimateList"></div>
+            <div class="section-title">Розрахунки та кейси</div>
+            <div class="estimate-list" id="estimateList">
+              <div class="empty">Завантаження...</div>
+            </div>
           </section>
+
         </div>
-        <div style="display:grid;gap:16px;">
+
+        <!-- RIGHT COLUMN: TIMELINE -->
+        <div>
           <section class="card">
             <div class="section-title">Шлях клієнта</div>
-            <div class="timeline" id="timeline"></div>
+            <div class="timeline" id="timeline">
+              <div class="loading">Завантаження...</div>
+            </div>
           </section>
         </div>
       </div>
+
     </div>
 
     <script>
@@ -122,79 +208,124 @@
       const apiUrl = (p) => `${pathModeBase}${p}`
       const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
       const fmt = (iso) => {
-        try { return new Date(iso).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) } catch { return String(iso || '—') }
+        try { return new Date(iso).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) }
+        catch { return String(iso || '—') }
       }
       async function json(resp) { try { return await resp.json() } catch { return null } }
-      function renderMeta(lead) {
-        const items = [
-          ['Клієнт', lead.fullName || lead.name || '—'],
-          ['Номер клієнта', lead.clientNumber || '—'],
-          ['Статус', lead.status || '—'],
-          ['Хвиля', String(lead.wave || 1)],
-          ['Телефон', lead.phone || '—'],
-          ['Email', lead.email || '—'],
-          ['Послуга', lead.serviceType || '—'],
-          ['Коментар', lead.comment || '—'],
-          ['IČO', lead.brief?.companyIco || '—'],
-          ['Компанія', lead.brief?.companyRegistry?.name || '—'],
-          ['Адреса', [lead.brief?.companyRegistry?.address, lead.brief?.companyRegistry?.city, lead.brief?.companyRegistry?.zip].filter(Boolean).join(', ') || lead.brief?.realizationAddress || '—'],
-          ['Отримання формуляра', lead.briefReceivedAt ? fmt(lead.briefReceivedAt) : '—'],
-        ]
-        document.getElementById('clientMeta').innerHTML = items.map(([k,v]) => `<div class="meta"><b>${esc(k)}</b><div>${esc(v)}</div></div>`).join('')
+
+      function initials(name) {
+        const parts = String(name || '').trim().split(' ')
+        return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : (String(name || '?')[0] || '?').toUpperCase()
       }
+
+      function renderMeta(lead) {
+        const fields = [
+          ['Клієнт', lead.fullName || lead.name],
+          ['Телефон', lead.phone],
+          ['Email', lead.email],
+          ['Статус', lead.status],
+          ['Послуга', lead.serviceType],
+          ['Хвиля', String(lead.wave || 1)],
+          ['IČO', lead.brief?.companyIco],
+          ['Компанія (ARES)', lead.brief?.companyRegistry?.name],
+          ['Адреса', [lead.brief?.companyRegistry?.address, lead.brief?.companyRegistry?.city, lead.brief?.companyRegistry?.zip].filter(Boolean).join(', ') || lead.brief?.realizationAddress],
+          ['Отримання формуляра', lead.briefReceivedAt ? fmt(lead.briefReceivedAt) : null],
+          ['Створено', fmt(lead.createdAt)],
+          ['Оновлено', fmt(lead.updatedAt || lead.createdAt)],
+        ].filter(([, v]) => v)
+        document.getElementById('clientMeta').innerHTML = fields.map(([k, v]) =>
+          `<div class="meta"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`
+        ).join('')
+      }
+
       function renderBrief(lead) {
         const brief = lead.brief || {}
         const rows = [
-          ['Що потрібно', brief.goal || brief.workType || '—'],
-          ['Тип обʼєкта', brief.objectType || '—'],
-          ['Площа / обсяг', brief.area || '—'],
-          ['Термін', brief.timeline || brief.requestedTerm || '—'],
-          ['Бюджет', brief.budget || '—'],
-          ['Додаткові деталі', brief.summaryText || brief.details || brief.note || '—'],
-        ]
-        document.getElementById('briefBox').innerHTML = rows.map(([k,v]) => `<div class="brief-row"><b>${esc(k)}</b><div>${esc(v)}</div></div>`).join('')
+          ['Що потрібно', brief.goal || brief.workType],
+          ['Тип обʼєкта', brief.objectType],
+          ['Площа / обсяг', brief.area],
+          ['Термін', brief.timeline || brief.requestedTerm],
+          ['Бюджет', brief.budget],
+          ['Деталі', brief.summaryText || brief.details || brief.note],
+        ].filter(([, v]) => v)
+        const el = document.getElementById('briefBox')
+        if (!rows.length) {
+          el.innerHTML = '<div class="empty">Формуляр ще не отримано</div>'
+          return
+        }
+        el.innerHTML = rows.map(([k, v]) =>
+          `<div class="brief-item"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`
+        ).join('')
       }
+
       function renderTimeline(items) {
-        document.getElementById('timeline').innerHTML = items.length
-          ? items.map((x) => `<div class="timeline-item"><div class="dot"></div><div><div class="t">${esc(x.title)}</div><div class="d">${esc(fmt(x.at))}${x.note ? ` · ${esc(x.note)}` : ''}</div></div></div>`).join('')
-          : '<div class="empty">Подій поки немає</div>'
+        const el = document.getElementById('timeline')
+        if (!items.length) { el.innerHTML = '<div class="empty">Подій поки немає</div>'; return }
+        const toneMap = { new: '', contacted: 'done', proposal: 'done', won: 'done', warn: 'warn' }
+        el.innerHTML = items.map((item, i) => `
+          <div class="tl-item">
+            <div class="tl-dot ${toneMap[item.tone] || ''}"></div>
+            <div>
+              <div class="tl-title">${esc(item.title)}</div>
+              <div class="tl-meta">${esc(fmt(item.at))}${item.note ? ' · ' + esc(item.note) : ''}</div>
+            </div>
+          </div>
+          ${i < items.length - 1 ? '<div class="tl-item"><div class="tl-line"></div><div></div></div>' : ''}
+        `).join('')
       }
+
       function renderEstimates(estimates, cases) {
-        const rows = []
-        for (const est of estimates || []) {
-          rows.push(`<div class="estimate"><div><b>Розрахунок</b> ${esc(est.estimateNo || '')}</div><div class="sub">Статус: ${esc(est.status || 'draft')} · Сума: ${esc(String(est.totalWithVat || 0))} CZK</div><div style="margin-top:8px;"><a class="btn primary" href="./estimate-builder.html?leadId=${encodeURIComponent(String(est.leadId || leadId))}&estimateId=${encodeURIComponent(String(est.id))}">Відкрити розрахунок</a></div></div>`)
+        const el = document.getElementById('estimateList')
+        const cards = []
+        for (const est of (estimates || [])) {
+          cards.push(`
+            <div class="estimate-card">
+              <div class="title">📊 ${esc(est.estimateNo || `EST-${est.id}`)}</div>
+              <div class="sub">Статус: ${esc(est.status || 'draft')} · Сума: ${esc(String(est.totalWithVat || 0))} CZK</div>
+              <div class="actions">
+                <a class="btn primary" href="./estimate-builder.html?leadId=${encodeURIComponent(String(est.leadId || leadId))}&estimateId=${encodeURIComponent(String(est.id))}">Відкрити розрахунок</a>
+              </div>
+            </div>
+          `)
         }
-        for (const c of cases || []) {
-          rows.push(`<div class="estimate"><div><b>Комерційний випадок</b> ${esc(c.internal_order_id || c.internalOrderId || '')}</div><div class="sub">Статус: ${esc(c.status || '—')} · Етап: ${esc(c.stage || '—')}</div></div>`)
+        for (const c of (cases || [])) {
+          cards.push(`
+            <div class="estimate-card" style="border-left-color:var(--orange)">
+              <div class="title">📁 ${esc(c.internal_order_id || c.internalOrderId || 'Кейс')}</div>
+              <div class="sub">Статус: ${esc(c.status || '—')} · Етап: ${esc(c.stage || '—')}</div>
+            </div>
+          `)
         }
-        document.getElementById('estimateList').innerHTML = rows.length ? rows.join('') : '<div class="empty">Розрахунок ще не створено. Переходьте в базу розрахунку.</div>'
+        el.innerHTML = cards.length ? cards.join('') : `
+          <div class="empty">Розрахунок ще не створено.<br>Перейдіть в базу розрахунку.</div>
+          <div style="margin-top:12px">
+            <a class="btn primary" id="goEstimate2" href="./estimate-builder.html?leadId=${leadId}">Створити розрахунок →</a>
+          </div>
+        `
       }
-      function renderKpis(lead, timeline, estimates) {
-        const data = [
-          ['Хвиля', String(lead.wave || 1)],
-          ['Подій', String((timeline || []).length)],
-          ['Розрахунків', String((estimates || []).length)],
-          ['Номер клієнта', lead.clientNumber || '—'],
-        ]
-        document.getElementById('kpis').innerHTML = data.map(([k,v]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')
-      }
+
       async function load() {
         if (!leadId) {
-          document.getElementById('pageSub').textContent = 'Не передано leadId'
+          document.getElementById('pageTitle').textContent = 'leadId не передано'
           return
         }
         const r = await fetch(apiUrl(`/api/crm/client-workspace/${leadId}`))
         const d = await json(r)
         if (!r.ok || !d?.ok) {
-          document.getElementById('pageSub').textContent = 'Помилка завантаження картки'
+          document.getElementById('pageTitle').textContent = 'Помилка завантаження'
           return
         }
         const w = d.workspace
         const lead = w.lead
-        document.getElementById('pageTitle').textContent = lead.fullName || lead.name || 'Клієнт'
-        document.getElementById('pageSub').textContent = `Клієнт № ${lead.clientNumber || '—'} · хвиля ${lead.wave || 1}`
+        const name = lead.fullName || lead.name || 'Клієнт'
+        document.getElementById('pageAvatar').textContent = initials(name)
+        document.getElementById('pageTitle').textContent = name
+        document.getElementById('pageSub').textContent = `Клієнт № ${lead.clientNumber || '—'} · Хвиля ${lead.wave || 1} · ${lead.status || '—'}`
         document.getElementById('goEstimate').href = `./estimate-builder.html?leadId=${encodeURIComponent(String(lead.id))}`
-        renderKpis(lead, w.timeline || [], w.estimates || [])
+        document.getElementById('kpiWave').textContent = String(lead.wave || 1)
+        document.getElementById('kpiNum').textContent = lead.clientNumber || '—'
+        document.getElementById('kpiEvents').textContent = String((w.timeline || []).length)
+        document.getElementById('kpiEstimates').textContent = String((w.estimates || []).length)
         renderMeta(lead)
         renderBrief(lead)
         renderTimeline(w.timeline || [])
@@ -203,4 +334,4 @@
       load()
     </script>
   </body>
-  </html>
+</html>

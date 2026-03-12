@@ -6,148 +6,254 @@
     <title>O&L Master Dom · CRM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
+      /* ─────────────────────────────────────────────────────────
+         O&L MASTER DOM  ·  ENTERPRISE CRM  ·  NEW PREMIUM UI
+      ───────────────────────────────────────────────────────── */
       :root {
-        --bg:      #05101E;
-        --bg2:     #081526;
-        --surface: #0C1B31;
-        --card:    #101F3A;
-        --card2:   #142548;
-        --line:    #1A3258;
-        --line2:   #254A80;
-        --txt:     #E8F1FF;
-        --muted:   #6E92BC;
-        --muted2:  #47648C;
-        --blue:    #4490EE;
-        --cyan:    #46C8DE;
-        --green:   #30CC8E;
-        --orange:  #EE8C3A;
-        --red:     #E85858;
-        --purple:  #9A7CEE;
-        --radius:  14px;
-        --radius2: 10px;
-        --shadow:  0 8px 40px rgba(0,4,20,.55);
+        --bg:     #020C18;
+        --bg2:    #040F1E;
+        --s:      #071626;
+        --s2:     #091B30;
+        --c:      #0C1E38;
+        --c2:     #0F2442;
+        --c3:     #122848;
+
+        --b:      rgba(255,255,255,.06);
+        --b2:     rgba(255,255,255,.11);
+        --b3:     rgba(255,255,255,.18);
+
+        --ink:    #E6F0FF;
+        --ink2:   #7AA2C4;
+        --ink3:   #3D618A;
+
+        --blue:   #1A6AE8;
+        --blue2:  #3D87F8;
+        --blue3:  #60A5FF;
+        --bglow:  rgba(26,106,232,.18);
+
+        --green:  #14C98A;
+        --orange: #E8921A;
+        --red:    #E83A3A;
+        --purple: #7A5EE8;
+        --cyan:   #18C4DC;
+
+        --r-xs:  4px;
+        --r-sm:  6px;
+        --r:     10px;
+        --r-md:  14px;
+        --r-lg:  18px;
+        --r-xl:  24px;
+
+        --sh:    0 2px 10px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+        --sh2:   0 8px 32px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.25);
+        --sh3:   0 20px 60px rgba(0,0,0,.6);
+
+        /* compat aliases */
+        --bg2-old: #040F1E;
+        --surface: #071626;
+        --card:    #0C1E38;
+        --card2:   #0F2442;
+        --line:    rgba(255,255,255,.06);
+        --line2:   rgba(255,255,255,.11);
+        --txt:     #E6F0FF;
+        --muted:   #7AA2C4;
+        --muted2:  #3D618A;
+        --radius:  10px;
+        --radius2: 8px;
+        --shadow:  0 4px 20px rgba(0,0,0,.4);
       }
+
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; }
+      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
       body {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         background: var(--bg);
-        color: var(--txt);
+        color: var(--ink);
         min-height: 100vh;
-        line-height: 1.6;
+        font-size: 14px;
+        line-height: 1.55;
         background-image:
-          radial-gradient(ellipse 1600px 700px at -8% -15%, rgba(20,50,130,.26) 0%, transparent 58%),
-          radial-gradient(ellipse 900px 450px at 108% 8%, rgba(20,80,160,.1) 0%, transparent 52%);
+          radial-gradient(ellipse 160% 40% at 50% -4%, rgba(26,106,232,.13) 0%, transparent 55%);
       }
 
-      /* ─── LAYOUT ─────────────────────────────────── */
-      .wrap { max-width: 1440px; margin: 0 auto; padding: 36px 28px 72px; }
-
-      /* ─── HEADER ─────────────────────────────────── */
+      /* ─── TOP HEADER ─────────────────────────────── */
       .header {
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 16px; flex-wrap: wrap;
-        margin-bottom: 40px; padding-bottom: 28px;
-        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(2,12,24,.94);
+        border-bottom: 1px solid var(--b2);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
       }
-      .logo { display: flex; align-items: center; gap: 16px; }
-      .logo-icon {
-        width: 52px; height: 52px; border-radius: 14px;
-        background: linear-gradient(145deg, #1C4090, #112C68);
-        border: 1px solid rgba(68,144,238,.35);
+      .header-inner {
+        max-width: 1680px;
+        margin: 0 auto;
+        padding: 0 32px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .logo { display: flex; align-items: center; gap: 12px; }
+      .logo-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(145deg, #1A4EA0 0%, #0F3070 100%);
+        border: 1px solid rgba(61,135,248,.35);
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
-        box-shadow: 0 4px 20px rgba(28,64,144,.4);
+        box-shadow: 0 2px 12px rgba(26,106,232,.3);
       }
-      .logo-text h1 { font-size: 22px; font-weight: 700; color: var(--txt); letter-spacing: -.4px; }
-      .logo-text p { font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 3px; }
+      .logo-mark svg { display: block; }
+      .logo-name {
+        font-size: 16px; font-weight: 800; color: var(--ink);
+        letter-spacing: -.4px; line-height: 1.1;
+      }
+      .logo-sub { font-size: 10px; color: var(--ink3); letter-spacing: .4px; text-transform: uppercase; margin-top: 2px; }
       .header-pill {
+        display: flex; align-items: center; gap: 7px;
         font-size: 12px; font-weight: 600; color: var(--green);
-        background: rgba(48,204,142,.1); border: 1px solid rgba(48,204,142,.22);
-        border-radius: 999px; padding: 7px 16px; letter-spacing: .3px;
+        background: rgba(20,201,138,.08);
+        border: 1px solid rgba(20,201,138,.2);
+        border-radius: 999px; padding: 6px 14px;
+      }
+      .header-pill::before {
+        content: '';
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse-dot 2s ease infinite;
+      }
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .4; }
       }
 
-      /* ─── TABS ───────────────────────────────────── */
+      /* ─── NAV TABS ───────────────────────────────── */
+      .nav-wrap {
+        background: rgba(2,12,24,.92);
+        border-bottom: 1px solid var(--b);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
       .tabbar {
-        display: flex; gap: 4px; margin-bottom: 32px;
-        background: var(--surface); border: 1px solid var(--line);
-        border-radius: var(--radius); padding: 5px; width: fit-content;
+        max-width: 1680px;
+        margin: 0 auto;
+        padding: 0 32px;
+        display: flex;
+        gap: 0;
+        width: auto;
+        background: transparent;
+        border: none;
+        border-radius: 0;
       }
       .tab {
-        border: none; background: transparent; color: var(--muted);
-        border-radius: var(--radius2); padding: 11px 24px;
-        font-size: 14px; font-weight: 600; cursor: pointer;
-        transition: all .18s ease; font-family: inherit; white-space: nowrap;
+        border: none;
+        background: transparent;
+        color: var(--ink3);
+        border-bottom: 2px solid transparent;
+        padding: 14px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .18s;
+        font-family: inherit;
+        white-space: nowrap;
+        letter-spacing: -.1px;
+        margin-bottom: -1px;
       }
-      .tab:hover { color: var(--txt); background: rgba(255,255,255,.05); }
+      .tab:hover { color: var(--ink2); }
       .tab.active {
-        background: linear-gradient(135deg, #1A3D80, #1F4FA0);
-        color: var(--txt);
-        box-shadow: 0 2px 16px rgba(30,79,160,.45);
+        color: var(--blue3);
+        border-bottom-color: var(--blue);
+      }
+
+      /* ─── PAGE WRAP ──────────────────────────────── */
+      .wrap {
+        max-width: 1680px;
+        margin: 0 auto;
+        padding: 32px 32px 80px;
       }
 
       /* ─── PANEL ──────────────────────────────────── */
       .panel {
-        background: var(--surface); border: 1px solid var(--line);
-        border-radius: var(--radius); padding: 36px;
-        box-shadow: var(--shadow);
+        background: var(--s);
+        border: 1px solid var(--b2);
+        border-radius: var(--r-lg);
+        padding: 32px;
+        box-shadow: var(--sh2);
       }
-      .panel-title { font-size: 24px; font-weight: 700; letter-spacing: -.4px; margin-bottom: 6px; }
-      .panel-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+      .panel-title {
+        font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+        margin-bottom: 6px; color: var(--ink);
+      }
+      .panel-sub {
+        font-size: 14px; color: var(--ink2); margin-bottom: 30px;
+      }
 
       /* ─── FORM ───────────────────────────────────── */
-      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       .field { display: flex; flex-direction: column; }
       .field label {
-        font-size: 11px; font-weight: 700; color: var(--muted);
-        text-transform: uppercase; letter-spacing: .7px; margin-bottom: 9px;
+        font-size: 11px; font-weight: 700; color: var(--ink3);
+        text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px;
       }
-      .field input, .field textarea, .field select {
-        background: var(--card); border: 1px solid var(--line2);
-        border-radius: var(--radius2); color: var(--txt);
-        font-size: 15px; font-family: inherit; padding: 14px 16px;
-        outline: none; transition: border-color .15s, box-shadow .15s; width: 100%;
+      .field input, .field select, .field textarea {
+        background: var(--c);
+        border: 1px solid var(--b2);
+        border-radius: var(--r);
+        color: var(--ink);
+        font-size: 15px; font-family: inherit;
+        padding: 14px 16px;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+        width: 100%;
       }
-      .field input::placeholder, .field textarea::placeholder { color: var(--muted2); }
-      .field input:focus, .field textarea:focus, .field select:focus {
-        border-color: var(--blue); box-shadow: 0 0 0 4px rgba(68,144,238,.12);
+      .field input::placeholder, .field textarea::placeholder { color: var(--ink3); }
+      .field input:focus, .field select:focus, .field textarea:focus {
+        border-color: var(--blue2);
+        box-shadow: 0 0 0 4px rgba(26,106,232,.12);
       }
       .field textarea { min-height: 110px; resize: vertical; }
-      .field-hint { font-size: 11px; color: var(--muted2); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+      .field-hint { font-size: 11px; color: var(--ink3); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
       .field-full { grid-column: 1 / -1; }
       .form-footer {
         display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-        margin-top: 28px; padding-top: 26px; border-top: 1px solid var(--line);
+        margin-top: 28px; padding-top: 26px; border-top: 1px solid var(--b);
       }
 
       /* ─── BUTTONS ────────────────────────────────── */
       .btn {
-        border: 1px solid var(--line2); border-radius: var(--radius2);
+        border: 1px solid var(--b2); border-radius: var(--r);
         font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
-        padding: 12px 22px; transition: all .18s ease;
+        padding: 11px 20px; transition: all .18s;
         display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-        background: var(--card); color: var(--txt); text-decoration: none;
+        background: var(--c); color: var(--ink); text-decoration: none;
       }
-      .btn:hover { background: var(--card2); border-color: var(--line2); }
+      .btn:hover { background: var(--c2); border-color: var(--b3); }
       .btn-primary {
-        background: linear-gradient(135deg, #2558BC, #3670D8);
+        background: linear-gradient(135deg, #1A6AE8, #2D80F8);
         color: #fff; border: none;
-        box-shadow: 0 4px 20px rgba(37,88,188,.4);
+        box-shadow: 0 4px 16px rgba(26,106,232,.4);
       }
       .btn-primary:hover {
-        background: linear-gradient(135deg, #2C64CC, #3E7CEE);
-        box-shadow: 0 6px 26px rgba(37,88,188,.52);
+        background: linear-gradient(135deg, #2070F0, #3A8CFF);
+        box-shadow: 0 6px 22px rgba(26,106,232,.55);
       }
       .btn-soft {
-        background: rgba(255,255,255,.04); border: 1px solid var(--line);
-        color: var(--muted); font-size: 13px; padding: 9px 14px;
+        background: rgba(255,255,255,.04); border: 1px solid var(--b);
+        color: var(--ink2); font-size: 13px; padding: 8px 14px;
       }
-      .btn-soft:hover { background: rgba(255,255,255,.08); color: var(--txt); border-color: var(--line2); }
-      .btn-icon { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; }
-      .msg { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-      .msg.ok { color: var(--green); }
+      .btn-soft:hover { background: rgba(255,255,255,.08); color: var(--ink); border-color: var(--b2); }
+      .btn-icon { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r); }
+
+      /* ─── MESSAGES ───────────────────────────────── */
+      .msg { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+      .msg.ok  { color: var(--green); }
       .msg.err { color: var(--red); }
       #formMsg { margin-top: 0; }
 
@@ -157,508 +263,297 @@
         gap: 14px; flex-wrap: wrap; margin-bottom: 24px;
       }
       .crm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-      .view-switch {
-        display: inline-flex;
-        border: 1px solid var(--line2);
-        border-radius: 10px;
-        overflow: hidden;
-      }
-      .view-btn {
-        border: none;
-        background: transparent;
-        color: var(--muted);
-        padding: 8px 12px;
-        font-size: 12px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .view-btn.active {
-        background: rgba(77,166,255,0.18);
-        color: #bfe1ff;
-      }
 
       /* ─── STATS ──────────────────────────────────── */
       .stats {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
         gap: 12px;
-        margin-bottom: 20px;
+        margin-bottom: 28px;
       }
       .stat {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        padding: 16px 18px;
-        position: relative;
-        overflow: hidden;
+        background: var(--c);
+        border: 1px solid var(--b);
+        border-top: 2px solid transparent;
+        border-radius: var(--r-md);
+        padding: 18px 20px;
+        transition: border-color .18s, transform .18s;
       }
-      .stat::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0;
-        width: 3px;
-        height: 100%;
-        background: var(--accent, var(--blue));
-        border-radius: 2px;
-      }
-      .stat.c-total  { --accent: var(--blue); }
-      .stat.c-new    { --accent: var(--cyan); }
-      .stat.c-prog   { --accent: var(--orange); }
-      .stat.c-won    { --accent: var(--green); }
+      .stat:hover { border-color: var(--b2); transform: translateY(-2px); }
       .stat .k {
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.7px;
-        color: var(--muted);
-        margin-bottom: 6px;
+        font-size: 11px; font-weight: 600; color: var(--ink3);
+        text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px;
       }
       .stat .v {
-        font-size: 32px;
-        font-weight: 700;
-        line-height: 1;
-        letter-spacing: -1px;
-        color: var(--txt);
+        font-size: 28px; font-weight: 800; letter-spacing: -1px;
+        color: var(--ink);
       }
+      .c-total { border-top-color: var(--blue2) !important; }
+      .c-total .v { color: var(--blue3); }
+      .c-won { border-top-color: var(--green) !important; }
+      .c-won .v { color: var(--green); }
+      .c-new { border-top-color: var(--red) !important; }
+      .c-new .v { color: var(--red); }
+      .c-prog { border-top-color: var(--orange) !important; }
+      .c-prog .v { color: var(--orange); }
 
       /* ─── FILTERS ────────────────────────────────── */
       .filters {
         display: grid;
-        grid-template-columns: 1fr repeat(4, 170px);
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
         gap: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
       }
-      .range-row {
-        display: none;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 14px;
+      .range-row { display: none; gap: 10px; margin-bottom: 14px; }
+      .range-row.active { display: grid; grid-template-columns: 1fr 1fr; }
+      input, select, textarea {
+        background: var(--c); border: 1px solid var(--b2);
+        border-radius: var(--r); color: var(--ink);
+        font-family: inherit; padding: 10px 14px; font-size: 13px; outline: none;
+        transition: border-color .15s, box-shadow .15s; width: 100%;
       }
-      .range-row.active { display: grid; }
-      .filters input, .filters select {
-        background: var(--card);
-        border: 1px solid var(--line2);
-        border-radius: var(--radius2);
-        color: var(--txt);
-        font-size: 13px;
-        font-family: inherit;
-        padding: 10px 13px;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-        width: 100%;
+      input::placeholder { color: var(--ink3); }
+      input:focus, select:focus {
+        border-color: var(--blue2); box-shadow: 0 0 0 3px rgba(26,106,232,.12);
       }
-      .filters input:focus, .filters select:focus {
-        border-color: var(--blue);
-        box-shadow: 0 0 0 3px rgba(77,166,255,0.12);
-      }
-      .filters input::placeholder { color: var(--muted2); }
 
-      /* ─── LEAD LIST ──────────────────────────────── */
-      .lead-list { display: flex; flex-direction: column; gap: 12px; }
-      .wave-board {
-        display: none;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-      }
-      .wave-col {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        padding: 10px;
-        min-height: 220px;
-      }
-      .wave-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .wave-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: #c9dcff;
-      }
-      .wave-count {
-        border: 1px solid var(--line2);
-        border-radius: 999px;
-        padding: 2px 8px;
-        font-size: 11px;
-        color: var(--muted);
-      }
-      .wave-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .wave-item {
-        border: 1px solid var(--line2);
-        border-radius: 10px;
-        padding: 9px;
-        background: #102147;
-      }
-      .wave-item-name {
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--txt);
-      }
-      .wave-item-meta {
-        margin-top: 3px;
-        font-size: 11px;
-        color: var(--muted);
-      }
-      .wave-item-actions {
-        margin-top: 7px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .wave-mini-btn {
-        border: 1px solid var(--line); background: rgba(255,255,255,.04);
-        color: var(--muted); border-radius: var(--radius2); font-size: 12px; font-weight: 600;
-        padding: 7px 12px; cursor: pointer; font-family: inherit; text-decoration: none;
-        display: inline-flex; align-items: center; transition: all .15s;
-      }
-      .wave-mini-btn:hover { background: rgba(68,144,238,.1); color: var(--txt); border-color: var(--line2); }
-      .empty { text-align: center; padding: 52px 20px; color: var(--muted); }
-      .empty svg { margin-bottom: 14px; opacity: .3; }
-      .empty p { font-size: 15px; margin-bottom: 4px; font-weight: 500; }
-      .empty small { font-size: 12px; }
-      .loading { text-align: center; padding: 44px; color: var(--muted); font-size: 14px; }
-
-      /* ─── LEAD CARD ──────────────────────────────── */
-      .lead-card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        overflow: hidden;
-        transition: border-color 0.15s, transform 0.15s;
-      }
-      .lead-card:hover { border-color: var(--line2); transform: translateY(-1px); }
-      .lead-card-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 18px 20px 14px;
-      }
-      .lead-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 17px;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, #1a4fb3, #0f7ab0);
-      }
-      .lead-info { flex: 1; min-width: 0; }
-      .lead-name {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--txt);
-        letter-spacing: -0.2px;
-        white-space: normal;
-        word-break: break-word;
-      }
-      .lead-contacts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 4px;
-      }
-      .lead-contacts a, .lead-contact-item {
-        font-size: 12px;
-        color: var(--muted);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .lead-contacts a:hover { color: var(--blue); }
-      .lead-right {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 6px;
-        flex-shrink: 0;
-      }
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        border-radius: 999px;
-        padding: 4px 11px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border: 1px solid;
+      /* ─── LEAD LIST TABLE ────────────────────────── */
+      .lead-list {}
+      .lead-main-row { cursor: pointer; }
+      .lead-main-row:hover td { background: rgba(26,106,232,.05); }
+      table { width: 100%; border-collapse: collapse; }
+      th {
+        text-align: left; padding: 11px 14px;
+        font-size: 11px; font-weight: 700; color: var(--ink3);
+        text-transform: uppercase; letter-spacing: .5px;
+        background: var(--s2); border-bottom: 1px solid var(--b2);
         white-space: nowrap;
       }
-      .badge-new        { color: #80B8F8; border-color: rgba(68,144,238,.25); background: rgba(68,144,238,.1); }
-      .badge-contacted  { color: #6AC8E8; border-color: rgba(70,200,232,.25); background: rgba(70,200,232,.1); }
-      .badge-proposal   { color: #66E0C8; border-color: rgba(48,224,200,.25); background: rgba(48,224,200,.1); }
-      .badge-progress   { color: #F0A060; border-color: rgba(240,160,96,.3); background: rgba(240,160,96,.08); }
-      .badge-invoicing  { color: #B090EE; border-color: rgba(176,144,238,.3); background: rgba(176,144,238,.08); }
-      .badge-won        { color: #50D8A0; border-color: rgba(48,204,142,.3); background: rgba(48,204,142,.08); }
-      .badge-completed  { color: #70E8B8; border-color: rgba(48,204,142,.35); background: rgba(48,204,142,.12); }
-      .badge-lost       { color: #E88080; border-color: rgba(232,88,88,.3); background: rgba(232,88,88,.07); }
+      td {
+        padding: 14px 14px; border-top: 1px solid var(--b);
+        font-size: 14px; vertical-align: middle;
+        transition: background .12s;
+      }
+
+      /* ─── BADGES ─────────────────────────────────── */
+      .badge {
+        display: inline-flex; align-items: center;
+        border-radius: 999px; padding: 4px 11px;
+        font-size: 11px; font-weight: 700;
+        letter-spacing: .2px; white-space: nowrap;
+        border: 1px solid;
+      }
+      .badge-new      { color: #80B4F8; border-color: rgba(80,180,248,.25); background: rgba(80,180,248,.1); }
+      .badge-contacted { color: #60D4C8; border-color: rgba(96,212,200,.25); background: rgba(96,212,200,.1); }
+      .badge-proposal  { color: #48DCEC; border-color: rgba(72,220,236,.25); background: rgba(72,220,236,.1); }
+      .badge-progress  { color: #F0A850; border-color: rgba(240,168,80,.28); background: rgba(240,168,80,.09); }
+      .badge-invoicing { color: #A888F8; border-color: rgba(168,136,248,.28); background: rgba(168,136,248,.09); }
+      .badge-won       { color: #30D898; border-color: rgba(48,216,152,.28); background: rgba(48,216,152,.09); }
+      .badge-completed { color: #58E8A8; border-color: rgba(88,232,168,.3); background: rgba(88,232,168,.11); }
+      .badge-lost      { color: #F07070; border-color: rgba(240,112,112,.28); background: rgba(240,112,112,.09); }
+
+      /* ─── LEAD CARD (legacy compat) ──────────────── */
+      .lead-card-top { padding: 16px 18px 12px; }
+      .lead-avatar {
+        width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 800; color: #fff;
+        background: linear-gradient(135deg, #1A4EA0, #0D3270);
+      }
+      .lead-info { flex: 1; min-width: 0; }
+      .lead-name { font-size: 16px; font-weight: 700; color: var(--ink); }
+      .lead-contacts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+      .lead-contacts a, .lead-contact-item { font-size: 12px; color: var(--ink2); text-decoration: none; }
+      .lead-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
       .brief-box {
-        margin: 10px 20px 0; padding: 12px 14px;
-        border-radius: var(--radius2); border: 1px solid var(--line);
-        background: rgba(8,18,38,.5); font-size: 13px; color: #9AB4D4; line-height: 1.6;
+        padding: 12px 14px; border-radius: var(--r);
+        border: 1px solid var(--b2); background: rgba(4,12,28,.6);
+        font-size: 13px; color: var(--ink2); line-height: 1.6;
       }
-      .status-pulse {
-        animation: badgePulse 1.5s ease-in-out infinite;
-      }
-      @keyframes badgePulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(77,166,255,0.0); }
-        50% { box-shadow: 0 0 0 7px rgba(77,166,255,0.12); }
-      }
-      .mail-state {
-        margin-top: 6px; padding: 6px 10px; border-radius: 9px;
-        font-size: 11px; font-weight: 700; line-height: 1.3;
-        border: 1px solid transparent; animation: fadeSlide .4s ease;
-      }
-      .mail-state.sent {
-        color: #78C8F0; border-color: rgba(68,196,240,.3);
-        background: rgba(68,196,240,.1);
-      }
-      .mail-state.error {
-        color: #F08080; border-color: rgba(232,88,88,.4);
-        background: rgba(248,113,113,0.08);
-        animation: fadeSlide 0.45s ease, errorPulse 1.3s ease-in-out infinite;
-      }
-      @keyframes fadeSlide {
-        from { opacity: 0; transform: translateY(-4px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes errorPulse {
-        0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.0); }
-        50% { box-shadow: 0 0 0 6px rgba(248,113,113,0.15); }
-      }
-      .lead-date { font-size: 11px; color: var(--muted2); }
-      .lead-comment {
-        margin: 0 20px;
-        padding: 11px 14px;
-        border-radius: var(--radius2);
-        background: var(--card2);
-        font-size: 13px;
-        color: var(--muted);
-        border-left: 3px solid var(--line2);
-        line-height: 1.5;
-      }
-      .lead-card-bottom {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 10px;
-        padding: 14px 20px 18px;
-        align-items: center;
-      }
+      .brief-box div { margin-bottom: 3px; }
+      .brief-box strong { color: var(--ink); }
+      .mail-state { margin-top: 6px; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+      .mail-state.sent { color: #60C8F0; border-color: rgba(60,200,240,.3); background: rgba(60,200,240,.1); }
+      .mail-state.error { color: #F07070; border-color: rgba(240,112,112,.35); background: rgba(240,112,112,.08); }
+      @keyframes fadeSlide { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes errorPulse { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 5px rgba(240,112,112,.14); } }
+      @keyframes badgePulse { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 6px rgba(26,106,232,.14); } }
+      .lead-date { font-size: 11px; color: var(--ink3); }
+      .lead-dates { font-size: 12px; color: var(--ink2); line-height: 1.45; }
+      .lead-comment { margin: 0 18px; padding: 10px 14px; border-radius: var(--r); background: var(--c2); font-size: 13px; color: var(--ink2); border-left: 3px solid var(--b2); line-height: 1.5; }
+      .lead-card-bottom { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px 18px 16px; align-items: center; }
+      .lead-left { display: flex; align-items: flex-start; gap: 12px; }
       .lead-actions { display: flex; gap: 8px; align-items: center; }
+      .lead-divider { height: 1px; background: var(--b); margin: 0 18px; }
+
+      /* ─── ACTION BUTTONS ─────────────────────────── */
       .btn-open {
-        background: rgba(68,144,238,.1); border: 1px solid rgba(68,144,238,.3);
-        color: #88B8F8; border-radius: var(--radius2); font-size: 13px; font-weight: 600;
-        padding: 9px 14px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+        background: rgba(26,106,232,.1); border: 1px solid rgba(26,106,232,.3);
+        color: #80B8F8; border-radius: var(--r); font-size: 13px; font-weight: 600;
+        padding: 8px 14px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
       }
-      .btn-open:hover { background: rgba(68,144,238,.2); border-color: var(--blue); color: #AAD0FF; }
-      .lead-dates { font-size: 12px; color: var(--muted); line-height: 1.45; }
+      .btn-open:hover { background: rgba(26,106,232,.2); border-color: var(--blue2); color: #A8D0FF; }
       .btn-delete {
-        background: transparent; border: 1px solid rgba(232,88,88,.35);
-        color: var(--red); border-radius: var(--radius2); font-size: 13px; font-weight: 600;
-        padding: 9px 14px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+        background: transparent; border: 1px solid rgba(232,58,58,.3);
+        color: var(--red); border-radius: var(--r); font-size: 13px; font-weight: 600;
+        padding: 8px 14px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
       }
-      .btn-delete:hover { background: rgba(232,88,88,.08); border-color: var(--red); }
-      .sync-hint { margin-top: 4px; font-size: 11px; color: var(--muted2); }
+      .btn-delete:hover { background: rgba(232,58,58,.08); border-color: var(--red); }
+
+      /* ─── MISC ───────────────────────────────────── */
+      .sync-hint { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+      .empty {
+        padding: 52px 24px; text-align: center; color: var(--ink2);
+        border: 1px dashed var(--b2); border-radius: var(--r-lg);
+      }
+      .empty svg { margin-bottom: 14px; opacity: .25; }
+      .empty p { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+      .empty small { font-size: 12px; color: var(--ink3); }
+      .loading { padding: 44px; text-align: center; color: var(--ink2); font-size: 14px; }
+
+      /* ─── MODAL ──────────────────────────────────── */
       .lead-modal {
-        position: fixed; inset: 0; z-index: 50; display: none;
-        align-items: center; justify-content: center; padding: 20px;
-        background: rgba(4,8,22,.8); backdrop-filter: blur(4px);
+        position: fixed; inset: 0; z-index: 50;
+        display: none; align-items: center; justify-content: center;
+        padding: 20px; background: rgba(1,5,14,.85);
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       }
       .lead-modal.show { display: flex; }
       .lead-modal-card {
-        width: min(980px, 100%); max-height: 90vh; overflow: auto;
-        border-radius: var(--radius); border: 1px solid var(--line2);
-        background: var(--surface); box-shadow: 0 24px 64px rgba(0,0,0,.7); padding: 28px;
+        width: min(1000px, 100%); max-height: 90vh; overflow: auto;
+        border-radius: var(--r-lg); border: 1px solid var(--b3);
+        background: var(--s); box-shadow: var(--sh3); padding: 28px;
       }
-      .modal-grid { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .modal-grid {
+        margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      }
       .modal-item {
-        background: var(--card); border: 1px solid var(--line);
-        border-radius: var(--radius2); padding: 12px 14px; font-size: 13px; color: #9AB8E0;
+        background: var(--c); border: 1px solid var(--b);
+        border-radius: var(--r); padding: 12px 14px; font-size: 13px; color: var(--ink2);
       }
-      .modal-item b { color: var(--txt); display: block; margin-bottom: 2px; }
+      .modal-item b { color: var(--ink); display: block; margin-bottom: 3px; font-weight: 700; }
       .modal-form { margin-top: 16px; display: grid; gap: 10px; }
       .modal-form select, .modal-form textarea, .modal-form input {
-        background: var(--card); border: 1px solid var(--line2);
-        border-radius: var(--radius2); color: var(--txt); padding: 12px 14px; font-family: inherit; outline: none;
+        background: var(--c); border: 1px solid var(--b2);
+        border-radius: var(--r); color: var(--ink); padding: 12px 14px; font-family: inherit; outline: none;
       }
       .modal-form select:focus, .modal-form textarea:focus, .modal-form input:focus {
-        border-color: var(--blue); box-shadow: 0 0 0 3px rgba(68,144,238,.12);
+        border-color: var(--blue2); box-shadow: 0 0 0 3px rgba(26,106,232,.12);
       }
-      .modal-form textarea { min-height: 96px; resize: vertical; }
+      .modal-form textarea { min-height: 90px; resize: vertical; }
       .modal-actions { margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px; }
-      .modal-msg { margin-top: 8px; font-size: 12px; color: var(--muted); }
-      .offer-list {
-        display: grid;
-        gap: 8px;
-      }
+      .modal-msg { margin-top: 8px; font-size: 12px; color: var(--ink2); }
+
+      /* ─── OFFERS ─────────────────────────────────── */
+      .offer-list { display: grid; gap: 9px; }
       .offer-item {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        background: var(--card);
-        padding: 10px;
-        font-size: 12px;
+        border: 1px solid var(--b); border-radius: var(--r);
+        background: var(--c); padding: 12px 14px; font-size: 12px;
+        transition: border-color .15s;
       }
-      .offer-item-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        align-items: center;
-      }
-      .offer-item-name { font-weight: 700; color: #d8e6ff; }
-      .offer-item-meta { margin-top: 5px; color: var(--muted); line-height: 1.4; }
+      .offer-item:hover { border-color: var(--b2); }
+      .offer-item-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 6px; }
+      .offer-item-name { font-weight: 700; color: #AACCFF; font-size: 13px; }
+      .offer-item-meta { color: var(--ink2); line-height: 1.5; }
       .offer-item-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
 
-      /* ─── DIVIDER ────────────────────────────────── */
-      .lead-divider {
-        height: 1px;
-        background: var(--line);
-        margin: 0 20px 0;
+      /* ─── WAVE MINI BTN ──────────────────────────── */
+      .wave-mini-btn {
+        background: rgba(255,255,255,.05); border: 1px solid var(--b);
+        color: var(--ink2); border-radius: var(--r); font-size: 12px; font-weight: 600;
+        padding: 6px 12px; cursor: pointer; font-family: inherit;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+        transition: all .15s;
       }
-      .cases-wrap { display: grid; gap: 12px; }
+      .wave-mini-btn:hover { background: rgba(26,106,232,.12); color: var(--ink); border-color: var(--b3); }
+
+      /* ─── CASES ──────────────────────────────────── */
+      .cases-wrap { display: grid; gap: 14px; }
       .cases-filters {
-        display: grid;
-        grid-template-columns: 1.2fr repeat(5, 1fr);
-        gap: 10px;
+        display: grid; grid-template-columns: 1.2fr repeat(5, 1fr); gap: 10px;
       }
-      .cases-filters input, .cases-filters select {
-        background: var(--card);
-        border: 1px solid var(--line2);
-        border-radius: var(--radius2);
-        color: var(--txt);
-        font-size: 13px;
-        font-family: inherit;
-        padding: 10px 12px;
-      }
-      .case-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
+      .case-grid { display: grid; gap: 14px; }
       .case-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--card);
-        padding: 14px;
+        background: var(--c); border: 1px solid var(--b);
+        border-radius: var(--r-md); padding: 18px 20px;
+        transition: border-color .18s, box-shadow .18s;
       }
-      .case-title { font-size: 15px; font-weight: 700; }
-      .case-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
-      .case-alert {
-        margin-top: 8px;
-        border: 1px solid rgba(248,113,113,0.55);
-        background: rgba(248,113,113,0.11);
-        color: #ffb3bd;
-        border-radius: 9px;
-        padding: 7px 10px;
-        font-size: 12px;
-        font-weight: 700;
-      }
-      .case-line { margin-top: 8px; font-size: 12px; color: #b9cfff; }
-      .case-actions {
-        margin-top: 10px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
+      .case-card:hover { border-color: var(--b2); box-shadow: var(--sh); }
+      .case-card.alert-soon { border-left: 3px solid var(--orange); }
+      .case-card.alert-overdue { border-left: 3px solid var(--red); }
+      .case-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+      .case-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+      .case-id { font-size: 12px; color: var(--ink2); }
+      .case-meta { font-size: 13px; color: var(--ink2); line-height: 1.6; }
+      .case-line { font-size: 13px; color: var(--ink2); line-height: 1.6; }
+      .case-alert { font-size: 12px; color: var(--orange); font-weight: 600; padding: 6px 10px; background: rgba(232,146,26,.1); border-radius: 8px; margin-top: 8px; }
+      .case-alerts { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+      .case-alert.soon { background: rgba(232,146,26,.1); color: var(--orange); }
+      .case-alert.overdue { background: rgba(232,58,58,.1); color: var(--red); }
+      .case-actions { border-top: 1px solid var(--b); padding-top: 12px; margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
       .case-btn {
-        background: rgba(77,166,255,0.12);
-        border: 1px solid rgba(77,166,255,0.45);
-        color: #a9d2ff;
-        border-radius: 9px;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 7px 10px;
-        cursor: pointer;
-        font-family: inherit;
+        background: rgba(255,255,255,.04); border: 1px solid var(--b2);
+        color: var(--ink2); border-radius: var(--r); font-size: 12px; font-weight: 600;
+        padding: 7px 13px; cursor: pointer; font-family: inherit; transition: all .15s;
       }
-      .case-btn:hover { background: rgba(77,166,255,0.2); }
-      .case-kpi {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-      .case-kpi .stat { padding: 10px 12px; }
-      .wave2-leads-wrap { display: grid; gap: 10px; margin-bottom: 12px; }
+      .case-btn:hover { background: rgba(26,106,232,.1); color: var(--ink); border-color: var(--blue2); }
+      .case-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+      .case-kpi .stat { padding: 14px 16px; }
+      .case-kpi .stat .v { font-size: 22px; }
+
+      /* ─── WAVE 2 ──────────────────────────────────── */
+      .wave2-leads-wrap { display: grid; gap: 12px; margin-bottom: 20px; }
       .wave2-leads-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-      .wave2-leads-title { font-size: 14px; font-weight: 700; color: #c7dcff; }
-      .wave2-leads-list {
-        display: grid;
-        gap: 10px;
-      }
+      .wave2-leads-title { font-size: 15px; font-weight: 700; color: #A0C4F0; }
+      .wave2-leads-list { display: grid; gap: 8px; }
       .wave2-list-wrap {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--card);
+        border: 1px solid var(--b); border-radius: var(--r-md); background: var(--c); overflow: hidden;
       }
-      .wave2-row {
-        border-top: 1px solid var(--line);
-        cursor: pointer;
-        transition: background 0.15s ease;
-      }
+      .wave2-row { border-top: 1px solid var(--b); cursor: pointer; transition: background .14s; }
       .wave2-row:first-child { border-top: 0; }
-      .wave2-row:hover { background: rgba(100, 168, 255, 0.06); }
+      .wave2-row:hover { background: rgba(26,106,232,.05); }
       .wave2-row-main {
-        display: grid;
-        grid-template-columns: minmax(160px, 2fr) minmax(120px, 1fr) minmax(92px, 0.8fr) auto;
-        gap: 12px;
-        align-items: center;
-        padding: 11px 12px;
+        display: grid; grid-template-columns: minmax(170px,2fr) minmax(130px,1fr) minmax(100px,.8fr) auto;
+        gap: 14px; align-items: center; padding: 14px 16px;
       }
-      .wave2-col-label {
-        display: block;
-        font-size: 11px;
-        color: var(--muted2);
-        margin-bottom: 3px;
-      }
-      .wave2-details {
-        display: none;
-        padding: 0 12px 12px;
-        background: rgba(9, 20, 45, 0.42);
-      }
+      .wave2-col-label { display: block; font-size: 11px; color: var(--ink3); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+      .wave2-details { display: none; padding: 0 16px 16px; background: rgba(2,8,18,.4); }
       .wave2-details.show { display: block; }
-      .wave2-empty {
-        padding: 14px 12px;
-        color: var(--muted);
-        font-size: 13px;
-      }
+      .wave2-empty { padding: 16px; color: var(--ink2); font-size: 13px; }
       .wave2-lead-name { font-size: 14px; font-weight: 700; }
-      .wave2-lead-meta { margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.4; }
-      .wave2-lead-actions { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 7px; }
-      .wave3-wrap { display: grid; gap: 12px; }
-      .wave3-kpi {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-      }
-      .wave3-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
+      .wave2-lead-meta { margin-top: 5px; font-size: 12px; color: var(--ink2); line-height: 1.4; }
+      .wave2-lead-actions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 7px; }
+
+      /* ─── WAVE 3 ──────────────────────────────────── */
+      .wave3-wrap { display: grid; gap: 14px; }
+      .wave3-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .wave3-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
       .wave3-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--card);
-        padding: 14px;
+        border: 1px solid var(--b); border-radius: var(--r-md);
+        background: var(--c); padding: 18px; transition: border-color .18s;
       }
+      .wave3-card:hover { border-color: var(--b2); }
       .wave3-title { font-size: 15px; font-weight: 700; }
-      .wave3-meta { margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.45; }
-      .wave3-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+      .wave3-meta { margin-top: 8px; font-size: 13px; color: var(--ink2); line-height: 1.5; }
+      .wave3-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+      /* ─── WAVE BOARD (compat) ────────────────────── */
+      .wave-board { display: none; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+      .wave-col { background: var(--c); border: 1px solid var(--b); border-radius: var(--r-md); padding: 10px; min-height: 180px; }
+      .wave-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+      .wave-title { font-size: 13px; font-weight: 700; }
+      .wave-count { border: 1px solid var(--b2); border-radius: 999px; padding: 2px 8px; font-size: 11px; color: var(--ink3); }
+      .wave-list { display: flex; flex-direction: column; gap: 8px; }
+      .wave-item { border: 1px solid var(--b2); border-radius: 9px; padding: 9px; background: var(--s2); }
+      .wave-item-name { font-size: 13px; font-weight: 700; }
+      .wave-item-meta { margin-top: 3px; font-size: 11px; color: var(--ink2); }
+      .wave-item-actions { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px; }
 
       /* ─── RESPONSIVE ─────────────────────────────── */
+      @media (max-width: 1200px) {
+        .stats { grid-template-columns: repeat(3, 1fr); }
+        .header-inner, .tabbar, .wrap { padding-left: 20px; padding-right: 20px; }
+      }
       @media (max-width: 900px) {
         .form-grid { grid-template-columns: 1fr; }
         .field-full { grid-column: 1; }
@@ -666,13 +561,9 @@
         .filters { grid-template-columns: 1fr 1fr; }
         .cases-filters { grid-template-columns: 1fr 1fr; }
         .case-grid { grid-template-columns: 1fr; }
-        .wave2-row-main {
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
+        .wave2-row-main { grid-template-columns: 1fr; gap: 8px; }
         .wave3-kpi { grid-template-columns: repeat(2, 1fr); }
         .wave3-list { grid-template-columns: 1fr; }
-        .wave-board { grid-template-columns: 1fr; }
         .lead-card-bottom { grid-template-columns: 1fr; }
         .lead-actions { width: 100%; }
         .lead-actions .btn-delete, .lead-actions .btn-open { width: 100%; justify-content: center; }
@@ -681,40 +572,47 @@
         .panel { padding: 18px 14px; }
         .stats { grid-template-columns: 1fr 1fr; }
         .filters { grid-template-columns: 1fr; }
-        .tabbar { width: 100%; }
-        .tab { flex: 1; text-align: center; }
+        .tabbar { gap: 0; overflow-x: auto; padding: 0 14px; }
+        .tab { padding: 13px 14px; font-size: 12px; }
         .lead-card-top { padding: 14px 14px 12px; }
-        .lead-right { align-items: flex-start; }
-        .lead-divider { margin: 0 14px 0; }
+        .lead-divider { margin: 0 14px; }
         .lead-card-bottom { padding: 12px 14px 14px; }
+        .wrap { padding: 20px 14px 60px; }
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
 
-      <header class="header">
+    <!-- ── STICKY TOP HEADER ── -->
+    <header class="header">
+      <div class="header-inner">
         <div class="logo">
-          <div class="logo-icon">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="rgba(160,200,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 21V13h6v8" stroke="rgba(160,200,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <div class="logo-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1v-10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="logo-text">
-            <h1>O&amp;L Master Dom</h1>
-            <p>Enterprise CRM · Správa zakázek</p>
+          <div>
+            <div class="logo-name">O&amp;L Master Dom</div>
+            <div class="logo-sub">Enterprise CRM</div>
           </div>
         </div>
-        <div class="header-pill">● Systém aktivní</div>
-      </header>
+        <div class="header-pill">Systém aktivní</div>
+      </div>
+    </header>
 
+    <!-- ── NAV TABS ── -->
+    <div class="nav-wrap">
       <div class="tabbar">
         <button class="tab active" data-tab="form" id="tabForm">Форма заявки</button>
         <button class="tab" data-tab="crm" id="tabCrm">Волна 1 · CRM Ліди</button>
         <button class="tab" data-tab="cases" id="tabCases">Волна 2 · Комерційні випадки</button>
         <button class="tab" data-tab="wave3" id="tabWave3">Волна 3 · Реалізація</button>
       </div>
+    </div>
+
+    <div class="wrap">
 
       <!-- ── FORM PANEL ── -->
       <section id="form" class="panel">
@@ -730,7 +628,7 @@
             <label>Телефон</label>
             <input id="phone" value="+420" maxlength="13" placeholder="+420XXXXXXXXX" />
             <span class="field-hint">
-              <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.5" stroke="#55709e"/><path d="M6 5v4M6 4h.01" stroke="#55709e" stroke-linecap="round"/></svg>
+              <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.5" stroke="#3D618A"/><path d="M6 5v4M6 4h.01" stroke="#3D618A" stroke-linecap="round"/></svg>
               Формат: +420XXXXXXXXX (9 цифр після +420)
             </span>
           </div>
@@ -748,9 +646,9 @@
               <option value="Інше">Інше</option>
             </select>
           </div>
-          <div class="field">
+          <div class="field field-full">
             <label>Коментар</label>
-            <textarea id="comment" placeholder="Потрібен сайт + реклама, запуск через 2 тижні..."></textarea>
+            <textarea id="comment" placeholder="Деталі запиту..."></textarea>
           </div>
         </div>
 
@@ -764,25 +662,25 @@
       </section>
 
       <!-- ── CRM PANEL ── -->
-      <section id="crm" class="panel" style="display:none; margin-top:16px;">
+      <section id="crm" class="panel" style="display:none; margin-top:20px;">
         <div class="crm-header">
           <div>
-            <div class="panel-title" id="crmTitle">Волна 1 · CRM Ліди</div>
+            <div class="panel-title" id="crmTitle" style="font-size:20px;margin-bottom:0">Волна 1 · CRM Ліди</div>
             <div id="syncHint" class="sync-hint">Оновлення: —</div>
           </div>
           <div class="crm-actions">
             <button id="exportCsvWave1" class="btn btn-soft">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               CSV 1 тур
             </button>
             <button id="exportCsvWave2" class="btn btn-soft">CSV 2 тур</button>
             <button id="exportCsvAll" class="btn btn-soft">CSV Загальний</button>
             <button id="exportCasesCsv" class="btn btn-soft">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               CSV Кейси
             </button>
             <button id="refresh" class="btn btn-soft">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Оновити
             </button>
           </div>
@@ -830,14 +728,19 @@
 
         <div id="leadList" class="lead-list"></div>
       </section>
-      <section id="cases" class="panel" style="display:none; margin-top:16px;">
+
+      <!-- ── CASES PANEL ── -->
+      <section id="cases" class="panel" style="display:none; margin-top:20px;">
         <div class="crm-header">
           <div>
-            <div class="panel-title">Волна 2 · Комерційні випадки</div>
+            <div class="panel-title" style="font-size:20px;margin-bottom:0">Волна 2 · Комерційні випадки</div>
             <div class="sync-hint" id="casesSyncHint">Оновлення: —</div>
           </div>
           <div class="crm-actions">
-            <button id="refreshCases" class="btn btn-soft">Оновити</button>
+            <button id="refreshCases" class="btn btn-soft">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Оновити
+            </button>
           </div>
         </div>
         <div class="wave2-leads-wrap">
@@ -876,10 +779,12 @@
           <div id="casesList" class="case-grid"></div>
         </div>
       </section>
-      <section id="wave3" class="panel" style="display:none; margin-top:16px;">
+
+      <!-- ── WAVE 3 PANEL ── -->
+      <section id="wave3" class="panel" style="display:none; margin-top:20px;">
         <div class="crm-header">
           <div>
-            <div class="panel-title">Волна 3 · Реалізація</div>
+            <div class="panel-title" style="font-size:20px;margin-bottom:0">Волна 3 · Реалізація</div>
             <div class="sync-hint" id="wave3SyncHint">Оновлення: —</div>
           </div>
           <div class="crm-actions">
@@ -893,14 +798,19 @@
       </section>
 
     </div>
+
+    <!-- ── LEAD MODAL ── -->
     <div id="leadModal" class="lead-modal">
       <div class="lead-modal-card">
-        <div class="crm-header" style="margin-bottom:10px;">
+        <div class="crm-header" style="margin-bottom:12px;">
           <div>
-            <div class="panel-title" style="font-size:18px;">Картка клієнта</div>
+            <div class="panel-title" style="font-size:18px;margin-bottom:0">Картка клієнта</div>
             <div id="modalSub" class="sync-hint">Детальна інформація</div>
           </div>
-          <button id="closeModal" class="btn btn-soft">Закрити</button>
+          <button id="closeModal" class="btn btn-soft">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Закрити
+          </button>
         </div>
         <div id="modalDetails" class="modal-grid"></div>
         <div class="modal-form">
@@ -922,28 +832,28 @@
           </select>
           <textarea id="modalComment" placeholder="Коментар менеджера..."></textarea>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <input id="modalIco" placeholder="IČO компанії (наприклад 12345678)" style="flex:1;min-width:240px;" />
-            <button id="lookupIcoBtn" class="btn btn-soft" type="button">Підтягнути дані по IČO</button>
+            <input id="modalIco" placeholder="IČO компанії (наприклад 12345678)" style="flex:1;min-width:220px;" />
+            <button id="lookupIcoBtn" class="btn btn-soft" type="button">Підтягнути по IČO</button>
             <button id="openBriefForm" class="btn btn-soft" type="button">Відкрити формуляр</button>
           </div>
           <div id="modalIcoMsg" class="modal-msg"></div>
         </div>
-        <div class="modal-form" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;">
-          <div class="sync-hint">AI: створити комерційний випадок з формуляра (текст/PDF)</div>
+        <div class="modal-form" style="margin-top:12px;border-top:1px solid var(--b);padding-top:12px;">
+          <div class="sync-hint">AI: створити комерційний випадок з формуляра</div>
           <textarea id="aiFormText" placeholder="Встав текст формуляра або додаткові деталі..."></textarea>
           <input id="aiFormFile" type="file" accept=".pdf,.txt,.md,.doc,.docx" />
           <button id="createCaseAi" class="btn btn-soft">Створити комерційний випадок (AI)</button>
           <div id="aiCaseMsg" class="modal-msg"></div>
         </div>
-        <div class="modal-form" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;">
+        <div class="modal-form" style="margin-top:12px;border-top:1px solid var(--b);padding-top:12px;">
           <div class="sync-hint">Робочий простір клієнта</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="openClientPage" class="btn btn-soft" type="button">Відкрити сторінку клієнта</button>
-            <button id="openEstimatePage" class="btn btn-soft" type="button">Перейти до бази розрахунку</button>
+            <button id="openClientPage" class="btn btn-soft" type="button">Сторінка клієнта</button>
+            <button id="openEstimatePage" class="btn btn-soft" type="button">База розрахунку</button>
           </div>
         </div>
-        <div class="modal-form" style="display:none;margin-top:10px;border-top:1px solid var(--line);padding-top:10px;">
-          <div class="sync-hint">Комерційна пропозиція (Excel/PDF, прикріплена до клієнта)</div>
+        <div class="modal-form" style="display:none;margin-top:12px;border-top:1px solid var(--b);padding-top:12px;">
+          <div class="sync-hint">Комерційна пропозиція (Excel/PDF)</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button id="createOfferDraft" class="btn btn-soft" type="button">Згенерувати чернетку КП (AI)</button>
             <button id="buildOfferDocs" class="btn btn-soft" type="button">Зібрати Excel + PDF</button>
@@ -1194,7 +1104,7 @@
         if (!leads.length) {
           leadList.innerHTML = `
             <div class="empty">
-              <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#55709e"/></svg>
+              <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#3D618A"/></svg>
               <p>Лідів не знайдено</p>
               <small>Спробуйте змінити фільтри або додайте нову заявку</small>
             </div>`
@@ -1208,13 +1118,13 @@
           return `
             <tr class="lead-main-row" data-toggle-row="${rowId}">
               <td>
-                <div style="font-weight:700;">${esc(lead.name || lead.fullName || '')}</div>
-                <div style="font-size:12px;color:var(--muted);">${esc(lead.phone || '—')} · ${esc(lead.email || '—')}</div>
+                <div style="font-weight:700;font-size:14px;">${esc(lead.name || lead.fullName || '')}</div>
+                <div style="font-size:12px;color:var(--ink2);margin-top:3px;">${esc(lead.phone || '—')} · ${esc(lead.email || '—')}</div>
               </td>
               <td><span class="badge ${badge}">${esc(lbl)}</span></td>
-              <td>${esc(lead.serviceType || 'Не вказано')}</td>
-              <td>${esc(lead.clientNumber || '—')}</td>
-              <td>${esc(fmtDate(lead.createdAt))}</td>
+              <td style="color:var(--ink2)">${esc(lead.serviceType || 'Не вказано')}</td>
+              <td style="font-weight:600">${esc(lead.clientNumber || '—')}</td>
+              <td style="color:var(--ink2)">${esc(fmtDate(lead.createdAt))}</td>
               <td>
                 <div class="lead-actions">
                   <button class="btn-open" data-open="${rowId}">Картка</button>
@@ -1223,7 +1133,7 @@
               </td>
             </tr>
             <tr id="lead-expand-${rowId}" style="display:none;">
-              <td colspan="6" style="padding:0 12px 12px;">
+              <td colspan="6" style="padding:0 12px 14px;">
                 <div class="brief-box" style="margin:0;">
                   ${lead.comment ? `<div><strong>Коментар:</strong> ${esc(lead.comment)}</div>` : ''}
                   <div><strong>Послуга:</strong> ${esc(lead.serviceType || '—')}</div>
@@ -1232,7 +1142,7 @@
                     <div style="margin-top:6px;"><strong>Формуляр:</strong> ${esc(lead.brief.summaryText || lead.brief.details || 'Отримано')}</div>
                     ${lead.brief.companyIco ? `<div><strong>IČO:</strong> ${esc(lead.brief.companyIco)}</div>` : ''}
                     ${lead.brief.companyRegistry?.name ? `<div><strong>Компанія:</strong> ${esc(lead.brief.companyRegistry.name)}</div>` : ''}
-                  ` : '<div style="margin-top:6px;color:var(--muted);">Формуляр ще не повернувся</div>'}
+                  ` : '<div style="margin-top:6px;color:var(--ink2);">Формуляр ще не повернувся</div>'}
                 </div>
               </td>
             </tr>
@@ -1240,16 +1150,16 @@
         }).join('')
 
         leadList.innerHTML = `
-          <div style="overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);">
+          <div style="overflow:auto;border:1px solid var(--b2);border-radius:var(--r-md);background:var(--c);">
             <table style="width:100%;border-collapse:collapse;min-width:920px;">
               <thead>
-                <tr style="background:#0f1f45;color:#bcd5ff;">
-                  <th style="text-align:left;padding:10px 12px;font-size:12px;">Клієнт</th>
-                  <th style="text-align:left;padding:10px 12px;font-size:12px;">Статус</th>
-                  <th style="text-align:left;padding:10px 12px;font-size:12px;">Послуга</th>
-                  <th style="text-align:left;padding:10px 12px;font-size:12px;">Номер</th>
-                  <th style="text-align:left;padding:10px 12px;font-size:12px;">Створено</th>
-                  <th style="text-align:left;padding:10px 12px;font-size:12px;">Дії</th>
+                <tr>
+                  <th>Клієнт</th>
+                  <th>Статус</th>
+                  <th>Послуга</th>
+                  <th>Номер</th>
+                  <th>Створено</th>
+                  <th>Дії</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
@@ -1471,7 +1381,7 @@
                 <div>
                   <span class="wave2-col-label">Клієнт</span>
                   <div class="wave2-lead-name">${esc(lead.name || lead.fullName || 'Клієнт')}</div>
-                  <div style="font-size:12px;color:var(--muted);">${esc(lead.phone || '—')} · ${esc(lead.email || '—')}</div>
+                  <div style="font-size:12px;color:var(--ink2);margin-top:2px;">${esc(lead.phone || '—')} · ${esc(lead.email || '—')}</div>
                 </div>
                 <div>
                   <span class="wave2-col-label">Статус</span>
@@ -1479,7 +1389,7 @@
                 </div>
                 <div>
                   <span class="wave2-col-label">Номер</span>
-                  <div>${esc(lead.clientNumber || '—')}</div>
+                  <div style="font-weight:600">${esc(lead.clientNumber || '—')}</div>
                 </div>
                 <div class="wave2-lead-actions" style="margin:0;">
                   <button class="wave-mini-btn" data-open-wave2="${rowId}">Швидка картка</button>
@@ -1710,12 +1620,12 @@
               <meta charset="UTF-8" />
               <title>Формуляр клієнта</title>
               <style>
-                body{font-family:Inter,Arial,sans-serif;background:#08142f;color:#e6efff;margin:0;padding:22px;}
-                .card{max-width:920px;margin:0 auto;background:#10244b;border:1px solid #2d4f8a;border-radius:12px;padding:16px;}
-                h1{margin:0 0 10px;font-size:20px;}
+                body{font-family:Inter,Arial,sans-serif;background:#02080F;color:#E6F0FF;margin:0;padding:24px;}
+                .card{max-width:920px;margin:0 auto;background:#0C1E38;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:20px;}
+                h1{margin:0 0 16px;font-size:20px;}
                 table{width:100%;border-collapse:collapse;}
-                td{padding:8px 10px;border-top:1px solid #27436f;vertical-align:top;font-size:14px;}
-                td:first-child{width:220px;color:#a9c2ea;font-weight:600;}
+                td{padding:10px 12px;border-top:1px solid rgba(255,255,255,.07);vertical-align:top;font-size:14px;}
+                td:first-child{width:220px;color:#7AA2C4;font-weight:600;}
               </style>
             </head>
             <body>
@@ -1750,7 +1660,7 @@
           const hasPdf = files.some((x) => x.kind === 'pdf')
           const hasXlsx = files.some((x) => x.kind === 'xlsx')
           return `
-            <div class="offer-item" style="${isActive ? 'border-color:#4da6ff;' : ''}">
+            <div class="offer-item" style="${isActive ? 'border-color:var(--blue2);' : ''}">
               <div class="offer-item-head">
                 <div class="offer-item-name">${esc(offer.offerNo || `OF-${offer.id}`)}</div>
                 <span class="badge ${isActive ? 'badge-contacted' : 'badge-new'}">${esc(OFFER_STATUS_LABELS[offer.status] || offer.status || 'Чернетка')}</span>
