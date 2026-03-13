@@ -256,6 +256,7 @@
     <script>
       const params = new URLSearchParams(location.search)
       const leadId = Number(params.get('leadId') || 0)
+      const jobId = Number(params.get('jobId') || 0)
       const estimateIdFromUrl = Number(params.get('estimateId') || 0)
       const pathModeBase = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
       const apiUrl = (p) => `${pathModeBase}${p}`
@@ -264,6 +265,7 @@
       async function json(resp) { try { return await resp.json() } catch { return null } }
 
       let lead = null
+      let job = null
       let estimate = null
       let catalog = []
       let activeNavKey = null
@@ -523,6 +525,7 @@
         renderItemRows()
       }
       async function ensureEstimate() {
+        if (!lead?.id) throw new Error('lead_missing_for_estimate')
         if (estimateIdFromUrl) {
           const r = await fetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
           const d = await json(r)
@@ -542,19 +545,44 @@
         estimate = createJson.estimate
       }
       async function loadLead() {
-        const r = await fetch(apiUrl(`/api/leads/${leadId}`))
-        const d = await json(r)
-        if (!r.ok || !d?.ok) throw new Error('lead_failed')
-        lead = d.lead
-        document.getElementById('leadSub').textContent = `${lead.fullName || lead.name || ''} · č. ${lead.clientNumber || '—'}`
-        document.getElementById('backClient').href = `./client-card.html?leadId=${encodeURIComponent(String(lead.id))}`
+        if (Number.isFinite(jobId) && jobId > 0) {
+          const jr = await fetch(apiUrl(`/api/crm/jobs/${jobId}`))
+          const jd = await json(jr)
+          if (jr.ok && jd?.ok) {
+            job = jd.job
+            if (Number.isFinite(Number(job?.leadId)) && Number(job.leadId) > 0) {
+              const lr = await fetch(apiUrl(`/api/leads/${job.leadId}`))
+              const ld = await json(lr)
+              if (lr.ok && ld?.ok) lead = ld.lead
+            }
+            if (!lead && jd?.customer) {
+              lead = { id: job.leadId || null, fullName: jd.customer.name || jd.customer.companyName || 'Klient', name: jd.customer.name || jd.customer.companyName || 'Klient', clientNumber: jd.customer.internalNumber || job.clientNumberSnapshot || null }
+            }
+            document.getElementById('leadSub').textContent = `${lead?.fullName || lead?.name || job.title || 'Zakázka'} · č. ${lead?.clientNumber || job.clientNumberSnapshot || '—'}`
+            document.getElementById('backClient').href = `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}`
+            return
+          }
+        }
+        if (Number.isFinite(leadId) && leadId > 0) {
+          const r = await fetch(apiUrl(`/api/leads/${leadId}`))
+          const d = await json(r)
+          if (!r.ok || !d?.ok) throw new Error('lead_failed')
+          lead = d.lead
+          const jr = await fetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
+          const jd = await json(jr)
+          if (jr.ok && jd?.ok && jd.jobs?.length) job = jd.jobs[0]
+          document.getElementById('leadSub').textContent = `${lead.fullName || lead.name || ''} · č. ${lead.clientNumber || '—'}`
+          document.getElementById('backClient').href = job ? `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}` : `./client-card.html?leadId=${encodeURIComponent(String(lead.id))}`
+          return
+        }
+        throw new Error('missing_job_or_lead_id')
       }
       async function saveEstimate() {
         if (!estimate) return
         estimate.title = document.getElementById('estimateTitle').value.trim() || estimate.title
         const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: estimate.title, tradeType: document.getElementById('tradeType').value, clientNumberSnapshot: lead?.clientNumber || null, lines: estimate.lines }),
+          body: JSON.stringify({ title: estimate.title, tradeType: document.getElementById('tradeType').value, clientNumberSnapshot: lead?.clientNumber || job?.clientNumberSnapshot || null, lines: estimate.lines }),
         })
         const d = await json(r)
         if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze uložit'); return }
@@ -596,7 +624,8 @@
           renderEstimatePanel()
           await loadCatalog()
         } catch (e) {
-          document.getElementById('leadSub').textContent = `Chyba: ${String(e?.message || e)}`
+          document.getElementById('leadSub').textContent = 'Tuto stránku otevřete ze zakázky nebo z pipeline.'
+          document.getElementById('catalogBody').innerHTML = `<div class=\"empty\">Chyba: ${String(e?.message || e)}<br><br><a class=\"btn primary\" href=\"./index.html\">Otevřít CRM pipeline</a></div>`
         }
       })()
     </script>

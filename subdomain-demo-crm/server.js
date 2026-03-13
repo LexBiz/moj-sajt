@@ -3395,7 +3395,9 @@ app.post('/api/crm/jobs', authMiddleware, roleGuard(['admin', 'manager']), async
   return res.json({ ok: true, job: enrichJob(job) })
 })
 app.get('/api/crm/jobs', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
-  const jobs = await listJobs({ pipelineStage: req.query?.pipelineStage || req.query?.stage, customerId: req.query?.customerId, priority: req.query?.priority, riskLevel: req.query?.riskLevel, waitingFor: req.query?.waitingFor })
+  const leadId = req.query?.leadId ? Number(req.query.leadId) : null
+  let jobs = await listJobs({ pipelineStage: req.query?.pipelineStage || req.query?.stage, customerId: req.query?.customerId, priority: req.query?.priority, riskLevel: req.query?.riskLevel, waitingFor: req.query?.waitingFor })
+  if (Number.isFinite(leadId)) jobs = jobs.filter((x) => Number(x.leadId || 0) === leadId)
   return res.json({ ok: true, jobs: jobs.map(enrichJob) })
 })
 app.get('/api/crm/jobs/:id', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {

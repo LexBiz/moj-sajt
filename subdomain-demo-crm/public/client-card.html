@@ -1,337 +1,81 @@
 <!doctype html>
-<html lang="uk">
+<html lang="cs">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>O&L Master Dom · Kartka klienta</title>
+    <title>O&L Master Dom · Přesměrování zakázky</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-      /* ── O&L Master Dom · Kartka klienta ── */
-      :root {
-        --bg:#020C18; --s:#071626; --c:#0C1E38; --c2:#0F2442;
-        --b:rgba(255,255,255,.06); --b2:rgba(255,255,255,.11); --b3:rgba(255,255,255,.18);
-        --ink:#E6F0FF; --ink2:#7AA2C4; --ink3:#3D618A;
-        --blue:#1A6AE8; --blue2:#3D87F8; --blue3:#60A5FF;
-        --green:#14C98A; --orange:#E8921A; --red:#E83A3A;
-        --r:10px; --r-md:14px; --r-lg:18px;
-        --sh:0 8px 32px rgba(0,0,0,.45); --sh2:0 20px 60px rgba(0,0,0,.6);
-      }
-      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-      html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;
-        background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
-
-      /* ── HEADER ── */
-      .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-      .header-inner{max-width:1600px;margin:0 auto;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-      .logo{display:flex;align-items:center;gap:12px}
-      .logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(145deg,#1A4EA0,#0F3070);border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 12px rgba(26,106,232,.3)}
-      .logo-name{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.4px;line-height:1.1}
-      .logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
-      .header-pill{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--green);background:rgba(20,201,138,.08);border:1px solid rgba(20,201,138,.2);border-radius:999px;padding:6px 14px}
-      .header-pill::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pd 2s ease infinite}
-      @keyframes pd{0%,100%{opacity:1}50%{opacity:.35}}
-
-      /* ── LAYOUT ── */
-      .wrap{max-width:1600px;margin:0 auto;padding:32px 32px 80px}
-      .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;padding:10px 18px;transition:all .18s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
-      .btn:hover{background:var(--c2);border-color:var(--b3)}
-      .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;box-shadow:0 4px 16px rgba(26,106,232,.4)}
-      .btn.primary:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF);box-shadow:0 6px 22px rgba(26,106,232,.55)}
-
-      /* ── PAGE TOP ── */
-      .page-top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--b2)}
-      .page-identity{display:flex;align-items:center;gap:14px}
-      .page-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(145deg,#1A4EA0,#0D3270);border:1px solid rgba(61,135,248,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;font-weight:800;color:rgba(200,225,255,.9)}
-      .page-title{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
-      .page-sub{font-size:13px;color:var(--ink2);margin-top:4px}
-      .page-actions{display:flex;gap:10px;flex-wrap:wrap}
-
-      /* ── KPI ROW ── */
-      .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
-      .kpi-card{background:var(--c);border:1px solid var(--b);border-top:2px solid transparent;border-radius:var(--r-md);padding:18px 20px;transition:all .18s}
-      .kpi-card:hover{border-color:var(--b2);transform:translateY(-2px)}
-      .kpi-card.blue{border-top-color:var(--blue2)}
-      .kpi-card.green{border-top-color:var(--green)}
-      .kpi-card.orange{border-top-color:var(--orange)}
-      .kpi-card.red{border-top-color:var(--red)}
-      .kpi-card .k{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
-      .kpi-card .v{font-size:26px;font-weight:800;letter-spacing:-1px}
-      .kpi-card.blue .v{color:var(--blue3)}
-      .kpi-card.green .v{color:var(--green)}
-      .kpi-card.orange .v{color:var(--orange)}
-
-      /* ── TWO-COL GRID ── */
-      .grid{display:grid;grid-template-columns:1.45fr .9fr;gap:20px}
-      .section-stack{display:grid;gap:20px}
-
-      /* ── CARD ── */
-      .card{background:var(--s);border:1px solid var(--b2);border-radius:var(--r-lg);padding:24px;box-shadow:var(--sh)}
-      .section-title{font-size:16px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px;color:var(--ink);display:flex;align-items:center;gap:8px}
-      .section-title::before{content:'';width:3px;height:16px;border-radius:2px;background:var(--blue);flex-shrink:0}
-
-      /* ── META GRID ── */
-      .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .meta{background:var(--c);border:1px solid var(--b);border-radius:var(--r);padding:13px 14px;transition:border-color .15s}
-      .meta:hover{border-color:var(--b2)}
-      .meta b{display:block;color:var(--ink3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-      .meta .val{font-size:14px;color:var(--ink);line-height:1.4}
-
-      /* ── TIMELINE ── */
-      .timeline{display:grid;gap:16px}
-      .tl-item{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
-      .tl-dot{width:12px;height:12px;border-radius:50%;background:var(--blue);margin-top:5px;box-shadow:0 0 0 4px rgba(26,106,232,.15);justify-self:center}
-      .tl-dot.done{background:var(--green);box-shadow:0 0 0 4px rgba(20,201,138,.15)}
-      .tl-dot.warn{background:var(--orange);box-shadow:0 0 0 4px rgba(232,146,26,.15)}
-      .tl-line{width:2px;background:var(--b2);height:20px;justify-self:center;margin-top:4px}
-      .tl-title{font-size:14px;font-weight:700;color:var(--ink)}
-      .tl-meta{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.4}
-
-      /* ── BRIEF ROWS ── */
-      .brief-grid{display:grid;gap:10px}
-      .brief-item{background:var(--c);border:1px solid var(--b);border-radius:var(--r);padding:13px 14px}
-      .brief-item b{display:block;color:var(--ink3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-      .brief-item .val{font-size:14px;color:var(--ink);line-height:1.5}
-
-      /* ── ESTIMATE LIST ── */
-      .estimate-list{display:grid;gap:12px}
-      .estimate-card{background:var(--c);border:1px solid var(--b);border-left:3px solid var(--blue);border-radius:var(--r-md);padding:16px 18px;transition:all .18s}
-      .estimate-card:hover{border-color:var(--b2);border-left-color:var(--blue2)}
-      .estimate-card .title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px}
-      .estimate-card .sub{font-size:13px;color:var(--ink2)}
-      .estimate-card .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-
-      /* ── EMPTY ── */
-      .empty{padding:32px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:14px}
-      .loading{padding:32px;text-align:center;color:var(--ink2);font-size:14px}
-
-      @media(max-width:1100px){.grid{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}}
-      @media(max-width:680px){.meta-grid{grid-template-columns:1fr}.kpi{grid-template-columns:1fr}.header-inner,.wrap{padding-left:16px;padding-right:16px}}
+      :root{--bg:#020C18;--s:#071626;--c:#0C1E38;--b:rgba(255,255,255,.08);--ink:#E6F0FF;--ink2:#7AA2C4;--blue:#1A6AE8;--blue2:#3D87F8;--r:12px;--sh:0 8px 32px rgba(0,0,0,.45)}
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:Inter,-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background-image:radial-gradient(ellipse 140% 40% at 50% -5%,rgba(26,106,232,.12) 0%,transparent 55%)}
+      .card{width:min(620px,100%);background:var(--s);border:1px solid var(--b);border-radius:18px;box-shadow:var(--sh);padding:28px}
+      .logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+      .mark{width:40px;height:40px;border-radius:10px;background:linear-gradient(145deg,#1A4EA0,#0F3070);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      .name{font-size:16px;font-weight:800;letter-spacing:-.3px}.sub{font-size:11px;color:var(--ink2);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+      .title{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-bottom:8px}
+      .text{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:16px}
+      .btns{display:flex;gap:10px;flex-wrap:wrap}
+      .btn{border:1px solid var(--b);background:var(--c);color:var(--ink);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+      .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);border:none;color:#fff}
+      .meta{margin-top:16px;font-size:12px;color:var(--ink2)}
+      .ok{color:#78cfff}.err{color:#ff8f8f}
     </style>
   </head>
   <body>
-
-    <header class="header">
-      <div class="header-inner">
-        <div class="logo">
-          <div class="logo-mark">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1v-10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="logo-name">O&amp;L Master Dom</div>
-            <div class="logo-sub">Enterprise CRM</div>
-          </div>
+    <div class="card">
+      <div class="logo">
+        <div class="mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(220,235,255,.92)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V14h6v8" stroke="rgba(220,235,255,.92)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div class="header-pill">Kartka klienta</div>
+        <div><div class="name">O&L Master Dom</div><div class="sub">Enterprise CRM</div></div>
       </div>
-    </header>
-
-    <div class="wrap">
-
-      <div class="page-top">
-        <div class="page-identity">
-          <div class="page-avatar" id="pageAvatar">?</div>
-          <div>
-            <div class="page-title" id="pageTitle">Завантаження...</div>
-            <div class="page-sub" id="pageSub"></div>
-          </div>
-        </div>
-        <div class="page-actions">
-          <a class="btn" href="./index.html">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Zpět do CRM
-          </a>
-          <a class="btn primary" id="goEstimate" href="./estimate-builder.html">
-            Přejít do rozpočtu
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-        </div>
+      <div class="title" id="title">Hledáme správnou zakázku…</div>
+      <div class="text" id="text">Tato stránka slouží jako kompatibilní přesměrování ze starého odkazu na novou detailní kartu zakázky.</div>
+      <div class="btns">
+        <a class="btn" href="./index.html">← Zpět do CRM</a>
+        <a class="btn primary" id="goBtn" href="./index.html">Otevřít pipeline</a>
       </div>
-
-      <!-- KPI -->
-      <div class="kpi" id="kpis">
-        <div class="kpi-card blue"><div class="k">Хвиля</div><div class="v" id="kpiWave">—</div></div>
-        <div class="kpi-card green"><div class="k">Номер клієнта</div><div class="v" id="kpiNum" style="font-size:18px">—</div></div>
-        <div class="kpi-card orange"><div class="k">Подій</div><div class="v" id="kpiEvents">—</div></div>
-        <div class="kpi-card"><div class="k">Розрахунків</div><div class="v" id="kpiEstimates" style="color:var(--ink)">—</div></div>
-      </div>
-
-      <div class="grid">
-        <!-- LEFT COLUMN -->
-        <div class="section-stack">
-
-          <section class="card">
-            <div class="section-title">Інформація про клієнта</div>
-            <div class="meta-grid" id="clientMeta">
-              <div class="meta"><b>Завантаження...</b></div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-title">Заповнений формуляр</div>
-            <div class="brief-grid" id="briefBox">
-              <div class="empty">Формуляр ще не отримано</div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-title">Розрахунки та кейси</div>
-            <div class="estimate-list" id="estimateList">
-              <div class="empty">Завантаження...</div>
-            </div>
-          </section>
-
-        </div>
-
-        <!-- RIGHT COLUMN: TIMELINE -->
-        <div>
-          <section class="card">
-            <div class="section-title">Шлях клієнта</div>
-            <div class="timeline" id="timeline">
-              <div class="loading">Завантаження...</div>
-            </div>
-          </section>
-        </div>
-      </div>
-
+      <div class="meta" id="meta">Kontrola parametrů…</div>
     </div>
-
     <script>
       const params = new URLSearchParams(location.search)
       const leadId = Number(params.get('leadId') || 0)
-      const pathModeBase = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
-      const apiUrl = (p) => `${pathModeBase}${p}`
-      const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      const fmt = (iso) => {
-        try { return new Date(iso).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) }
-        catch { return String(iso || '—') }
+      const jobId = Number(params.get('jobId') || 0)
+      const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+      const api = (p) => `${base}${p}`
+      async function json(r){ try { return await r.json() } catch { return null } }
+      function setState(title, text, meta, href){
+        document.getElementById('title').textContent = title
+        document.getElementById('text').textContent = text
+        document.getElementById('meta').innerHTML = meta
+        if (href) document.getElementById('goBtn').href = href
       }
-      async function json(resp) { try { return await resp.json() } catch { return null } }
-
-      function initials(name) {
-        const parts = String(name || '').trim().split(' ')
-        return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : (String(name || '?')[0] || '?').toUpperCase()
-      }
-
-      function renderMeta(lead) {
-        const fields = [
-          ['Клієнт', lead.fullName || lead.name],
-          ['Телефон', lead.phone],
-          ['Email', lead.email],
-          ['Статус', lead.status],
-          ['Послуга', lead.serviceType],
-          ['Хвиля', String(lead.wave || 1)],
-          ['IČO', lead.brief?.companyIco],
-          ['Компанія (ARES)', lead.brief?.companyRegistry?.name],
-          ['Адреса', [lead.brief?.companyRegistry?.address, lead.brief?.companyRegistry?.city, lead.brief?.companyRegistry?.zip].filter(Boolean).join(', ') || lead.brief?.realizationAddress],
-          ['Отримання формуляра', lead.briefReceivedAt ? fmt(lead.briefReceivedAt) : null],
-          ['Створено', fmt(lead.createdAt)],
-          ['Оновлено', fmt(lead.updatedAt || lead.createdAt)],
-        ].filter(([, v]) => v)
-        document.getElementById('clientMeta').innerHTML = fields.map(([k, v]) =>
-          `<div class="meta"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`
-        ).join('')
-      }
-
-      function renderBrief(lead) {
-        const brief = lead.brief || {}
-        const rows = [
-          ['Що потрібно', brief.goal || brief.workType],
-          ['Тип обʼєкта', brief.objectType],
-          ['Площа / обсяг', brief.area],
-          ['Термін', brief.timeline || brief.requestedTerm],
-          ['Бюджет', brief.budget],
-          ['Деталі', brief.summaryText || brief.details || brief.note],
-        ].filter(([, v]) => v)
-        const el = document.getElementById('briefBox')
-        if (!rows.length) {
-          el.innerHTML = '<div class="empty">Формуляр ще не отримано</div>'
+      async function run(){
+        if (Number.isFinite(jobId) && jobId > 0) {
+          const href = `./job-detail.html?jobId=${encodeURIComponent(String(jobId))}`
+          setState('Přesměrování na detail zakázky', 'Našli jsme konkrétní zakázku. Otevřeme novou detailní kartu.', '<span class="ok">jobId je platný</span>', href)
+          location.replace(href)
           return
         }
-        el.innerHTML = rows.map(([k, v]) =>
-          `<div class="brief-item"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`
-        ).join('')
-      }
-
-      function renderTimeline(items) {
-        const el = document.getElementById('timeline')
-        if (!items.length) { el.innerHTML = '<div class="empty">Подій поки немає</div>'; return }
-        const toneMap = { new: '', contacted: 'done', proposal: 'done', won: 'done', warn: 'warn' }
-        el.innerHTML = items.map((item, i) => `
-          <div class="tl-item">
-            <div class="tl-dot ${toneMap[item.tone] || ''}"></div>
-            <div>
-              <div class="tl-title">${esc(item.title)}</div>
-              <div class="tl-meta">${esc(fmt(item.at))}${item.note ? ' · ' + esc(item.note) : ''}</div>
-            </div>
-          </div>
-          ${i < items.length - 1 ? '<div class="tl-item"><div class="tl-line"></div><div></div></div>' : ''}
-        `).join('')
-      }
-
-      function renderEstimates(estimates, cases) {
-        const el = document.getElementById('estimateList')
-        const cards = []
-        for (const est of (estimates || [])) {
-          cards.push(`
-            <div class="estimate-card">
-              <div class="title">📊 ${esc(est.estimateNo || `EST-${est.id}`)}</div>
-              <div class="sub">Статус: ${esc(est.status || 'draft')} · Сума: ${esc(String(est.totalWithVat || 0))} CZK</div>
-              <div class="actions">
-                <a class="btn primary" href="./estimate-builder.html?leadId=${encodeURIComponent(String(est.leadId || leadId))}&estimateId=${encodeURIComponent(String(est.id))}">Відкрити розрахунок</a>
-              </div>
-            </div>
-          `)
-        }
-        for (const c of (cases || [])) {
-          cards.push(`
-            <div class="estimate-card" style="border-left-color:var(--orange)">
-              <div class="title">📁 ${esc(c.internal_order_id || c.internalOrderId || 'Кейс')}</div>
-              <div class="sub">Статус: ${esc(c.status || '—')} · Етап: ${esc(c.stage || '—')}</div>
-            </div>
-          `)
-        }
-        el.innerHTML = cards.length ? cards.join('') : `
-          <div class="empty">Розрахунок ще не створено.<br>Перейдіть в базу розрахунку.</div>
-          <div style="margin-top:12px">
-            <a class="btn primary" id="goEstimate2" href="./estimate-builder.html?leadId=${leadId}">Створити розрахунок →</a>
-          </div>
-        `
-      }
-
-      async function load() {
-        if (!leadId) {
-          document.getElementById('pageTitle').textContent = 'leadId не передано'
+        if (Number.isFinite(leadId) && leadId > 0) {
+          const r = await fetch(api(`/api/crm/jobs?leadId=${encodeURIComponent(String(leadId))}`))
+          const d = await json(r)
+          const jobs = d?.jobs || []
+          if (r.ok && jobs.length) {
+            const href = `./job-detail.html?jobId=${encodeURIComponent(String(jobs[0].id))}`
+            setState('Zakázka nalezena', 'Starý odkaz s leadId jsme úspěšně spárovali s novou zakázkou.', `<span class="ok">leadId ${leadId} → jobId ${jobs[0].id}</span>`, href)
+            location.replace(href)
+            return
+          }
+          setState('Zakázka pro lead nebyla nalezena', 'Lead existuje, ale zatím k němu není navázaná zakázka. Vraťte se do CRM a otevřete zakázku z pipeline.', `<span class="err">leadId ${leadId} bez job vazby</span>`, './index.html')
           return
         }
-        const r = await fetch(apiUrl(`/api/crm/client-workspace/${leadId}`))
-        const d = await json(r)
-        if (!r.ok || !d?.ok) {
-          document.getElementById('pageTitle').textContent = 'Помилка завантаження'
-          return
-        }
-        const w = d.workspace
-        const lead = w.lead
-        const name = lead.fullName || lead.name || 'Клієнт'
-        document.getElementById('pageAvatar').textContent = initials(name)
-        document.getElementById('pageTitle').textContent = name
-        document.getElementById('pageSub').textContent = `Клієнт № ${lead.clientNumber || '—'} · Хвиля ${lead.wave || 1} · ${lead.status || '—'}`
-        document.getElementById('goEstimate').href = `./estimate-builder.html?leadId=${encodeURIComponent(String(lead.id))}`
-        document.getElementById('kpiWave').textContent = String(lead.wave || 1)
-        document.getElementById('kpiNum').textContent = lead.clientNumber || '—'
-        document.getElementById('kpiEvents').textContent = String((w.timeline || []).length)
-        document.getElementById('kpiEstimates').textContent = String((w.estimates || []).length)
-        renderMeta(lead)
-        renderBrief(lead)
-        renderTimeline(w.timeline || [])
-        renderEstimates(w.estimates || [], w.cases || [])
+        setState('Chybí parametr leadId nebo jobId', 'Tento starý odkaz neobsahuje potřebný identifikátor. Otevřete prosím zakázku z hlavní pipeline.', '<span class="err">Neplatný nebo chybějící parametr v URL</span>', './index.html')
       }
-      load()
+      run()
     </script>
   </body>
 </html>
