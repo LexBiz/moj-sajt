@@ -1510,7 +1510,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   ]
   const title = estimate?.title || `Rozpočet ${job?.internalNumber || lead?.clientNumber || ''}`.trim()
   const estimateDate = estimate?.estimateDate || new Date().toISOString().slice(0, 10)
-  const lines = normalizeEstimateLines(estimate?.lines || [])
+  const lines = Array.isArray(estimate?.lines) ? estimate.lines.map((line, idx) => normalizeEstimateLine(line, idx)) : []
   const grouped = groupedEstimateLinesForExport(lines)
   const totals = computeEstimateTotals(lines, estimate?.vatRate || 21)
 
