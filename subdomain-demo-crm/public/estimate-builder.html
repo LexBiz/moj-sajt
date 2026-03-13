@@ -3,291 +3,145 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>O&L Master Dom · Databáze ceníku</title>
+    <title>O&L Master Dom · Rozpočet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-      /* ── O&L Master Dom · Databáze ceníku ── */
-      :root {
-        --bg: #020C18;
-        --s:  #071626;
-        --c:  #0C1E38;
-        --c2: #0F2442;
-        --b:  rgba(255,255,255,.06);
-        --b2: rgba(255,255,255,.11);
-        --b3: rgba(255,255,255,.18);
-        --ink:  #E6F0FF;
-        --ink2: #7AA2C4;
-        --ink3: #3D618A;
-        --blue:  #1A6AE8;
-        --blue2: #3D87F8;
-        --blue3: #60A5FF;
-        --green: #14C98A;
-        --orange:#E8921A;
-        --red:   #E83A3A;
-        --r:  10px;  --r-md: 14px;  --r-lg: 18px;
-        --sh: 0 8px 32px rgba(0,0,0,.45);
-      }
+      :root{--bg:#020C18;--s:#071626;--s2:#091B30;--c:#0C1E38;--c2:#0F2442;--b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;--blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;--green:#14C98A;--red:#E83A3A;--r:10px;--r-md:14px;--r-lg:18px;--sh:0 8px 32px rgba(0,0,0,.45)}
       *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-      html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;
-        background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
-
-      /* ── HEADER ── */
-      .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-      .header-inner{max-width:1800px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-      .logo{display:flex;align-items:center;gap:12px}
-      .logo-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(145deg,#1A4EA0,#0F3070);border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3)}
-      .logo-name{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
-      .logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
-      .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-      .header-info{font-size:12px;color:var(--ink2);max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
+      .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px)}
+      .header-inner{max-width:1900px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+      .logo{display:flex;align-items:center;gap:10px}.logo-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#1A4EA0,#0F3070);border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3)}.logo-name{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+      .hdr-info{font-size:12px;color:var(--ink2);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:9px 16px;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
-      .btn:hover{background:var(--c2);border-color:var(--b3)}
-      .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;box-shadow:0 3px 14px rgba(26,106,232,.4)}
-      .btn.primary:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF)}
-
-      /* ── PAGE LAYOUT ── */
-      .page{max-width:1800px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 60px)}
-
-      /* ── LEFT SIDEBAR ── */
-      .sidebar{background:var(--s);border-right:1px solid var(--b2);padding:24px 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;display:flex;flex-direction:column;gap:0}
-      .sidebar-search{padding:12px 16px 0;flex-shrink:0}
-      .sidebar-search input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);font-family:inherit;padding:10px 12px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
-      .sidebar-search input::placeholder{color:var(--ink3)}
-      .sidebar-search input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
-      .sidebar-filter{padding:10px 16px 0;flex-shrink:0}
-      .sidebar-filter select{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);font-family:inherit;padding:9px 12px;font-size:13px;outline:none;cursor:pointer}
-      .sidebar-nav{flex:1;padding:14px 0;overflow-y:auto}
-      .sidebar-nav-head{padding:8px 16px 6px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px}
-      .nav-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;color:var(--ink2);text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent;background:transparent;border-top:none;border-right:none;border-bottom:none;font-family:inherit;width:100%;text-align:left}
-      .nav-item:hover{background:rgba(26,106,232,.08);color:var(--ink);border-left-color:var(--b3)}
-      .nav-item.active{background:rgba(26,106,232,.12);color:var(--blue3);border-left-color:var(--blue);font-weight:700}
-      .nav-count{font-size:11px;color:var(--ink3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:999px;flex-shrink:0}
-      .nav-item.active .nav-count{color:var(--blue3);background:rgba(26,106,232,.16)}
-
-      /* ── MAIN AREA ── */
-      .main{padding:0 0 100px;overflow-y:auto}
-      .main-top{padding:20px 28px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--s);position:sticky;top:0;z-index:20;backdrop-filter:blur(12px)}
-      .main-title{font-size:20px;font-weight:800;letter-spacing:-.4px}
-      .main-count{font-size:12px;color:var(--ink2);margin-top:3px}
-
-      /* ── CATEGORY SECTION ── */
-      .cat-section{border-bottom:1px solid var(--b)}
-      .cat-section-head{padding:18px 28px 14px;background:rgba(255,255,255,.015)}
-      .cat-section-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}
-      .cat-section-sub{font-size:12px;color:var(--ink3);margin-top:3px}
-
-      /* ── ITEM ROW ── (key design element — like cenikyremesel.cz) */
-      .item-row{display:grid;grid-template-columns:52px minmax(0,1fr) 140px 130px 100px;gap:0;align-items:center;border-top:1px solid var(--b);transition:background .12s;padding:0}
-      .item-row:hover{background:rgba(26,106,232,.04)}
-      .item-row.in-cart{background:rgba(26,106,232,.06)}
-      .item-icon{width:52px;height:60px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink3)}
-      .item-icon svg{opacity:.4;transition:opacity .15s}
-      .item-row.in-cart .item-icon svg{opacity:.8;color:var(--blue3)}
-      .item-body{padding:13px 16px 13px 0}
-      .item-name{font-size:14px;font-weight:500;color:var(--ink);line-height:1.4}
-      .item-code{font-size:11px;color:var(--ink3);margin-top:3px;font-family:monospace}
-      .item-price-col{padding:0 16px;text-align:right;border-left:1px solid var(--b)}
-      .item-price{font-size:15px;font-weight:700;color:var(--ink)}
-      .item-unit{font-size:11px;color:var(--ink3);margin-top:2px}
-      .item-qty-col{padding:0 12px;border-left:1px solid var(--b);display:flex;align-items:center;justify-content:center;gap:10px}
-      .qty-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;cursor:pointer;border:none;flex-shrink:0;transition:all .15s;line-height:1}
-      .qty-minus{background:rgba(232,58,58,.15);color:var(--red)}
-      .qty-minus:hover{background:rgba(232,58,58,.35);color:#fff}
-      .qty-plus{background:rgba(26,106,232,.15);color:var(--blue3)}
-      .qty-plus:hover{background:rgba(26,106,232,.4);color:#fff}
-      .qty-val{min-width:32px;text-align:center;font-size:16px;font-weight:700;color:var(--ink)}
-      .qty-val.nonzero{color:var(--blue3)}
-      .item-total-col{padding:0 16px;text-align:right;border-left:1px solid var(--b)}
-      .item-total{font-size:15px;font-weight:700;color:var(--ink3)}
-      .item-total.nonzero{color:var(--green)}
-      .item-total-unit{font-size:11px;color:var(--ink3);margin-top:2px}
-
-      /* ── FLOATING CART BOTTOM ── */
-      .cart-bar{position:fixed;bottom:0;left:260px;right:0;z-index:30;background:rgba(4,14,28,.96);border-top:1px solid var(--b2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:none;align-items:center;justify-content:space-between;gap:16px;padding:14px 28px;flex-wrap:wrap}
-      .cart-bar.show{display:flex}
-      .cart-summary{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-      .cart-stat{display:flex;flex-direction:column;align-items:center}
-      .cart-stat .k{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
-      .cart-stat .v{font-size:18px;font-weight:800;color:var(--ink)}
-      .cart-stat .v.green{color:var(--green)}
-      .cart-divider{width:1px;height:36px;background:var(--b2)}
-      .cart-actions{display:flex;gap:10px;flex-wrap:wrap}
-
-      /* ── ESTIMATE PANEL (hidden, toggled) ── */
-      .estimate-panel{position:fixed;top:60px;right:0;bottom:0;z-index:35;width:420px;background:var(--s);border-left:1px solid var(--b2);box-shadow:-8px 0 40px rgba(0,0,0,.5);display:none;flex-direction:column;overflow:hidden}
-      .estimate-panel.show{display:flex}
-      .estimate-head{padding:18px 20px;border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-      .estimate-head-title{font-size:16px;font-weight:800}
-      .estimate-body{flex:1;overflow-y:auto;padding:16px 20px}
-      .estimate-foot{padding:16px 20px;border-top:1px solid var(--b2);display:grid;gap:8px;flex-shrink:0}
-      .est-line{display:flex;align-items:start;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--b)}
-      .est-line:first-child{border-top:none}
-      .est-line-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
-      .est-line-qty{font-size:12px;color:var(--ink2);margin-top:2px}
-      .est-line-price{font-size:14px;font-weight:700;color:var(--ink);flex-shrink:0}
-      .est-sum-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px}
-      .est-sum-row:last-child{font-size:16px;font-weight:800;border-top:1px solid var(--b2);padding-top:10px;margin-top:4px}
-      .manual-add-section{padding:16px 20px;border-top:1px solid var(--b)}
-      .manual-grid{display:grid;grid-template-columns:1fr 60px 90px auto;gap:8px;align-items:end}
-      .mini-input{background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);font-family:inherit;padding:8px 10px;font-size:13px;outline:none;width:100%}
-      .mini-input:focus{border-color:var(--blue2)}
-
-      /* ── EMPTY / LOADING ── */
-      .empty{padding:48px 28px;text-align:center;color:var(--ink2);font-size:14px}
-
-      @media(max-width:1100px){.page{grid-template-columns:220px minmax(0,1fr)}.cart-bar{left:220px}.estimate-panel{width:380px}}
-      @media(max-width:800px){.page{grid-template-columns:1fr}.sidebar{display:none}.cart-bar{left:0}.estimate-panel{width:100%}.item-row{grid-template-columns:0 minmax(0,1fr) 110px 110px 80px}}
-      @media(max-width:600px){.item-row{grid-template-columns:1fr auto auto}.item-icon{display:none}.item-price-col,.item-total-col,.item-qty-col{border-left:none;padding:0 6px}}
+      .btn:hover{background:var(--c2)} .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none}
+      .page{max-width:1900px;margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr) 820px;min-height:calc(100vh - 56px)}
+      .sidebar{background:var(--s);border-right:1px solid var(--b2);padding:18px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+      .main{min-width:0;border-right:1px solid var(--b2)}
+      .editor{background:var(--bg);padding:18px 20px 120px;overflow:auto}
+      .sidebar-sec{padding:0 16px 14px}.sidebar-head{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+      .input,.select,textarea{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:10px 12px;font:inherit;outline:none}
+      .input::placeholder,textarea::placeholder{color:var(--ink3)}
+      .nav-item{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:10px;color:var(--ink2);background:transparent;border:none;font:inherit;cursor:pointer;text-align:left;width:100%}
+      .nav-item.active{background:rgba(26,106,232,.12);color:var(--blue3);font-weight:700}.nav-item:hover{background:rgba(26,106,232,.08);color:var(--ink)}
+      .nav-count{font-size:11px;color:var(--ink3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:999px}
+      .main-top{position:sticky;top:56px;z-index:10;padding:16px 22px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95)}
+      .main-title{font-size:19px;font-weight:800}.main-sub{font-size:12px;color:var(--ink2);margin-top:3px}
+      .group-head{padding:16px 22px 12px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.015)}.group-title{font-size:16px;font-weight:800}.group-sub{font-size:12px;color:var(--ink3);margin-top:3px}
+      .item{display:grid;grid-template-columns:50px minmax(0,1fr) 110px 120px 110px;align-items:center;border-bottom:1px solid var(--b2)}
+      .item:hover{background:rgba(26,106,232,.04)} .item.incart{background:rgba(26,106,232,.06)}
+      .item-icon{width:50px;height:56px;display:flex;align-items:center;justify-content:center;color:var(--ink3)}
+      .item-body{padding:12px 14px 12px 0}.item-name{font-size:14px;font-weight:500;line-height:1.38}.item-code{font-size:11px;color:var(--ink3);margin-top:2px;font-family:monospace}
+      .item-price,.item-total{padding:0 12px;text-align:right}.item-price-main,.item-total-main{font-size:14px;font-weight:700}.item-price-sub,.item-total-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+      .item-total-main.active{color:var(--green)}
+      .item-qty{padding:0 10px;display:flex;justify-content:center;align-items:center;gap:10px}.qty-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;border:none;cursor:pointer}.qty-minus{background:rgba(232,58,58,.16);color:var(--red)}.qty-plus{background:rgba(26,106,232,.16);color:var(--blue3)}.qty-val{min-width:30px;text-align:center;font-size:15px;font-weight:700}.qty-val.active{color:var(--blue3)}
+      .sheet{background:var(--s);border:1px solid var(--b2);border-radius:18px;box-shadow:var(--sh);overflow:hidden}
+      .sheet-head{padding:22px 24px;border-bottom:1px solid var(--b2);background:linear-gradient(180deg,rgba(26,106,232,.06),transparent)}.sheet-title{font-size:20px;font-weight:800}.sheet-sub{font-size:12px;color:var(--ink2);margin-top:4px}
+      .sheet-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.meta-card{background:var(--c);border:1px solid var(--b2);border-radius:10px;padding:12px 14px}.meta-card b{display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}.meta-card .v{font-size:13px;line-height:1.45}
+      .sheet-body{padding:18px 24px}.sheet-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.sheet-toolbar-left{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--b2);background:rgba(255,255,255,.04);color:var(--ink2)}
+      .table-wrap{overflow:auto;border:1px solid var(--b2);border-radius:12px}.sheet-table{width:100%;border-collapse:collapse;min-width:1040px}.sheet-table th{padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;background:var(--s2);border-bottom:1px solid var(--b2);white-space:nowrap}.sheet-table td{padding:10px 8px;border-top:1px solid var(--b2);vertical-align:top}.sheet-table tr:hover td{background:rgba(26,106,232,.03)}
+      .sheet-input{width:100%;background:transparent;border:1px solid transparent;border-radius:8px;color:var(--ink);padding:8px 9px;font:inherit;outline:none}.sheet-input:focus{background:var(--c2);border-color:var(--blue2)}.sheet-input.num{text-align:right}.small-code{font-size:11px;color:var(--ink3);font-family:monospace}.section-row td{background:rgba(255,255,255,.025);font-weight:700;color:var(--blue3)}
+      .totals{display:grid;gap:8px;margin-top:18px;border-top:1px solid var(--b2);padding-top:14px}.tot-row{display:flex;justify-content:space-between;align-items:center;font-size:14px}.tot-row strong{font-size:15px}.tot-row.final{font-size:16px;font-weight:800;padding-top:6px;border-top:1px solid var(--b2)}
+      .manual-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--b2)}.manual-grid{display:grid;grid-template-columns:1fr 70px 100px 120px auto;gap:8px;align-items:end}
+      .empty{padding:28px 18px;text-align:center;color:var(--ink2);font-size:14px}
+      @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}.editor{position:fixed;inset:56px 0 0 auto;width:min(860px,100%);z-index:35;background:rgba(2,12,24,.96);display:none}.editor.show{display:block}}
+      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.main{border-right:none}.editor{position:fixed;inset:56px 0 0 0;width:100%}.item{grid-template-columns:0 minmax(0,1fr) 110px 120px 100px}.item-icon{display:none}}
+      @media(max-width:700px){.item{grid-template-columns:1fr auto auto}.item-price,.item-qty,.item-total{padding:0 6px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.table-wrap{border-radius:10px}}
     </style>
   </head>
   <body>
-
-    <!-- STICKY HEADER -->
-    <header class="header">
-      <div class="header-inner">
-        <div class="logo">
-          <div class="logo-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="logo-name">O&amp;L Master Dom</div>
-            <div class="logo-sub">Databáze ceníku</div>
-          </div>
-        </div>
-        <div class="header-info" id="leadSub">Načítání...</div>
-        <div class="header-actions">
-          <a class="btn" id="backClient" href="./client-card.html">← Ke kartě</a>
-          <button class="btn" id="toggleEstimate">Zobrazit rozpočet (<span id="cartCount">0</span>)</button>
-          <button class="btn primary" id="saveEstimate">Uložit rozpočet</button>
-        </div>
+    <header class="header"><div class="header-inner">
+      <div class="logo"><div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="logo-name">O&amp;L Master Dom</div><div class="logo-sub">Rozpočet</div></div></div>
+      <div class="hdr-info" id="leadSub">Načítání…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" id="backLink" href="./index.html">← Ke kartě</a>
+        <button class="btn" id="toggleSheet">Zobrazit editor</button>
+        <button class="btn" id="buildDocs">Vygenerovat Excel/PDF</button>
+        <button class="btn primary" id="saveEstimate">Uložit rozpočet</button>
       </div>
-    </header>
-
-    <!-- TWO-COLUMN LAYOUT -->
+    </div></header>
     <div class="page">
-
-      <!-- LEFT SIDEBAR: NAVIGATION -->
       <aside class="sidebar">
-        <div class="sidebar-filter">
-          <select id="tradeType">
-            <option value="electro">Elektrika</option>
-            <option value="construction">Stavba</option>
-          </select>
-        </div>
-        <div class="sidebar-search">
-          <input id="catalogSearch" placeholder="Vyhledat položku česky..." />
-        </div>
-        <nav class="sidebar-nav">
-          <div class="sidebar-nav-head">Kategorie prací</div>
-          <div id="navItems"></div>
-        </nav>
+        <div class="sidebar-sec"><select class="select" id="tradeType"><option value="electro">Elektrika</option><option value="construction">Stavba</option></select></div>
+        <div class="sidebar-sec"><input class="input" id="catalogSearch" placeholder="Vyhledat položku česky..." /></div>
+        <div class="sidebar-sec"><div class="sidebar-head">Kategorie prací</div><div id="navItems"></div></div>
       </aside>
-
-      <!-- RIGHT: CATALOG -->
       <main class="main">
-        <div class="main-top">
-          <div>
-            <div class="main-title" id="mainTitle">Vyberte kategorii</div>
-            <div class="main-count" id="mainCount"></div>
+        <div class="main-top"><div><div class="main-title" id="mainTitle">Vyberte kategorii zleva</div><div class="main-sub" id="mainCount"></div></div></div>
+        <div id="catalogBody"><div class="empty">Načítání katalogu...</div></div>
+      </main>
+      <section class="editor" id="editorSheet">
+        <div class="sheet">
+          <div class="sheet-head">
+            <div class="sheet-title" id="sheetTitle">Rozpočet</div>
+            <div class="sheet-sub" id="sheetSub">Načítání…</div>
+            <div class="sheet-meta" id="sheetMeta"></div>
+          </div>
+          <div class="sheet-body">
+            <div class="sheet-toolbar">
+              <div class="sheet-toolbar-left">
+                <span class="chip" id="sheetStage">Pipeline</span>
+                <span class="chip" id="sheetClientNo">Klient č.</span>
+                <span class="chip" id="sheetJobNo">Zakázka č.</span>
+                <a class="chip" id="xlsxLink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">Excel</a>
+                <a class="chip" id="pdfLink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">PDF</a>
+              </div>
+              <textarea class="sheet-input" id="estimateNote" placeholder="Poznámka k rozpočtu / instrukce" style="width:280px;min-height:44px;resize:vertical"></textarea>
+            </div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:12px">Rozpočet se generuje přímo z CRM položek. Ceny práce a materiálu upravujete zde, ne v Excelu.</div>
+            <div class="table-wrap">
+              <table class="sheet-table">
+                <thead>
+                  <tr>
+                    <th style="width:72px">Kód</th>
+                    <th>Popis práce</th>
+                    <th>Popis materiálu</th>
+                    <th style="width:95px">Množství / mj</th>
+                    <th style="width:110px">Cena práce</th>
+                    <th style="width:110px">Cena materiálu</th>
+                    <th style="width:120px">Cena práce + materiálu</th>
+                    <th style="width:54px"></th>
+                  </tr>
+                </thead>
+                <tbody id="estimateRows"></tbody>
+              </table>
+            </div>
+            <div class="manual-sec">
+              <div class="manual-grid">
+                <input class="input" id="manualWork" placeholder="Popis práce" />
+                <input class="input" id="manualUnit" placeholder="MJ" value="ks" />
+                <input class="input" id="manualQty" type="number" step="0.01" value="1" placeholder="Množství" />
+                <input class="input" id="manualLabor" type="number" step="0.01" value="0" placeholder="Cena práce" />
+                <button class="btn" id="addManualLine">Přidat ruční řádek</button>
+              </div>
+            </div>
+            <div class="totals" id="estimateTotals"></div>
           </div>
         </div>
-        <div id="catalogBody">
-          <div class="empty">Načítání katalogu…</div>
-        </div>
-      </main>
+      </section>
     </div>
-
-    <!-- FLOATING CART BAR (bottom) -->
-    <div class="cart-bar" id="cartBar">
-      <div class="cart-summary">
-        <div class="cart-stat">
-          <div class="k">Položek</div>
-          <div class="v" id="cartCount2">0</div>
-        </div>
-        <div class="cart-divider"></div>
-        <div class="cart-stat">
-          <div class="k">Bez DPH</div>
-          <div class="v green" id="cartNoVat">0,00 Kč</div>
-        </div>
-        <div class="cart-divider"></div>
-        <div class="cart-stat">
-          <div class="k">Celkem s DPH</div>
-          <div class="v green" id="cartTotal">0,00 Kč</div>
-        </div>
-      </div>
-      <div class="cart-actions">
-        <button class="btn" id="toggleEstimate2">Zobrazit rozpočet →</button>
-      </div>
-    </div>
-
-    <!-- SLIDE-IN ESTIMATE PANEL -->
-    <div class="estimate-panel" id="estimatePanel">
-      <div class="estimate-head">
-        <div class="estimate-head-title">Aktuální rozpočet</div>
-        <button class="btn" id="closeEstimate">✕</button>
-      </div>
-      <div class="estimate-body">
-        <div style="margin-bottom:12px">
-          <input class="mini-input" style="width:100%" id="estimateTitle" placeholder="Název rozpočtu" />
-        </div>
-        <div id="estimateLines">
-          <div class="empty" style="padding:24px 0">Zatím žádné položky</div>
-        </div>
-      </div>
-      <div class="manual-add-section">
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Přidat ručně</div>
-        <div class="manual-grid">
-          <input class="mini-input" id="manualName" placeholder="Název" />
-          <input class="mini-input" id="manualUnit" value="ks" placeholder="MJ" />
-          <input class="mini-input" type="number" id="manualBase" value="0" placeholder="Cena" />
-          <button class="btn primary" id="addManualLine">+</button>
-        </div>
-        <input class="mini-input" type="hidden" id="manualQty" value="1" />
-      </div>
-      <div class="estimate-foot" id="estimateTotals"></div>
-    </div>
-
     <script>
       const params = new URLSearchParams(location.search)
       const leadId = Number(params.get('leadId') || 0)
       const jobId = Number(params.get('jobId') || 0)
       const estimateIdFromUrl = Number(params.get('estimateId') || 0)
-      const pathModeBase = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
-      const apiUrl = (p) => `${pathModeBase}${p}`
+      const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+      const apiUrl = (p) => `${base}${p}`
       const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      const fmt = (n) => Number(n || 0).toFixed(2).replace('.',',') + ' Kč'
+      const fmtMoney = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`
+      const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' }) } catch { return '—' } }
       async function json(resp) { try { return await resp.json() } catch { return null } }
 
-      let lead = null
-      let job = null
-      let estimate = null
-      let catalog = []
-      let activeNavKey = null
-
-      const NAV_LABELS = {
-        grooves:     'Sekání šliců (drážek) a kapes',
-        boxes:       'Krabice',
-        cables:      'Tahání kabelů',
-        switchboards:'Rozvaděče',
-        outlets:     'Zapojení zásuvek, vypínačů',
-        other:       'Ostatní',
-        completion:  'Kompletace',
-        revision:    'Revize',
-        demolition:  'Demontáže',
-        hourly:      'Hodinové sazby',
-        systems:     'Elektrikářské celky',
-      }
+      let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null
+      const NAV_LABELS = { grooves:'Sekání šliců (drážek) a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zapojení zásuvek, vypínačů', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
       const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
+      const SECTION_TYPES = { grooves:'elektro', boxes:'elektro', cables:'elektro', switchboards:'elektro', outlets:'elektro', completion:'elektro', revision:'elektro', demolition:'elektro', hourly:'ostatni_naklady', systems:'elektro', other:'elektro' }
 
       function uiCategoryKey(item) {
-        const name = String(item?.itemName || '').toLowerCase()
-        const category = String(item?.categoryKey || '')
+        const name = String(item?.itemName || item?.workDescription || '').toLowerCase()
+        const category = String(item?.categoryKey || item?.groupKey || '')
         const phase = String(item?.phaseKey || '')
         const unit = String(item?.unit || '').toLowerCase()
         if (unit === 'hod' || name.includes('hodin')) return 'hourly'
@@ -302,207 +156,161 @@
         if (name.includes('soubor') || name.includes('sestava') || name.includes('celek')) return 'systems'
         return 'other'
       }
-
-      function grouped(items) {
-        const map = new Map()
-        for (const item of items) {
-          const key = uiCategoryKey(item)
-          if (!map.has(key)) map.set(key, [])
-          map.get(key).push(item)
-        }
-        return map
+      function groupedCatalog(items) { const map = new Map(); for (const item of items) { const key = uiCategoryKey(item); if (!map.has(key)) map.set(key, []); map.get(key).push(item) } return map }
+      function buildLineCode(sectionType, index) { if (sectionType === 'stavba') return `stav ${index}`; if (sectionType === 'ostatni_naklady') return `ost ${index}`; return `ele ${index}` }
+      function normalizeEstimateLines(lines) {
+        const counters = { elektro: 0, stavba: 0, ostatni_naklady: 0 }
+        return (lines || []).map((line, idx) => {
+          const sectionType = line.sectionType || SECTION_TYPES[uiCategoryKey(line)] || 'elektro'
+          counters[sectionType] = (counters[sectionType] || 0) + 1
+          const quantity = Number(line.quantity || 0)
+          const laborUnitPrice = Number(line.laborUnitPrice ?? line.clientPrice ?? 0)
+          const materialUnitPrice = Number(line.materialUnitPrice || 0)
+          const laborTotal = +(quantity * laborUnitPrice).toFixed(2)
+          const materialTotal = +(quantity * materialUnitPrice).toFixed(2)
+          const lineTotal = +(laborTotal + materialTotal).toFixed(2)
+          return { ...line, lineCode: line.lineCode || buildLineCode(sectionType, counters[sectionType]), sectionType, workDescription: line.workDescription || line.itemName || '', materialDescription: line.materialDescription || '', quantity, laborUnitPrice, materialUnitPrice, laborTotal, materialTotal, lineTotal, totalClient: lineTotal, totalBase: laborTotal, groupKey: line.groupKey || uiCategoryKey(line), groupLabel: line.groupLabel || NAV_LABELS[uiCategoryKey(line)] || 'Ostatní', positionOrder: idx + 1 }
+        })
       }
-
-      function catalogLine(item) {
-        return (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null
+      function groupedEstimate(lines) { const map = new Map(); for (const line of normalizeEstimateLines(lines)) { const key = line.groupKey || 'other'; if (!map.has(key)) map.set(key, []); map.get(key).push(line) } return map }
+      function totals(lines) {
+        const normalized = normalizeEstimateLines(lines)
+        const labor = normalized.reduce((s, l) => s + Number(l.laborTotal || 0), 0)
+        const material = normalized.reduce((s, l) => s + Number(l.materialTotal || 0), 0)
+        const other = normalized.filter(x => x.sectionType === 'ostatni_naklady').reduce((s, l) => s + Number(l.lineTotal || 0), 0)
+        const bezDph = labor + material + other
+        const dphRate = Number(estimate?.vatRate || 21)
+        const dph = +(bezDph * (dphRate / 100)).toFixed(2)
+        const total = +(bezDph + dph).toFixed(2)
+        return { labor, material, other, bezDph, dph, total }
       }
-
-      function totals() {
-        const lines = estimate?.lines || []
-        const client = lines.reduce((s, x) => s + Number(x.totalClient || 0), 0)
-        const vat = client * ((Number(estimate?.vatRate || 21)) / 100)
-        return { count: lines.length, client, vat, total: client + vat }
-      }
-
-      function upsert(item, delta) {
+      function catalogLine(item) { return (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null }
+      function addCatalogItem(item, delta) {
         if (!estimate) return
         const existing = catalogLine(item)
         if (!existing && delta <= 0) return
         if (!existing) {
-          estimate.lines.push({
-            catalogItemId: item.id,
-            phaseKey: item.phaseKey,
-            categoryKey: item.categoryKey,
-            itemName: item.itemName,
-            unit: item.unit || 'ks',
-            quantity: 1,
-            basePrice: Number(item.basePrice || 0),
-            clientPrice: Number(item.basePrice || 0),
-            totalBase: Number(item.basePrice || 0),
-            totalClient: Number(item.basePrice || 0),
-            positionOrder: estimate.lines.length + 1,
-          })
+          estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, sectionType: SECTION_TYPES[uiCategoryKey(item)] || 'elektro', groupKey: uiCategoryKey(item), groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní', phaseKey: item.phaseKey, categoryKey: item.categoryKey, itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: 1, laborUnitPrice: Number(item.basePrice || 0), materialUnitPrice: 0 })
         } else {
           existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
-          if (existing.quantity <= 0) {
-            estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
-          } else {
-            existing.totalBase  = existing.quantity * Number(existing.basePrice  || 0)
-            existing.totalClient = existing.quantity * Number(existing.clientPrice || 0)
-          }
+          if (existing.quantity <= 0) estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
         }
-        renderCartBar()
-        renderItemRows()
-        renderEstimatePanel()
+        estimate.lines = normalizeEstimateLines(estimate.lines)
+        renderAll()
       }
-
-      /* ── RENDER NAV ── */
       function renderNav() {
-        const groups = grouped(catalog)
-        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat(Array.from(groups.keys()).filter((k) => !NAV_ORDER.includes(k)))
-        document.getElementById('navItems').innerHTML = ordered.map((key) => {
+        const groups = groupedCatalog(catalog)
+        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
+        const nav = document.getElementById('navItems')
+        nav.innerHTML = ordered.map((key) => {
           const count = (groups.get(key) || []).length
-          const inCartCount = (estimate?.lines || []).filter((l) => uiCategoryKey(l) === key).length
-          const isActive = key === activeNavKey
-          return `<button class="nav-item${isActive ? ' active' : ''}" data-nav="${esc(key)}">
-            <span>${esc(NAV_LABELS[key] || key)}</span>
-            <span class="nav-count">${inCartCount > 0 ? inCartCount + ' / ' : ''}${count}</span>
-          </button>`
+          const inCount = (estimate?.lines || []).filter((l) => uiCategoryKey(l) === key).length
+          return `<button class="nav-item${key === activeNavKey ? ' active' : ''}" data-nav="${esc(key)}"><span>${esc(NAV_LABELS[key] || key)}</span><span class="nav-count">${inCount > 0 ? inCount + ' / ' : ''}${count}</span></button>`
         }).join('')
-        document.getElementById('navItems').querySelectorAll('[data-nav]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            activeNavKey = btn.getAttribute('data-nav')
-            renderNav()
-            renderItemRows()
-            const groups2 = grouped(catalog)
-            document.getElementById('mainTitle').textContent = NAV_LABELS[activeNavKey] || activeNavKey
-            document.getElementById('mainCount').textContent = `${(groups2.get(activeNavKey) || []).length} položek`
-          })
-        })
+        nav.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', () => { activeNavKey = btn.getAttribute('data-nav'); renderNav(); renderCatalogRows() }))
       }
-
-      /* ── RENDER CATALOG ITEMS ── */
-      function renderItemRows() {
+      function renderCatalogRows() {
         const body = document.getElementById('catalogBody')
-        if (!catalog.length) {
-          body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'
-          return
-        }
-        const groups = grouped(catalog)
-        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat(Array.from(groups.keys()).filter((k) => !NAV_ORDER.includes(k)))
-        const toRender = activeNavKey ? (groups.get(activeNavKey) ? [activeNavKey] : ordered) : ordered
-        if (!toRender.length || (activeNavKey && !groups.has(activeNavKey))) {
-          body.innerHTML = '<div class="empty">V této kategorii nejsou žádné položky.</div>'
-          return
-        }
-        body.innerHTML = toRender.map((key) => {
+        if (!catalog.length) { body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'; return }
+        const groups = groupedCatalog(catalog)
+        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
+        const visibleKeys = activeNavKey && groups.has(activeNavKey) ? [activeNavKey] : ordered
+        body.innerHTML = visibleKeys.map((key) => {
           const items = groups.get(key) || []
-          return `
-            <div class="cat-section" id="cat-${key}">
-              <div class="cat-section-head">
-                <div class="cat-section-title">${esc(NAV_LABELS[key] || key)}</div>
-                <div class="cat-section-sub">${items.length} položek</div>
-              </div>
-              ${items.map((item) => {
-                const line = catalogLine(item)
-                const qty = Number(line?.quantity || 0)
-                const rowTotal = qty * Number(item.basePrice || 0)
-                const inCart = qty > 0
-                return `
-                  <div class="item-row${inCart ? ' in-cart' : ''}">
-                    <div class="item-icon">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/>
-                      </svg>
-                    </div>
-                    <div class="item-body">
-                      <div class="item-name">${esc(item.itemName)}</div>
-                      ${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}
-                    </div>
-                    <div class="item-price-col">
-                      <div class="item-price">${esc(String(item.basePrice || 0))} Kč</div>
-                      <div class="item-unit">/ ${esc(item.unit || 'ks')}</div>
-                    </div>
-                    <div class="item-qty-col">
-                      <button class="qty-btn qty-minus" data-minus="${esc(String(item.id))}">−</button>
-                      <span class="qty-val${qty > 0 ? ' nonzero' : ''}">${qty}</span>
-                      <button class="qty-btn qty-plus" data-plus="${esc(String(item.id))}">+</button>
-                    </div>
-                    <div class="item-total-col">
-                      <div class="item-total${qty > 0 ? ' nonzero' : ''}">${qty > 0 ? rowTotal.toFixed(0) + ' Kč' : '0 Kč'}</div>
-                      <div class="item-total-unit">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div>
-                    </div>
-                  </div>
-                `
-              }).join('')}
-            </div>
-          `
+          return `<div class="group-head"><div class="group-title">${esc(NAV_LABELS[key] || key)}</div><div class="group-sub">${items.length} položek</div></div>${items.map((item) => { const line = catalogLine(item); const qty = Number(line?.quantity || 0); const total = qty * Number(item.basePrice || 0); return `<div class="item${qty > 0 ? ' incart' : ''}"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 3"></path></svg></div><div class="item-body"><div class="item-name">${esc(item.itemName)}</div>${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}</div><div class="item-price"><div class="item-price-main">${esc(String(item.basePrice || 0))} Kč</div><div class="item-price-sub">/ ${esc(item.unit || 'ks')}</div></div><div class="item-qty"><button class="qty-btn qty-minus" data-minus="${item.id}">−</button><div class="qty-val${qty > 0 ? ' active' : ''}">${qty}</div><button class="qty-btn qty-plus" data-plus="${item.id}">+</button></div><div class="item-total"><div class="item-total-main${qty > 0 ? ' active' : ''}">${qty > 0 ? total.toFixed(0) + ' Kč' : '0 Kč'}</div><div class="item-total-sub">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div></div></div>` }).join('')}`
         }).join('')
-        body.querySelectorAll('[data-plus]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const id = Number(btn.getAttribute('data-plus'))
-            const item = catalog.find((x) => Number(x.id) === id)
-            if (item) upsert(item, 1)
-          })
-        })
-        body.querySelectorAll('[data-minus]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const id = Number(btn.getAttribute('data-minus'))
-            const item = catalog.find((x) => Number(x.id) === id)
-            if (item) upsert(item, -1)
-          })
-        })
+        body.querySelectorAll('[data-plus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-plus'))); if (item) addCatalogItem(item, 1) }))
+        body.querySelectorAll('[data-minus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-minus'))); if (item) addCatalogItem(item, -1) }))
+        document.getElementById('mainTitle').textContent = activeNavKey ? NAV_LABELS[activeNavKey] || activeNavKey : 'Vyberte kategorii zleva'
+        document.getElementById('mainCount').textContent = activeNavKey && groups.has(activeNavKey) ? `${(groups.get(activeNavKey) || []).length} položek` : `${catalog.length} položek v databázi`
       }
-
-      /* ── RENDER CART BAR ── */
-      function renderCartBar() {
-        const t = totals()
-        const bar = document.getElementById('cartBar')
-        bar.classList.toggle('show', t.count > 0)
-        document.getElementById('cartCount').textContent = String(t.count)
-        document.getElementById('cartCount2').textContent = String(t.count)
-        document.getElementById('cartNoVat').textContent = fmt(t.client)
-        document.getElementById('cartTotal').textContent = fmt(t.total)
+      function renderEstimateTable() {
+        const tbody = document.getElementById('estimateRows')
+        const lines = normalizeEstimateLines(estimate?.lines || [])
+        estimate.lines = lines
+        if (!lines.length) { tbody.innerHTML = `<tr><td colspan="8"><div class="empty">Rozpočet zatím neobsahuje žádné řádky. Přidávejte položky z katalogu vlevo a upravujte je přímo v tabulce.</div></td></tr>`; return }
+        const groups = groupedEstimate(lines)
+        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
+        tbody.innerHTML = ordered.map((key) => { const rows = groups.get(key) || []; return `<tr class="section-row"><td colspan="8">${esc(NAV_LABELS[key] || key)}</td></tr>${rows.map((line) => `<tr data-pos="${line.positionOrder}"><td><input class="sheet-input small-code" data-field="lineCode" data-pos="${line.positionOrder}" value="${esc(line.lineCode || '')}" /></td><td><textarea class="sheet-input" data-field="workDescription" data-pos="${line.positionOrder}" style="min-height:44px;resize:vertical">${esc(line.workDescription || '')}</textarea></td><td><textarea class="sheet-input" data-field="materialDescription" data-pos="${line.positionOrder}" style="min-height:44px;resize:vertical">${esc(line.materialDescription || '')}</textarea></td><td><input class="sheet-input num" data-field="quantity" data-pos="${line.positionOrder}" value="${esc(String(line.quantity || 0))}" /><input class="sheet-input" data-field="unit" data-pos="${line.positionOrder}" value="${esc(line.unit || 'ks')}" style="margin-top:6px" /></td><td><input class="sheet-input num" data-field="laborUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.laborUnitPrice || 0))}" /><div class="small-code" style="margin-top:6px">${fmtMoney(line.laborTotal || 0)}</div></td><td><input class="sheet-input num" data-field="materialUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.materialUnitPrice || 0))}" /><div class="small-code" style="margin-top:6px">${fmtMoney(line.materialTotal || 0)}</div></td><td><div style="font-weight:800;text-align:right;padding:8px 0;">${fmtMoney(line.lineTotal || 0)}</div></td><td><button class="btn" data-remove="${line.positionOrder}" style="padding:8px 10px">✕</button></td></tr>`).join('')}` }).join('')
+        tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
+        tbody.querySelectorAll('[data-remove]').forEach((btn) => btn.addEventListener('click', () => { const pos = Number(btn.getAttribute('data-remove')); estimate.lines = estimate.lines.filter((x) => Number(x.positionOrder) !== pos); estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
       }
-
-      /* ── RENDER ESTIMATE PANEL ── */
-      function renderEstimatePanel() {
-        const lines = estimate?.lines || []
-        const host = document.getElementById('estimateLines')
-        document.getElementById('estimateTitle').value = estimate?.title || ''
-        if (!lines.length) {
-          host.innerHTML = '<div style="padding:16px 0;text-align:center;color:var(--ink3);font-size:13px">Zatím žádné položky</div>'
-        } else {
-          host.innerHTML = lines.map((line, idx) => `
-            <div class="est-line">
-              <div>
-                <div class="est-line-name">${esc(line.itemName)}</div>
-                <div class="est-line-qty">${line.quantity} ${esc(line.unit || 'ks')} × ${esc(String(line.clientPrice || 0))} Kč</div>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <div class="est-line-price">${(Number(line.totalClient||0)).toFixed(0)} Kč</div>
-                <button style="background:rgba(232,58,58,.15);border:none;color:var(--red);border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" data-remove="${idx}">✕</button>
-              </div>
-            </div>
-          `).join('')
+      function renderTotals() { const t = totals(estimate?.lines || []); document.getElementById('estimateTotals').innerHTML = `<div class="tot-row"><span>Součet práce</span><strong>${fmtMoney(t.labor)}</strong></div><div class="tot-row"><span>Součet materiálu</span><strong>${fmtMoney(t.material)}</strong></div><div class="tot-row"><span>Ostatní rozpočtové náklady</span><strong>${fmtMoney(t.other)}</strong></div><div class="tot-row"><span>Celkem bez DPH</span><strong>${fmtMoney(t.bezDph)}</strong></div><div class="tot-row"><span>DPH ${estimate?.vatRate || 21} %</span><strong>${fmtMoney(t.dph)}</strong></div><div class="tot-row final"><span>Celkem s DPH</span><strong style="color:var(--green)">${fmtMoney(t.total)}</strong></div>` }
+      function updateHeaderInfo() {
+        const stage = job?.pipelineStage || job?.stage || '—'
+        document.getElementById('sheetTitle').textContent = estimate?.title || 'Rozpočet'
+        document.getElementById('sheetSub').textContent = `${estimate?.estimateNo || '—'} · ${stage}`
+        const meta = [
+          ['Interní číslo zakázky', estimate?.jobNumberSnapshot || job?.internalNumber || '—'],
+          ['Číslo klienta', estimate?.clientNumberSnapshot || lead?.clientNumber || job?.clientNumberSnapshot || '—'],
+          ['Datum rozpočtu', estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())],
+          ['Klient', estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'],
+          ['Firma', estimate?.companyNameSnapshot || '—'],
+          ['IČO', estimate?.customerIcoSnapshot || '—'],
+          ['Adresa', estimate?.customerAddressSnapshot || '—'],
+          ['Typ zakázky', job?.jobType === 'elektro' ? 'Elektro' : job?.jobType === 'stavebni' ? 'Stavební' : 'Kombinovaná'],
+        ]
+        document.getElementById('sheetMeta').innerHTML = meta.map(([k, v]) => `<div class="meta-card"><b>${esc(k)}</b><div class="v">${esc(v)}</div></div>`).join('')
+        document.getElementById('sheetStage').textContent = stage
+        document.getElementById('sheetClientNo').textContent = estimate?.clientNumberSnapshot || lead?.clientNumber || '—'
+        document.getElementById('sheetJobNo').textContent = estimate?.jobNumberSnapshot || job?.internalNumber || '—'
+        document.getElementById('leadSub').textContent = `${lead?.fullName || lead?.name || job?.title || 'Zakázka'} · ${estimate?.estimateNo || '—'}`
+      }
+      async function loadContext() {
+        if (Number.isFinite(jobId) && jobId > 0) {
+          const jr = await fetch(apiUrl(`/api/crm/jobs/${jobId}`))
+          const jd = await json(jr)
+          if (!jr.ok || !jd?.ok) throw new Error('job_failed')
+          job = jd.job
+          if (job?.leadId) {
+            const lr = await fetch(apiUrl(`/api/leads/${job.leadId}`))
+            const ld = await json(lr)
+            if (lr.ok && ld?.ok) lead = ld.lead
+          }
+          document.getElementById('backLink').href = `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}`
+          return
         }
-        host.querySelectorAll('[data-remove]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            estimate.lines.splice(Number(btn.getAttribute('data-remove')), 1)
-            renderCartBar()
-            renderItemRows()
-            renderEstimatePanel()
-          })
-        })
-        const t = totals()
-        document.getElementById('estimateTotals').innerHTML = `
-          <div class="est-sum-row"><span style="color:var(--ink2)">Bez DPH</span><strong>${fmt(t.client)}</strong></div>
-          <div class="est-sum-row"><span style="color:var(--ink2)">DPH ${estimate?.vatRate || 21} %</span><strong>${fmt(t.vat)}</strong></div>
-          <div class="est-sum-row"><span>Celkem s DPH</span><strong style="color:var(--green)">${fmt(t.total)}</strong></div>
-        `
+        if (Number.isFinite(leadId) && leadId > 0) {
+          const lr = await fetch(apiUrl(`/api/leads/${leadId}`))
+          const ld = await json(lr)
+          if (!lr.ok || !ld?.ok) throw new Error('lead_failed')
+          lead = ld.lead
+          const jr = await fetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
+          const jd = await json(jr)
+          if (jr.ok && jd?.ok && jd.jobs?.length) job = jd.jobs[0]
+          document.getElementById('backLink').href = job ? `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}` : './index.html'
+          return
+        }
+        throw new Error('missing_job_or_lead_id')
       }
-
-      /* ── LOAD ── */
+      async function ensureEstimate() {
+        if (estimateIdFromUrl) {
+          const r = await fetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
+          const d = await json(r)
+          if (r.ok && d?.ok) { estimate = d.estimate; return }
+        }
+        if (job?.id) {
+          const ex = await fetch(apiUrl(`/api/crm/estimates?jobId=${encodeURIComponent(String(job.id))}`))
+          const dx = await json(ex)
+          if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
+          const cr = await fetch(apiUrl('/api/crm/estimates/from-job'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: job.id }) })
+          const cd = await json(cr)
+          if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'estimate_create_failed')
+          estimate = cd.estimate
+          return
+        }
+        if (lead?.id) {
+          const ex = await fetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(lead.id))}`))
+          const dx = await json(ex)
+          if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
+          const cr = await fetch(apiUrl('/api/crm/estimates/from-lead'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
+          const cd = await json(cr)
+          if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'estimate_create_failed')
+          estimate = cd.estimate
+          return
+        }
+        throw new Error('estimate_context_missing')
+      }
       async function loadCatalog() {
         const p = new URLSearchParams()
         const trade = document.getElementById('tradeType').value
@@ -512,120 +320,78 @@
         const r = await fetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
         const d = await json(r)
         catalog = (r.ok && d?.ok) ? (d.items || []) : []
-        renderNav()
-        if (!activeNavKey && catalog.length) {
-          const groups = grouped(catalog)
-          const ordered = NAV_ORDER.filter((k) => groups.has(k))
-          activeNavKey = ordered[0] || null
-          if (activeNavKey) {
-            document.getElementById('mainTitle').textContent = NAV_LABELS[activeNavKey] || activeNavKey
-            document.getElementById('mainCount').textContent = `${(groups.get(activeNavKey) || []).length} položek`
-          }
-        }
-        renderItemRows()
-      }
-      async function ensureEstimate() {
-        if (!lead?.id) throw new Error('lead_missing_for_estimate')
-        if (estimateIdFromUrl) {
-          const r = await fetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
-          const d = await json(r)
-          if (r.ok && d?.ok) { estimate = d.estimate; return }
-        }
-        const existing = await fetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(leadId))}`))
-        const existingJson = await json(existing)
-        if (existing.ok && existingJson?.ok && existingJson.estimates?.length) {
-          estimate = existingJson.estimates[0]; return
-        }
-        const create = await fetch(apiUrl('/api/crm/estimates/from-lead'), {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leadId }),
-        })
-        const createJson = await json(create)
-        if (!create.ok || !createJson?.ok) throw new Error(createJson?.error || 'estimate_create_failed')
-        estimate = createJson.estimate
-      }
-      async function loadLead() {
-        if (Number.isFinite(jobId) && jobId > 0) {
-          const jr = await fetch(apiUrl(`/api/crm/jobs/${jobId}`))
-          const jd = await json(jr)
-          if (jr.ok && jd?.ok) {
-            job = jd.job
-            if (Number.isFinite(Number(job?.leadId)) && Number(job.leadId) > 0) {
-              const lr = await fetch(apiUrl(`/api/leads/${job.leadId}`))
-              const ld = await json(lr)
-              if (lr.ok && ld?.ok) lead = ld.lead
-            }
-            if (!lead && jd?.customer) {
-              lead = { id: job.leadId || null, fullName: jd.customer.name || jd.customer.companyName || 'Klient', name: jd.customer.name || jd.customer.companyName || 'Klient', clientNumber: jd.customer.internalNumber || job.clientNumberSnapshot || null }
-            }
-            document.getElementById('leadSub').textContent = `${lead?.fullName || lead?.name || job.title || 'Zakázka'} · č. ${lead?.clientNumber || job.clientNumberSnapshot || '—'}`
-            document.getElementById('backClient').href = `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}`
-            return
-          }
-        }
-        if (Number.isFinite(leadId) && leadId > 0) {
-          const r = await fetch(apiUrl(`/api/leads/${leadId}`))
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error('lead_failed')
-          lead = d.lead
-          const jr = await fetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
-          const jd = await json(jr)
-          if (jr.ok && jd?.ok && jd.jobs?.length) job = jd.jobs[0]
-          document.getElementById('leadSub').textContent = `${lead.fullName || lead.name || ''} · č. ${lead.clientNumber || '—'}`
-          document.getElementById('backClient').href = job ? `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}` : `./client-card.html?leadId=${encodeURIComponent(String(lead.id))}`
-          return
-        }
-        throw new Error('missing_job_or_lead_id')
+        const groups = groupedCatalog(catalog)
+        if ((!activeNavKey || !groups.has(activeNavKey)) && catalog.length) activeNavKey = NAV_ORDER.find((k) => groups.has(k)) || [...groups.keys()][0] || null
+        renderNav(); renderCatalogRows()
       }
       async function saveEstimate() {
         if (!estimate) return
-        estimate.title = document.getElementById('estimateTitle').value.trim() || estimate.title
-        const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: estimate.title, tradeType: document.getElementById('tradeType').value, clientNumberSnapshot: lead?.clientNumber || job?.clientNumberSnapshot || null, lines: estimate.lines }),
-        })
+        estimate.title = document.getElementById('sheetTitle').textContent || estimate.title
+        estimate.note = document.getElementById('estimateNote').value || ''
+        estimate.lines = normalizeEstimateLines(estimate.lines || [])
+        const payload = {
+          title: estimate.title,
+          tradeType: document.getElementById('tradeType').value,
+          note: estimate.note,
+          estimateDate: estimate.estimateDate || new Date().toISOString().slice(0, 10),
+          jobNumberSnapshot: estimate.jobNumberSnapshot || job?.internalNumber || null,
+          clientNumberSnapshot: estimate.clientNumberSnapshot || lead?.clientNumber || job?.clientNumberSnapshot || null,
+          clientNameSnapshot: estimate.clientNameSnapshot || lead?.fullName || lead?.name || null,
+          companyNameSnapshot: estimate.companyNameSnapshot || null,
+          customerAddressSnapshot: estimate.customerAddressSnapshot || null,
+          customerIcoSnapshot: estimate.customerIcoSnapshot || null,
+          lines: estimate.lines,
+        }
+        const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         const d = await json(r)
-        if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze uložit'); return }
+        if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze uložit rozpočet'); return }
         estimate = d.estimate
-        alert('Uloženo ✓')
+        estimate.lines = normalizeEstimateLines(estimate.lines || [])
+        renderAll()
+        alert('Rozpočet byl uložen')
       }
-
-      /* ── EVENTS ── */
-      document.getElementById('addManualLine').addEventListener('click', () => {
-        const name = document.getElementById('manualName').value.trim() || 'Nová položka'
-        const unit = document.getElementById('manualUnit').value.trim() || 'ks'
-        const price = Number(document.getElementById('manualBase').value || 0)
-        estimate.lines.push({ itemName: name, unit, quantity: 1, basePrice: price, clientPrice: price, totalBase: price, totalClient: price, phaseKey: 'service', categoryKey: 'manual', positionOrder: estimate.lines.length + 1 })
-        document.getElementById('manualName').value = ''
-        renderCartBar(); renderItemRows(); renderEstimatePanel()
-      })
+      async function buildEstimateDocs() {
+        if (!estimate?.id) return
+        await saveEstimate()
+        const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+        const d = await json(r)
+        if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze vygenerovat dokumenty'); return }
+        const xlsx = `${apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)}`
+        const pdf = `${apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`)}`
+        const x = document.getElementById('xlsxLink')
+        const p = document.getElementById('pdfLink')
+        x.href = xlsx; x.style.display = 'inline-flex'
+        p.href = pdf; p.style.display = 'inline-flex'
+        alert(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel vygenerován, PDF se nepodařilo vytvořit')
+      }
+      function renderAll() { updateHeaderInfo(); renderNav(); renderCatalogRows(); renderEstimateTable(); renderTotals() }
       document.getElementById('saveEstimate').addEventListener('click', saveEstimate)
-      const togglePanel = () => {
-        const p = document.getElementById('estimatePanel')
-        p.classList.toggle('show')
-        renderEstimatePanel()
-      }
-      document.getElementById('toggleEstimate').addEventListener('click', togglePanel)
-      document.getElementById('toggleEstimate2').addEventListener('click', togglePanel)
-      document.getElementById('closeEstimate').addEventListener('click', () => document.getElementById('estimatePanel').classList.remove('show'))
+      document.getElementById('buildDocs').addEventListener('click', buildEstimateDocs)
+      document.getElementById('toggleSheet').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
       document.getElementById('tradeType').addEventListener('change', () => { activeNavKey = null; loadCatalog() })
-      let searchTimer
-      document.getElementById('catalogSearch').addEventListener('input', () => {
-        clearTimeout(searchTimer)
-        searchTimer = setTimeout(() => { activeNavKey = null; loadCatalog() }, 300)
+      let timer
+      document.getElementById('catalogSearch').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { activeNavKey = null; loadCatalog() }, 250) })
+      document.getElementById('estimateNote').addEventListener('input', (e) => { if (estimate) estimate.note = e.target.value })
+      document.getElementById('addManualLine').addEventListener('click', () => {
+        if (!estimate) return
+        estimate.lines.push({ lineCode: null, sectionType: 'ostatni_naklady', groupKey: 'other', groupLabel: 'Ostatní', workDescription: document.getElementById('manualWork').value.trim() || 'Nová položka', materialDescription: '', quantity: Number(document.getElementById('manualQty').value || 0), unit: document.getElementById('manualUnit').value.trim() || 'ks', laborUnitPrice: Number(document.getElementById('manualLabor').value || 0), materialUnitPrice: 0 })
+        estimate.lines = normalizeEstimateLines(estimate.lines)
+        document.getElementById('manualWork').value = ''
+        renderAll()
       })
-
       ;(async () => {
         try {
-          await loadLead()
+          await loadContext()
           await ensureEstimate()
-          document.getElementById('tradeType').value = estimate.tradeType || 'electro'
-          renderCartBar()
-          renderEstimatePanel()
+          estimate.lines = normalizeEstimateLines(estimate.lines || [])
+          document.getElementById('tradeType').value = estimate.tradeType === 'construction' ? 'construction' : 'electro'
+          document.getElementById('estimateNote').value = estimate.note || ''
+          renderAll()
           await loadCatalog()
         } catch (e) {
           document.getElementById('leadSub').textContent = 'Tuto stránku otevřete ze zakázky nebo z pipeline.'
-          document.getElementById('catalogBody').innerHTML = `<div class=\"empty\">Chyba: ${String(e?.message || e)}<br><br><a class=\"btn primary\" href=\"./index.html\">Otevřít CRM pipeline</a></div>`
+          document.querySelector('.main').innerHTML = `<div class="empty">Chyba: ${esc(String(e?.message || e))}<br><br><a class="btn primary" href="./index.html">Otevřít CRM pipeline</a></div>`
+          document.getElementById('editorSheet').innerHTML = ''
         }
       })()
     </script>

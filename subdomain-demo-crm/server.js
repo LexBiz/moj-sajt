@@ -43,6 +43,7 @@ const REQUIRE_AUTH = String(process.env.CRM_REQUIRE_AUTH || 'false').trim() === 
 const DATA_DIR = path.join(__dirname, 'data')
 const GENERATED_DIR = path.join(__dirname, 'generated')
 const GENERATED_OFFERS_DIR = path.join(GENERATED_DIR, 'offers')
+const GENERATED_ESTIMATES_DIR = path.join(GENERATED_DIR, 'estimates')
 const OFFER_TEMPLATES_DIR = String(process.env.CRM_OFFER_TEMPLATES_DIR || path.join(__dirname, 'templates', 'offers')).trim()
 const CRM_PUBLIC_BASE_URL = String(process.env.CRM_PUBLIC_BASE_URL || `http://localhost:${PORT}`).trim().replace(/\/+$/, '')
 const DB_URL = String(process.env.CRM_DATABASE_URL || process.env.DATABASE_URL || '').trim()
@@ -126,6 +127,7 @@ const execFileAsync = promisify(execFile)
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
   if (!fs.existsSync(GENERATED_OFFERS_DIR)) fs.mkdirSync(GENERATED_OFFERS_DIR, { recursive: true })
+  if (!fs.existsSync(GENERATED_ESTIMATES_DIR)) fs.mkdirSync(GENERATED_ESTIMATES_DIR, { recursive: true })
 }
 function fileStorePath(name) {
   ensureDataDir()
@@ -1493,21 +1495,179 @@ function publicFileUrl(filePath) {
   return `${CRM_PUBLIC_BASE_URL}/${rel}`
 }
 
-function buildEstimateNo(leadId) {
+async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
+  ensureDataDir()
+  const workbook = new ExcelJS.Workbook()
+  const ws = workbook.addWorksheet('Rozpocet')
+  ws.columns = [
+    { key: 'a', width: 12 },
+    { key: 'b', width: 42 },
+    { key: 'c', width: 34 },
+    { key: 'd', width: 14 },
+    { key: 'e', width: 14 },
+    { key: 'f', width: 14 },
+    { key: 'g', width: 16 },
+  ]
+  const title = estimate?.title || `Rozpočet ${job?.internalNumber || lead?.clientNumber || ''}`.trim()
+  const estimateDate = estimate?.estimateDate || new Date().toISOString().slice(0, 10)
+  const lines = normalizeEstimateLines(estimate?.lines || [])
+  const grouped = groupedEstimateLinesForExport(lines)
+  const totals = computeEstimateTotals(lines, estimate?.vatRate || 21)
+
+  ws.mergeCells('A1:G1')
+  ws.getCell('A1').value = title
+  ws.getCell('A1').font = { name: 'Carlito', size: 16, bold: true }
+  ws.getCell('A1').alignment = { horizontal: 'left' }
+  ws.getCell('F2').value = `Datum: ${formatCzDate(new Date(estimateDate))}`
+  ws.getCell('F3').value = `Zakázka: ${job?.internalNumber || estimate?.jobNumberSnapshot || '—'}`
+  ws.getCell('F4').value = `Klient: ${estimate?.clientNumberSnapshot || lead?.clientNumber || '—'}`
+  ws.getCell('A3').value = `Klient: ${customer?.name || estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'}`
+  ws.getCell('A4').value = `Firma: ${estimate?.companyNameSnapshot || customer?.companyName || '—'}`
+  ws.getCell('A5').value = `Adresa: ${estimate?.customerAddressSnapshot || customer?.address || '—'}`
+  ws.getCell('A6').value = `IČO: ${estimate?.customerIcoSnapshot || customer?.ico || '—'}`
+
+  const headerRow = 8
+  const headers = ['Číslo položky', 'Popis práce', 'Popis materiálu', 'Množství / mj', 'Cena práce', 'Cena materiálu', 'Cena práce + materiálu']
+  headers.forEach((h, idx) => {
+    const cell = ws.getCell(headerRow, idx + 1)
+    cell.value = h
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Carlito', size: 10 }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F3070' } }
+    cell.alignment = { vertical: 'middle', horizontal: idx >= 3 ? 'center' : 'left', wrapText: true }
+    cell.border = thinBorder()
+  })
+
+  let rowNo = headerRow + 1
+  for (const [groupKey, rows] of grouped) {
+    ws.mergeCells(`A${rowNo}:G${rowNo}`)
+    const titleCell = ws.getCell(`A${rowNo}`)
+    titleCell.value = estimateGroupLabel(groupKey)
+    titleCell.font = { bold: true, color: { argb: 'FF0F3070' }, name: 'Carlito', size: 11 }
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }
+    titleCell.border = thinBorder()
+    rowNo += 1
+    for (const line of rows) {
+      const vals = [
+        line.lineCode || '',
+        line.workDescription || '',
+        line.materialDescription || '',
+        `${line.quantity || 0} ${line.unit || ''}`.trim(),
+        line.laborTotal || 0,
+        line.materialTotal || 0,
+        line.lineTotal || 0,
+      ]
+      vals.forEach((val, idx) => {
+        const cell = ws.getCell(rowNo, idx + 1)
+        cell.value = val
+        cell.font = { name: 'Carlito', size: 10 }
+        cell.alignment = { vertical: 'top', horizontal: idx >= 4 ? 'right' : 'left', wrapText: true }
+        if (idx >= 4) cell.numFmt = '#,##0.00 Kč'
+        cell.border = thinBorder()
+      })
+      rowNo += 1
+    }
+  }
+
+  rowNo += 1
+  const summaryRows = [
+    ['Součet práce', totals.laborTotal],
+    ['Součet materiálu', totals.materialTotal],
+    ['Ostatní rozpočtové náklady', totals.otherCostsTotal],
+    ['Celkem bez DPH', totals.totalNoVat],
+    [`DPH ${estimate?.vatRate || 21} %`, totals.vatAmount],
+    ['Celkem s DPH', totals.totalWithVat],
+  ]
+  for (const [label, amount] of summaryRows) {
+    ws.mergeCells(`A${rowNo}:F${rowNo}`)
+    ws.getCell(`A${rowNo}`).value = label
+    ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
+    ws.getCell(`G${rowNo}`).value = amount
+    ws.getCell(`G${rowNo}`).numFmt = '#,##0.00 Kč'
+    ws.getCell(`G${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
+    for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
+    rowNo += 1
+  }
+
+  rowNo += 1
+  ws.mergeCells(`A${rowNo}:G${rowNo + 1}`)
+  ws.getCell(`A${rowNo}`).value = estimate?.note || ''
+  ws.getCell(`A${rowNo}`).alignment = { wrapText: true, vertical: 'top' }
+  ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10 }
+  for (let r = rowNo; r <= rowNo + 1; r += 1) for (let c = 1; c <= 7; c += 1) ws.getCell(r, c).border = thinBorder()
+
+  const safe = String(estimate?.estimateNo || `rozpocet-${estimate?.id || Date.now()}`).replace(/[^\w.-]+/g, '_')
+  const xlsxPath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.xlsx`)
+  await workbook.xlsx.writeFile(xlsxPath)
+  return xlsxPath
+}
+
+function thinBorder() {
+  return {
+    top: { style: 'thin', color: { argb: 'FF9EB2CC' } },
+    left: { style: 'thin', color: { argb: 'FF9EB2CC' } },
+    bottom: { style: 'thin', color: { argb: 'FF9EB2CC' } },
+    right: { style: 'thin', color: { argb: 'FF9EB2CC' } },
+  }
+}
+
+function estimateGroupLabel(key) {
+  const map = {
+    grooves: 'Elektrikářské práce',
+    boxes: 'Elektrikářské práce',
+    cables: 'Elektrikářské práce',
+    switchboards: 'Elektrikářské práce',
+    outlets: 'Elektrikářské práce',
+    completion: 'Elektrikářské práce',
+    revision: 'Elektrikářské práce',
+    demolition: 'Elektrikářské práce',
+    systems: 'Elektrikářské práce',
+    hourly: 'Ostatní rozpočtové náklady',
+    other: 'Ostatní rozpočtové náklady',
+  }
+  return map[key] || 'Rozpočet'
+}
+
+function groupedEstimateLinesForExport(lines) {
+  const map = new Map()
+  for (const line of lines) {
+    const key = line.groupKey || 'other'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(line)
+  }
+  const ordered = ['grooves','boxes','cables','switchboards','outlets','completion','revision','demolition','hourly','systems','other']
+  const result = []
+  for (const key of ordered) if (map.has(key)) result.push([key, map.get(key)])
+  for (const [k, v] of map.entries()) if (!ordered.includes(k)) result.push([k, v])
+  return result
+}
+
+function buildEstimateNo(jobIdOrLeadId) {
   const year = new Date().getFullYear()
   const tail = String(Date.now()).slice(-6)
-  return `EST-${year}-${String(leadId || 'X')}-${tail}`
+  return `RZP-${year}-${String(jobIdOrLeadId || 'X')}-${tail}`
 }
 function estimateLineFromRow(row) {
   return {
     id: row.id != null ? Number(row.id) : null,
     estimateId: row.estimate_id != null ? Number(row.estimate_id) : null,
     catalogItemId: row.catalog_item_id != null ? Number(row.catalog_item_id) : null,
+    sourceCatalogCode: row.source_catalog_code || null,
+    lineCode: row.line_code || null,
+    sectionType: row.section_type || 'elektro',
+    groupKey: row.group_key || row.category_key || 'other',
+    groupLabel: row.group_label || row.group_key || row.category_key || 'Ostatní',
     phaseKey: row.phase_key || row.phaseKey || 'preparation',
     categoryKey: row.category_key || row.categoryKey || 'general',
     itemName: row.item_name || row.itemName || '',
+    workDescription: row.work_description || row.item_name || row.itemName || '',
+    materialDescription: row.material_description || '',
     unit: row.unit || 'ks',
     quantity: roundMoney(row.quantity),
+    laborUnitPrice: roundMoney(row.labor_unit_price != null ? row.labor_unit_price : row.client_price),
+    laborTotal: roundMoney(row.labor_total != null ? row.labor_total : row.total_client),
+    materialUnitPrice: roundMoney(row.material_unit_price),
+    materialTotal: roundMoney(row.material_total),
+    lineTotal: roundMoney(row.line_total != null ? row.line_total : row.total_client),
     basePrice: roundMoney(row.base_price),
     clientPrice: roundMoney(row.client_price),
     totalBase: roundMoney(row.total_base),
@@ -1517,30 +1677,48 @@ function estimateLineFromRow(row) {
 }
 function normalizeEstimateLine(input = {}, idx = 0) {
   const quantity = roundMoney(toNum(input.quantity, 0))
-  const basePrice = roundMoney(toNum(input.basePrice, 0))
-  const clientPrice = roundMoney(input.clientPrice != null ? toNum(input.clientPrice, basePrice) : basePrice)
+  const laborUnitPrice = roundMoney(toNum(input.laborUnitPrice != null ? input.laborUnitPrice : input.clientPrice, 0))
+  const materialUnitPrice = roundMoney(toNum(input.materialUnitPrice, 0))
+  const laborTotal = roundMoney(quantity * laborUnitPrice)
+  const materialTotal = roundMoney(quantity * materialUnitPrice)
+  const lineTotal = roundMoney(laborTotal + materialTotal)
   return {
     id: input.id != null ? Number(input.id) : null,
     catalogItemId: input.catalogItemId != null ? Number(input.catalogItemId) : null,
+    sourceCatalogCode: input.sourceCatalogCode ? String(input.sourceCatalogCode).trim() : null,
+    lineCode: input.lineCode ? String(input.lineCode).trim() : null,
+    sectionType: String(input.sectionType || 'elektro').trim() || 'elektro',
+    groupKey: String(input.groupKey || input.categoryKey || 'other').trim() || 'other',
+    groupLabel: String(input.groupLabel || input.groupKey || 'Ostatní').trim() || 'Ostatní',
     phaseKey: String(input.phaseKey || 'preparation').trim() || 'preparation',
     categoryKey: String(input.categoryKey || 'general').trim() || 'general',
-    itemName: String(input.itemName || '').trim(),
+    itemName: String(input.itemName || input.workDescription || '').trim(),
+    workDescription: String(input.workDescription || input.itemName || '').trim(),
+    materialDescription: String(input.materialDescription || '').trim(),
     unit: String(input.unit || 'ks').trim() || 'ks',
     quantity,
-    basePrice,
-    clientPrice,
-    totalBase: roundMoney(quantity * basePrice),
-    totalClient: roundMoney(quantity * clientPrice),
+    laborUnitPrice,
+    laborTotal,
+    materialUnitPrice,
+    materialTotal,
+    lineTotal,
+    basePrice: roundMoney(toNum(input.basePrice, laborUnitPrice)),
+    clientPrice: laborUnitPrice,
+    totalBase: laborTotal,
+    totalClient: lineTotal,
     positionOrder: Number(input.positionOrder != null ? input.positionOrder : idx + 1),
   }
 }
 function computeEstimateTotals(lines, vatRate) {
+  const laborTotal = roundMoney(lines.filter(x => String(x.sectionType || '') !== 'ostatni_naklady').reduce((sum, line) => sum + toNum(line.laborTotal, 0), 0))
+  const materialTotal = roundMoney(lines.filter(x => String(x.sectionType || '') !== 'ostatni_naklady').reduce((sum, line) => sum + toNum(line.materialTotal, 0), 0))
+  const otherCostsTotal = roundMoney(lines.filter(x => String(x.sectionType || '') === 'ostatni_naklady').reduce((sum, line) => sum + toNum(line.lineTotal, 0), 0))
   const subtotalBase = roundMoney(lines.reduce((sum, line) => sum + toNum(line.totalBase, 0), 0))
   const subtotalClient = roundMoney(lines.reduce((sum, line) => sum + toNum(line.totalClient, 0), 0))
-  const totalNoVat = subtotalClient
+  const totalNoVat = roundMoney(laborTotal + materialTotal + otherCostsTotal)
   const vatAmount = roundMoney(totalNoVat * (toNum(vatRate, 21) / 100))
   const totalWithVat = roundMoney(totalNoVat + vatAmount)
-  return { subtotalBase, subtotalClient, totalNoVat, vatAmount, totalWithVat }
+  return { subtotalBase, subtotalClient, totalNoVat, vatAmount, totalWithVat, laborTotal, materialTotal, otherCostsTotal }
 }
 function normalizeServiceCatalogItem(row) {
   return {
@@ -1684,9 +1862,17 @@ async function bulkImportServiceCatalogItems(items = []) {
 function normalizeEstimate(row, lines = []) {
   return {
     id: Number(row.id),
+    jobId: row.job_id != null ? Number(row.job_id) : null,
     leadId: row.lead_id != null ? Number(row.lead_id) : null,
     estimateNo: row.estimate_no || row.estimateNo || '',
+    estimateDate: row.estimate_date || row.estimateDate || null,
+    jobNumberSnapshot: row.job_number_snapshot || row.jobNumberSnapshot || null,
     clientNumberSnapshot: row.client_number_snapshot || row.clientNumberSnapshot || null,
+    clientNameSnapshot: row.client_name_snapshot || row.clientNameSnapshot || null,
+    companyNameSnapshot: row.company_name_snapshot || row.companyNameSnapshot || null,
+    customerAddressSnapshot: row.customer_address_snapshot || row.customerAddressSnapshot || null,
+    customerIcoSnapshot: row.customer_ico_snapshot || row.customerIcoSnapshot || null,
+    estimateKind: row.estimate_kind || row.estimateKind || 'standard',
     title: row.title || '',
     tradeType: row.trade_type || row.tradeType || 'electro',
     buildingType: row.building_type || row.buildingType || null,
@@ -1694,6 +1880,10 @@ function normalizeEstimate(row, lines = []) {
     currency: row.currency || 'CZK',
     vatRate: roundMoney(row.vat_rate),
     notes: row.notes || '',
+    note: row.note || '',
+    laborTotal: roundMoney(row.labor_total),
+    materialTotal: roundMoney(row.material_total),
+    otherCostsTotal: roundMoney(row.other_costs_total),
     subtotalBase: roundMoney(row.subtotal_base),
     subtotalClient: roundMoney(row.subtotal_client),
     totalNoVat: roundMoney(row.total_no_vat),
@@ -1724,6 +1914,7 @@ async function listEstimates(filters = {}) {
       where.push(sql.replace('?', `$${params.length}`))
     }
     if (filters.leadId) add('lead_id = ?', Number(filters.leadId))
+    if (filters.jobId) add('job_id = ?', Number(filters.jobId))
     if (filters.status) add('status = ?', String(filters.status))
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
     const q = await dbQuery(`SELECT * FROM crm_estimates ${whereSql} ORDER BY created_at DESC LIMIT 200`, params)
@@ -1736,31 +1927,43 @@ async function listEstimates(filters = {}) {
   }
   let rows = readArrayFile('estimates')
   if (filters.leadId) rows = rows.filter((x) => Number(x.leadId) === Number(filters.leadId))
+  if (filters.jobId) rows = rows.filter((x) => Number(x.jobId) === Number(filters.jobId))
   if (filters.status) rows = rows.filter((x) => String(x.status || '') === String(filters.status))
   return rows
 }
-async function createEstimateDraftFromLead(lead) {
-  if (!lead) throw new Error('lead_not_found')
-  const title = `Rozpočet ${lead.clientNumber || lead.name || 'клієнт'}`
-  const tradeType = /елект|electro|ajax|cctv/i.test(String(lead.serviceType || '')) ? 'electro' : 'general'
-  const buildingType = lead.brief?.objectType ? String(lead.brief.objectType) : null
+async function createEstimateDraftForContext({ lead, job, customer }) {
+  if (!lead && !job) throw new Error('estimate_context_missing')
+  const title = `Rozpočet ze dne ${new Date().toLocaleDateString('cs-CZ')} ${customer?.name || lead?.clientNumber || lead?.name || job?.internalNumber || 'zakázka'}`
+  const tradeType = job?.jobType === 'stavebni' ? 'construction' : job?.jobType === 'kombinovana' ? 'construction' : 'electro'
+  const buildingType = lead?.brief?.objectType ? String(lead.brief.objectType) : null
+  const estimateNo = buildEstimateNo(job?.id || lead?.id)
+  const estimateDate = new Date().toISOString().slice(0, 10)
   if (pool) {
     const q = await dbQuery(
       `INSERT INTO crm_estimates
-      (lead_id, estimate_no, client_number_snapshot, title, trade_type, building_type, status, currency, vat_rate, notes,
-       subtotal_base, subtotal_client, total_no_vat, vat_amount, total_with_vat, created_at, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,0,0,0,0,0,now(),now()) RETURNING *`,
+      (job_id, lead_id, estimate_no, estimate_date, job_number_snapshot, client_number_snapshot, client_name_snapshot, company_name_snapshot, customer_address_snapshot, customer_ico_snapshot, estimate_kind, title, trade_type, building_type, status, currency, vat_rate, notes, note,
+       labor_total, material_total, other_costs_total, subtotal_base, subtotal_client, total_no_vat, vat_amount, total_with_vat, created_at, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,0,0,0,0,0,0,0,0,now(),now()) RETURNING *`,
       [
-        lead.id,
-        buildEstimateNo(lead.id),
-        lead.clientNumber || null,
+        job?.id || null,
+        lead?.id || null,
+        estimateNo,
+        estimateDate,
+        job?.internalNumber || null,
+        lead?.clientNumber || null,
+        customer?.name || lead?.fullName || lead?.name || null,
+        customer?.companyName || null,
+        customer?.address || lead?.brief?.realizationAddress || null,
+        customer?.ico || lead?.brief?.companyIco || null,
+        'standard',
         title,
         tradeType,
         buildingType,
         ESTIMATE_STATUS.DRAFT,
         'CZK',
         21,
-        lead.brief?.summaryText || '',
+        lead?.brief?.summaryText || '',
+        '',
       ]
     )
     return normalizeEstimate(q.rows[0], [])
@@ -1768,16 +1971,28 @@ async function createEstimateDraftFromLead(lead) {
   const rows = readArrayFile('estimates')
   const row = {
     id: Date.now(),
-    leadId: lead.id,
-    estimateNo: buildEstimateNo(lead.id),
-    clientNumberSnapshot: lead.clientNumber || null,
+    jobId: job?.id || null,
+    leadId: lead?.id || null,
+    estimateNo,
+    estimateDate,
+    jobNumberSnapshot: job?.internalNumber || null,
+    clientNumberSnapshot: lead?.clientNumber || null,
+    clientNameSnapshot: customer?.name || lead?.fullName || lead?.name || null,
+    companyNameSnapshot: customer?.companyName || null,
+    customerAddressSnapshot: customer?.address || lead?.brief?.realizationAddress || null,
+    customerIcoSnapshot: customer?.ico || lead?.brief?.companyIco || null,
+    estimateKind: 'standard',
     title,
     tradeType,
     buildingType,
     status: ESTIMATE_STATUS.DRAFT,
     currency: 'CZK',
     vatRate: 21,
-    notes: lead.brief?.summaryText || '',
+    notes: lead?.brief?.summaryText || '',
+    note: '',
+    laborTotal: 0,
+    materialTotal: 0,
+    otherCostsTotal: 0,
     subtotalBase: 0,
     subtotalClient: 0,
     totalNoVat: 0,
@@ -1791,6 +2006,19 @@ async function createEstimateDraftFromLead(lead) {
   writeArrayFile('estimates', rows)
   return row
 }
+async function createEstimateDraftFromLead(lead) {
+  if (!lead) throw new Error('lead_not_found')
+  const job = await findJobByLeadId(lead.id)
+  const customer = job?.customerId ? await getCustomerById(job.customerId) : null
+  return createEstimateDraftForContext({ lead, job, customer })
+}
+async function createEstimateDraftFromJob(job) {
+  if (!job) throw new Error('job_not_found')
+  const customer = job.customerId ? await getCustomerById(job.customerId) : null
+  let lead = null
+  if (job.leadId) lead = await getLeadById(job.leadId)
+  return createEstimateDraftForContext({ lead, job, customer })
+}
 async function saveEstimate(id, patch = {}) {
   if (pool) {
     const ex = await dbQuery('SELECT * FROM crm_estimates WHERE id = $1 LIMIT 1', [id])
@@ -1799,6 +2027,13 @@ async function saveEstimate(id, patch = {}) {
     const lines = Array.isArray(patch.lines) ? patch.lines.map((x, idx) => normalizeEstimateLine(x, idx)) : (await getEstimateById(id))?.lines || []
     const totals = computeEstimateTotals(lines, patch.vatRate != null ? patch.vatRate : cur.vat_rate)
     const merged = {
+      estimateDate: patch.estimateDate !== undefined ? patch.estimateDate : cur.estimate_date,
+      jobNumberSnapshot: patch.jobNumberSnapshot !== undefined ? patch.jobNumberSnapshot : cur.job_number_snapshot,
+      clientNameSnapshot: patch.clientNameSnapshot !== undefined ? patch.clientNameSnapshot : cur.client_name_snapshot,
+      companyNameSnapshot: patch.companyNameSnapshot !== undefined ? patch.companyNameSnapshot : cur.company_name_snapshot,
+      customerAddressSnapshot: patch.customerAddressSnapshot !== undefined ? patch.customerAddressSnapshot : cur.customer_address_snapshot,
+      customerIcoSnapshot: patch.customerIcoSnapshot !== undefined ? patch.customerIcoSnapshot : cur.customer_ico_snapshot,
+      estimateKind: patch.estimateKind !== undefined ? patch.estimateKind : cur.estimate_kind,
       title: patch.title != null ? String(patch.title || '').trim() : cur.title,
       tradeType: patch.tradeType != null ? String(patch.tradeType || '').trim() : cur.trade_type,
       buildingType: patch.buildingType !== undefined ? (patch.buildingType ? String(patch.buildingType).trim() : null) : cur.building_type,
@@ -1806,15 +2041,23 @@ async function saveEstimate(id, patch = {}) {
       currency: patch.currency != null ? String(patch.currency || '').trim() : cur.currency,
       vatRate: patch.vatRate != null ? roundMoney(patch.vatRate) : roundMoney(cur.vat_rate),
       notes: patch.notes !== undefined ? String(patch.notes || '') : String(cur.notes || ''),
+      note: patch.note !== undefined ? String(patch.note || '') : String(cur.note || ''),
       clientNumberSnapshot: patch.clientNumberSnapshot !== undefined ? (patch.clientNumberSnapshot || null) : cur.client_number_snapshot,
     }
     await dbQuery(
       `UPDATE crm_estimates
-       SET client_number_snapshot=$1,title=$2,trade_type=$3,building_type=$4,status=$5,currency=$6,vat_rate=$7,notes=$8,
-           subtotal_base=$9,subtotal_client=$10,total_no_vat=$11,vat_amount=$12,total_with_vat=$13,updated_at=now()
-       WHERE id=$14`,
+       SET estimate_date=$1,job_number_snapshot=$2,client_number_snapshot=$3,client_name_snapshot=$4,company_name_snapshot=$5,customer_address_snapshot=$6,customer_ico_snapshot=$7,estimate_kind=$8,title=$9,trade_type=$10,building_type=$11,status=$12,currency=$13,vat_rate=$14,notes=$15,note=$16,
+           labor_total=$17,material_total=$18,other_costs_total=$19,subtotal_base=$20,subtotal_client=$21,total_no_vat=$22,vat_amount=$23,total_with_vat=$24,updated_at=now()
+       WHERE id=$25`,
       [
+        merged.estimateDate,
+        merged.jobNumberSnapshot,
         merged.clientNumberSnapshot,
+        merged.clientNameSnapshot,
+        merged.companyNameSnapshot,
+        merged.customerAddressSnapshot,
+        merged.customerIcoSnapshot,
+        merged.estimateKind,
         merged.title,
         merged.tradeType,
         merged.buildingType,
@@ -1822,6 +2065,10 @@ async function saveEstimate(id, patch = {}) {
         merged.currency,
         merged.vatRate,
         merged.notes,
+        merged.note,
+        totals.laborTotal,
+        totals.materialTotal,
+        totals.otherCostsTotal,
         totals.subtotalBase,
         totals.subtotalClient,
         totals.totalNoVat,
@@ -1835,9 +2082,9 @@ async function saveEstimate(id, patch = {}) {
       for (const line of lines) {
         await dbQuery(
           `INSERT INTO crm_estimate_lines
-          (estimate_id, catalog_item_id, phase_key, category_key, item_name, unit, quantity, base_price, client_price, total_base, total_client, position_order, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,now(),now())`,
-          [id, line.catalogItemId, line.phaseKey, line.categoryKey, line.itemName, line.unit, line.quantity, line.basePrice, line.clientPrice, line.totalBase, line.totalClient, line.positionOrder]
+          (estimate_id, catalog_item_id, source_catalog_code, line_code, section_type, group_key, group_label, phase_key, category_key, item_name, work_description, material_description, unit, quantity, labor_unit_price, labor_total, material_unit_price, material_total, line_total, base_price, client_price, total_base, total_client, position_order, created_at, updated_at)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,now(),now())`,
+          [id, line.catalogItemId, line.sourceCatalogCode, line.lineCode, line.sectionType, line.groupKey, line.groupLabel, line.phaseKey, line.categoryKey, line.itemName, line.workDescription, line.materialDescription, line.unit, line.quantity, line.laborUnitPrice, line.laborTotal, line.materialUnitPrice, line.materialTotal, line.lineTotal, line.basePrice, line.clientPrice, line.totalBase, line.totalClient, line.positionOrder]
         )
       }
     }
@@ -1853,6 +2100,9 @@ async function saveEstimate(id, patch = {}) {
     ...current,
     ...patch,
     lines,
+    laborTotal: totals.laborTotal,
+    materialTotal: totals.materialTotal,
+    otherCostsTotal: totals.otherCostsTotal,
     subtotalBase: totals.subtotalBase,
     subtotalClient: totals.subtotalClient,
     totalNoVat: totals.totalNoVat,
@@ -3265,6 +3515,7 @@ app.post('/api/crm/catalog/import', authMiddleware, roleGuard(['admin', 'manager
 app.get('/api/crm/estimates', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
   const estimates = await listEstimates({
     leadId: req.query?.leadId ? Number(req.query.leadId) : null,
+    jobId: req.query?.jobId ? Number(req.query.jobId) : null,
     status: req.query?.status ? String(req.query.status) : '',
   })
   return res.json({ ok: true, estimates })
@@ -3283,10 +3534,23 @@ app.post('/api/crm/estimates/from-lead', authMiddleware, roleGuard(['admin', 'ma
   if (!Number.isFinite(leadId)) return res.status(400).json({ ok: false, error: 'leadId is required' })
   const lead = await getLeadById(leadId)
   if (!lead) return res.status(404).json({ ok: false, error: 'Lead not found' })
-  const existing = (await listEstimates({ leadId })).find((x) => String(x.status || '') !== ESTIMATE_STATUS.ARCHIVED)
+  const job = await findJobByLeadId(leadId)
+  const existing = (await listEstimates({ leadId, jobId: job?.id || null })).find((x) => String(x.status || '') !== ESTIMATE_STATUS.ARCHIVED)
   if (existing) return res.json({ ok: true, estimate: existing, reused: true })
-  const estimate = await createEstimateDraftFromLead(lead)
+  const estimate = job ? await createEstimateDraftFromJob(job) : await createEstimateDraftFromLead(lead)
   await insertAudit(req.auth?.email || null, 'estimate_created', 'estimate', estimate.id, { leadId, estimateNo: estimate.estimateNo })
+  return res.json({ ok: true, estimate, reused: false })
+})
+
+app.post('/api/crm/estimates/from-job', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const jobId = Number(req.body?.jobId)
+  if (!Number.isFinite(jobId)) return res.status(400).json({ ok: false, error: 'jobId is required' })
+  const job = await getJobById(jobId)
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' })
+  const existing = (await listEstimates({ jobId })).find((x) => String(x.status || '') !== ESTIMATE_STATUS.ARCHIVED)
+  if (existing) return res.json({ ok: true, estimate: existing, reused: true })
+  const estimate = await createEstimateDraftFromJob(job)
+  await insertAudit(req.auth?.email || null, 'estimate_created_from_job', 'estimate', estimate.id, { jobId, estimateNo: estimate.estimateNo })
   return res.json({ ok: true, estimate, reused: false })
 })
 
@@ -3297,6 +3561,44 @@ app.patch('/api/crm/estimates/:id', authMiddleware, roleGuard(['admin', 'manager
   if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
   await insertAudit(req.auth?.email || null, 'estimate_updated', 'estimate', id, req.body || {})
   return res.json({ ok: true, estimate })
+})
+
+app.post('/api/crm/estimates/:id/build-documents', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+  const estimate = await getEstimateById(id)
+  if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
+  const job = estimate.jobId ? await getJobById(estimate.jobId) : null
+  const customer = job?.customerId ? await getCustomerById(job.customerId) : null
+  let lead = null
+  if (estimate.leadId) lead = await getLeadById(estimate.leadId)
+  try {
+    const xlsxPath = await buildEstimateXlsxFile({ estimate, lead, job, customer })
+    const pdfResult = await convertXlsxToPdfIfPossible(xlsxPath)
+    const docs = []
+    docs.push(await addJobDocument(job?.id || 0, { documentType: 'kalkulace', fileName: path.basename(xlsxPath), filePath: xlsxPath, fileUrl: publicFileUrl(xlsxPath), storageKey: xlsxPath, status: 'created', version: 1, uploadedBy: 'system', source: 'estimate_builder', isFinal: true }))
+    if (pdfResult.ok) {
+      docs.push(await addJobDocument(job?.id || 0, { documentType: 'kalkulace', fileName: path.basename(pdfResult.pdfPath), filePath: pdfResult.pdfPath, fileUrl: publicFileUrl(pdfResult.pdfPath), storageKey: pdfResult.pdfPath, status: 'created', version: 1, uploadedBy: 'system', source: 'estimate_builder', isFinal: true }))
+    }
+    if (job?.id) {
+      await addJobEvent(job.id, { eventType: 'document_added', eventCode: 'estimate_documents_built', actorType: 'system', title: 'Rozpočet exportován', message: 'Systém vygeneroval Excel/PDF rozpočtu', metadata: { estimateId: id, xlsx: path.basename(xlsxPath), pdf: pdfResult.ok ? path.basename(pdfResult.pdfPath) : null } })
+    }
+    return res.json({ ok: true, estimate, files: docs, pdf: pdfResult })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: 'Failed to build estimate documents', details: String(e?.message || e) })
+  }
+})
+
+app.get('/api/crm/estimates/:id/file/:kind', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  const id = Number(req.params.id)
+  const kind = String(req.params.kind || '').trim().toLowerCase()
+  if (!Number.isFinite(id) || !['xlsx','pdf'].includes(kind)) return res.status(400).json({ ok: false, error: 'Invalid params' })
+  const estimate = await getEstimateById(id)
+  if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
+  const safe = String(estimate.estimateNo || `rozpocet-${estimate.id}`).replace(/[^\w.-]+/g, '_')
+  const filePath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.${kind}`)
+  if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: 'File not found' })
+  return res.download(filePath, path.basename(filePath))
 })
 
 app.get('/api/crm/suppliers', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
