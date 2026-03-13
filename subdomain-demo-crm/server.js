@@ -80,6 +80,34 @@ const ESTIMATE_STATUS = {
   ARCHIVED: 'archived',
 }
 
+const JOB_STAGES = [
+  'nova_poptavka',
+  'podklady',
+  'zpracovani_nabidky',
+  'nabidka_odeslana',
+  'schvaleni_objednavka',
+  'zaloha_priprava',
+  'realizace',
+  'predani_fakturace',
+  'dokonceno',
+]
+const JOB_STAGE_LABELS = {
+  nova_poptavka: 'Nová poptávka',
+  podklady: 'Podklady od klienta',
+  zpracovani_nabidky: 'Zpracování nabídky',
+  nabidka_odeslana: 'Nabídka odeslána',
+  schvaleni_objednavka: 'Schválení / objednávka',
+  zaloha_priprava: 'Záloha / příprava',
+  realizace: 'Realizace zakázky',
+  predani_fakturace: 'Předání / fakturace',
+  dokonceno: 'Dokončeno / uzavřeno',
+}
+const JOB_PRIORITIES = ['low', 'normal', 'high', 'urgent']
+const RISK_LEVELS = ['none', 'approaching', 'overdue', 'invoice_overdue']
+const WAITING_FOR_OPTIONS = ['client', 'internal_sales', 'accountant', 'realization_team', 'signature', 'payment', 'none']
+const BLOCKING_FACTORS = ['missing_form', 'waiting_offer_response', 'waiting_signature', 'waiting_advance_payment', 'missing_contract', 'missing_material', 'missing_protocol', 'overdue_invoice', 'none']
+const REALIZATION_STATUSES = ['priprava', 'realizace', 'kontrola', 'dokoncovani']
+
 const hasPg = Boolean(DB_URL)
 if (IS_PROD && !hasPg) {
   throw new Error('CRM_DATABASE_URL (or DATABASE_URL) is required in production.')
@@ -2045,6 +2073,372 @@ function publicError(lang, key) {
   return dict[key]?.[safe] || 'Validation error'
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   ZAKAZKA PIPELINE: customers, jobs, documents, events, tasks
+   ══════════════════════════════════════════════════════════════════ */
+
+function buildCustomerNumber() {
+  return `KL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+}
+function buildJobNumber() {
+  return `ZAK-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+}
+function normalizeCustomer(row) {
+  if (!row) return null
+  return {
+    id: Number(row.id),
+    name: row.name || '',
+    companyName: row.company_name || null,
+    ico: row.ico || null,
+    dic: row.dic || null,
+    clientType: row.client_type || 'osoba',
+    phone: row.phone || null,
+    email: row.email || null,
+    address: row.address || null,
+    aresData: row.ares_data || null,
+    internalNumber: row.internal_number || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+async function createCustomer(p) {
+  if (pool) {
+    const q = await dbQuery(
+      `INSERT INTO crm_customers (name,company_name,ico,dic,client_type,phone,email,address,ares_data,internal_number,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now(),now()) RETURNING *`,
+      [p.name||'',p.companyName||null,p.ico||null,p.dic||null,p.clientType||'osoba',p.phone||null,p.email||null,p.address||null,p.aresData?JSON.stringify(p.aresData):null,p.internalNumber||buildCustomerNumber()]
+    )
+    return normalizeCustomer(q.rows[0])
+  }
+  const rows = readArrayFile('customers')
+  const row = { id: Date.now(), name: p.name||'', company_name: p.companyName||null, ico: p.ico||null, dic: p.dic||null, client_type: p.clientType||'osoba', phone: p.phone||null, email: p.email||null, address: p.address||null, ares_data: p.aresData||null, internal_number: p.internalNumber||buildCustomerNumber(), created_at: nowIso(), updated_at: nowIso() }
+  rows.unshift(row)
+  writeArrayFile('customers', rows)
+  return normalizeCustomer(row)
+}
+async function getCustomerById(id) {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_customers WHERE id=$1',[id]); return q.rowCount ? normalizeCustomer(q.rows[0]) : null }
+  return normalizeCustomer(readArrayFile('customers').find(x => Number(x.id) === Number(id)) || null)
+}
+async function listCustomers() {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_customers ORDER BY created_at DESC LIMIT 2000'); return q.rows.map(normalizeCustomer) }
+  return readArrayFile('customers').map(normalizeCustomer)
+}
+async function findCustomerByEmail(email) {
+  if (!email) return null
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_customers WHERE lower(email)=$1 LIMIT 1',[email.toLowerCase()]); return q.rowCount ? normalizeCustomer(q.rows[0]) : null }
+  return normalizeCustomer(readArrayFile('customers').find(x => String(x.email||'').toLowerCase() === email.toLowerCase()) || null)
+}
+
+function normalizeJob(row) {
+  if (!row) return null
+  const pipelineStage = row.pipeline_stage || row.stage || 'nova_poptavka'
+  return {
+    id: Number(row.id),
+    customerId: row.customer_id != null ? Number(row.customer_id) : null,
+    leadId: row.lead_id != null ? Number(row.lead_id) : null,
+    internalNumber: row.internal_number || null,
+    title: row.title || '',
+    jobType: row.job_type || 'kombinovana',
+    source: row.source || 'web_form',
+    stage: pipelineStage,
+    pipelineStage,
+    receivedAt: row.received_at || null,
+    formSentAt: row.form_sent_at || null,
+    formReceivedAt: row.form_received_at || null,
+    offerSentAt: row.offer_sent_at || null,
+    offerApprovedAt: row.offer_approved_at || null,
+    orderSignedAt: row.order_signed_at || null,
+    depositPaidAt: row.deposit_paid_at || null,
+    plannedStart: row.planned_start || null,
+    plannedEnd: row.planned_end || null,
+    actualStart: row.actual_start || null,
+    actualEnd: row.actual_end || null,
+    handoverAt: row.handover_at || null,
+    closedAt: row.closed_at || null,
+    totalPrice: roundMoney(row.total_price),
+    depositAmount: roundMoney(row.deposit_amount),
+    depositInvoiceId: row.deposit_invoice_id || null,
+    depositPaid: Boolean(row.deposit_paid),
+    finalInvoiceId: row.final_invoice_id || null,
+    finalPaid: Boolean(row.final_paid),
+    costs: roundMoney(row.costs),
+    profit: roundMoney(row.profit),
+    responsiblePerson: row.responsible_person || null,
+    clientContactPerson: row.client_contact_person || null,
+    priority: row.priority || 'normal',
+    blockingFactor: row.blocking_factor || 'none',
+    waitingFor: row.waiting_for || 'none',
+    riskLevel: row.risk_level || 'none',
+    nextAction: row.next_action || null,
+    nextActionDueAt: row.next_action_due_at || null,
+    lastClientContactAt: row.last_client_contact_at || null,
+    lastInternalActionAt: row.last_internal_action_at || null,
+    stalledAt: row.stalled_at || null,
+    stalledReason: row.stalled_reason || null,
+    orderSent: Boolean(row.order_sent),
+    clientSigned: Boolean(row.client_signed),
+    weSigned: Boolean(row.we_signed),
+    realizationStatus: row.realization_status || 'priprava',
+    handoverPlanned: Boolean(row.handover_planned),
+    handoverProtocolReady: Boolean(row.handover_protocol_ready),
+    handoverSigned: Boolean(row.handover_signed),
+    notes: row.notes || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+async function createJob(p) {
+  const pipelineStage = p.pipelineStage || p.stage || 'nova_poptavka'
+  if (pool) {
+    const q = await dbQuery(
+      `INSERT INTO crm_jobs (customer_id,lead_id,internal_number,title,job_type,source,stage,pipeline_stage,received_at,responsible_person,client_contact_person,priority,waiting_for,blocking_factor,risk_level,next_action,next_action_due_at,last_client_contact_at,last_internal_action_at,notes,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,now(),now()) RETURNING *`,
+      [p.customerId||null,p.leadId||null,p.internalNumber||buildJobNumber(),p.title||'Nová zakázka',p.jobType||'kombinovana',p.source||'web_form',pipelineStage,pipelineStage,p.responsiblePerson||null,p.clientContactPerson||null,p.priority||'normal',p.waitingFor||'client',p.blockingFactor||'missing_form',p.riskLevel||'none',p.nextAction||'Zkontrolovat novou poptávku',p.nextActionDueAt||null,p.lastClientContactAt||null,p.lastInternalActionAt||nowIso(),p.notes||null]
+    )
+    return normalizeJob(q.rows[0])
+  }
+  const rows = readArrayFile('jobs')
+  const row = { id: Date.now(), customer_id: p.customerId||null, lead_id: p.leadId||null, internal_number: p.internalNumber||buildJobNumber(), title: p.title||'Nová zakázka', job_type: p.jobType||'kombinovana', source: p.source||'web_form', stage: pipelineStage, pipeline_stage: pipelineStage, received_at: nowIso(), responsible_person: p.responsiblePerson||null, client_contact_person: p.clientContactPerson||null, priority: p.priority||'normal', waiting_for: p.waitingFor||'client', blocking_factor: p.blockingFactor||'missing_form', risk_level: p.riskLevel||'none', next_action: p.nextAction||'Zkontrolovat novou poptávku', next_action_due_at: p.nextActionDueAt||null, last_client_contact_at: p.lastClientContactAt||null, last_internal_action_at: nowIso(), stalled_at: null, stalled_reason: null, notes: p.notes||null, created_at: nowIso(), updated_at: nowIso(), total_price: 0, deposit_amount: 0, deposit_paid: false, final_paid: false, costs: 0, profit: 0, order_sent: false, client_signed: false, we_signed: false, realization_status: 'priprava', handover_planned: false, handover_protocol_ready: false, handover_signed: false }
+  rows.unshift(row)
+  writeArrayFile('jobs', rows)
+  return normalizeJob(row)
+}
+async function getJobById(id) {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_jobs WHERE id=$1',[id]); return q.rowCount ? normalizeJob(q.rows[0]) : null }
+  return normalizeJob(readArrayFile('jobs').find(x => Number(x.id) === Number(id)) || null)
+}
+async function listJobs(filters = {}) {
+  if (pool) {
+    const w = []; const p = []
+    function a(sql, val) { p.push(val); w.push(sql.replace('?', `$${p.length}`)) }
+    if (filters.stage || filters.pipelineStage) a('pipeline_stage=?', filters.pipelineStage || filters.stage)
+    if (filters.customerId) a('customer_id=?', Number(filters.customerId))
+    if (filters.priority) a('priority=?', filters.priority)
+    if (filters.riskLevel) a('risk_level=?', filters.riskLevel)
+    if (filters.waitingFor) a('waiting_for=?', filters.waitingFor)
+    const ws = w.length ? `WHERE ${w.join(' AND ')}` : ''
+    const q = await dbQuery(`SELECT * FROM crm_jobs ${ws} ORDER BY created_at DESC LIMIT 2000`, p)
+    return q.rows.map(normalizeJob)
+  }
+  let rows = readArrayFile('jobs')
+  if (filters.stage || filters.pipelineStage) rows = rows.filter(x => (x.pipeline_stage || x.stage) === (filters.pipelineStage || filters.stage))
+  if (filters.customerId) rows = rows.filter(x => Number(x.customer_id) === Number(filters.customerId))
+  if (filters.waitingFor) rows = rows.filter(x => (x.waiting_for || 'none') === filters.waitingFor)
+  return rows.map(normalizeJob)
+}
+async function updateJob(id, patch) {
+  if (pool) {
+    const ex = await dbQuery('SELECT * FROM crm_jobs WHERE id=$1',[id])
+    if (!ex.rowCount) return null
+    const c = ex.rows[0]
+    const fields = ['title','job_type','stage','pipeline_stage','form_sent_at','form_received_at','offer_sent_at','offer_approved_at','order_signed_at','deposit_paid_at','planned_start','planned_end','actual_start','actual_end','handover_at','closed_at','total_price','deposit_amount','deposit_invoice_id','deposit_paid','final_invoice_id','final_paid','costs','profit','responsible_person','client_contact_person','priority','blocking_factor','waiting_for','risk_level','next_action','next_action_due_at','last_client_contact_at','last_internal_action_at','stalled_at','stalled_reason','order_sent','client_signed','we_signed','realization_status','handover_planned','handover_protocol_ready','handover_signed','notes']
+    const camel = (s) => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
+    const vals = []; const sets = []
+    for (const f of fields) {
+      const key = camel(f)
+      if (patch[key] !== undefined) { vals.push(patch[key]); sets.push(`${f}=$${vals.length}`) }
+    }
+    if (patch.pipelineStage !== undefined && patch.stage === undefined) { vals.push(patch.pipelineStage); sets.push(`stage=$${vals.length}`) }
+    if (patch.stage !== undefined && patch.pipelineStage === undefined) { vals.push(patch.stage); sets.push(`pipeline_stage=$${vals.length}`) }
+    if (!sets.length) return normalizeJob(c)
+    vals.push(id)
+    const q = await dbQuery(`UPDATE crm_jobs SET ${sets.join(',')},updated_at=now() WHERE id=$${vals.length} RETURNING *`, vals)
+    return normalizeJob(q.rows[0])
+  }
+  const rows = readArrayFile('jobs')
+  const idx = rows.findIndex(x => Number(x.id) === Number(id))
+  if (idx < 0) return null
+  const camel = (s) => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
+  for (const key of Object.keys(patch)) {
+    const snk = key.replace(/[A-Z]/g, l => '_' + l.toLowerCase())
+    rows[idx][snk] = patch[key]
+  }
+  rows[idx].updated_at = nowIso()
+  writeArrayFile('jobs', rows)
+  return normalizeJob(rows[idx])
+}
+async function findJobByLeadId(leadId) {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_jobs WHERE lead_id=$1 ORDER BY created_at DESC LIMIT 1',[leadId]); return q.rowCount ? normalizeJob(q.rows[0]) : null }
+  return normalizeJob(readArrayFile('jobs').find(x => Number(x.lead_id) === Number(leadId)) || null)
+}
+
+function normalizeJobDoc(row) { return { id: Number(row.id), jobId: Number(row.job_id), docType: row.document_type || row.doc_type, fileName: row.file_name, filePath: row.file_path||null, fileUrl: row.file_url||null, storageKey: row.storage_key || null, status: row.status || 'created', version: Number(row.version || 1), uploadedBy: row.uploaded_by || null, source: row.source || null, signatureMode: row.signature_mode || null, isFinal: Boolean(row.is_final), uploadedAt: row.uploaded_at || row.created_at, sentAt: row.sent_at || null, signedAt: row.signed_at || null } }
+async function addJobDocument(jobId, doc) {
+  if (pool) { const q = await dbQuery('INSERT INTO crm_job_documents (job_id,doc_type,document_type,file_name,file_path,file_url,storage_key,status,version,sent_at,signed_at,uploaded_by,source,signature_mode,is_final,uploaded_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now()) RETURNING *',[jobId,doc.documentType||doc.docType||'other',doc.documentType||doc.docType||'other',doc.fileName||'',doc.filePath||null,doc.fileUrl||null,doc.storageKey||null,doc.status||'created',doc.version||1,doc.sentAt||null,doc.signedAt||null,doc.uploadedBy||null,doc.source||null,doc.signatureMode||null,Boolean(doc.isFinal)]); return normalizeJobDoc(q.rows[0]) }
+  const rows = readArrayFile('job_documents'); const r = { id: Date.now(), job_id: jobId, doc_type: doc.documentType||doc.docType||'other', document_type: doc.documentType||doc.docType||'other', file_name: doc.fileName||'', file_path: doc.filePath||null, file_url: doc.fileUrl||null, storage_key: doc.storageKey||null, status: doc.status||'created', version: doc.version||1, sent_at: doc.sentAt||null, signed_at: doc.signedAt||null, uploaded_by: doc.uploadedBy||null, source: doc.source||null, signature_mode: doc.signatureMode||null, is_final: Boolean(doc.isFinal), uploaded_at: nowIso() }; rows.unshift(r); writeArrayFile('job_documents', rows); return normalizeJobDoc(r)
+}
+async function listJobDocuments(jobId) {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_job_documents WHERE job_id=$1 ORDER BY uploaded_at DESC',[jobId]); return q.rows.map(normalizeJobDoc) }
+  return readArrayFile('job_documents').filter(x => Number(x.job_id) === Number(jobId)).map(normalizeJobDoc)
+}
+
+function normalizeJobEvent(row) { return { id: Number(row.id), jobId: Number(row.job_id), eventType: row.event_type, eventCode: row.event_code || null, title: row.title, description: row.description||null, actor: row.actor||null, actorType: row.actor_type || 'user', actorId: row.actor_id || null, message: row.message || row.description || null, metadata: row.metadata || {}, createdAt: row.created_at } }
+async function addJobEvent(jobId, ev) {
+  if (pool) { const q = await dbQuery('INSERT INTO crm_job_events (job_id,event_type,event_code,title,description,actor,actor_type,actor_id,message,metadata,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now()) RETURNING *',[jobId,ev.eventType||'note',ev.eventCode||null,ev.title||'',ev.description||null,ev.actor||null,ev.actorType||'user',ev.actorId||null,ev.message||ev.description||null,JSON.stringify(ev.metadata||{})]); return normalizeJobEvent(q.rows[0]) }
+  const rows = readArrayFile('job_events'); const r = { id: Date.now(), job_id: jobId, event_type: ev.eventType||'note', event_code: ev.eventCode||null, title: ev.title||'', description: ev.description||null, actor: ev.actor||null, actor_type: ev.actorType||'user', actor_id: ev.actorId||null, message: ev.message||ev.description||null, metadata: ev.metadata||{}, created_at: nowIso() }; rows.unshift(r); writeArrayFile('job_events', rows); return normalizeJobEvent(r)
+}
+async function listJobEvents(jobId) {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_job_events WHERE job_id=$1 ORDER BY created_at DESC LIMIT 500',[jobId]); return q.rows.map(normalizeJobEvent) }
+  return readArrayFile('job_events').filter(x => Number(x.job_id) === Number(jobId)).map(normalizeJobEvent)
+}
+
+function normalizeJobTask(row) { return { id: Number(row.id), jobId: Number(row.job_id), taskType: row.task_type || 'manual', title: row.title, description: row.description || null, status: row.status||'pending', assignedTo: row.assigned_to||null, dueDate: row.due_date||null, completedAt: row.completed_at||null, isSystemGenerated: Boolean(row.is_system_generated), priority: row.priority || 'normal', createdAt: row.created_at } }
+async function addJobTask(jobId, t) {
+  if (pool) { const q = await dbQuery('INSERT INTO crm_job_tasks (job_id,task_type,title,description,status,assigned_to,due_date,completed_at,is_system_generated,priority,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now()) RETURNING *',[jobId,t.taskType||'manual',t.title||'',t.description||null,t.status||'pending',t.assignedTo||null,t.dueDate||null,t.completedAt||null,Boolean(t.isSystemGenerated),t.priority||'normal']); return normalizeJobTask(q.rows[0]) }
+  const rows = readArrayFile('job_tasks'); const r = { id: Date.now(), job_id: jobId, task_type: t.taskType||'manual', title: t.title||'', description: t.description||null, status: t.status||'pending', assigned_to: t.assignedTo||null, due_date: t.dueDate||null, completed_at: t.completedAt||null, is_system_generated: Boolean(t.isSystemGenerated), priority: t.priority||'normal', created_at: nowIso() }; rows.unshift(r); writeArrayFile('job_tasks', rows); return normalizeJobTask(r)
+}
+async function updateJobTask(taskId, patch) {
+  if (pool) {
+    const sets = []; const vals = []
+    if (patch.status !== undefined) { vals.push(patch.status); sets.push(`status=$${vals.length}`) }
+    if (patch.completedAt !== undefined) { vals.push(patch.completedAt); sets.push(`completed_at=$${vals.length}`) }
+    if (patch.title !== undefined) { vals.push(patch.title); sets.push(`title=$${vals.length}`) }
+    if (patch.taskType !== undefined) { vals.push(patch.taskType); sets.push(`task_type=$${vals.length}`) }
+    if (patch.description !== undefined) { vals.push(patch.description); sets.push(`description=$${vals.length}`) }
+    if (patch.assignedTo !== undefined) { vals.push(patch.assignedTo); sets.push(`assigned_to=$${vals.length}`) }
+    if (patch.dueDate !== undefined) { vals.push(patch.dueDate); sets.push(`due_date=$${vals.length}`) }
+    if (patch.isSystemGenerated !== undefined) { vals.push(Boolean(patch.isSystemGenerated)); sets.push(`is_system_generated=$${vals.length}`) }
+    if (patch.priority !== undefined) { vals.push(patch.priority); sets.push(`priority=$${vals.length}`) }
+    if (!sets.length) return null
+    vals.push(taskId)
+    const q = await dbQuery(`UPDATE crm_job_tasks SET ${sets.join(',')} WHERE id=$${vals.length} RETURNING *`, vals)
+    return q.rowCount ? normalizeJobTask(q.rows[0]) : null
+  }
+  const rows = readArrayFile('job_tasks'); const idx = rows.findIndex(x => Number(x.id) === Number(taskId)); if (idx < 0) return null
+  Object.assign(rows[idx], patch); writeArrayFile('job_tasks', rows); return normalizeJobTask(rows[idx])
+}
+async function listJobTasks(jobId) {
+  if (pool) { const q = await dbQuery('SELECT * FROM crm_job_tasks WHERE job_id=$1 ORDER BY created_at ASC',[jobId]); return q.rows.map(normalizeJobTask) }
+  return readArrayFile('job_tasks').filter(x => Number(x.job_id) === Number(jobId)).map(normalizeJobTask)
+}
+
+function daysBetween(from, to) {
+  if (!from) return null
+  const a = new Date(from); const b = to ? new Date(to) : new Date()
+  return Math.ceil((b.getTime() - a.getTime()) / 86400000)
+}
+function computeJobTimers(job) {
+  if (!job) return {}
+  const lastClientContact = job.lastClientContactAt || job.formSentAt || job.offerSentAt || job.receivedAt
+  return {
+    daysWithoutClientReply: (job.waitingFor === 'client' && lastClientContact) ? daysBetween(lastClientContact) : null,
+    daysSinceOfferSent: job.offerSentAt ? daysBetween(job.offerSentAt) : null,
+    daysToStart: job.plannedStart ? Math.ceil((new Date(job.plannedStart).getTime() - Date.now()) / 86400000) : null,
+    daysOverdue: (job.plannedEnd && !job.closedAt) ? Math.max(0, Math.ceil((Date.now() - new Date(job.plannedEnd).getTime()) / 86400000)) : null,
+    daysToInvoiceDue: null,
+    daysSinceLastInternalAction: job.lastInternalActionAt ? daysBetween(job.lastInternalActionAt) : null,
+    daysStalled: job.stalledAt ? daysBetween(job.stalledAt) : null,
+  }
+}
+function computeJobRisks(job) {
+  if (!job) return { riskLevel: 'none', blockingFactor: 'none' }
+  const timers = computeJobTimers(job)
+  let risk = job.riskLevel || 'none'
+  let blocking = job.blockingFactor || 'none'
+  if (timers.daysOverdue != null && timers.daysOverdue > 0) risk = 'overdue'
+  else if (timers.daysToStart != null && timers.daysToStart <= 3 && timers.daysToStart >= 0) risk = 'approaching'
+  const stage = job.pipelineStage || job.stage
+  if (stage === 'nova_poptavka' && !job.formSentAt) blocking = 'missing_form'
+  if (stage === 'podklady' && !job.formReceivedAt) blocking = 'missing_form'
+  if (stage === 'nabidka_odeslana' && !job.offerApprovedAt) blocking = 'waiting_offer_response'
+  if (stage === 'schvaleni_objednavka' && !job.clientSigned) blocking = job.orderSent ? 'waiting_signature' : 'missing_contract'
+  if (stage === 'zaloha_priprava' && !job.depositPaid) blocking = 'waiting_advance_payment'
+  if (stage === 'zaloha_priprava' && job.depositPaid && job.notes && /material/i.test(job.notes) && !job.actualStart) blocking = 'missing_material'
+  if (stage === 'predani_fakturace' && !job.handoverSigned) blocking = 'missing_protocol'
+  if (job.finalInvoiceId && !job.finalPaid && timers.daysOverdue != null && timers.daysOverdue > 0) blocking = 'overdue_invoice'
+  if (!blocking) blocking = 'none'
+  return { riskLevel: risk, blockingFactor: blocking }
+}
+function enrichJob(job) {
+  if (!job) return null
+  const timers = computeJobTimers(job)
+  const risks = computeJobRisks(job)
+  const nextAction = job.nextAction || (
+    risks.blockingFactor === 'missing_form' ? 'Odeslat / dohledat formulář' :
+    risks.blockingFactor === 'waiting_offer_response' ? 'Zavolat klientovi kvůli nabídce' :
+    risks.blockingFactor === 'waiting_signature' ? 'Urgovat podpis objednávky' :
+    risks.blockingFactor === 'waiting_advance_payment' ? 'Zkontrolovat zálohovou platbu' :
+    risks.blockingFactor === 'missing_contract' ? 'Připravit a odeslat objednávku' :
+    risks.blockingFactor === 'missing_material' ? 'Objednat materiál' :
+    risks.blockingFactor === 'missing_protocol' ? 'Připravit předávací protokol' :
+    risks.blockingFactor === 'overdue_invoice' ? 'Řešit fakturu po splatnosti' :
+    'Pokračovat v aktuální etapě'
+  )
+  return { ...job, timers, computedRisk: risks.riskLevel, computedBlocking: risks.blockingFactor, nextAction }
+}
+async function listProblems() {
+  const jobs = await listJobs()
+  return jobs.map(enrichJob).filter(j => {
+    if ((j.pipelineStage || j.stage) === 'dokonceno') return false
+    const t = j.timers || {}
+    if (t.daysWithoutClientReply != null && t.daysWithoutClientReply >= 3) return true
+    if (t.daysSinceOfferSent != null && t.daysSinceOfferSent >= 5 && (j.pipelineStage || j.stage) === 'nabidka_odeslana') return true
+    if (t.daysToStart != null && t.daysToStart <= 3 && t.daysToStart >= 0) return true
+    if (t.daysOverdue != null && t.daysOverdue > 0) return true
+    if (j.computedBlocking && j.computedBlocking !== 'none') return true
+    if (j.computedRisk !== 'none') return true
+    return false
+  })
+}
+
+function groupProblemsByType(items = []) {
+  const groups = { bez_odpovedi: [], finance: [], dokumenty: [], realizace: [], po_terminu: [] }
+  for (const job of items) {
+    const t = job.timers || {}
+    const blocking = job.computedBlocking || 'none'
+    if (t.daysWithoutClientReply != null && t.daysWithoutClientReply >= 3) { groups.bez_odpovedi.push(job); continue }
+    if (['waiting_advance_payment', 'overdue_invoice'].includes(blocking)) { groups.finance.push(job); continue }
+    if (['missing_form', 'missing_contract', 'missing_protocol', 'waiting_signature'].includes(blocking)) { groups.dokumenty.push(job); continue }
+    if ((job.pipelineStage || job.stage) === 'realizace' || ['missing_material'].includes(blocking)) { groups.realizace.push(job); continue }
+    if (t.daysOverdue != null && t.daysOverdue > 0) { groups.po_terminu.push(job); continue }
+    groups.realizace.push(job)
+  }
+  return groups
+}
+
+function normalizeInvoice(row) {
+  if (!row) return null
+  return {
+    id: Number(row.id),
+    jobId: Number(row.job_id),
+    invoiceType: row.invoice_type || 'advance',
+    fakturoidInvoiceId: row.fakturoid_invoice_id || null,
+    invoiceNumber: row.invoice_number || null,
+    status: row.status || 'draft',
+    amount: roundMoney(row.amount),
+    currency: row.currency || 'CZK',
+    issuedAt: row.issued_at || null,
+    dueAt: row.due_at || null,
+    paidAt: row.paid_at || null,
+    rawPayload: row.raw_payload || null,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+  }
+}
+async function addJobInvoice(jobId, payload) {
+  if (pool) {
+    const q = await dbQuery(
+      `INSERT INTO crm_job_invoices (job_id,invoice_type,fakturoid_invoice_id,invoice_number,status,amount,currency,issued_at,due_at,paid_at,raw_payload,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now()) RETURNING *`,
+      [jobId, payload.invoiceType || 'advance', payload.fakturoidInvoiceId || null, payload.invoiceNumber || null, payload.status || 'draft', roundMoney(payload.amount), payload.currency || 'CZK', payload.issuedAt || null, payload.dueAt || null, payload.paidAt || null, payload.rawPayload ? JSON.stringify(payload.rawPayload) : null]
+    )
+    return normalizeInvoice(q.rows[0])
+  }
+  const rows = readArrayFile('job_invoices')
+  const row = { id: Date.now(), job_id: jobId, invoice_type: payload.invoiceType || 'advance', fakturoid_invoice_id: payload.fakturoidInvoiceId || null, invoice_number: payload.invoiceNumber || null, status: payload.status || 'draft', amount: roundMoney(payload.amount), currency: payload.currency || 'CZK', issued_at: payload.issuedAt || null, due_at: payload.dueAt || null, paid_at: payload.paidAt || null, raw_payload: payload.rawPayload || null, created_at: nowIso(), updated_at: nowIso() }
+  rows.unshift(row)
+  writeArrayFile('job_invoices', rows)
+  return normalizeInvoice(row)
+}
+async function listJobInvoices(jobId) {
+  if (pool) {
+    const q = await dbQuery('SELECT * FROM crm_job_invoices WHERE job_id=$1 ORDER BY created_at DESC', [jobId])
+    return q.rows.map(normalizeInvoice)
+  }
+  return readArrayFile('job_invoices').filter(x => Number(x.job_id) === Number(jobId)).map(normalizeInvoice)
+}
+
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static(path.join(__dirname, 'public')))
@@ -2114,7 +2508,42 @@ async function handleLeadCreate(req, res, forced = {}) {
     const lead = await createLead({ ...(req.body || {}), ...forced })
     const dispatch = await queueLeadDelivery(lead)
     await insertAudit(null, 'lead_created', 'lead', lead.id, { source: lead.source })
-    return res.json({ ok: true, lead: dispatch.lead || lead, dispatch: { whatsapp: dispatch.wa, emailClient: dispatch.mail } })
+
+    let customer = await findCustomerByEmail(lead.email)
+    if (!customer) {
+      customer = await createCustomer({
+        name: lead.fullName || lead.name || '',
+        phone: lead.phone || null,
+        email: lead.email || null,
+        clientType: 'osoba',
+      })
+    }
+    const serviceMap = { 'Електромонтаж': 'elektro', 'Будівельні роботи': 'stavebni', 'Ремонт': 'stavebni' }
+    const job = await createJob({
+      customerId: customer.id,
+      leadId: lead.id,
+      title: `Zakázka ${lead.name || lead.fullName || ''}`.trim(),
+      jobType: serviceMap[lead.serviceType] || 'kombinovana',
+      source: lead.source || 'web_form',
+      stage: 'nova_poptavka',
+      pipelineStage: 'nova_poptavka',
+      waitingFor: 'client',
+      blockingFactor: dispatch.mail?.ok ? 'none' : 'missing_form',
+      nextAction: dispatch.mail?.ok ? 'Čekáme na formulář od klienta' : 'Odeslat informační formulář klientovi',
+      lastClientContactAt: null,
+      lastInternalActionAt: nowIso(),
+      notes: lead.comment || null,
+      formSentAt: dispatch.mail?.ok ? nowIso() : null,
+      nextActionDueAt: dispatch.mail?.ok ? new Date(Date.now() + 3 * 86400000).toISOString() : null,
+    })
+    await addJobEvent(job.id, { eventType: 'stage_change', eventCode: 'job_created_from_lead', actorType: 'system', title: 'Nová poptávka vytvořena', description: `Klient: ${customer.name}, zdroj: ${lead.source || 'web_form'}`, message: 'Systém vytvořil zákazníka a zakázku z nové poptávky', metadata: { leadId: lead.id, customerId: customer.id } })
+    if (dispatch.mail?.ok) {
+      await updateJob(job.id, { formSentAt: nowIso(), lastClientContactAt: nowIso(), waitingFor: 'client', blockingFactor: 'missing_form', nextAction: 'Vyčkat na vyplněný formulář klienta' })
+      await addJobEvent(job.id, { eventType: 'email_sent', eventCode: 'form_sent', actorType: 'system', title: 'Informační formulář odeslán', description: `Email: ${lead.email}`, message: 'Systém odeslal informační formulář klientovi', metadata: { email: lead.email } })
+    }
+    await addJobTask(job.id, { taskType: 'lead_review', title: 'Zkontrolovat novou poptávku', isSystemGenerated: true, priority: 'normal', assignedTo: 'internal_sales' })
+
+    return res.json({ ok: true, lead: dispatch.lead || lead, dispatch: { whatsapp: dispatch.wa, emailClient: dispatch.mail }, job: enrichJob(job), customer })
   } catch (e) {
     const reason = String(e?.message || e)
     if (reason === 'required') return res.status(400).json({ ok: false, error: publicError(lang, 'required') })
@@ -2347,6 +2776,22 @@ app.post('/api/client-brief', async (req, res) => {
         offerDraft = await createOfferDraftFromLead(updatedLead)
       } catch (offerErr) {
         await insertAudit(null, 'offer_auto_create_failed', 'lead', lead.id, { error: String(offerErr?.message || offerErr) })
+      }
+      const linkedJob = await findJobByLeadId(lead.id)
+      if (linkedJob && linkedJob.stage === 'nova_poptavka') {
+        await updateJob(linkedJob.id, {
+          stage: 'podklady',
+          pipelineStage: 'podklady',
+          formReceivedAt: nowIso(),
+          waitingFor: 'internal_sales',
+          blockingFactor: 'none',
+          nextAction: 'Zpracovat podklady a připravit kalkulaci',
+          nextActionDueAt: new Date(Date.now() + 2 * 86400000).toISOString(),
+          lastClientContactAt: nowIso(),
+        })
+        await addJobEvent(linkedJob.id, { eventType: 'stage_change', eventCode: 'brief_received', actorType: 'customer', title: 'Podklady od klienta přijaty', description: `Formulář přijat`, message: 'Klient odeslal informační formulář', metadata: { leadId: lead.id } })
+        await addJobDocument(linkedJob.id, { docType: 'formular', documentType: 'formular', fileName: 'Informační formulář klienta', status: 'received', uploadedBy: 'system', source: 'client_form', isFinal: true })
+        await addJobTask(linkedJob.id, { taskType: 'offer_preparation', title: 'Připravit kalkulaci a návrh nabídky', isSystemGenerated: true, priority: 'high', assignedTo: 'internal_sales', dueDate: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10) })
       }
     }
     const dispatch = await sendBriefToOwner({ company, goal, details: summaryText })
@@ -2911,6 +3356,187 @@ app.post('/api/crm/fakturoid/invoices/create-and-send', authMiddleware, roleGuar
     email: req.body?.email || null,
   })
   return res.json({ ok: true, invoice: result.invoice })
+})
+
+/* ══════════════════════════════════════════════════════════════════
+   ZAKAZKA PIPELINE API ROUTES
+   ══════════════════════════════════════════════════════════════════ */
+
+app.get('/api/crm/pipeline', async (_req, res) => {
+  const jobs = await listJobs()
+  const enriched = jobs.map(enrichJob)
+  const byStage = {}
+  for (const s of JOB_STAGES) byStage[s] = []
+  for (const j of enriched) (byStage[j.pipelineStage] || (byStage[j.pipelineStage] = [])).push(j)
+  const customerIds = [...new Set(enriched.map(j => j.customerId).filter(Boolean))]
+  const customers = {}
+  for (const cid of customerIds) { const c = await getCustomerById(cid); if (c) customers[cid] = c }
+  return res.json({ ok: true, stages: JOB_STAGES, stageLabels: JOB_STAGE_LABELS, byStage, customers })
+})
+
+app.post('/api/crm/customers', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const c = await createCustomer(req.body || {})
+  await insertAudit(req.auth?.email || null, 'customer_created', 'customer', c.id, req.body)
+  return res.json({ ok: true, customer: c })
+})
+app.get('/api/crm/customers', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (_req, res) => {
+  return res.json({ ok: true, customers: await listCustomers() })
+})
+app.get('/api/crm/customers/:id', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  const c = await getCustomerById(Number(req.params.id))
+  if (!c) return res.status(404).json({ ok: false, error: 'Customer not found' })
+  return res.json({ ok: true, customer: c })
+})
+
+app.post('/api/crm/jobs', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const job = await createJob(req.body || {})
+  await addJobEvent(job.id, { eventType: 'stage_change', eventCode: 'job_created', actorType: 'user', title: 'Zakázka vytvořena', description: `Etapa: ${JOB_STAGE_LABELS[job.pipelineStage] || job.pipelineStage}`, actor: req.auth?.email, message: 'Vytvořena nová zakázka', metadata: { pipelineStage: job.pipelineStage } })
+  await insertAudit(req.auth?.email || null, 'job_created', 'job', job.id, req.body)
+  return res.json({ ok: true, job: enrichJob(job) })
+})
+app.get('/api/crm/jobs', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  const jobs = await listJobs({ pipelineStage: req.query?.pipelineStage || req.query?.stage, customerId: req.query?.customerId, priority: req.query?.priority, riskLevel: req.query?.riskLevel, waitingFor: req.query?.waitingFor })
+  return res.json({ ok: true, jobs: jobs.map(enrichJob) })
+})
+app.get('/api/crm/jobs/:id', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  const job = await getJobById(Number(req.params.id))
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' })
+  const customer = job.customerId ? await getCustomerById(job.customerId) : null
+  const events = await listJobEvents(job.id)
+  const documents = await listJobDocuments(job.id)
+  const tasks = await listJobTasks(job.id)
+  const invoices = await listJobInvoices(job.id)
+  return res.json({ ok: true, job: enrichJob(job), customer, events, documents, tasks, invoices })
+})
+app.patch('/api/crm/jobs/:id', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const id = Number(req.params.id)
+  const updated = await updateJob(id, req.body || {})
+  if (!updated) return res.status(404).json({ ok: false, error: 'Job not found' })
+  await insertAudit(req.auth?.email || null, 'job_updated', 'job', id, req.body)
+  return res.json({ ok: true, job: enrichJob(updated) })
+})
+app.post('/api/crm/jobs/:id/move', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const id = Number(req.params.id)
+  const newStage = String(req.body?.stage || '').trim()
+  if (!JOB_STAGES.includes(newStage)) return res.status(400).json({ ok: false, error: `Invalid stage. Must be one of: ${JOB_STAGES.join(', ')}` })
+  const dateFields = {}
+  if (newStage === 'podklady') dateFields.formReceivedAt = nowIso()
+  if (newStage === 'nabidka_odeslana') dateFields.offerSentAt = nowIso()
+  if (newStage === 'schvaleni_objednavka') dateFields.offerApprovedAt = nowIso()
+  if (newStage === 'zaloha_priprava') dateFields.orderSignedAt = nowIso()
+  if (newStage === 'realizace') dateFields.actualStart = new Date().toISOString().slice(0, 10)
+  if (newStage === 'predani_fakturace') dateFields.handoverAt = nowIso()
+  if (newStage === 'dokonceno') dateFields.closedAt = nowIso()
+  const stagePatch = {
+    pipelineStage: newStage,
+    stage: newStage,
+    waitingFor:
+      newStage === 'nova_poptavka' ? 'client' :
+      newStage === 'podklady' ? 'internal_sales' :
+      newStage === 'zpracovani_nabidky' ? 'internal_sales' :
+      newStage === 'nabidka_odeslana' ? 'client' :
+      newStage === 'schvaleni_objednavka' ? 'signature' :
+      newStage === 'zaloha_priprava' ? 'payment' :
+      newStage === 'realizace' ? 'realization_team' :
+      newStage === 'predani_fakturace' ? 'accountant' :
+      'none',
+    blockingFactor:
+      newStage === 'nova_poptavka' ? 'missing_form' :
+      newStage === 'podklady' ? 'none' :
+      newStage === 'zpracovani_nabidky' ? 'none' :
+      newStage === 'nabidka_odeslana' ? 'waiting_offer_response' :
+      newStage === 'schvaleni_objednavka' ? 'waiting_signature' :
+      newStage === 'zaloha_priprava' ? 'waiting_advance_payment' :
+      newStage === 'realizace' ? 'missing_material' :
+      newStage === 'predani_fakturace' ? 'missing_protocol' :
+      'none',
+    nextAction:
+      newStage === 'nova_poptavka' ? 'Kontaktovat klienta a zkontrolovat poptávku' :
+      newStage === 'podklady' ? 'Zkontrolovat podklady od klienta' :
+      newStage === 'zpracovani_nabidky' ? 'Připravit kalkulaci a nabídku' :
+      newStage === 'nabidka_odeslana' ? 'Zavolat klientovi kvůli reakci na nabídku' :
+      newStage === 'schvaleni_objednavka' ? 'Zajistit podpis objednávky' :
+      newStage === 'zaloha_priprava' ? 'Vystavit zálohovou fakturu' :
+      newStage === 'realizace' ? 'Potvrdit termín a připravit realizaci' :
+      newStage === 'predani_fakturace' ? 'Připravit předávací protokol a finální fakturu' :
+      'Uzavřít zakázku',
+    nextActionDueAt: req.body?.nextActionDueAt || null,
+    lastInternalActionAt: nowIso(),
+    stalledAt: null,
+    stalledReason: null,
+    ...dateFields,
+  }
+  const updated = await updateJob(id, stagePatch)
+  if (!updated) return res.status(404).json({ ok: false, error: 'Job not found' })
+  await addJobEvent(id, { eventType: 'stage_change', eventCode: 'stage_moved', actorType: 'user', title: `Přesun do: ${JOB_STAGE_LABELS[newStage] || newStage}`, actor: req.auth?.email, message: `Zakázka přesunuta do etapy ${JOB_STAGE_LABELS[newStage] || newStage}`, metadata: { pipelineStage: newStage } })
+  if (newStage === 'schvaleni_objednavka') {
+    await addJobTask(id, { taskType: 'contract', title: 'Připravit objednávku', isSystemGenerated: true, priority: 'high' })
+  }
+  if (newStage === 'zaloha_priprava') {
+    await addJobTask(id, { taskType: 'invoice', title: 'Vystavit zálohovou fakturu', isSystemGenerated: true, priority: 'high' })
+  }
+  if (newStage === 'realizace') {
+    await addJobTask(id, { taskType: 'schedule', title: 'Potvrdit termín realizace', isSystemGenerated: true, priority: 'high' })
+  }
+  if (newStage === 'predani_fakturace') {
+    await addJobTask(id, { taskType: 'handover_protocol', title: 'Připravit předávací protokol', isSystemGenerated: true, priority: 'high' })
+    await addJobTask(id, { taskType: 'invoice', title: 'Vystavit finální fakturu', isSystemGenerated: true, priority: 'high' })
+  }
+  await insertAudit(req.auth?.email || null, 'job_stage_moved', 'job', id, { stage: newStage })
+  return res.json({ ok: true, job: enrichJob(updated) })
+})
+
+app.post('/api/crm/jobs/:id/documents', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const doc = await addJobDocument(Number(req.params.id), req.body || {})
+  await addJobEvent(Number(req.params.id), { eventType: 'document_added', eventCode: 'document_added', actorType: 'user', title: `Dokument přidán: ${doc.fileName}`, actor: req.auth?.email, message: `Přidán dokument ${doc.fileName}`, metadata: { documentType: doc.docType, status: doc.status, version: doc.version } })
+  return res.json({ ok: true, document: doc })
+})
+app.get('/api/crm/jobs/:id/documents', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  return res.json({ ok: true, documents: await listJobDocuments(Number(req.params.id)) })
+})
+
+app.post('/api/crm/jobs/:id/events', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const ev = await addJobEvent(Number(req.params.id), { ...(req.body || {}), actor: req.auth?.email || req.body?.actor, actorType: req.body?.actorType || 'user' })
+  return res.json({ ok: true, event: ev })
+})
+app.get('/api/crm/jobs/:id/events', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  return res.json({ ok: true, events: await listJobEvents(Number(req.params.id)) })
+})
+
+app.post('/api/crm/jobs/:id/tasks', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const task = await addJobTask(Number(req.params.id), req.body || {})
+  return res.json({ ok: true, task })
+})
+app.patch('/api/crm/jobs/:id/tasks/:taskId', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const task = await updateJobTask(Number(req.params.taskId), req.body || {})
+  if (!task) return res.status(404).json({ ok: false, error: 'Task not found' })
+  return res.json({ ok: true, task })
+})
+app.get('/api/crm/jobs/:id/tasks', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  return res.json({ ok: true, tasks: await listJobTasks(Number(req.params.id)) })
+})
+
+app.get('/api/crm/problems', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (_req, res) => {
+  const problems = await listProblems()
+  const customerIds = [...new Set(problems.map(j => j.customerId).filter(Boolean))]
+  const customers = {}
+  for (const cid of customerIds) { const c = await getCustomerById(cid); if (c) customers[cid] = c }
+  const grouped = groupProblemsByType(problems)
+  return res.json({ ok: true, problems, grouped, customers })
+})
+
+app.get('/api/crm/job-stages', (_req, res) => {
+  return res.json({ ok: true, stages: JOB_STAGES, labels: JOB_STAGE_LABELS, waitingFor: WAITING_FOR_OPTIONS, blockingFactors: BLOCKING_FACTORS })
+})
+
+app.post('/api/crm/jobs/:id/invoices', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const invoice = await addJobInvoice(Number(req.params.id), req.body || {})
+  await addJobEvent(Number(req.params.id), { eventType: 'finance_update', eventCode: 'invoice_created', actorType: 'user', title: `Faktura ${invoice.invoiceType}`, actor: req.auth?.email, message: `Vytvořena ${invoice.invoiceType} faktura`, metadata: { invoiceId: invoice.id, status: invoice.status } })
+  return res.json({ ok: true, invoice })
+})
+
+app.get('/api/crm/jobs/:id/invoices', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  return res.json({ ok: true, invoices: await listJobInvoices(Number(req.params.id)) })
 })
 
 async function bootstrap() {

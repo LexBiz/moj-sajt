@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk">
+<html lang="cs">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,1940 +8,281 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-      /* ─────────────────────────────────────────────────────────
-         O&L MASTER DOM  ·  ENTERPRISE CRM  ·  NEW PREMIUM UI
-      ───────────────────────────────────────────────────────── */
-      :root {
-        --bg:     #020C18;
-        --bg2:    #040F1E;
-        --s:      #071626;
-        --s2:     #091B30;
-        --c:      #0C1E38;
-        --c2:     #0F2442;
-        --c3:     #122848;
-
-        --b:      rgba(255,255,255,.06);
-        --b2:     rgba(255,255,255,.11);
-        --b3:     rgba(255,255,255,.18);
-
-        --ink:    #E6F0FF;
-        --ink2:   #7AA2C4;
-        --ink3:   #3D618A;
-
-        --blue:   #1A6AE8;
-        --blue2:  #3D87F8;
-        --blue3:  #60A5FF;
-        --bglow:  rgba(26,106,232,.18);
-
-        --green:  #14C98A;
-        --orange: #E8921A;
-        --red:    #E83A3A;
-        --purple: #7A5EE8;
-        --cyan:   #18C4DC;
-
-        --r-xs:  4px;
-        --r-sm:  6px;
-        --r:     10px;
-        --r-md:  14px;
-        --r-lg:  18px;
-        --r-xl:  24px;
-
-        --sh:    0 2px 10px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
-        --sh2:   0 8px 32px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.25);
-        --sh3:   0 20px 60px rgba(0,0,0,.6);
-
-        /* compat aliases */
-        --bg2-old: #040F1E;
-        --surface: #071626;
-        --card:    #0C1E38;
-        --card2:   #0F2442;
-        --line:    rgba(255,255,255,.06);
-        --line2:   rgba(255,255,255,.11);
-        --txt:     #E6F0FF;
-        --muted:   #7AA2C4;
-        --muted2:  #3D618A;
-        --radius:  10px;
-        --radius2: 8px;
-        --shadow:  0 4px 20px rgba(0,0,0,.4);
-      }
-
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-
-      body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: var(--bg);
-        color: var(--ink);
-        min-height: 100vh;
-        font-size: 14px;
-        line-height: 1.55;
-        background-image:
-          radial-gradient(ellipse 160% 40% at 50% -4%, rgba(26,106,232,.13) 0%, transparent 55%);
-      }
-
-      /* ─── TOP HEADER ─────────────────────────────── */
-      .header {
-        position: sticky;
-        top: 0;
-        z-index: 40;
-        background: rgba(2,12,24,.94);
-        border-bottom: 1px solid var(--b2);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-      }
-      .header-inner {
-        max-width: 1680px;
-        margin: 0 auto;
-        padding: 0 32px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-      }
-      .logo { display: flex; align-items: center; gap: 12px; }
-      .logo-mark {
-        width: 38px; height: 38px; border-radius: 10px;
-        background: linear-gradient(145deg, #1A4EA0 0%, #0F3070 100%);
-        border: 1px solid rgba(61,135,248,.35);
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 2px 12px rgba(26,106,232,.3);
-      }
-      .logo-mark svg { display: block; }
-      .logo-name {
-        font-size: 16px; font-weight: 800; color: var(--ink);
-        letter-spacing: -.4px; line-height: 1.1;
-      }
-      .logo-sub { font-size: 10px; color: var(--ink3); letter-spacing: .4px; text-transform: uppercase; margin-top: 2px; }
-      .header-pill {
-        display: flex; align-items: center; gap: 7px;
-        font-size: 12px; font-weight: 600; color: var(--green);
-        background: rgba(20,201,138,.08);
-        border: 1px solid rgba(20,201,138,.2);
-        border-radius: 999px; padding: 6px 14px;
-      }
-      .header-pill::before {
-        content: '';
-        width: 7px; height: 7px; border-radius: 50%;
-        background: var(--green);
-        box-shadow: 0 0 6px var(--green);
-        animation: pulse-dot 2s ease infinite;
-      }
-      @keyframes pulse-dot {
-        0%, 100% { opacity: 1; }
-        50% { opacity: .4; }
-      }
-
-      /* ─── NAV TABS ───────────────────────────────── */
-      .nav-wrap {
-        background: rgba(2,12,24,.92);
-        border-bottom: 1px solid var(--b);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-      }
-      .tabbar {
-        max-width: 1680px;
-        margin: 0 auto;
-        padding: 0 32px;
-        display: flex;
-        gap: 0;
-        width: auto;
-        background: transparent;
-        border: none;
-        border-radius: 0;
-      }
-      .tab {
-        border: none;
-        background: transparent;
-        color: var(--ink3);
-        border-bottom: 2px solid transparent;
-        padding: 14px 20px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all .18s;
-        font-family: inherit;
-        white-space: nowrap;
-        letter-spacing: -.1px;
-        margin-bottom: -1px;
-      }
-      .tab:hover { color: var(--ink2); }
-      .tab.active {
-        color: var(--blue3);
-        border-bottom-color: var(--blue);
-      }
-
-      /* ─── PAGE WRAP ──────────────────────────────── */
-      .wrap {
-        max-width: 1680px;
-        margin: 0 auto;
-        padding: 32px 32px 80px;
-      }
-
-      /* ─── PANEL ──────────────────────────────────── */
-      .panel {
-        background: var(--s);
-        border: 1px solid var(--b2);
-        border-radius: var(--r-lg);
-        padding: 32px;
-        box-shadow: var(--sh2);
-      }
-      .panel-title {
-        font-size: 22px; font-weight: 800; letter-spacing: -.5px;
-        margin-bottom: 6px; color: var(--ink);
-      }
-      .panel-sub {
-        font-size: 14px; color: var(--ink2); margin-bottom: 30px;
-      }
-
-      /* ─── FORM ───────────────────────────────────── */
-      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-      .field { display: flex; flex-direction: column; }
-      .field label {
-        font-size: 11px; font-weight: 700; color: var(--ink3);
-        text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px;
-      }
-      .field input, .field select, .field textarea {
-        background: var(--c);
-        border: 1px solid var(--b2);
-        border-radius: var(--r);
-        color: var(--ink);
-        font-size: 15px; font-family: inherit;
-        padding: 14px 16px;
-        outline: none;
-        transition: border-color .15s, box-shadow .15s;
-        width: 100%;
-      }
-      .field input::placeholder, .field textarea::placeholder { color: var(--ink3); }
-      .field input:focus, .field select:focus, .field textarea:focus {
-        border-color: var(--blue2);
-        box-shadow: 0 0 0 4px rgba(26,106,232,.12);
-      }
-      .field textarea { min-height: 110px; resize: vertical; }
-      .field-hint { font-size: 11px; color: var(--ink3); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
-      .field-full { grid-column: 1 / -1; }
-      .form-footer {
-        display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-        margin-top: 28px; padding-top: 26px; border-top: 1px solid var(--b);
-      }
-
-      /* ─── BUTTONS ────────────────────────────────── */
-      .btn {
-        border: 1px solid var(--b2); border-radius: var(--r);
-        font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
-        padding: 11px 20px; transition: all .18s;
-        display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-        background: var(--c); color: var(--ink); text-decoration: none;
-      }
-      .btn:hover { background: var(--c2); border-color: var(--b3); }
-      .btn-primary {
-        background: linear-gradient(135deg, #1A6AE8, #2D80F8);
-        color: #fff; border: none;
-        box-shadow: 0 4px 16px rgba(26,106,232,.4);
-      }
-      .btn-primary:hover {
-        background: linear-gradient(135deg, #2070F0, #3A8CFF);
-        box-shadow: 0 6px 22px rgba(26,106,232,.55);
-      }
-      .btn-soft {
-        background: rgba(255,255,255,.04); border: 1px solid var(--b);
-        color: var(--ink2); font-size: 13px; padding: 8px 14px;
-      }
-      .btn-soft:hover { background: rgba(255,255,255,.08); color: var(--ink); border-color: var(--b2); }
-      .btn-icon { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r); }
-
-      /* ─── MESSAGES ───────────────────────────────── */
-      .msg { font-size: 14px; display: flex; align-items: center; gap: 8px; }
-      .msg.ok  { color: var(--green); }
-      .msg.err { color: var(--red); }
-      #formMsg { margin-top: 0; }
-
-      /* ─── CRM HEADER ─────────────────────────────── */
-      .crm-header {
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 14px; flex-wrap: wrap; margin-bottom: 24px;
-      }
-      .crm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-      /* ─── STATS ──────────────────────────────────── */
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 12px;
-        margin-bottom: 28px;
-      }
-      .stat {
-        background: var(--c);
-        border: 1px solid var(--b);
-        border-top: 2px solid transparent;
-        border-radius: var(--r-md);
-        padding: 18px 20px;
-        transition: border-color .18s, transform .18s;
-      }
-      .stat:hover { border-color: var(--b2); transform: translateY(-2px); }
-      .stat .k {
-        font-size: 11px; font-weight: 600; color: var(--ink3);
-        text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px;
-      }
-      .stat .v {
-        font-size: 28px; font-weight: 800; letter-spacing: -1px;
-        color: var(--ink);
-      }
-      .c-total { border-top-color: var(--blue2) !important; }
-      .c-total .v { color: var(--blue3); }
-      .c-won { border-top-color: var(--green) !important; }
-      .c-won .v { color: var(--green); }
-      .c-new { border-top-color: var(--red) !important; }
-      .c-new .v { color: var(--red); }
-      .c-prog { border-top-color: var(--orange) !important; }
-      .c-prog .v { color: var(--orange); }
-
-      /* ─── FILTERS ────────────────────────────────── */
-      .filters {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 18px;
-      }
-      .range-row { display: none; gap: 10px; margin-bottom: 14px; }
-      .range-row.active { display: grid; grid-template-columns: 1fr 1fr; }
-      input, select, textarea {
-        background: var(--c); border: 1px solid var(--b2);
-        border-radius: var(--r); color: var(--ink);
-        font-family: inherit; padding: 10px 14px; font-size: 13px; outline: none;
-        transition: border-color .15s, box-shadow .15s; width: 100%;
-      }
-      input::placeholder { color: var(--ink3); }
-      input:focus, select:focus {
-        border-color: var(--blue2); box-shadow: 0 0 0 3px rgba(26,106,232,.12);
-      }
-
-      /* ─── LEAD LIST TABLE ────────────────────────── */
-      .lead-list {}
-      .lead-main-row { cursor: pointer; }
-      .lead-main-row:hover td { background: rgba(26,106,232,.05); }
-      table { width: 100%; border-collapse: collapse; }
-      th {
-        text-align: left; padding: 11px 14px;
-        font-size: 11px; font-weight: 700; color: var(--ink3);
-        text-transform: uppercase; letter-spacing: .5px;
-        background: var(--s2); border-bottom: 1px solid var(--b2);
-        white-space: nowrap;
-      }
-      td {
-        padding: 14px 14px; border-top: 1px solid var(--b);
-        font-size: 14px; vertical-align: middle;
-        transition: background .12s;
-      }
-
-      /* ─── BADGES ─────────────────────────────────── */
-      .badge {
-        display: inline-flex; align-items: center;
-        border-radius: 999px; padding: 4px 11px;
-        font-size: 11px; font-weight: 700;
-        letter-spacing: .2px; white-space: nowrap;
-        border: 1px solid;
-      }
-      .badge-new      { color: #80B4F8; border-color: rgba(80,180,248,.25); background: rgba(80,180,248,.1); }
-      .badge-contacted { color: #60D4C8; border-color: rgba(96,212,200,.25); background: rgba(96,212,200,.1); }
-      .badge-proposal  { color: #48DCEC; border-color: rgba(72,220,236,.25); background: rgba(72,220,236,.1); }
-      .badge-progress  { color: #F0A850; border-color: rgba(240,168,80,.28); background: rgba(240,168,80,.09); }
-      .badge-invoicing { color: #A888F8; border-color: rgba(168,136,248,.28); background: rgba(168,136,248,.09); }
-      .badge-won       { color: #30D898; border-color: rgba(48,216,152,.28); background: rgba(48,216,152,.09); }
-      .badge-completed { color: #58E8A8; border-color: rgba(88,232,168,.3); background: rgba(88,232,168,.11); }
-      .badge-lost      { color: #F07070; border-color: rgba(240,112,112,.28); background: rgba(240,112,112,.09); }
-
-      /* ─── LEAD CARD (legacy compat) ──────────────── */
-      .lead-card-top { padding: 16px 18px 12px; }
-      .lead-avatar {
-        width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 14px; font-weight: 800; color: #fff;
-        background: linear-gradient(135deg, #1A4EA0, #0D3270);
-      }
-      .lead-info { flex: 1; min-width: 0; }
-      .lead-name { font-size: 16px; font-weight: 700; color: var(--ink); }
-      .lead-contacts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-      .lead-contacts a, .lead-contact-item { font-size: 12px; color: var(--ink2); text-decoration: none; }
-      .lead-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-      .brief-box {
-        padding: 12px 14px; border-radius: var(--r);
-        border: 1px solid var(--b2); background: rgba(4,12,28,.6);
-        font-size: 13px; color: var(--ink2); line-height: 1.6;
-      }
-      .brief-box div { margin-bottom: 3px; }
-      .brief-box strong { color: var(--ink); }
-      .mail-state { margin-top: 6px; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
-      .mail-state.sent { color: #60C8F0; border-color: rgba(60,200,240,.3); background: rgba(60,200,240,.1); }
-      .mail-state.error { color: #F07070; border-color: rgba(240,112,112,.35); background: rgba(240,112,112,.08); }
-      @keyframes fadeSlide { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes errorPulse { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 5px rgba(240,112,112,.14); } }
-      @keyframes badgePulse { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 6px rgba(26,106,232,.14); } }
-      .lead-date { font-size: 11px; color: var(--ink3); }
-      .lead-dates { font-size: 12px; color: var(--ink2); line-height: 1.45; }
-      .lead-comment { margin: 0 18px; padding: 10px 14px; border-radius: var(--r); background: var(--c2); font-size: 13px; color: var(--ink2); border-left: 3px solid var(--b2); line-height: 1.5; }
-      .lead-card-bottom { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px 18px 16px; align-items: center; }
-      .lead-left { display: flex; align-items: flex-start; gap: 12px; }
-      .lead-actions { display: flex; gap: 8px; align-items: center; }
-      .lead-divider { height: 1px; background: var(--b); margin: 0 18px; }
-
-      /* ─── ACTION BUTTONS ─────────────────────────── */
-      .btn-open {
-        background: rgba(26,106,232,.1); border: 1px solid rgba(26,106,232,.3);
-        color: #80B8F8; border-radius: var(--r); font-size: 13px; font-weight: 600;
-        padding: 8px 14px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
-      }
-      .btn-open:hover { background: rgba(26,106,232,.2); border-color: var(--blue2); color: #A8D0FF; }
-      .btn-delete {
-        background: transparent; border: 1px solid rgba(232,58,58,.3);
-        color: var(--red); border-radius: var(--r); font-size: 13px; font-weight: 600;
-        padding: 8px 14px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
-      }
-      .btn-delete:hover { background: rgba(232,58,58,.08); border-color: var(--red); }
-
-      /* ─── MISC ───────────────────────────────────── */
-      .sync-hint { font-size: 11px; color: var(--ink3); margin-top: 4px; }
-      .empty {
-        padding: 52px 24px; text-align: center; color: var(--ink2);
-        border: 1px dashed var(--b2); border-radius: var(--r-lg);
-      }
-      .empty svg { margin-bottom: 14px; opacity: .25; }
-      .empty p { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
-      .empty small { font-size: 12px; color: var(--ink3); }
-      .loading { padding: 44px; text-align: center; color: var(--ink2); font-size: 14px; }
-
-      /* ─── MODAL ──────────────────────────────────── */
-      .lead-modal {
-        position: fixed; inset: 0; z-index: 50;
-        display: none; align-items: center; justify-content: center;
-        padding: 20px; background: rgba(1,5,14,.85);
-        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-      }
-      .lead-modal.show { display: flex; }
-      .lead-modal-card {
-        width: min(1000px, 100%); max-height: 90vh; overflow: auto;
-        border-radius: var(--r-lg); border: 1px solid var(--b3);
-        background: var(--s); box-shadow: var(--sh3); padding: 28px;
-      }
-      .modal-grid {
-        margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-      }
-      .modal-item {
-        background: var(--c); border: 1px solid var(--b);
-        border-radius: var(--r); padding: 12px 14px; font-size: 13px; color: var(--ink2);
-      }
-      .modal-item b { color: var(--ink); display: block; margin-bottom: 3px; font-weight: 700; }
-      .modal-form { margin-top: 16px; display: grid; gap: 10px; }
-      .modal-form select, .modal-form textarea, .modal-form input {
-        background: var(--c); border: 1px solid var(--b2);
-        border-radius: var(--r); color: var(--ink); padding: 12px 14px; font-family: inherit; outline: none;
-      }
-      .modal-form select:focus, .modal-form textarea:focus, .modal-form input:focus {
-        border-color: var(--blue2); box-shadow: 0 0 0 3px rgba(26,106,232,.12);
-      }
-      .modal-form textarea { min-height: 90px; resize: vertical; }
-      .modal-actions { margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px; }
-      .modal-msg { margin-top: 8px; font-size: 12px; color: var(--ink2); }
-
-      /* ─── OFFERS ─────────────────────────────────── */
-      .offer-list { display: grid; gap: 9px; }
-      .offer-item {
-        border: 1px solid var(--b); border-radius: var(--r);
-        background: var(--c); padding: 12px 14px; font-size: 12px;
-        transition: border-color .15s;
-      }
-      .offer-item:hover { border-color: var(--b2); }
-      .offer-item-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 6px; }
-      .offer-item-name { font-weight: 700; color: #AACCFF; font-size: 13px; }
-      .offer-item-meta { color: var(--ink2); line-height: 1.5; }
-      .offer-item-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
-
-      /* ─── WAVE MINI BTN ──────────────────────────── */
-      .wave-mini-btn {
-        background: rgba(255,255,255,.05); border: 1px solid var(--b);
-        color: var(--ink2); border-radius: var(--r); font-size: 12px; font-weight: 600;
-        padding: 6px 12px; cursor: pointer; font-family: inherit;
-        text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
-        transition: all .15s;
-      }
-      .wave-mini-btn:hover { background: rgba(26,106,232,.12); color: var(--ink); border-color: var(--b3); }
-
-      /* ─── CASES ──────────────────────────────────── */
-      .cases-wrap { display: grid; gap: 14px; }
-      .cases-filters {
-        display: grid; grid-template-columns: 1.2fr repeat(5, 1fr); gap: 10px;
-      }
-      .case-grid { display: grid; gap: 14px; }
-      .case-card {
-        background: var(--c); border: 1px solid var(--b);
-        border-radius: var(--r-md); padding: 18px 20px;
-        transition: border-color .18s, box-shadow .18s;
-      }
-      .case-card:hover { border-color: var(--b2); box-shadow: var(--sh); }
-      .case-card.alert-soon { border-left: 3px solid var(--orange); }
-      .case-card.alert-overdue { border-left: 3px solid var(--red); }
-      .case-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-      .case-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-      .case-id { font-size: 12px; color: var(--ink2); }
-      .case-meta { font-size: 13px; color: var(--ink2); line-height: 1.6; }
-      .case-line { font-size: 13px; color: var(--ink2); line-height: 1.6; }
-      .case-alert { font-size: 12px; color: var(--orange); font-weight: 600; padding: 6px 10px; background: rgba(232,146,26,.1); border-radius: 8px; margin-top: 8px; }
-      .case-alerts { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-      .case-alert.soon { background: rgba(232,146,26,.1); color: var(--orange); }
-      .case-alert.overdue { background: rgba(232,58,58,.1); color: var(--red); }
-      .case-actions { border-top: 1px solid var(--b); padding-top: 12px; margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-      .case-btn {
-        background: rgba(255,255,255,.04); border: 1px solid var(--b2);
-        color: var(--ink2); border-radius: var(--r); font-size: 12px; font-weight: 600;
-        padding: 7px 13px; cursor: pointer; font-family: inherit; transition: all .15s;
-      }
-      .case-btn:hover { background: rgba(26,106,232,.1); color: var(--ink); border-color: var(--blue2); }
-      .case-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-      .case-kpi .stat { padding: 14px 16px; }
-      .case-kpi .stat .v { font-size: 22px; }
-
-      /* ─── WAVE 2 ──────────────────────────────────── */
-      .wave2-leads-wrap { display: grid; gap: 12px; margin-bottom: 20px; }
-      .wave2-leads-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-      .wave2-leads-title { font-size: 15px; font-weight: 700; color: #A0C4F0; }
-      .wave2-leads-list { display: grid; gap: 8px; }
-      .wave2-list-wrap {
-        border: 1px solid var(--b); border-radius: var(--r-md); background: var(--c); overflow: hidden;
-      }
-      .wave2-row { border-top: 1px solid var(--b); cursor: pointer; transition: background .14s; }
-      .wave2-row:first-child { border-top: 0; }
-      .wave2-row:hover { background: rgba(26,106,232,.05); }
-      .wave2-row-main {
-        display: grid; grid-template-columns: minmax(170px,2fr) minmax(130px,1fr) minmax(100px,.8fr) auto;
-        gap: 14px; align-items: center; padding: 14px 16px;
-      }
-      .wave2-col-label { display: block; font-size: 11px; color: var(--ink3); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
-      .wave2-details { display: none; padding: 0 16px 16px; background: rgba(2,8,18,.4); }
-      .wave2-details.show { display: block; }
-      .wave2-empty { padding: 16px; color: var(--ink2); font-size: 13px; }
-      .wave2-lead-name { font-size: 14px; font-weight: 700; }
-      .wave2-lead-meta { margin-top: 5px; font-size: 12px; color: var(--ink2); line-height: 1.4; }
-      .wave2-lead-actions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 7px; }
-
-      /* ─── WAVE 3 ──────────────────────────────────── */
-      .wave3-wrap { display: grid; gap: 14px; }
-      .wave3-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-      .wave3-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
-      .wave3-card {
-        border: 1px solid var(--b); border-radius: var(--r-md);
-        background: var(--c); padding: 18px; transition: border-color .18s;
-      }
-      .wave3-card:hover { border-color: var(--b2); }
-      .wave3-title { font-size: 15px; font-weight: 700; }
-      .wave3-meta { margin-top: 8px; font-size: 13px; color: var(--ink2); line-height: 1.5; }
-      .wave3-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
-
-      /* ─── WAVE BOARD (compat) ────────────────────── */
-      .wave-board { display: none; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
-      .wave-col { background: var(--c); border: 1px solid var(--b); border-radius: var(--r-md); padding: 10px; min-height: 180px; }
-      .wave-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-      .wave-title { font-size: 13px; font-weight: 700; }
-      .wave-count { border: 1px solid var(--b2); border-radius: 999px; padding: 2px 8px; font-size: 11px; color: var(--ink3); }
-      .wave-list { display: flex; flex-direction: column; gap: 8px; }
-      .wave-item { border: 1px solid var(--b2); border-radius: 9px; padding: 9px; background: var(--s2); }
-      .wave-item-name { font-size: 13px; font-weight: 700; }
-      .wave-item-meta { margin-top: 3px; font-size: 11px; color: var(--ink2); }
-      .wave-item-actions { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px; }
-
-      /* ─── RESPONSIVE ─────────────────────────────── */
-      @media (max-width: 1200px) {
-        .stats { grid-template-columns: repeat(3, 1fr); }
-        .header-inner, .tabbar, .wrap { padding-left: 20px; padding-right: 20px; }
-      }
-      @media (max-width: 900px) {
-        .form-grid { grid-template-columns: 1fr; }
-        .field-full { grid-column: 1; }
-        .stats { grid-template-columns: repeat(2, 1fr); }
-        .filters { grid-template-columns: 1fr 1fr; }
-        .cases-filters { grid-template-columns: 1fr 1fr; }
-        .case-grid { grid-template-columns: 1fr; }
-        .wave2-row-main { grid-template-columns: 1fr; gap: 8px; }
-        .wave3-kpi { grid-template-columns: repeat(2, 1fr); }
-        .wave3-list { grid-template-columns: 1fr; }
-        .lead-card-bottom { grid-template-columns: 1fr; }
-        .lead-actions { width: 100%; }
-        .lead-actions .btn-delete, .lead-actions .btn-open { width: 100%; justify-content: center; }
-      }
-      @media (max-width: 560px) {
-        .panel { padding: 18px 14px; }
-        .stats { grid-template-columns: 1fr 1fr; }
-        .filters { grid-template-columns: 1fr; }
-        .tabbar { gap: 0; overflow-x: auto; padding: 0 14px; }
-        .tab { padding: 13px 14px; font-size: 12px; }
-        .lead-card-top { padding: 14px 14px 12px; }
-        .lead-divider { margin: 0 14px; }
-        .lead-card-bottom { padding: 12px 14px 14px; }
-        .wrap { padding: 20px 14px 60px; }
-      }
+      :root{--bg:#020C18;--s:#071626;--s2:#091B30;--c:#0C1E38;--c2:#0F2442;--b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--b3:rgba(255,255,255,.18);--ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;--blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;--green:#14C98A;--orange:#E8921A;--red:#E83A3A;--purple:#7A5EE8;--cyan:#18C4DC;--r:10px;--r-md:14px;--r-lg:18px;--sh:0 8px 32px rgba(0,0,0,.45)}
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+      html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
+      .hdr{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px)}
+      .hdr-in{max-width:100%;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+      .logo{display:flex;align-items:center;gap:10px}
+      .logo-m{width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#1A4EA0,#0F3070);border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3)}
+      .logo-n{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-s{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+      .pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--green);background:rgba(20,201,138,.08);border:1px solid rgba(20,201,138,.2);border-radius:999px;padding:5px 12px}
+      .pill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);animation:pd 2s ease infinite}
+      @keyframes pd{0%,100%{opacity:1}50%{opacity:.35}}
+      .nav{background:rgba(2,12,24,.92);border-bottom:1px solid var(--b)}
+      .nav-in{padding:0 24px;display:flex;gap:0}
+      .tab{border:none;background:transparent;color:var(--ink3);border-bottom:2px solid transparent;padding:12px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;margin-bottom:-1px}
+      .tab:hover{color:var(--ink2)}.tab.active{color:var(--blue3);border-bottom-color:var(--blue)}
+      .wrap{padding:20px 24px 60px}
+      .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:9px 16px;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
+      .btn:hover{background:var(--c2);border-color:var(--b3)}
+      .btn-p{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;box-shadow:0 3px 14px rgba(26,106,232,.4)}
+      .btn-p:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF)}
+      .badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:700;letter-spacing:.2px;white-space:nowrap;border:1px solid}
+      .b-blue{color:#80B8F8;border-color:rgba(80,184,248,.25);background:rgba(80,184,248,.1)}
+      .b-green{color:#50D8A0;border-color:rgba(80,216,160,.25);background:rgba(80,216,160,.1)}
+      .b-orange{color:#F0A850;border-color:rgba(240,168,80,.25);background:rgba(240,168,80,.1)}
+      .b-red{color:#F07070;border-color:rgba(240,112,112,.25);background:rgba(240,112,112,.1)}
+      .b-purple{color:#A080F0;border-color:rgba(160,128,240,.25);background:rgba(160,128,240,.1)}
+      .b-cyan{color:#60D8EC;border-color:rgba(96,216,236,.25);background:rgba(96,216,236,.1)}
+      .b-grey{color:var(--ink2);border-color:var(--b2);background:rgba(255,255,255,.04)}
+      .panel{background:var(--s);border:1px solid var(--b2);border-radius:var(--r-lg);padding:28px;box-shadow:var(--sh)}
+      .panel-t{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:6px}
+      .panel-sub{font-size:13px;color:var(--ink2);margin-bottom:24px}
+      .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+      .field{display:flex;flex-direction:column}.field label{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+      .field input,.field select,.field textarea{background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);font-size:14px;font-family:inherit;padding:12px 14px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+      .field input::placeholder,.field textarea::placeholder{color:var(--ink3)}
+      .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
+      .field textarea{min-height:100px;resize:vertical}
+      .field-full{grid-column:1/-1}
+      .form-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px;padding-top:20px;border-top:1px solid var(--b)}
+      .msg{font-size:13px;display:flex;align-items:center;gap:6px}.msg.ok{color:var(--green)}.msg.err{color:var(--red)}
+      .pipe-wrap{overflow-x:auto;padding-bottom:16px}
+      .pipe{display:grid;grid-auto-flow:column;grid-auto-columns:240px;gap:12px;min-width:max-content}
+      .col{background:var(--s);border:1px solid var(--b2);border-radius:var(--r-md);min-height:300px;display:flex;flex-direction:column}
+      .col-head{padding:12px 14px;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+      .col-title{font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px}
+      .col-count{font-size:11px;color:var(--ink3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:999px}
+      .col-body{flex:1;padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:calc(100vh - 220px)}
+      .card{background:var(--c);border:1px solid var(--b);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .15s}
+      .card:hover{border-color:var(--b3);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+      .card-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.3}
+      .card-meta{font-size:11px;color:var(--ink2);line-height:1.5}
+      .card-meta strong{color:var(--ink)}
+      .card-foot{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+      .card-risk{margin-top:6px;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px}
+      .risk-none{display:none}
+      .risk-approaching{color:var(--orange);background:rgba(232,146,26,.1)}
+      .risk-overdue{color:var(--red);background:rgba(232,58,58,.1)}
+      .risk-invoice_overdue{color:var(--red);background:rgba(232,58,58,.12)}
+      .prob-table{width:100%;border-collapse:collapse}
+      .prob-table th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;background:var(--s2);border-bottom:1px solid var(--b2)}
+      .prob-table td{padding:12px;border-top:1px solid var(--b);font-size:13px;vertical-align:middle}
+      .prob-table tr:hover td{background:rgba(26,106,232,.04)}
+      .empty{padding:40px 20px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:14px}
+      .loading{padding:40px;text-align:center;color:var(--ink2)}
+      @media(max-width:900px){.form-grid{grid-template-columns:1fr}.pipe{grid-auto-columns:200px}}
+      @media(max-width:600px){.hdr-in,.nav-in,.wrap{padding-left:14px;padding-right:14px}.tab{padding:10px 12px;font-size:12px}}
     </style>
   </head>
   <body>
-
-    <!-- ── STICKY TOP HEADER ── -->
-    <header class="header">
-      <div class="header-inner">
+    <header class="hdr">
+      <div class="hdr-in">
         <div class="logo">
-          <div class="logo-mark">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1v-10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="logo-name">O&amp;L Master Dom</div>
-            <div class="logo-sub">Enterprise CRM</div>
-          </div>
+          <div class="logo-m"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><div class="logo-n">O&amp;L Master Dom</div><div class="logo-s">Enterprise CRM</div></div>
         </div>
-        <div class="header-pill">Systém aktivní</div>
+        <div class="pill">Systém aktivní</div>
       </div>
     </header>
-
-    <!-- ── NAV TABS ── -->
-    <div class="nav-wrap">
-      <div class="tabbar">
-        <button class="tab active" data-tab="form" id="tabForm">Форма заявки</button>
-        <button class="tab" data-tab="crm" id="tabCrm">Волна 1 · CRM Ліди</button>
-        <button class="tab" data-tab="cases" id="tabCases">Волна 2 · Комерційні випадки</button>
-        <button class="tab" data-tab="wave3" id="tabWave3">Волна 3 · Реалізація</button>
-      </div>
-    </div>
+    <div class="nav"><div class="nav-in">
+      <button class="tab active" data-tab="pipeline">Pipeline zakázek</button>
+      <button class="tab" data-tab="form">Nová poptávka</button>
+      <button class="tab" data-tab="problems">Problémy</button>
+    </div></div>
 
     <div class="wrap">
-
-      <!-- ── FORM PANEL ── -->
-      <section id="form" class="panel">
-        <div class="panel-title">Нова заявка</div>
-        <div class="panel-sub">Заповніть дані клієнта — заявка одразу потрапить у CRM та буде надіслана в WhatsApp.</div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label>Ім'я клієнта</label>
-            <input id="name" placeholder="Ярослав" />
-          </div>
-          <div class="field">
-            <label>Телефон</label>
-            <input id="phone" value="+420" maxlength="13" placeholder="+420XXXXXXXXX" />
-            <span class="field-hint">
-              <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.5" stroke="#3D618A"/><path d="M6 5v4M6 4h.01" stroke="#3D618A" stroke-linecap="round"/></svg>
-              Формат: +420XXXXXXXXX (9 цифр після +420)
-            </span>
-          </div>
-          <div class="field">
-            <label>Email</label>
-            <input id="email" placeholder="client@example.com" type="email" />
-          </div>
-          <div class="field">
-            <label>Тип послуги</label>
-            <select id="serviceType">
-              <option value="Електромонтаж">Електромонтаж</option>
-              <option value="Будівельні роботи">Будівельні роботи</option>
-              <option value="Ремонт">Ремонт</option>
-              <option value="Проектування">Проектування</option>
-              <option value="Інше">Інше</option>
-            </select>
-          </div>
-          <div class="field field-full">
-            <label>Коментар</label>
-            <textarea id="comment" placeholder="Деталі запиту..."></textarea>
-          </div>
+      <!-- PIPELINE -->
+      <section id="sec-pipeline">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div class="panel-t" style="margin:0">Pipeline zakázek</div>
+          <button class="btn" id="refreshPipe">↻ Obnovit</button>
         </div>
+        <div class="pipe-wrap"><div class="pipe" id="pipeBoard"><div class="loading">Načítání...</div></div></div>
+      </section>
 
-        <div class="form-footer">
-          <button id="submitLead" class="btn btn-primary">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Надіслати заявку
-          </button>
-          <div id="formMsg" class="msg"></div>
+      <!-- FORM -->
+      <section id="sec-form" style="display:none">
+        <div class="panel">
+          <div class="panel-t">Nová poptávka</div>
+          <div class="panel-sub">Vyplňte údaje klienta — poptávka se automaticky objeví v pipeline a klientovi bude odeslán formulář.</div>
+          <div class="form-grid">
+            <div class="field"><label>Jméno klienta</label><input id="fName" placeholder="Jan Novák" /></div>
+            <div class="field"><label>Telefon</label><input id="fPhone" value="+420" maxlength="13" placeholder="+420XXXXXXXXX" /></div>
+            <div class="field"><label>Email</label><input id="fEmail" type="email" placeholder="klient@email.cz" /></div>
+            <div class="field"><label>Typ zakázky</label>
+              <select id="fType">
+                <option value="Електромонтаж">Elektro</option>
+                <option value="Будівельні роботи">Stavební</option>
+                <option value="Ремонт">Kombinovaná</option>
+                <option value="Інше">Jiné</option>
+              </select>
+            </div>
+            <div class="field field-full"><label>Popis poptávky</label><textarea id="fComment" placeholder="Popište požadavek klienta..."></textarea></div>
+          </div>
+          <div class="form-foot">
+            <button class="btn btn-p" id="submitLead"><svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Vytvořit poptávku</button>
+            <div id="formMsg" class="msg"></div>
+          </div>
         </div>
       </section>
 
-      <!-- ── CRM PANEL ── -->
-      <section id="crm" class="panel" style="display:none; margin-top:20px;">
-        <div class="crm-header">
-          <div>
-            <div class="panel-title" id="crmTitle" style="font-size:20px;margin-bottom:0">Волна 1 · CRM Ліди</div>
-            <div id="syncHint" class="sync-hint">Оновлення: —</div>
-          </div>
-          <div class="crm-actions">
-            <button id="exportCsvWave1" class="btn btn-soft">
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              CSV 1 тур
-            </button>
-            <button id="exportCsvWave2" class="btn btn-soft">CSV 2 тур</button>
-            <button id="exportCsvAll" class="btn btn-soft">CSV Загальний</button>
-            <button id="exportCasesCsv" class="btn btn-soft">
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              CSV Кейси
-            </button>
-            <button id="refresh" class="btn btn-soft">
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Оновити
-            </button>
-          </div>
+      <!-- PROBLEMS -->
+      <section id="sec-problems" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div class="panel-t" style="margin:0">Dashboard problémů</div>
+          <button class="btn" id="refreshProb">↻ Obnovit</button>
         </div>
-
-        <div class="stats" id="stats"></div>
-
-        <div class="filters">
-          <input id="search" placeholder="Пошук за ім'ям, телефоном, email..." />
-          <select id="statusFilter">
-            <option value="">Всі статуси</option>
-            <option value="new_request">Нова заявка</option>
-            <option value="form_sent">Форму відправлено</option>
-            <option value="form_received">Клієнт у другому турі</option>
-            <option value="invalid_email">Невірний email</option>
-          </select>
-          <select id="sourceFilter">
-            <option value="">Всі джерела</option>
-            <option value="web_form">Веб-форма</option>
-            <option value="email">E-mail</option>
-            <option value="whatsapp">WhatsApp</option>
-            <option value="instagram">Instagram</option>
-            <option value="other">Інше</option>
-          </select>
-          <select id="serviceFilter">
-            <option value="">Всі послуги</option>
-            <option value="Електромонтаж">Електромонтаж</option>
-            <option value="Будівельні роботи">Будівельні роботи</option>
-            <option value="Ремонт">Ремонт</option>
-            <option value="Проектування">Проектування</option>
-            <option value="Інше">Інше</option>
-          </select>
-          <select id="dateFilter">
-            <option value="all">За весь час</option>
-            <option value="month">Поточний місяць</option>
-            <option value="quarter">Поточний квартал</option>
-            <option value="year">Поточний рік</option>
-            <option value="custom">Власний діапазон</option>
-          </select>
-        </div>
-        <div id="rangeRow" class="range-row">
-          <input id="dateFrom" type="date" />
-          <input id="dateTo" type="date" />
-        </div>
-
-        <div id="leadList" class="lead-list"></div>
+        <div id="probBody"><div class="loading">Načítání...</div></div>
       </section>
-
-      <!-- ── CASES PANEL ── -->
-      <section id="cases" class="panel" style="display:none; margin-top:20px;">
-        <div class="crm-header">
-          <div>
-            <div class="panel-title" style="font-size:20px;margin-bottom:0">Волна 2 · Комерційні випадки</div>
-            <div class="sync-hint" id="casesSyncHint">Оновлення: —</div>
-          </div>
-          <div class="crm-actions">
-            <button id="refreshCases" class="btn btn-soft">
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Оновити
-            </button>
-          </div>
-        </div>
-        <div class="wave2-leads-wrap">
-          <div class="wave2-leads-head">
-            <div class="wave2-leads-title">Ліди 2-ї хвилі (після формуляра)</div>
-            <div class="sync-hint" id="wave2LeadsHint">Оновлення: —</div>
-          </div>
-          <div id="wave2LeadsList" class="wave2-leads-list"></div>
-        </div>
-        <div class="case-kpi" id="casesKpi"></div>
-        <div class="cases-wrap">
-          <div class="cases-filters">
-            <input id="caseSearchId" placeholder="Пошук по Internal ID..." />
-            <select id="caseOrderType">
-              <option value="">Тип замовлення: всі</option>
-              <option value="construction">Будівельні роботи</option>
-              <option value="electro">Електро</option>
-              <option value="combined">Комбіновані</option>
-            </select>
-            <select id="caseStatus">
-              <option value="">Статус: всі</option>
-              <option value="contacted">Зв'язались</option>
-              <option value="offer_sent">Комерційна пропозиція відправлена</option>
-              <option value="waiting_response">Очікує відповіді</option>
-              <option value="in_execution">В реалізації</option>
-              <option value="invoicing">Виставлення рахунку</option>
-              <option value="need_attention">Необхідно вирішити</option>
-              <option value="won">Виграно</option>
-              <option value="lost">Програно</option>
-              <option value="completed">Завершено</option>
-            </select>
-            <input id="caseManager" placeholder="Пошук по менеджеру..." />
-            <input id="casePeriodFrom" type="date" />
-            <input id="casePeriodTo" type="date" />
-          </div>
-          <div id="casesList" class="case-grid"></div>
-        </div>
-      </section>
-
-      <!-- ── WAVE 3 PANEL ── -->
-      <section id="wave3" class="panel" style="display:none; margin-top:20px;">
-        <div class="crm-header">
-          <div>
-            <div class="panel-title" style="font-size:20px;margin-bottom:0">Волна 3 · Реалізація</div>
-            <div class="sync-hint" id="wave3SyncHint">Оновлення: —</div>
-          </div>
-          <div class="crm-actions">
-            <button id="refreshWave3" class="btn btn-soft">Оновити</button>
-          </div>
-        </div>
-        <div class="wave3-wrap">
-          <div class="wave3-kpi" id="wave3Kpi"></div>
-          <div class="wave3-list" id="wave3List"></div>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- ── LEAD MODAL ── -->
-    <div id="leadModal" class="lead-modal">
-      <div class="lead-modal-card">
-        <div class="crm-header" style="margin-bottom:12px;">
-          <div>
-            <div class="panel-title" style="font-size:18px;margin-bottom:0">Картка клієнта</div>
-            <div id="modalSub" class="sync-hint">Детальна інформація</div>
-          </div>
-          <button id="closeModal" class="btn btn-soft">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            Закрити
-          </button>
-        </div>
-        <div id="modalDetails" class="modal-grid"></div>
-        <div class="modal-form">
-          <input id="modalClientNumber" placeholder="Номер клієнта (присвоює асистент)" />
-          <select id="modalStatus">
-            <option value="new_request">Нова заявка</option>
-            <option value="contacted">Зв'язались</option>
-            <option value="form_sent">Форму відправлено</option>
-            <option value="form_received">Форму отримано</option>
-            <option value="offer_sent">Комерційна пропозиція відправлена</option>
-            <option value="waiting_response">Очікує відповіді</option>
-            <option value="in_execution">В реалізації</option>
-            <option value="invoicing">Виставлення рахунку</option>
-            <option value="need_attention">Необхідно вирішити</option>
-            <option value="won">Виграно</option>
-            <option value="lost">Програно</option>
-            <option value="completed">Завершено</option>
-            <option value="invalid_email">Невірний email</option>
-          </select>
-          <textarea id="modalComment" placeholder="Коментар менеджера..."></textarea>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <input id="modalIco" placeholder="IČO компанії (наприклад 12345678)" style="flex:1;min-width:220px;" />
-            <button id="lookupIcoBtn" class="btn btn-soft" type="button">Підтягнути по IČO</button>
-            <button id="openBriefForm" class="btn btn-soft" type="button">Відкрити формуляр</button>
-          </div>
-          <div id="modalIcoMsg" class="modal-msg"></div>
-        </div>
-        <div class="modal-form" style="margin-top:12px;border-top:1px solid var(--b);padding-top:12px;">
-          <div class="sync-hint">AI: створити комерційний випадок з формуляра</div>
-          <textarea id="aiFormText" placeholder="Встав текст формуляра або додаткові деталі..."></textarea>
-          <input id="aiFormFile" type="file" accept=".pdf,.txt,.md,.doc,.docx" />
-          <button id="createCaseAi" class="btn btn-soft">Створити комерційний випадок (AI)</button>
-          <div id="aiCaseMsg" class="modal-msg"></div>
-        </div>
-        <div class="modal-form" style="margin-top:12px;border-top:1px solid var(--b);padding-top:12px;">
-          <div class="sync-hint">Робочий простір клієнта</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="openClientPage" class="btn btn-soft" type="button">Сторінка клієнта</button>
-            <button id="openEstimatePage" class="btn btn-soft" type="button">База розрахунку</button>
-          </div>
-        </div>
-        <div class="modal-form" style="display:none;margin-top:12px;border-top:1px solid var(--b);padding-top:12px;">
-          <div class="sync-hint">Комерційна пропозиція (Excel/PDF)</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="createOfferDraft" class="btn btn-soft" type="button">Згенерувати чернетку КП (AI)</button>
-            <button id="buildOfferDocs" class="btn btn-soft" type="button">Зібрати Excel + PDF</button>
-            <button id="sendOfferToClient" class="btn btn-soft" type="button">Надіслати клієнту</button>
-          </div>
-          <div id="offerMsg" class="modal-msg"></div>
-          <div id="modalOffers" class="offer-list"></div>
-        </div>
-        <div class="modal-actions">
-          <button id="saveModal" class="btn btn-primary">Зберегти зміни</button>
-        </div>
-        <div id="modalMsg" class="modal-msg"></div>
-      </div>
     </div>
 
     <script>
-      const pathModeBase = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
-      const apiUrl = (p) => `${pathModeBase}${p}`
-      const formSection = document.getElementById('form')
-      const crmSection  = document.getElementById('crm')
-      const formMsg     = document.getElementById('formMsg')
-      const leadList    = document.getElementById('leadList')
-      const statsEl     = document.getElementById('stats')
-      const searchEl    = document.getElementById('search')
-      const statusFilterEl = document.getElementById('statusFilter')
-      const sourceFilterEl = document.getElementById('sourceFilter')
-      const serviceFilterEl = document.getElementById('serviceFilter')
-      const dateFilterEl   = document.getElementById('dateFilter')
-      const rangeRowEl     = document.getElementById('rangeRow')
-      const dateFromEl     = document.getElementById('dateFrom')
-      const dateToEl       = document.getElementById('dateTo')
-      const syncHintEl     = document.getElementById('syncHint')
-      const leadModalEl    = document.getElementById('leadModal')
-      const modalDetailsEl = document.getElementById('modalDetails')
-      const modalStatusEl  = document.getElementById('modalStatus')
-      const modalCommentEl = document.getElementById('modalComment')
-      const modalClientNumberEl = document.getElementById('modalClientNumber')
-      const modalIcoEl = document.getElementById('modalIco')
-      const modalIcoMsgEl = document.getElementById('modalIcoMsg')
-      const openBriefFormEl = document.getElementById('openBriefForm')
-      const openClientPageEl = document.getElementById('openClientPage')
-      const openEstimatePageEl = document.getElementById('openEstimatePage')
-      const modalMsgEl     = document.getElementById('modalMsg')
-      const modalSubEl     = document.getElementById('modalSub')
-      const aiFormTextEl   = document.getElementById('aiFormText')
-      const aiFormFileEl   = document.getElementById('aiFormFile')
-      const aiCaseMsgEl    = document.getElementById('aiCaseMsg')
-      const createOfferDraftEl = document.getElementById('createOfferDraft')
-      const buildOfferDocsEl = document.getElementById('buildOfferDocs')
-      const sendOfferToClientEl = document.getElementById('sendOfferToClient')
-      const offerMsgEl = document.getElementById('offerMsg')
-      const modalOffersEl = document.getElementById('modalOffers')
-      const casesSection   = document.getElementById('cases')
-      const wave3Section   = document.getElementById('wave3')
-      const casesSyncHintEl = document.getElementById('casesSyncHint')
-      const casesKpiEl     = document.getElementById('casesKpi')
-      const casesListEl    = document.getElementById('casesList')
-      const wave2LeadsListEl = document.getElementById('wave2LeadsList')
-      const wave2LeadsHintEl = document.getElementById('wave2LeadsHint')
-      const wave3SyncHintEl = document.getElementById('wave3SyncHint')
-      const wave3KpiEl = document.getElementById('wave3Kpi')
-      const wave3ListEl = document.getElementById('wave3List')
-      const caseSearchIdEl = document.getElementById('caseSearchId')
-      const caseOrderTypeEl = document.getElementById('caseOrderType')
-      const caseStatusEl   = document.getElementById('caseStatus')
-      const caseManagerEl  = document.getElementById('caseManager')
-      const casePeriodFromEl = document.getElementById('casePeriodFrom')
-      const casePeriodToEl = document.getElementById('casePeriodTo')
-      let allLeads = []
-      let allCases = []
-      let currentLeadId = null
-      let currentLeadData = null
-      let currentLeadOffers = []
-      let selectedOfferId = null
+      const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+      const api = (p) => `${base}${p}`
+      const esc = (s) => String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      async function j(r) { try { return await r.json() } catch { return null } }
+      const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ',{day:'2-digit',month:'2-digit',year:'numeric'}) } catch { return '—' } }
 
-      const STATUS_LABELS = {
-        new_request: 'Нова заявка',
-        contacted: "Зв'язались",
-        form_sent: 'Форму відправлено',
-        proposal_sent: 'Форму відправлено',
-        waiting_response: 'Очікує відповіді',
-        offer_sent: 'Комерційна пропозиція відправлена',
-        won: 'Виграно',
-        lost: 'Програно',
-        in_execution: 'В реалізації',
-        invoicing: 'Виставлення рахунку',
-        need_attention: 'Необхідно вирішити',
-        completed: 'Завершено',
-        form_received: 'Клієнт у другому турі',
-        invalid_email: 'Невірний email',
+      const STAGE_LABELS = {
+        nova_poptavka:'Nová poptávka',podklady:'Podklady od klienta',zpracovani_nabidky:'Zpracování nabídky',
+        nabidka_odeslana:'Nabídka odeslána',schvaleni_objednavka:'Schválení / objednávka',zaloha_priprava:'Záloha / příprava',
+        realizace:'Realizace zakázky',predani_fakturace:'Předání / fakturace',dokonceno:'Dokončeno / uzavřeno'
       }
-      const OFFER_STATUS_LABELS = {
-        draft: 'Чернетка',
-        review: 'На погодженні',
-        approved: 'Погоджено',
-        sent: 'Надіслано',
-        accepted: 'Прийнято',
-        declined: 'Відхилено',
-      }
+      const STAGES = Object.keys(STAGE_LABELS)
+      const STAGE_COLORS = {nova_poptavka:'b-blue',podklady:'b-cyan',zpracovani_nabidky:'b-purple',nabidka_odeslana:'b-orange',schvaleni_objednavka:'b-green',zaloha_priprava:'b-blue',realizace:'b-orange',predani_fakturace:'b-purple',dokonceno:'b-green'}
 
-      /* helpers */
-      function esc(s) {
-        return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      }
-      async function json(resp) {
-        try { return await resp.json() } catch { return null }
-      }
-      function downloadCsvByUrl(url, fileName) {
-        const a = document.createElement('a')
-        a.href = url
-        a.download = fileName
-        a.click()
-      }
-      function fmtDate(iso) {
-        try {
-          const d = new Date(iso)
-          return d.toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
-        } catch { return String(iso || '') }
-      }
-      function fmtDateShort(iso) {
-        try {
-          const d = new Date(iso)
-          return d.toLocaleDateString('uk-UA', { day:'2-digit', month:'short', year:'numeric' })
-        } catch { return String(iso || '') }
-      }
-      function initials(name) {
-        const parts = String(name || '').trim().split(' ')
-        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-        return String(name || '?')[0].toUpperCase()
-      }
-      function statusLabel(s) {
-        return STATUS_LABELS[s] || STATUS_LABELS.new_request
-      }
-      function badgeClass(s) {
-        if (s === 'contacted') return 'badge-contacted'
-        if (s === 'form_sent' || s === 'proposal_sent') return 'badge-proposal'
-        if (s === 'offer_sent') return 'badge-contacted'
-        if (s === 'waiting_response') return 'badge-invoicing'
-        if (s === 'need_attention') return 'badge-lost'
-        if (s === 'in_execution') return 'badge-progress'
-        if (s === 'form_received') return 'badge-proposal'
-        if (s === 'invoicing') return 'badge-invoicing'
-        if (s === 'won') return 'badge-won'
-        if (s === 'lost' || s === 'invalid_email') return 'badge-lost'
-        if (s === 'completed') return 'badge-completed'
-        return 'badge-new'
-      }
-      function proposalUi(lead) {
-        if (lead.proposalMailState === 'invalid_email' || lead.status === 'invalid_email') {
-          return '<div class="mail-state error">⚠ Невірний email — пропозицію не відправлено</div>'
-        }
-        if (lead.proposalSentAt || lead.proposalMailState === 'sent' || lead.status === 'form_sent' || lead.status === 'proposal_sent') {
-          const sentAt = lead.proposalSentAt ? ` · ${esc(fmtDate(lead.proposalSentAt))}` : ''
-          return `<div class="mail-state sent">📨 Форму відправлено${sentAt}</div>`
-        }
+      document.querySelectorAll('.tab[data-tab]').forEach(b => {
+        b.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'))
+          b.classList.add('active')
+          const t = b.getAttribute('data-tab')
+          document.getElementById('sec-pipeline').style.display = t === 'pipeline' ? '' : 'none'
+          document.getElementById('sec-form').style.display = t === 'form' ? '' : 'none'
+          document.getElementById('sec-problems').style.display = t === 'problems' ? '' : 'none'
+          if (t === 'pipeline') loadPipeline()
+          if (t === 'problems') loadProblems()
+        })
+      })
+
+      function riskBadge(risk) {
+        if (risk === 'approaching') return '<div class="card-risk risk-approaching">⚠ Blíží se termín</div>'
+        if (risk === 'overdue') return '<div class="card-risk risk-overdue">⛔ Po termínu</div>'
+        if (risk === 'invoice_overdue') return '<div class="card-risk risk-invoice_overdue">💰 Faktura po splatnosti</div>'
         return ''
       }
-
-      /* tab switching */
-      document.querySelectorAll('.tab[data-tab]').forEach((b) => {
-        b.addEventListener('click', () => {
-          document.querySelectorAll('.tab[data-tab]').forEach((x) => x.classList.remove('active'))
-          b.classList.add('active')
-          const tab = b.getAttribute('data-tab')
-          formSection.style.display = tab === 'form' ? '' : 'none'
-          crmSection.style.display  = tab === 'crm' ? '' : 'none'
-          casesSection.style.display = tab === 'cases' ? '' : 'none'
-          wave3Section.style.display = tab === 'wave3' ? '' : 'none'
-          if (tab === 'crm') loadLeads()
-          if (tab === 'cases') {
-            loadWave2Leads()
-            loadCases()
-          }
-          if (tab === 'wave3') loadWave3()
-        })
-      })
-
-      /* stats */
-      function renderStats(leads) {
-        const total = leads.length
-        const won = leads.filter(x => x.status === 'won').length
-        const lost = leads.filter(x => x.status === 'lost').length
-        const successRate = total > 0 ? Math.round((won / total) * 100) : 0
-        const active = leads.filter(x => ['contacted','form_sent','proposal_sent','offer_sent','waiting_response','in_execution','invoicing','form_received','need_attention'].includes(String(x.status || ''))).length
-        const completed = leads.filter(x => x.status === 'completed').length
-        const items = [
-          { cls:'c-total', k:'Всього заявок', v: total },
-          { cls:'c-won',   k:'Виграно',       v: won },
-          { cls:'c-new',   k:'Програно',      v: lost },
-          { cls:'c-prog',  k:'Успішність %',  v: `${successRate}%` },
-          { cls:'c-prog',  k:'Активні проєкти', v: active },
-          { cls:'c-won',   k:'Завершені',     v: completed },
-        ]
-        statsEl.innerHTML = items.map(x => `
-          <div class="stat ${x.cls}">
-            <div class="k">${x.k}</div>
-            <div class="v">${x.v}</div>
-          </div>
-        `).join('')
-      }
-
-      /* filter + sort */
-      function filteredLeads() {
-        const q  = searchEl.value.trim().toLowerCase()
-        const st = statusFilterEl.value
-        const src = sourceFilterEl.value
-        const svc = serviceFilterEl.value
-        const dm = dateFilterEl.value
-        const now = Date.now()
-        const ms = (lead) => Date.parse(String(lead.createdAt || ''))
-        const filtered = allLeads.filter(lead => {
-          if (Number(lead.wave || 1) > 2) return false
-          if (st && lead.status !== st) return false
-          if (src && String(lead.source || '') !== src) return false
-          if (svc && String(lead.serviceType || '') !== svc) return false
-          const m = ms(lead)
-          if (Number.isFinite(m)) {
-            const d = new Date(m)
-            const n = new Date(now)
-            if (dm === 'month' && (d.getFullYear() !== n.getFullYear() || d.getMonth() !== n.getMonth())) return false
-            if (dm === 'quarter') {
-              const q1 = Math.floor(d.getMonth() / 3)
-              const q2 = Math.floor(n.getMonth() / 3)
-              if (d.getFullYear() !== n.getFullYear() || q1 !== q2) return false
-            }
-            if (dm === 'year' && d.getFullYear() !== n.getFullYear()) return false
-            if (dm === 'custom') {
-              const from = dateFromEl.value ? Date.parse(`${dateFromEl.value}T00:00:00`) : NaN
-              const to = dateToEl.value ? Date.parse(`${dateToEl.value}T23:59:59`) : NaN
-              if (Number.isFinite(from) && m < from) return false
-              if (Number.isFinite(to) && m > to) return false
-            }
-          }
-          if (!q) return true
-          return [lead.fullName, lead.name, lead.lastName, lead.phone, lead.email, lead.comment, lead.managerComment, lead.manager, lead.serviceType, lead.clientNumber]
-            .map(x => String(x || '').toLowerCase())
-            .some(x => x.includes(q))
-        })
-        const getMs = (v) => Number.isFinite(Date.parse(String(v||''))) ? Date.parse(String(v||'')) : 0
-        filtered.sort((a,b) => getMs(b.createdAt) - getMs(a.createdAt))
-        return filtered
-      }
-
-      /* render leads */
-      function renderLeads() {
-        renderStats(allLeads)
-        const leads = filteredLeads()
-        if (!leads.length) {
-          leadList.innerHTML = `
-            <div class="empty">
-              <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#3D618A"/></svg>
-              <p>Лідів не знайдено</p>
-              <small>Спробуйте змінити фільтри або додайте нову заявку</small>
-            </div>`
-          return
-        }
-
-        const rows = leads.map((lead) => {
-          const badge = badgeClass(lead.status || 'new_request')
-          const lbl = statusLabel(lead.status || 'new_request')
-          const rowId = Number(lead.id)
-          return `
-            <tr class="lead-main-row" data-toggle-row="${rowId}">
-              <td>
-                <div style="font-weight:700;font-size:14px;">${esc(lead.name || lead.fullName || '')}</div>
-                <div style="font-size:12px;color:var(--ink2);margin-top:3px;">${esc(lead.phone || '—')} · ${esc(lead.email || '—')}</div>
-              </td>
-              <td><span class="badge ${badge}">${esc(lbl)}</span></td>
-              <td style="color:var(--ink2)">${esc(lead.serviceType || 'Не вказано')}</td>
-              <td style="font-weight:600">${esc(lead.clientNumber || '—')}</td>
-              <td style="color:var(--ink2)">${esc(fmtDate(lead.createdAt))}</td>
-              <td>
-                <div class="lead-actions">
-                  <button class="btn-open" data-open="${rowId}">Картка</button>
-                  <button class="btn-delete" data-delete="${rowId}">Видалити</button>
-                </div>
-              </td>
-            </tr>
-            <tr id="lead-expand-${rowId}" style="display:none;">
-              <td colspan="6" style="padding:0 12px 14px;">
-                <div class="brief-box" style="margin:0;">
-                  ${lead.comment ? `<div><strong>Коментар:</strong> ${esc(lead.comment)}</div>` : ''}
-                  <div><strong>Послуга:</strong> ${esc(lead.serviceType || '—')}</div>
-                  <div><strong>Номер клієнта:</strong> ${esc(lead.clientNumber || '—')}</div>
-                  ${lead.brief ? `
-                    <div style="margin-top:6px;"><strong>Формуляр:</strong> ${esc(lead.brief.summaryText || lead.brief.details || 'Отримано')}</div>
-                    ${lead.brief.companyIco ? `<div><strong>IČO:</strong> ${esc(lead.brief.companyIco)}</div>` : ''}
-                    ${lead.brief.companyRegistry?.name ? `<div><strong>Компанія:</strong> ${esc(lead.brief.companyRegistry.name)}</div>` : ''}
-                  ` : '<div style="margin-top:6px;color:var(--ink2);">Формуляр ще не повернувся</div>'}
-                </div>
-              </td>
-            </tr>
-          `
-        }).join('')
-
-        leadList.innerHTML = `
-          <div style="overflow:auto;border:1px solid var(--b2);border-radius:var(--r-md);background:var(--c);">
-            <table style="width:100%;border-collapse:collapse;min-width:920px;">
-              <thead>
-                <tr>
-                  <th>Клієнт</th>
-                  <th>Статус</th>
-                  <th>Послуга</th>
-                  <th>Номер</th>
-                  <th>Створено</th>
-                  <th>Дії</th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </div>
-        `
-
-        leadList.querySelectorAll('[data-toggle-row]').forEach((row) => {
-          row.addEventListener('click', (e) => {
-            if (e.target.closest('button')) return
-            const id = row.getAttribute('data-toggle-row')
-            const details = document.getElementById(`lead-expand-${id}`)
-            if (!details) return
-            details.style.display = details.style.display === 'none' ? '' : 'none'
-          })
-        })
-
-        leadList.querySelectorAll('[data-open]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation()
-            openLeadCard(Number(btn.getAttribute('data-open')))
-          })
-        })
-
-        leadList.querySelectorAll('[data-delete]').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation()
-            const id = btn.getAttribute('data-delete')
-            const confirmed = window.confirm('Видалити цю заявку з CRM?')
-            if (!confirmed) return
-            const pwd = window.prompt('Введіть пароль для видалення:')
-            if (!pwd) return
-            const orig = btn.textContent
-            btn.disabled = true
-            try {
-              const r = await fetch(apiUrl(`/api/leads/${id}`), {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deletePassword: pwd.trim() }),
-              })
-              const d = await json(r)
-              if (!r.ok || !d?.ok) throw new Error(d?.error || 'delete_failed')
-              btn.textContent = 'Видалено'
-              setTimeout(async () => { await loadLeads() }, 250)
-            } catch (err) {
-              const msg = String(err && err.message ? err.message : '')
-              btn.textContent = msg.includes('password') ? 'Невірний пароль' : 'Помилка'
-              setTimeout(() => { btn.textContent = orig; btn.disabled = false }, 1500)
-              return
-            }
-            btn.disabled = false
-          })
-        })
-      }
-
-      /* load leads */
-      async function loadLeads(opts = {}) {
-        if (!opts.silent) leadList.innerHTML = '<div class="loading">Завантаження...</div>'
-        try {
-          const r = await fetch(`${apiUrl('/api/leads')}?_t=${Date.now()}`, { cache: 'no-store' })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error()
-          allLeads = d.leads || []
-          renderLeads()
-          if (syncHintEl) syncHintEl.textContent = `Оновлення: ${fmtDate(new Date().toISOString())}`
-        } catch {
-          leadList.innerHTML = '<div class="empty"><p>Помилка завантаження</p><small>Спробуйте оновити сторінку</small></div>'
-        }
-      }
-
-      function renderCasesKpi(analytics) {
-        const o = analytics?.orders || {}
-        const items = [
-          { k:'Активні замовлення', v:o.activeOrders || 0, c:'c-total' },
-          { k:'До старту', v:o.beforeStart || 0, c:'c-new' },
-          { k:'В реалізації', v:o.inExecution || 0, c:'c-prog' },
-          { k:'Прострочені', v:o.overdue || 0, c:'c-new' },
-          { k:'Виграні кейси', v:o.wonCases || 0, c:'c-won' },
-          { k:'Програні кейси', v:o.lostCases || 0, c:'c-new' },
-        ]
-        casesKpiEl.innerHTML = items.map(x => `
-          <div class="stat ${x.c}">
-            <div class="k">${x.k}</div>
-            <div class="v">${x.v}</div>
-          </div>
-        `).join('')
-      }
-
-      function renderCases() {
-        if (!allCases.length) {
-          casesListEl.innerHTML = '<div class="empty"><p>Комерційні випадки відсутні</p></div>'
-          return
-        }
-        casesListEl.innerHTML = allCases.map((c) => {
-          const status = statusLabel(c.status || 'contacted')
-          const attention = c.signals?.needsAttention
-          const daysToStart = c.signals?.daysToStart
-          const daysToEnd = c.signals?.daysToEnd
-          const internalId = c.internal_order_id || c.internalOrderId || '—'
-          const clientName = c.person_name || c.personName || c.client_contact_name || c.clientContactName || c.company_name || c.companyName || 'Клієнт'
-          return `
-            <article class="case-card">
-              <div class="case-title">${esc(clientName)}</div>
-              <div class="case-meta">Internal ID: <strong>${esc(internalId)}</strong> · Статус: <span class="badge ${badgeClass(c.status || 'contacted')}">${esc(status)}</span></div>
-              ${attention ? '<div class="case-alert">⚠ Необхідно вирішити (до старту 15–20 днів)</div>' : ''}
-              <div class="case-line">Тип: <strong>${esc(c.order_type || c.orderType || '—')}</strong> · Етап: <strong>${esc(c.stage || '—')}</strong></div>
-              <div class="case-line">Днів до старту: <strong>${daysToStart == null ? '—' : daysToStart}</strong> · Днів до завершення: <strong>${daysToEnd == null ? '—' : daysToEnd}</strong></div>
-              <div class="case-line">Менеджер: <strong>${esc(c.company_manager || c.companyManager || '—')}</strong></div>
-              <div class="case-actions">
-                <button class="case-btn" data-offer-id="${Number(c.id)}">Надіслати КП</button>
-                <button class="case-btn" data-accept-id="${Number(c.id)}">КП прийнято → Фактура</button>
-              </div>
-            </article>
-          `
-        }).join('')
-        casesListEl.querySelectorAll('[data-offer-id]').forEach((btn) => {
-          btn.addEventListener('click', () => sendCaseOffer(Number(btn.getAttribute('data-offer-id'))))
-        })
-        casesListEl.querySelectorAll('[data-accept-id]').forEach((btn) => {
-          btn.addEventListener('click', () => acceptCaseOffer(Number(btn.getAttribute('data-accept-id'))))
-        })
-      }
-
-      async function sendCaseOffer(caseId) {
-        const row = allCases.find((x) => Number(x.id) === Number(caseId))
-        if (!row) return
-        const email = prompt('Email клієнта для КП:', row.client_contact_email || row.person_email || '')
-        if (!email) return
-        const amountRaw = prompt('Сума КП (CZK):', String(row.offer_amount ?? row.offerAmount ?? ''))
-        const amount = Number(amountRaw || 0)
-        if (!Number.isFinite(amount) || amount <= 0) {
-          alert('Некоректна сума')
-          return
-        }
-        const subject = prompt('Тема листа:', `Комерційна пропозиція ${row.internal_order_id || row.internalOrderId || ''}`) || ''
-        try {
-          const r = await fetch(apiUrl(`/api/crm/cases/${caseId}/send-offer`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, offerAmount: amount, subject }),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'send_failed')
-          alert('КП надіслано')
-          await loadCases()
-          await loadLeads({ silent: true })
-        } catch (e) {
-          alert(`Помилка відправки КП: ${String(e && e.message ? e.message : e)}`)
-        }
-      }
-
-      async function acceptCaseOffer(caseId) {
-        const row = allCases.find((x) => Number(x.id) === Number(caseId))
-        if (!row) return
-        const subjectId = prompt('Fakturoid subject_id клієнта:')
-        if (!subjectId) return
-        const dueDate = prompt('Дата оплати (YYYY-MM-DD):')
-        if (!dueDate) return
-        const amountRaw = prompt('Сума фактури (CZK):', String(row.offer_amount ?? row.offerAmount ?? ''))
-        const amount = Number(amountRaw || 0)
-        if (!Number.isFinite(amount) || amount <= 0) {
-          alert('Некоректна сума')
-          return
-        }
-        const email = prompt('Email отримувача фактури:', row.client_contact_email || row.person_email || '')
-        if (!email) return
-        try {
-          const r = await fetch(apiUrl(`/api/crm/cases/${caseId}/accept-offer`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subjectId: Number(subjectId), dueDate, amount, email }),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'invoice_failed')
-          alert(`Фактуру відправлено. Invoice ID: ${d.invoice?.id || '—'}`)
-          await loadCases()
-          await loadLeads({ silent: true })
-        } catch (e) {
-          alert(`Помилка фактурування: ${String(e && e.message ? e.message : e)}`)
-        }
-      }
-
-      async function loadCases() {
-        const p = new URLSearchParams()
-        if (caseOrderTypeEl.value) p.set('orderType', caseOrderTypeEl.value)
-        if (caseStatusEl.value) p.set('status', caseStatusEl.value)
-        if (caseSearchIdEl.value.trim()) p.set('internalOrderId', caseSearchIdEl.value.trim())
-        if (caseManagerEl.value.trim()) p.set('manager', caseManagerEl.value.trim())
-        if (casePeriodFromEl.value) p.set('periodFrom', `${casePeriodFromEl.value}T00:00:00.000Z`)
-        if (casePeriodToEl.value) p.set('periodTo', `${casePeriodToEl.value}T23:59:59.999Z`)
-        try {
-          const [rCases, rAnalytics] = await Promise.all([
-            fetch(apiUrl(`/api/crm/cases?${p.toString()}`)),
-            fetch(apiUrl('/api/crm/analytics')),
-          ])
-          const [dCases, dAnalytics] = await Promise.all([json(rCases), json(rAnalytics)])
-          if (!rCases.ok || !dCases?.ok) throw new Error('cases_failed')
-          allCases = dCases.cases || []
-          renderCases()
-          if (rAnalytics.ok && dAnalytics?.ok) renderCasesKpi(dAnalytics.reports)
-          if (casesSyncHintEl) casesSyncHintEl.textContent = `Оновлення: ${fmtDate(new Date().toISOString())}`
-        } catch {
-          casesListEl.innerHTML = '<div class="empty"><p>Помилка завантаження кейсів</p></div>'
-        }
-      }
-
-      function renderWave2Leads() {
-        const rows = allLeads.filter((x) => Number(x.wave || 1) === 2)
-        if (!rows.length) {
-          wave2LeadsListEl.innerHTML = '<div class="empty"><p>У 2-й хвилі поки немає лідів</p></div>'
-          return
-        }
-        const listRows = rows.map((lead) => {
-          const rowId = Number(lead.id)
-          const badge = badgeClass(lead.status || 'form_received')
-          return `
-            <article class="wave2-row" data-wave2-toggle="${rowId}">
-              <div class="wave2-row-main">
-                <div>
-                  <span class="wave2-col-label">Клієнт</span>
-                  <div class="wave2-lead-name">${esc(lead.name || lead.fullName || 'Клієнт')}</div>
-                  <div style="font-size:12px;color:var(--ink2);margin-top:2px;">${esc(lead.phone || '—')} · ${esc(lead.email || '—')}</div>
-                </div>
-                <div>
-                  <span class="wave2-col-label">Статус</span>
-                  <span class="badge ${badge}">${esc(statusLabel(lead.status || 'form_received'))}</span>
-                </div>
-                <div>
-                  <span class="wave2-col-label">Номер</span>
-                  <div style="font-weight:600">${esc(lead.clientNumber || '—')}</div>
-                </div>
-                <div class="wave2-lead-actions" style="margin:0;">
-                  <button class="wave-mini-btn" data-open-wave2="${rowId}">Швидка картка</button>
-                  <a class="wave-mini-btn" href="./client-card.html?leadId=${rowId}">Сторінка клієнта</a>
-                  <a class="wave-mini-btn" href="./estimate-builder.html?leadId=${rowId}">База розрахунку</a>
-                  <button class="wave-mini-btn" data-wave2to3="${rowId}">→ Волна 3</button>
-                </div>
-              </div>
-              <div id="wave2-expand-${rowId}" class="wave2-details">
-                <div class="brief-box" style="margin:0;">
-                  ${lead.brief?.summaryText ? `<div><strong>Формуляр:</strong> ${esc(lead.brief.summaryText)}</div>` : ''}
-                  ${lead.brief?.companyIco ? `<div><strong>IČO:</strong> ${esc(lead.brief.companyIco)}</div>` : ''}
-                  ${lead.brief?.companyRegistry?.name ? `<div><strong>Компанія:</strong> ${esc(lead.brief.companyRegistry.name)}</div>` : ''}
-                  <div><strong>Адреса:</strong> ${esc(lead.brief?.companyRegistry?.address || lead.brief?.realizationAddress || '—')}</div>
-                  <div><strong>Коментар:</strong> ${esc(lead.managerComment || lead.comment || '—')}</div>
-                </div>
-              </div>
-            </article>
-          `
-        }).join('')
-        wave2LeadsListEl.innerHTML = `
-          <div class="wave2-list-wrap">
-            ${listRows}
-          </div>
-        `
-        wave2LeadsListEl.querySelectorAll('[data-wave2-toggle]').forEach((row) => {
-          row.addEventListener('click', (e) => {
-            if (e.target.closest('button')) return
-            const id = row.getAttribute('data-wave2-toggle')
-            const details = document.getElementById(`wave2-expand-${id}`)
-            if (!details) return
-            details.classList.toggle('show')
-          })
-        })
-        wave2LeadsListEl.querySelectorAll('[data-open-wave2]').forEach((btn) => {
-          btn.addEventListener('click', () => openLeadCard(Number(btn.getAttribute('data-open-wave2'))))
-        })
-        wave2LeadsListEl.querySelectorAll('[data-wave2to3]').forEach((btn) => {
-          btn.addEventListener('click', async () => {
-            const id = Number(btn.getAttribute('data-wave2to3'))
-            if (!Number.isFinite(id)) return
-            btn.disabled = true
-            try {
-              const r = await fetch(apiUrl(`/api/leads/${id}`), {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ wave: 3 }),
-              })
-              const d = await json(r)
-              if (!r.ok || !d?.ok) throw new Error('move_failed')
-              await loadWave2Leads({ silent: true })
-              await loadWave3({ silent: true })
-            } catch {
-              btn.disabled = false
-            }
-          })
-        })
-      }
-
-      async function loadWave2Leads(opts = {}) {
-        if (!opts.silent) wave2LeadsListEl.innerHTML = '<div class="loading">Завантаження...</div>'
-        try {
-          const r = await fetch(`${apiUrl('/api/leads')}?_t=${Date.now()}`, { cache: 'no-store' })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error('load_failed')
-          allLeads = d.leads || []
-          renderWave2Leads()
-          if (wave2LeadsHintEl) wave2LeadsHintEl.textContent = `Оновлення: ${fmtDate(new Date().toISOString())}`
-        } catch {
-          wave2LeadsListEl.innerHTML = '<div class="empty"><p>Помилка завантаження 2-ї хвилі</p></div>'
-        }
-      }
-
-      function renderWave3() {
-        const wave3Leads = allLeads.filter((x) => Number(x.wave || 1) >= 3)
-        const inExecution = wave3Leads.filter((x) => String(x.status || '') === 'in_execution').length
-        const invoicing = wave3Leads.filter((x) => String(x.status || '') === 'invoicing').length
-        const completed = wave3Leads.filter((x) => String(x.status || '') === 'completed').length
-        const active = wave3Leads.filter((x) => ['in_execution', 'invoicing', 'waiting_response', 'need_attention'].includes(String(x.status || ''))).length
-        const kpi = [
-          { k: 'Всього у 3-й хвилі', v: wave3Leads.length, c: 'c-total' },
-          { k: 'В реалізації', v: inExecution, c: 'c-prog' },
-          { k: 'Виставлення рахунку', v: invoicing, c: 'c-new' },
-          { k: 'Завершено', v: completed, c: 'c-won' },
-          { k: 'Активні', v: active, c: 'c-total' },
-        ]
-        wave3KpiEl.innerHTML = kpi.map(x => `
-          <div class="stat ${x.c}">
-            <div class="k">${x.k}</div>
-            <div class="v">${x.v}</div>
-          </div>
-        `).join('')
-
-        if (!wave3Leads.length) {
-          wave3ListEl.innerHTML = '<div class="empty"><p>У 3-й хвилі поки немає клієнтів</p></div>'
-          return
-        }
-        wave3ListEl.innerHTML = wave3Leads.map((lead) => `
-          <article class="wave3-card">
-            <div class="wave3-title">${esc(lead.name || lead.fullName || 'Клієнт')}</div>
-            <div class="wave3-meta">
-              Статус: <strong>${esc(statusLabel(lead.status || 'new_request'))}</strong><br />
-              Телефон: ${esc(lead.phone || '—')}<br />
-              Email: ${esc(lead.email || '—')}<br />
-              Номер клієнта: ${esc(lead.clientNumber || '—')}
+      function renderCard(job, customers) {
+        const c = customers[job.customerId] || {}
+        const name = c.name || c.companyName || job.title || '—'
+        const type = job.jobType === 'elektro' ? 'Elektro' : job.jobType === 'stavebni' ? 'Stavební' : 'Kombinovaná'
+        const financeStatus = job.finalPaid ? 'Uhrazeno' : job.depositPaid ? 'Záloha uhrazena' : job.depositAmount > 0 ? 'Čeká na zálohu' : 'Bez zálohy'
+        const start = job.plannedStart ? fmt(job.plannedStart) : '—'
+        const waitLabel = job.waitingFor || 'none'
+        return `
+          <div class="card" data-job="${job.id}">
+            <div class="card-name">${esc(name)}</div>
+            <div class="card-meta">
+              <strong>${esc(job.internalNumber || '')}</strong><br>
+              Klient: ${esc(name)}<br>
+              Typ: <strong>${esc(type)}</strong><br>
+              Odpovědná osoba: <strong>${esc(job.responsiblePerson || '—')}</strong><br>
+              Termín: <strong>${esc(start)}</strong><br>
+              Finance: <strong>${esc(financeStatus)}</strong><br>
+              Čekáme na: <strong>${esc(waitLabel)}</strong>
             </div>
-            <div class="wave3-actions">
-              <button class="wave-mini-btn" data-open-wave3="${lead.id}">Відкрити картку</button>
-              <button class="wave-mini-btn" data-move-wave3="${lead.id}" data-wave="2">Повернути у волну 2</button>
+            <div class="card-foot">
+              ${job.priority === 'urgent' ? '<span class="badge b-red">URGENT</span>' : ''}
+              ${job.priority === 'high' ? '<span class="badge b-orange">VYSOKÁ</span>' : ''}
+              ${job.computedBlocking && job.computedBlocking !== 'none' ? '<span class="badge b-grey">' + esc(job.computedBlocking) + '</span>' : ''}
             </div>
-          </article>
-        `).join('')
-        wave3ListEl.querySelectorAll('[data-open-wave3]').forEach((btn) => {
-          btn.addEventListener('click', () => openLeadCard(Number(btn.getAttribute('data-open-wave3'))))
-        })
-        wave3ListEl.querySelectorAll('[data-move-wave3]').forEach((btn) => {
-          btn.addEventListener('click', async () => {
-            const id = Number(btn.getAttribute('data-move-wave3'))
-            const wave = Number(btn.getAttribute('data-wave'))
-            if (!Number.isFinite(id) || !Number.isFinite(wave)) return
-            btn.disabled = true
-            try {
-              const r = await fetch(apiUrl(`/api/leads/${id}`), {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ wave }),
-              })
-              const d = await json(r)
-              if (!r.ok || !d?.ok) throw new Error('move_failed')
-              await loadLeads({ silent: true })
-              await loadWave3({ silent: true })
-            } catch {
-              btn.disabled = false
-            }
-          })
-        })
-      }
-
-      async function loadWave3(opts = {}) {
-        if (!opts.silent) wave3ListEl.innerHTML = '<div class="loading">Завантаження...</div>'
-        try {
-          if (!allLeads.length) {
-            const r = await fetch(apiUrl('/api/leads'))
-            const d = await json(r)
-            if (!r.ok || !d?.ok) throw new Error('load_failed')
-            allLeads = d.leads || []
-          }
-          renderWave3()
-          if (wave3SyncHintEl) wave3SyncHintEl.textContent = `Оновлення: ${fmtDate(new Date().toISOString())}`
-        } catch {
-          wave3ListEl.innerHTML = '<div class="empty"><p>Помилка завантаження 3-ї хвилі</p></div>'
-        }
-      }
-
-      function openLeadCard(id) {
-        const lead = allLeads.find((x) => Number(x.id) === Number(id))
-        if (!lead) return
-        currentLeadId = Number(id)
-        currentLeadData = lead
-        modalSubEl.textContent = `${lead.name || 'Клієнт'} · ${statusLabel(lead.status)}`
-        modalStatusEl.value = lead.status || 'new_request'
-        modalCommentEl.value = lead.managerComment || ''
-        modalClientNumberEl.value = lead.clientNumber || ''
-        modalIcoEl.value = lead.brief?.companyIco || ''
-        modalIcoMsgEl.textContent = ''
-        aiFormTextEl.value = ''
-        aiFormFileEl.value = ''
-        aiCaseMsgEl.textContent = ''
-        modalDetailsEl.innerHTML = [
-          `<div class="modal-item"><b>Імʼя:</b> ${esc(lead.name || '—')}</div>`,
-          `<div class="modal-item"><b>Телефон:</b> ${esc(lead.phone || '—')}</div>`,
-          `<div class="modal-item"><b>Email:</b> ${esc(lead.email || '—')}</div>`,
-          `<div class="modal-item"><b>Номер клієнта:</b> ${esc(lead.clientNumber || '—')}</div>`,
-          `<div class="modal-item"><b>Послуга:</b> ${esc(lead.serviceType || '—')}</div>`,
-          `<div class="modal-item"><b>Створено:</b> ${esc(fmtDate(lead.createdAt))}</div>`,
-          `<div class="modal-item"><b>Оновлено:</b> ${esc(fmtDate(lead.updatedAt || lead.createdAt))}</div>`,
-          `<div class="modal-item"><b>Коментар клієнта:</b> ${esc(lead.comment || '—')}</div>`,
-          `<div class="modal-item"><b>Форма:</b> ${lead.brief ? esc(`Отримано ${fmtDate(lead.briefReceivedAt || lead.brief.receivedAt || lead.updatedAt)}`) : 'Не отримано'}</div>`,
-          lead.brief ? `<div class="modal-item"><b>Деталі форми:</b> ${esc(
-            lead.brief.summaryText ||
-            [
-              lead.brief.workType ? `Роботи: ${lead.brief.workType}` : '',
-              lead.brief.objectType ? `Обʼєкт: ${lead.brief.objectType}` : '',
-              lead.brief.address ? `Адреса: ${lead.brief.address}` : '',
-              lead.brief.area ? `Площа: ${lead.brief.area}` : '',
-              lead.brief.budget ? `Бюджет: ${lead.brief.budget}` : '',
-              lead.brief.timeline ? `Термін: ${lead.brief.timeline}` : '',
-              lead.brief.details ? `Деталі: ${lead.brief.details}` : '',
-            ].filter(Boolean).join(' | ')
-          )}</div>` : '',
-          lead.brief?.companyRegistry ? `<div class="modal-item"><b>Компанія (ARES):</b> ${esc([
-            lead.brief.companyRegistry.name ? `Назва: ${lead.brief.companyRegistry.name}` : '',
-            lead.brief.companyRegistry.ico ? `IČO: ${lead.brief.companyRegistry.ico}` : '',
-            lead.brief.companyRegistry.dic ? `DIČ: ${lead.brief.companyRegistry.dic}` : '',
-            [lead.brief.companyRegistry.address, lead.brief.companyRegistry.city, lead.brief.companyRegistry.zip].filter(Boolean).join(', ') || '',
-          ].filter(Boolean).join(' | '))}</div>` : '',
-        ].filter(Boolean).join('')
-        modalMsgEl.textContent = ''
-        offerMsgEl.textContent = ''
-        modalOffersEl.innerHTML = '<div class="loading">Завантаження КП...</div>'
-        loadLeadOffers(currentLeadId)
-        leadModalEl.classList.add('show')
-      }
-      function renderBriefWindow(lead) {
-        const brief = lead?.brief && typeof lead.brief === 'object' ? lead.brief : null
-        if (!brief) {
-          alert('Формуляр для цього клієнта ще не отримано')
-          return
-        }
-        const rows = [
-          ['Клієнт', brief.clientName || lead?.name || '—'],
-          ['Email', brief.clientEmail || lead?.email || '—'],
-          ['Телефон', brief.clientPhone || lead?.phone || '—'],
-          ['IČO', brief.companyIco || '—'],
-          ['Компанія (ARES)', brief.companyRegistry?.name || '—'],
-          ['Адреса', brief.realizationAddress || brief.address || '—'],
-          ['Тип обʼєкта', brief.objectType || '—'],
-          ['Роботи', brief.workType || (Array.isArray(brief.requestTypes) ? brief.requestTypes.join(', ') : '') || '—'],
-          ['Площа/обсяг', brief.area || '—'],
-          ['Бюджет', brief.budget || '—'],
-          ['Термін', brief.timeline || brief.requestedTerm || '—'],
-          ['Деталі', brief.summaryText || brief.details || brief.note || '—'],
-        ]
-        const html = `
-          <!doctype html>
-          <html lang="uk">
-            <head>
-              <meta charset="UTF-8" />
-              <title>Формуляр клієнта</title>
-              <style>
-                body{font-family:Inter,Arial,sans-serif;background:#02080F;color:#E6F0FF;margin:0;padding:24px;}
-                .card{max-width:920px;margin:0 auto;background:#0C1E38;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:20px;}
-                h1{margin:0 0 16px;font-size:20px;}
-                table{width:100%;border-collapse:collapse;}
-                td{padding:10px 12px;border-top:1px solid rgba(255,255,255,.07);vertical-align:top;font-size:14px;}
-                td:first-child{width:220px;color:#7AA2C4;font-weight:600;}
-              </style>
-            </head>
-            <body>
-              <div class="card">
-                <h1>Заповнений формуляр клієнта</h1>
-                <table>
-                  ${rows.map(([k,v]) => `<tr><td>${esc(k)}</td><td>${esc(v || '—')}</td></tr>`).join('')}
-                </table>
-              </div>
-            </body>
-          </html>
+            ${riskBadge(job.computedRisk)}
+          </div>
         `
-        const w = window.open('', '_blank')
-        if (!w) {
-          alert('Дозвольте popup для перегляду формуляра')
-          return
-        }
-        w.document.open()
-        w.document.write(html)
-        w.document.close()
       }
-
-      function renderLeadOffers() {
-        if (!currentLeadOffers.length) {
-          modalOffersEl.innerHTML = '<div class="offer-item"><div class="offer-item-name">КП ще не створено</div><div class="offer-item-meta">Натисніть "Згенерувати чернетку КП (AI)".</div></div>'
-          return
-        }
-        if (!selectedOfferId) selectedOfferId = Number(currentLeadOffers[0].id)
-        modalOffersEl.innerHTML = currentLeadOffers.map((offer) => {
-          const isActive = Number(offer.id) === Number(selectedOfferId)
-          const files = Array.isArray(offer.files) ? offer.files : []
-          const hasPdf = files.some((x) => x.kind === 'pdf')
-          const hasXlsx = files.some((x) => x.kind === 'xlsx')
+      async function loadPipeline() {
+        const r = await fetch(api('/api/crm/pipeline'))
+        const d = await j(r)
+        if (!r.ok || !d?.ok) { document.getElementById('pipeBoard').innerHTML = '<div class="empty">Chyba načítání pipeline</div>'; return }
+        const { byStage, customers } = d
+        document.getElementById('pipeBoard').innerHTML = STAGES.map(stage => {
+          const jobs = byStage[stage] || []
           return `
-            <div class="offer-item" style="${isActive ? 'border-color:var(--blue2);' : ''}">
-              <div class="offer-item-head">
-                <div class="offer-item-name">${esc(offer.offerNo || `OF-${offer.id}`)}</div>
-                <span class="badge ${isActive ? 'badge-contacted' : 'badge-new'}">${esc(OFFER_STATUS_LABELS[offer.status] || offer.status || 'Чернетка')}</span>
+            <div class="col">
+              <div class="col-head">
+                <div class="col-title">${esc(STAGE_LABELS[stage])}</div>
+                <div class="col-count">${jobs.length}</div>
               </div>
-              <div class="offer-item-meta">
-                Версія: ${esc(String(offer.version || 1))} · Створено: ${esc(fmtDate(offer.createdAt))}<br />
-                Сума: <strong>${esc(String(offer.totalWithVat ?? 0))} CZK</strong><br />
-                Файли: ${hasXlsx ? 'Excel' : '—'} / ${hasPdf ? 'PDF' : '—'}
-              </div>
-              <div class="offer-item-actions">
-                <button class="wave-mini-btn" data-select-offer="${offer.id}">Обрати</button>
-                ${hasXlsx ? `<a class="wave-mini-btn" href="${apiUrl(`/api/crm/offers/${offer.id}/file/xlsx`)}" target="_blank" rel="noopener">Excel</a>` : ''}
-                ${hasPdf ? `<a class="wave-mini-btn" href="${apiUrl(`/api/crm/offers/${offer.id}/file/pdf`)}" target="_blank" rel="noopener">PDF</a>` : ''}
+              <div class="col-body">
+                ${jobs.length ? jobs.map(j => renderCard(j, customers || {})).join('') : '<div style="padding:16px;text-align:center;color:var(--ink3);font-size:12px">Žádné zakázky</div>'}
               </div>
             </div>
           `
         }).join('')
-        modalOffersEl.querySelectorAll('[data-select-offer]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            selectedOfferId = Number(btn.getAttribute('data-select-offer'))
-            renderLeadOffers()
+        document.getElementById('pipeBoard').querySelectorAll('[data-job]').forEach(el => {
+          el.addEventListener('click', () => {
+            window.location.href = `./job-detail.html?jobId=${el.getAttribute('data-job')}`
           })
         })
       }
-      async function loadLeadOffers(leadId) {
-        if (!Number.isFinite(Number(leadId))) return
-        try {
-          const r = await fetch(apiUrl(`/api/crm/offers?leadId=${encodeURIComponent(String(leadId))}`))
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error('offers_failed')
-          currentLeadOffers = Array.isArray(d.offers) ? d.offers : []
-          selectedOfferId = currentLeadOffers.length ? Number(currentLeadOffers[0].id) : null
-          renderLeadOffers()
-        } catch {
-          modalOffersEl.innerHTML = '<div class="offer-item"><div class="offer-item-name">Помилка завантаження КП</div></div>'
-        }
+
+      async function loadProblems() {
+        const r = await fetch(api('/api/crm/problems'))
+        const d = await j(r)
+        if (!r.ok || !d?.ok) { document.getElementById('probBody').innerHTML = '<div class="empty">Chyba načítání</div>'; return }
+        const { problems, grouped, customers } = d
+        if (!problems.length) { document.getElementById('probBody').innerHTML = '<div class="empty">Žádné problémy. Vše je v pořádku.</div>'; return }
+        const labels = { bez_odpovedi: 'Bez odpovědi', finance: 'Finance', dokumenty: 'Dokumenty', realizace: 'Realizace', po_terminu: 'Po termínu' }
+        const sections = Object.entries(grouped || {}).filter(([, rows]) => Array.isArray(rows) && rows.length)
+        document.getElementById('probBody').innerHTML = sections.map(([key, rows]) => `
+          <div class="panel" style="padding:0; overflow:hidden; margin-bottom:16px;">
+            <div style="padding:14px 16px; border-bottom:1px solid var(--b); background:var(--s2); font-size:13px; font-weight:700;">${esc(labels[key] || key)} · ${rows.length}</div>
+            <div style="overflow:auto;">
+              <table class="prob-table">
+                <thead><tr>
+                  <th>Zakázka</th><th>Klient</th><th>Etapa</th><th>Riziko</th><th>Blokace</th><th>Čekáme na</th><th>Další krok</th>
+                </tr></thead>
+                <tbody>
+                  ${rows.map(p => {
+                    const c = (customers || {})[p.customerId] || {}
+                    return `<tr style="cursor:pointer" data-prob-job="${p.id}">
+                      <td><strong>${esc(p.internalNumber || '')}</strong><br><span style="color:var(--ink2)">${esc(p.title || '')}</span></td>
+                      <td>${esc(c.name || '—')}</td>
+                      <td><span class="badge ${STAGE_COLORS[p.pipelineStage || p.stage] || 'b-grey'}">${esc(STAGE_LABELS[p.pipelineStage || p.stage] || p.pipelineStage || p.stage)}</span></td>
+                      <td>${riskBadge(p.computedRisk)}</td>
+                      <td style="color:var(--ink2)">${esc(p.computedBlocking || '—')}</td>
+                      <td style="color:var(--ink2)">${esc(p.waitingFor || '—')}</td>
+                      <td style="font-weight:600">${esc(p.nextAction || '—')}</td>
+                    </tr>`
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `).join('')
+        document.getElementById('probBody').querySelectorAll('[data-prob-job]').forEach(el => {
+          el.addEventListener('click', () => { window.location.href = `./job-detail.html?jobId=${el.getAttribute('data-prob-job')}` })
+        })
       }
 
-      /* submit lead */
       document.getElementById('submitLead').addEventListener('click', async () => {
-        formMsg.className = 'msg'
-        formMsg.textContent = ''
-        const body = {
-          lang: 'ua',
-          name: document.getElementById('name').value.trim(),
-          phone: document.getElementById('phone').value.trim(),
-          email: document.getElementById('email').value.trim(),
-          serviceType: document.getElementById('serviceType').value,
-          comment: document.getElementById('comment').value.trim(),
-        }
+        const msg = document.getElementById('formMsg')
+        msg.className = 'msg'; msg.textContent = ''
+        const body = { lang: 'cz', name: document.getElementById('fName').value.trim(), phone: document.getElementById('fPhone').value.trim(), email: document.getElementById('fEmail').value.trim(), serviceType: document.getElementById('fType').value, comment: document.getElementById('fComment').value.trim() }
+        const btn = document.getElementById('submitLead'); const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = 'Odesílám...'
         try {
-          const btn = document.getElementById('submitLead')
-          const orig = btn.innerHTML
-          btn.disabled = true
-          btn.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.7s" repeatCount="indefinite"/></circle></svg> Надсилаємо...'
-          const r = await fetch(apiUrl('/api/leads'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          })
-          const d = await json(r)
-          btn.disabled = false
-          btn.innerHTML = orig
-          if (!r.ok || !d?.ok) {
-            formMsg.className = 'msg err'
-            formMsg.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> ' + (d?.error || 'Помилка')
-            return
-          }
-          const waOk = d.dispatch?.whatsapp?.ok
-          const emOk = d.dispatch?.emailClient?.ok
-          const leadStatus = d.lead?.status
-          formMsg.className = 'msg ok'
-          formMsg.innerHTML = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Заявку збережено.${waOk ? ' WhatsApp: відправлено.' : ''}${emOk ? ' Форма на email клієнта: відправлено.' : ''}${leadStatus === 'invalid_email' ? ' CRM: Невірний email.' : ''}`
-          document.getElementById('name').value    = ''
-          document.getElementById('email').value   = ''
-          document.getElementById('comment').value = ''
-          document.getElementById('phone').value   = '+420'
-        } catch {
-          formMsg.className = 'msg err'
-          formMsg.innerHTML = '✗ Помилка мережі'
-        }
+          const r = await fetch(api('/api/leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          const d = await j(r); btn.disabled = false; btn.innerHTML = orig
+          if (!r.ok || !d?.ok) { msg.className = 'msg err'; msg.textContent = d?.error || 'Chyba'; return }
+          msg.className = 'msg ok'; msg.textContent = `Poptávka vytvořena. Zakázka: ${d.job?.internalNumber || '—'}`
+          document.getElementById('fName').value = ''; document.getElementById('fEmail').value = ''; document.getElementById('fComment').value = ''; document.getElementById('fPhone').value = '+420'
+        } catch { btn.disabled = false; btn.innerHTML = orig; msg.className = 'msg err'; msg.textContent = 'Chyba sítě' }
       })
 
-      /* export csv by tours */
-      document.getElementById('exportCsvWave1').addEventListener('click', () => {
-        downloadCsvByUrl(apiUrl('/api/crm/export/leads.csv?scope=wave1'), `leads-wave1-${new Date().toISOString().slice(0,10)}.csv`)
-      })
-      document.getElementById('exportCsvWave2').addEventListener('click', () => {
-        downloadCsvByUrl(apiUrl('/api/crm/export/leads.csv?scope=wave2'), `leads-wave2-${new Date().toISOString().slice(0,10)}.csv`)
-      })
-      document.getElementById('exportCsvAll').addEventListener('click', () => {
-        downloadCsvByUrl(apiUrl('/api/crm/export/leads.csv?scope=all'), `leads-all-${new Date().toISOString().slice(0,10)}.csv`)
-      })
-      document.getElementById('exportCasesCsv').addEventListener('click', () => {
-        downloadCsvByUrl(apiUrl('/api/crm/export/cases.csv'), `cases-${new Date().toISOString().slice(0,10)}.csv`)
-      })
-
-      /* filter listeners */
-      searchEl.addEventListener('input', renderLeads)
-      statusFilterEl.addEventListener('change', renderLeads)
-      sourceFilterEl.addEventListener('change', renderLeads)
-      serviceFilterEl.addEventListener('change', renderLeads)
-      dateFilterEl.addEventListener('change', renderLeads)
-      dateFromEl.addEventListener('change', renderLeads)
-      dateToEl.addEventListener('change', renderLeads)
-      dateFilterEl.addEventListener('change', () => {
-        rangeRowEl.classList.toggle('active', dateFilterEl.value === 'custom')
-      })
-      document.getElementById('refresh').addEventListener('click', loadLeads)
-      document.getElementById('refreshCases').addEventListener('click', () => {
-        loadWave2Leads()
-        loadCases()
-      })
-      document.getElementById('refreshWave3').addEventListener('click', loadWave3)
-      caseSearchIdEl.addEventListener('input', loadCases)
-      caseOrderTypeEl.addEventListener('change', loadCases)
-      caseStatusEl.addEventListener('change', loadCases)
-      caseManagerEl.addEventListener('input', loadCases)
-      casePeriodFromEl.addEventListener('change', loadCases)
-      casePeriodToEl.addEventListener('change', loadCases)
-      document.getElementById('closeModal').addEventListener('click', () => leadModalEl.classList.remove('show'))
-      leadModalEl.addEventListener('click', (e) => {
-        if (e.target === leadModalEl) leadModalEl.classList.remove('show')
-      })
-      document.getElementById('saveModal').addEventListener('click', async () => {
-        if (!currentLeadId) return
-        modalMsgEl.textContent = 'Зберігаємо...'
-        try {
-          const r = await fetch(apiUrl(`/api/leads/${currentLeadId}`), {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status: modalStatusEl.value,
-              managerComment: modalCommentEl.value.trim(),
-              clientNumber: modalClientNumberEl.value.trim(),
-            }),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'save_failed')
-          if (d?.lead && Number.isFinite(Number(d.lead.id))) {
-            const idx = allLeads.findIndex((x) => Number(x.id) === Number(d.lead.id))
-            if (idx >= 0) allLeads[idx] = d.lead
-            else allLeads.unshift(d.lead)
-          }
-          modalMsgEl.textContent = 'Зміни збережено'
-          renderLeads()
-          if (casesSection.style.display !== 'none') renderWave2Leads()
-          if (wave3Section.style.display !== 'none') renderWave3()
-          await loadLeads({ silent: true })
-          if (casesSection.style.display !== 'none') await loadWave2Leads({ silent: true })
-          if (wave3Section.style.display !== 'none') await loadWave3({ silent: true })
-          openLeadCard(currentLeadId)
-        } catch (e) {
-          modalMsgEl.textContent = `Не вдалося зберегти: ${String(e && e.message ? e.message : e)}`
-        }
-      })
-      document.getElementById('lookupIcoBtn').addEventListener('click', async () => {
-        if (!currentLeadId) return
-        const ico = (modalIcoEl.value || '').replace(/[^\d]/g, '')
-        if (ico.length < 6) {
-          modalIcoMsgEl.textContent = 'Введіть коректний IČO'
-          return
-        }
-        modalIcoMsgEl.textContent = 'Підтягуємо дані з ARES...'
-        try {
-          const r = await fetch(apiUrl(`/api/leads/${currentLeadId}/enrich-company-by-ico`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ico }),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'lookup_failed')
-          modalIcoMsgEl.textContent = `Готово: ${d.company?.name || 'дані підтягнуто'}`
-          await loadLeads({ silent: true })
-          openLeadCard(currentLeadId)
-        } catch (e) {
-          modalIcoMsgEl.textContent = `Помилка: ${String(e && e.message ? e.message : e)}`
-        }
-      })
-      openBriefFormEl.addEventListener('click', () => {
-        renderBriefWindow(currentLeadData)
-      })
-      openClientPageEl.addEventListener('click', () => {
-        if (!currentLeadId) return
-        window.open(`./client-card.html?leadId=${encodeURIComponent(String(currentLeadId))}`, '_blank')
-      })
-      openEstimatePageEl.addEventListener('click', () => {
-        if (!currentLeadId) return
-        window.open(`./estimate-builder.html?leadId=${encodeURIComponent(String(currentLeadId))}`, '_blank')
-      })
-      document.getElementById('createCaseAi').addEventListener('click', async () => {
-        if (!currentLeadId) return
-        aiCaseMsgEl.textContent = 'AI обробка...'
-        try {
-          const fd = new FormData()
-          fd.append('leadId', String(currentLeadId))
-          if (aiFormTextEl.value.trim()) fd.append('formText', aiFormTextEl.value.trim())
-          if (aiFormFileEl.files && aiFormFileEl.files[0]) fd.append('formFile', aiFormFileEl.files[0])
-          const r = await fetch(apiUrl('/api/crm/cases/from-form-ai'), {
-            method: 'POST',
-            body: fd,
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'ai_failed')
-          aiCaseMsgEl.textContent = `Комерційний випадок створено. ID: ${d.case?.id || '—'}`
-          await loadLeads({ silent: true })
-        } catch (e) {
-          aiCaseMsgEl.textContent = `Помилка AI: ${String(e && e.message ? e.message : e)}`
-        }
-      })
-      createOfferDraftEl.addEventListener('click', async () => {
-        if (!currentLeadId) return
-        offerMsgEl.textContent = 'Генеруємо чернетку КП...'
-        try {
-          const r = await fetch(apiUrl('/api/crm/offers/from-lead-ai'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leadId: currentLeadId }),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'create_offer_failed')
-          offerMsgEl.textContent = 'Чернетку КП створено'
-          await loadLeadOffers(currentLeadId)
-        } catch (e) {
-          offerMsgEl.textContent = `Помилка: ${String(e && e.message ? e.message : e)}`
-        }
-      })
-      buildOfferDocsEl.addEventListener('click', async () => {
-        if (!selectedOfferId) {
-          offerMsgEl.textContent = 'Оберіть КП зі списку'
-          return
-        }
-        offerMsgEl.textContent = 'Формуємо Excel + PDF...'
-        try {
-          const r = await fetch(apiUrl(`/api/crm/offers/${selectedOfferId}/build-documents`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'build_docs_failed')
-          offerMsgEl.textContent = d?.pdf?.ok
-            ? 'Готово: Excel + PDF згенеровано'
-            : 'Excel згенеровано, PDF не створено (перевірте LibreOffice на сервері)'
-          await loadLeadOffers(currentLeadId)
-        } catch (e) {
-          offerMsgEl.textContent = `Помилка: ${String(e && e.message ? e.message : e)}`
-        }
-      })
-      sendOfferToClientEl.addEventListener('click', async () => {
-        if (!selectedOfferId) {
-          offerMsgEl.textContent = 'Оберіть КП зі списку'
-          return
-        }
-        const lead = allLeads.find((x) => Number(x.id) === Number(currentLeadId))
-        const email = prompt('Email клієнта для КП (PDF + Excel):', lead?.email || '')
-        if (!email) return
-        offerMsgEl.textContent = 'Надсилаємо КП клієнту...'
-        try {
-          const r = await fetch(apiUrl(`/api/crm/offers/${selectedOfferId}/send-to-client`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) throw new Error(d?.error || 'send_offer_failed')
-          offerMsgEl.textContent = 'КП відправлено клієнту'
-          await loadLeadOffers(currentLeadId)
-          await loadLeads({ silent: true })
-        } catch (e) {
-          offerMsgEl.textContent = `Помилка: ${String(e && e.message ? e.message : e)}`
-        }
-      })
-      setInterval(() => {
-        loadLeads({ silent: true })
-        if (casesSection.style.display !== 'none') {
-          loadWave2Leads({ silent: true })
-          loadCases()
-        }
-        if (wave3Section.style.display !== 'none') loadWave3({ silent: true })
-      }, 60000)
+      document.getElementById('refreshPipe').addEventListener('click', loadPipeline)
+      document.getElementById('refreshProb').addEventListener('click', loadProblems)
+      loadPipeline()
     </script>
   </body>
 </html>

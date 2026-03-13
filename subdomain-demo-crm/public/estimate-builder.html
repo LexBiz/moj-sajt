@@ -1,174 +1,256 @@
 <!doctype html>
-<html lang="uk">
+<html lang="cs">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>O&L Master Dom · Báze rozpočtu</title>
+    <title>O&L Master Dom · Databáze ceníku</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
+      /* ── O&L Master Dom · Databáze ceníku ── */
       :root {
-        --bg:#05101E; --surface:#0C1B31; --card:#101F3A; --card2:#142548;
-        --line:#1A3258; --line2:#254A80;
-        --txt:#E8F1FF; --muted:#6E92BC; --muted2:#47648C;
-        --blue:#4490EE; --cyan:#46C8DE; --green:#30CC8E;
-        --r:14px; --r2:10px; --shadow:0 8px 40px rgba(0,4,20,.55);
+        --bg: #020C18;
+        --s:  #071626;
+        --c:  #0C1E38;
+        --c2: #0F2442;
+        --b:  rgba(255,255,255,.06);
+        --b2: rgba(255,255,255,.11);
+        --b3: rgba(255,255,255,.18);
+        --ink:  #E6F0FF;
+        --ink2: #7AA2C4;
+        --ink3: #3D618A;
+        --blue:  #1A6AE8;
+        --blue2: #3D87F8;
+        --blue3: #60A5FF;
+        --green: #14C98A;
+        --orange:#E8921A;
+        --red:   #E83A3A;
+        --r:  10px;  --r-md: 14px;  --r-lg: 18px;
+        --sh: 0 8px 32px rgba(0,0,0,.45);
       }
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;
-        background-image:radial-gradient(ellipse 1600px 700px at -8% -15%,rgba(20,50,130,.24) 0%,transparent 58%)}
-      .wrap{max-width:1680px;margin:0 auto;padding:36px 28px 72px}
-      .top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:32px;
-        padding-bottom:26px;border-bottom:1px solid var(--line)}
-      .page-logo{display:flex;align-items:center;gap:14px}
-      .page-logo-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#1C4090,#112C68);
-        border:1px solid rgba(68,144,238,.3);display:flex;align-items:center;justify-content:center;
-        box-shadow:0 4px 18px rgba(28,64,144,.35);flex-shrink:0}
-      .title{font-size:30px;font-weight:700;letter-spacing:-.4px}
-      .sub{color:var(--muted);font-size:13px;margin-top:4px}
-      .actions{display:flex;gap:10px;flex-wrap:wrap}
-      .btn{border:1px solid var(--line2);background:var(--card);color:var(--txt);padding:12px 20px;
-        border-radius:var(--r2);font-weight:600;cursor:pointer;text-decoration:none;
-        display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:14px;transition:all .18s}
-      .btn:hover{background:var(--card2);border-color:var(--line2)}
-      .btn.primary{background:linear-gradient(135deg,#2558BC,#3670D8);color:#fff;border:none;
-        box-shadow:0 4px 20px rgba(37,88,188,.4)}
-      .btn.primary:hover{background:linear-gradient(135deg,#2C64CC,#3E7CEE);box-shadow:0 6px 26px rgba(37,88,188,.52)}
-      .layout{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
-      .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-        padding:26px;box-shadow:var(--shadow)}
-      .section-title{font-size:18px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px}
-      .filters{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px;margin-bottom:16px}
-      input,select,textarea{
-        width:100%;padding:12px 14px;border-radius:var(--r2);
-        border:1px solid var(--line2);background:var(--card);color:var(--txt);
-        font:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
-      input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(68,144,238,.12)}
-      input::placeholder{color:var(--muted2)}
-      .catalog-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px}
-      .phase-nav{
-        border:1px solid var(--line);border-radius:var(--r);
-        background:rgba(12,20,44,.6);padding:10px;
-        max-height:800px;overflow:auto;
-        position:sticky;top:20px}
-      .phase-nav a{
-        display:flex;justify-content:space-between;gap:8px;
-        padding:10px 12px;border-radius:var(--r2);
-        color:var(--txt);text-decoration:none;font-size:13px;font-weight:500;
-        transition:all .15s;margin-bottom:2px}
-      .phase-nav a:hover,.phase-nav a.active{background:rgba(68,144,238,.12);color:var(--txt)}
-      .phase-nav a.active{border-left:3px solid var(--blue)}
-      .phase-count{font-size:11px;color:var(--muted);background:rgba(255,255,255,.06);
-        padding:2px 7px;border-radius:999px;flex-shrink:0}
-      .catalog-wrap{max-height:800px;overflow:auto;scroll-behavior:smooth}
-      .pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;
-        border:1px solid var(--line);background:rgba(68,144,238,.07);font-size:11px;color:var(--muted)}
-      .line-card{border:1px solid var(--line);border-radius:var(--r2);background:var(--card);padding:14px;margin-top:12px}
-      .line-grid{display:grid;grid-template-columns:2.2fr .7fr .7fr .7fr auto;gap:10px;align-items:end}
-      .sum{display:grid;gap:8px;margin-top:20px}
-      .sum-row{display:flex;justify-content:space-between;align-items:center;
-        border-top:1px solid rgba(255,255,255,.06);padding-top:10px;font-size:14px}
-      .sum-row:last-child{font-size:16px;font-weight:700}
-      .empty{padding:24px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);font-size:14px}
-      .hint{font-size:12px;color:var(--muted);line-height:1.5}
-      .phase-block{border:1px solid var(--line);border-radius:var(--r);background:rgba(10,18,40,.5);margin-bottom:16px;overflow:hidden}
-      .phase-head{
-        padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);
-        display:flex;justify-content:space-between;align-items:center;gap:10px;
-        background:rgba(68,144,238,.06);cursor:pointer}
-      .phase-title{font-size:16px;font-weight:700}
-      .cat-block{padding:10px 14px 16px}
-      .catalog-item{
-        display:grid;grid-template-columns:minmax(0,1fr) 130px 120px;
-        gap:16px;align-items:center;
-        padding:14px 0;border-top:1px solid rgba(255,255,255,.05)}
-      .catalog-item:first-child{border-top:0}
-      .catalog-name{font-weight:600;font-size:14px;line-height:1.45;color:var(--txt)}
-      .catalog-meta{margin-top:5px;display:flex;gap:7px;flex-wrap:wrap}
-      .price-col{text-align:right}
-      .price-main{font-weight:700;font-size:15px;color:var(--txt)}
-      .price-sub{font-size:11px;color:var(--muted);margin-top:2px}
-      .qty-box{display:flex;align-items:center;gap:10px;justify-content:flex-end}
-      .qty-btn{
-        width:32px;height:32px;border-radius:999px;
-        border:1px solid var(--line2);background:var(--card);
-        color:var(--txt);font-weight:700;cursor:pointer;font-size:16px;
-        display:flex;align-items:center;justify-content:center;
-        transition:all .15s;flex-shrink:0}
-      .qty-btn:hover{background:rgba(68,144,238,.15);border-color:var(--blue)}
-      .qty-val{min-width:36px;text-align:center;font-weight:700;font-size:15px}
-      .qty-val.active{color:var(--blue)}
-      .line-inline{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-      @media(max-width:1200px){.layout{grid-template-columns:1fr}.catalog-layout{grid-template-columns:1fr}.phase-nav{position:static;max-height:none}}
-      @media(max-width:700px){.filters,.line-grid{grid-template-columns:1fr}.catalog-item{grid-template-columns:1fr}.price-col{text-align:left}.qty-box{justify-content:flex-start}}
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+      html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;
+        background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
+
+      /* ── HEADER ── */
+      .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+      .header-inner{max-width:1800px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+      .logo{display:flex;align-items:center;gap:12px}
+      .logo-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(145deg,#1A4EA0,#0F3070);border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3)}
+      .logo-name{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+      .logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+      .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+      .header-info{font-size:12px;color:var(--ink2);max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:9px 16px;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
+      .btn:hover{background:var(--c2);border-color:var(--b3)}
+      .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;box-shadow:0 3px 14px rgba(26,106,232,.4)}
+      .btn.primary:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF)}
+
+      /* ── PAGE LAYOUT ── */
+      .page{max-width:1800px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 60px)}
+
+      /* ── LEFT SIDEBAR ── */
+      .sidebar{background:var(--s);border-right:1px solid var(--b2);padding:24px 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;display:flex;flex-direction:column;gap:0}
+      .sidebar-search{padding:12px 16px 0;flex-shrink:0}
+      .sidebar-search input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);font-family:inherit;padding:10px 12px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+      .sidebar-search input::placeholder{color:var(--ink3)}
+      .sidebar-search input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
+      .sidebar-filter{padding:10px 16px 0;flex-shrink:0}
+      .sidebar-filter select{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);font-family:inherit;padding:9px 12px;font-size:13px;outline:none;cursor:pointer}
+      .sidebar-nav{flex:1;padding:14px 0;overflow-y:auto}
+      .sidebar-nav-head{padding:8px 16px 6px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px}
+      .nav-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;color:var(--ink2);text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent;background:transparent;border-top:none;border-right:none;border-bottom:none;font-family:inherit;width:100%;text-align:left}
+      .nav-item:hover{background:rgba(26,106,232,.08);color:var(--ink);border-left-color:var(--b3)}
+      .nav-item.active{background:rgba(26,106,232,.12);color:var(--blue3);border-left-color:var(--blue);font-weight:700}
+      .nav-count{font-size:11px;color:var(--ink3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:999px;flex-shrink:0}
+      .nav-item.active .nav-count{color:var(--blue3);background:rgba(26,106,232,.16)}
+
+      /* ── MAIN AREA ── */
+      .main{padding:0 0 100px;overflow-y:auto}
+      .main-top{padding:20px 28px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--s);position:sticky;top:0;z-index:20;backdrop-filter:blur(12px)}
+      .main-title{font-size:20px;font-weight:800;letter-spacing:-.4px}
+      .main-count{font-size:12px;color:var(--ink2);margin-top:3px}
+
+      /* ── CATEGORY SECTION ── */
+      .cat-section{border-bottom:1px solid var(--b)}
+      .cat-section-head{padding:18px 28px 14px;background:rgba(255,255,255,.015)}
+      .cat-section-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}
+      .cat-section-sub{font-size:12px;color:var(--ink3);margin-top:3px}
+
+      /* ── ITEM ROW ── (key design element — like cenikyremesel.cz) */
+      .item-row{display:grid;grid-template-columns:52px minmax(0,1fr) 140px 130px 100px;gap:0;align-items:center;border-top:1px solid var(--b);transition:background .12s;padding:0}
+      .item-row:hover{background:rgba(26,106,232,.04)}
+      .item-row.in-cart{background:rgba(26,106,232,.06)}
+      .item-icon{width:52px;height:60px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink3)}
+      .item-icon svg{opacity:.4;transition:opacity .15s}
+      .item-row.in-cart .item-icon svg{opacity:.8;color:var(--blue3)}
+      .item-body{padding:13px 16px 13px 0}
+      .item-name{font-size:14px;font-weight:500;color:var(--ink);line-height:1.4}
+      .item-code{font-size:11px;color:var(--ink3);margin-top:3px;font-family:monospace}
+      .item-price-col{padding:0 16px;text-align:right;border-left:1px solid var(--b)}
+      .item-price{font-size:15px;font-weight:700;color:var(--ink)}
+      .item-unit{font-size:11px;color:var(--ink3);margin-top:2px}
+      .item-qty-col{padding:0 12px;border-left:1px solid var(--b);display:flex;align-items:center;justify-content:center;gap:10px}
+      .qty-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;cursor:pointer;border:none;flex-shrink:0;transition:all .15s;line-height:1}
+      .qty-minus{background:rgba(232,58,58,.15);color:var(--red)}
+      .qty-minus:hover{background:rgba(232,58,58,.35);color:#fff}
+      .qty-plus{background:rgba(26,106,232,.15);color:var(--blue3)}
+      .qty-plus:hover{background:rgba(26,106,232,.4);color:#fff}
+      .qty-val{min-width:32px;text-align:center;font-size:16px;font-weight:700;color:var(--ink)}
+      .qty-val.nonzero{color:var(--blue3)}
+      .item-total-col{padding:0 16px;text-align:right;border-left:1px solid var(--b)}
+      .item-total{font-size:15px;font-weight:700;color:var(--ink3)}
+      .item-total.nonzero{color:var(--green)}
+      .item-total-unit{font-size:11px;color:var(--ink3);margin-top:2px}
+
+      /* ── FLOATING CART BOTTOM ── */
+      .cart-bar{position:fixed;bottom:0;left:260px;right:0;z-index:30;background:rgba(4,14,28,.96);border-top:1px solid var(--b2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:none;align-items:center;justify-content:space-between;gap:16px;padding:14px 28px;flex-wrap:wrap}
+      .cart-bar.show{display:flex}
+      .cart-summary{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+      .cart-stat{display:flex;flex-direction:column;align-items:center}
+      .cart-stat .k{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+      .cart-stat .v{font-size:18px;font-weight:800;color:var(--ink)}
+      .cart-stat .v.green{color:var(--green)}
+      .cart-divider{width:1px;height:36px;background:var(--b2)}
+      .cart-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+      /* ── ESTIMATE PANEL (hidden, toggled) ── */
+      .estimate-panel{position:fixed;top:60px;right:0;bottom:0;z-index:35;width:420px;background:var(--s);border-left:1px solid var(--b2);box-shadow:-8px 0 40px rgba(0,0,0,.5);display:none;flex-direction:column;overflow:hidden}
+      .estimate-panel.show{display:flex}
+      .estimate-head{padding:18px 20px;border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+      .estimate-head-title{font-size:16px;font-weight:800}
+      .estimate-body{flex:1;overflow-y:auto;padding:16px 20px}
+      .estimate-foot{padding:16px 20px;border-top:1px solid var(--b2);display:grid;gap:8px;flex-shrink:0}
+      .est-line{display:flex;align-items:start;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--b)}
+      .est-line:first-child{border-top:none}
+      .est-line-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
+      .est-line-qty{font-size:12px;color:var(--ink2);margin-top:2px}
+      .est-line-price{font-size:14px;font-weight:700;color:var(--ink);flex-shrink:0}
+      .est-sum-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px}
+      .est-sum-row:last-child{font-size:16px;font-weight:800;border-top:1px solid var(--b2);padding-top:10px;margin-top:4px}
+      .manual-add-section{padding:16px 20px;border-top:1px solid var(--b)}
+      .manual-grid{display:grid;grid-template-columns:1fr 60px 90px auto;gap:8px;align-items:end}
+      .mini-input{background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);font-family:inherit;padding:8px 10px;font-size:13px;outline:none;width:100%}
+      .mini-input:focus{border-color:var(--blue2)}
+
+      /* ── EMPTY / LOADING ── */
+      .empty{padding:48px 28px;text-align:center;color:var(--ink2);font-size:14px}
+
+      @media(max-width:1100px){.page{grid-template-columns:220px minmax(0,1fr)}.cart-bar{left:220px}.estimate-panel{width:380px}}
+      @media(max-width:800px){.page{grid-template-columns:1fr}.sidebar{display:none}.cart-bar{left:0}.estimate-panel{width:100%}.item-row{grid-template-columns:0 minmax(0,1fr) 110px 110px 80px}}
+      @media(max-width:600px){.item-row{grid-template-columns:1fr auto auto}.item-icon{display:none}.item-price-col,.item-total-col,.item-qty-col{border-left:none;padding:0 6px}}
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="top">
-        <div class="page-logo">
-          <div class="page-logo-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="8" height="8" rx="2" stroke="rgba(160,200,255,.9)" stroke-width="1.5"/>
-              <rect x="13" y="3" width="8" height="8" rx="2" stroke="rgba(160,200,255,.9)" stroke-width="1.5"/>
-              <rect x="3" y="13" width="8" height="8" rx="2" stroke="rgba(160,200,255,.9)" stroke-width="1.5"/>
-              <rect x="13" y="13" width="8" height="8" rx="2" stroke="rgba(160,200,255,.9)" stroke-width="1.5"/>
+
+    <!-- STICKY HEADER -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-mark">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
           <div>
-            <div class="title">Báze rozpočtu</div>
-            <div class="sub" id="leadSub">Načítání...</div>
+            <div class="logo-name">O&amp;L Master Dom</div>
+            <div class="logo-sub">Databáze ceníku</div>
           </div>
         </div>
-        <div class="actions">
-          <a class="btn" id="backClient" href="./client-card.html">← Ke kartě klienta</a>
+        <div class="header-info" id="leadSub">Načítání...</div>
+        <div class="header-actions">
+          <a class="btn" id="backClient" href="./client-card.html">← Ke kartě</a>
+          <button class="btn" id="toggleEstimate">Zobrazit rozpočet (<span id="cartCount">0</span>)</button>
           <button class="btn primary" id="saveEstimate">Uložit rozpočet</button>
         </div>
       </div>
+    </header>
 
-      <div class="layout">
-        <section class="card">
-          <div class="section-title">Databáze ceníku a položek</div>
-          <div class="filters">
-            <select id="tradeType">
-              <option value="electro">Elektrika</option>
-              <option value="construction">Stavba</option>
-            </select>
-            <input id="catalogSearch" placeholder="Vyhledávání položek v češtině..." />
-          </div>
-          <div class="hint" style="margin-bottom:12px;">Vyhledávání funguje podle českých slov. Položky jsou rozdělené do logických kategorií podle skutečného pořadí prací.</div>
-          <div class="catalog-layout">
-            <div class="phase-nav" id="phaseNav"></div>
-            <div class="catalog-wrap">
-              <div id="catalogBody"></div>
-            </div>
-          </div>
-        </section>
+    <!-- TWO-COLUMN LAYOUT -->
+    <div class="page">
 
-        <section class="card">
-          <div class="section-title">Aktuální rozpočet</div>
-          <div class="hint" id="estimateMeta">Завантаження...</div>
-          <div style="margin-top:12px;">
-            <input id="estimateTitle" placeholder="Název rozpočtu" />
-          </div>
-          <div style="margin-top:10px;">
-            <textarea id="estimateNotes" placeholder="Poznámka k rozpočtu"></textarea>
-          </div>
+      <!-- LEFT SIDEBAR: NAVIGATION -->
+      <aside class="sidebar">
+        <div class="sidebar-filter">
+          <select id="tradeType">
+            <option value="electro">Elektrika</option>
+            <option value="construction">Stavba</option>
+          </select>
+        </div>
+        <div class="sidebar-search">
+          <input id="catalogSearch" placeholder="Vyhledat položku česky..." />
+        </div>
+        <nav class="sidebar-nav">
+          <div class="sidebar-nav-head">Kategorie prací</div>
+          <div id="navItems"></div>
+        </nav>
+      </aside>
 
-          <div style="margin-top:14px;" class="section-title">Rychle přidat ruční položku</div>
-          <div class="line-grid">
-            <input id="manualName" placeholder="Název položky" />
-            <input id="manualUnit" placeholder="MJ" value="ks" />
-            <input id="manualQty" type="number" step="0.01" placeholder="Množství" value="1" />
-            <input id="manualBase" type="number" step="0.01" placeholder="Základní cena" value="0" />
-            <button class="btn" id="addManualLine">Přidat</button>
+      <!-- RIGHT: CATALOG -->
+      <main class="main">
+        <div class="main-top">
+          <div>
+            <div class="main-title" id="mainTitle">Vyberte kategorii</div>
+            <div class="main-count" id="mainCount"></div>
           </div>
+        </div>
+        <div id="catalogBody">
+          <div class="empty">Načítání katalogu…</div>
+        </div>
+      </main>
+    </div>
 
-          <div id="estimateLines"></div>
-          <div class="sum" id="estimateTotals"></div>
-        </section>
+    <!-- FLOATING CART BAR (bottom) -->
+    <div class="cart-bar" id="cartBar">
+      <div class="cart-summary">
+        <div class="cart-stat">
+          <div class="k">Položek</div>
+          <div class="v" id="cartCount2">0</div>
+        </div>
+        <div class="cart-divider"></div>
+        <div class="cart-stat">
+          <div class="k">Bez DPH</div>
+          <div class="v green" id="cartNoVat">0,00 Kč</div>
+        </div>
+        <div class="cart-divider"></div>
+        <div class="cart-stat">
+          <div class="k">Celkem s DPH</div>
+          <div class="v green" id="cartTotal">0,00 Kč</div>
+        </div>
       </div>
+      <div class="cart-actions">
+        <button class="btn" id="toggleEstimate2">Zobrazit rozpočet →</button>
+      </div>
+    </div>
+
+    <!-- SLIDE-IN ESTIMATE PANEL -->
+    <div class="estimate-panel" id="estimatePanel">
+      <div class="estimate-head">
+        <div class="estimate-head-title">Aktuální rozpočet</div>
+        <button class="btn" id="closeEstimate">✕</button>
+      </div>
+      <div class="estimate-body">
+        <div style="margin-bottom:12px">
+          <input class="mini-input" style="width:100%" id="estimateTitle" placeholder="Název rozpočtu" />
+        </div>
+        <div id="estimateLines">
+          <div class="empty" style="padding:24px 0">Zatím žádné položky</div>
+        </div>
+      </div>
+      <div class="manual-add-section">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Přidat ručně</div>
+        <div class="manual-grid">
+          <input class="mini-input" id="manualName" placeholder="Název" />
+          <input class="mini-input" id="manualUnit" value="ks" placeholder="MJ" />
+          <input class="mini-input" type="number" id="manualBase" value="0" placeholder="Cena" />
+          <button class="btn primary" id="addManualLine">+</button>
+        </div>
+        <input class="mini-input" type="hidden" id="manualQty" value="1" />
+      </div>
+      <div class="estimate-foot" id="estimateTotals"></div>
     </div>
 
     <script>
@@ -178,40 +260,29 @@
       const pathModeBase = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
       const apiUrl = (p) => `${pathModeBase}${p}`
       const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      const fmt = (n) => Number(n || 0).toFixed(2).replace('.',',') + ' Kč'
       async function json(resp) { try { return await resp.json() } catch { return null } }
+
       let lead = null
       let estimate = null
       let catalog = []
+      let activeNavKey = null
+
       const NAV_LABELS = {
-        grooves: 'Sekání šliců (drážek) a kapes',
-        boxes: 'Krabice',
-        cables: 'Tahání kabelů',
-        switchboards: 'Rozvaděče',
-        outlets: 'Zapojení zásuvek, vypínačů',
-        other: 'Ostatní',
-        completion: 'Kompletace',
-        revision: 'Revize',
-        demolition: 'Demontáže',
-        hourly: 'Hodinové sazby',
-        systems: 'Elektrikářské celky',
+        grooves:     'Sekání šliců (drážek) a kapes',
+        boxes:       'Krabice',
+        cables:      'Tahání kabelů',
+        switchboards:'Rozvaděče',
+        outlets:     'Zapojení zásuvek, vypínačů',
+        other:       'Ostatní',
+        completion:  'Kompletace',
+        revision:    'Revize',
+        demolition:  'Demontáže',
+        hourly:      'Hodinové sazby',
+        systems:     'Elektrikářské celky',
       }
       const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
-      const CATEGORY_LABELS = {
-        marking_and_preparation: 'Rozměření a příprava',
-        cutting_and_grooves: 'Sekání, výřezy, kapsy a prostupy',
-        pipes_and_channels: 'Trubky, lišty a kanály',
-        cable_routes: 'Trasy',
-        cables_and_wires: 'Kabely a vodiče',
-        boxes_and_junctions: 'Krabice a rozvodky',
-        switchboard: 'Rozvaděče a jištění',
-        devices_and_outlets: 'Zásuvky, vypínače a ovladače',
-        low_current_and_security: 'Slaboproud a zabezpečení',
-        lighting: 'Svítidla a osvětlení',
-        finishing: 'Kryty, rámečky a dokončení',
-        testing_and_revision: 'Revize, měření a oživení',
-        general: 'Ostatní položky',
-        manual: 'Ruční položky',
-      }
+
       function uiCategoryKey(item) {
         const name = String(item?.itemName || '').toLowerCase()
         const category = String(item?.categoryKey || '')
@@ -230,30 +301,31 @@
         return 'other'
       }
 
-      function totals(lines, vatRate) {
-        const base = lines.reduce((s, x) => s + (Number(x.totalBase || 0)), 0)
-        const client = lines.reduce((s, x) => s + (Number(x.totalClient || 0)), 0)
-        const vat = client * ((Number(vatRate || 21)) / 100)
-        return { base, client, vat, total: client + vat }
-      }
-      function catalogLine(item) {
-        return estimate.lines.find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null
-      }
-      function groupedCatalog(items) {
-        const phaseMap = new Map()
+      function grouped(items) {
+        const map = new Map()
         for (const item of items) {
-          const navKey = uiCategoryKey(item)
-          if (!phaseMap.has(navKey)) phaseMap.set(navKey, [])
-          phaseMap.get(navKey).push(item)
+          const key = uiCategoryKey(item)
+          if (!map.has(key)) map.set(key, [])
+          map.get(key).push(item)
         }
-        return phaseMap
+        return map
       }
-      function slug(s) {
-        return String(s || '').toLowerCase().replace(/[^\w]+/g, '-')
+
+      function catalogLine(item) {
+        return (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null
       }
-      function upsertCatalogItem(item, delta) {
+
+      function totals() {
+        const lines = estimate?.lines || []
+        const client = lines.reduce((s, x) => s + Number(x.totalClient || 0), 0)
+        const vat = client * ((Number(estimate?.vatRate || 21)) / 100)
+        return { count: lines.length, client, vat, total: client + vat }
+      }
+
+      function upsert(item, delta) {
+        if (!estimate) return
         const existing = catalogLine(item)
-        if (!existing && delta < 0) return
+        if (!existing && delta <= 0) return
         if (!existing) {
           estimate.lines.push({
             catalogItemId: item.id,
@@ -268,173 +340,187 @@
             totalClient: Number(item.basePrice || 0),
             positionOrder: estimate.lines.length + 1,
           })
-          renderEstimate()
-          renderCatalog()
-          return
-        }
-        existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
-        if (existing.quantity <= 0) {
-          estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
         } else {
-          existing.totalBase = Number(existing.quantity || 0) * Number(existing.basePrice || 0)
-          existing.totalClient = Number(existing.quantity || 0) * Number(existing.clientPrice || 0)
+          existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
+          if (existing.quantity <= 0) {
+            estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
+          } else {
+            existing.totalBase  = existing.quantity * Number(existing.basePrice  || 0)
+            existing.totalClient = existing.quantity * Number(existing.clientPrice || 0)
+          }
         }
-        renderEstimate()
-        renderCatalog()
+        renderCartBar()
+        renderItemRows()
+        renderEstimatePanel()
       }
-      function renderCatalog() {
+
+      /* ── RENDER NAV ── */
+      function renderNav() {
+        const groups = grouped(catalog)
+        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat(Array.from(groups.keys()).filter((k) => !NAV_ORDER.includes(k)))
+        document.getElementById('navItems').innerHTML = ordered.map((key) => {
+          const count = (groups.get(key) || []).length
+          const inCartCount = (estimate?.lines || []).filter((l) => uiCategoryKey(l) === key).length
+          const isActive = key === activeNavKey
+          return `<button class="nav-item${isActive ? ' active' : ''}" data-nav="${esc(key)}">
+            <span>${esc(NAV_LABELS[key] || key)}</span>
+            <span class="nav-count">${inCartCount > 0 ? inCartCount + ' / ' : ''}${count}</span>
+          </button>`
+        }).join('')
+        document.getElementById('navItems').querySelectorAll('[data-nav]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            activeNavKey = btn.getAttribute('data-nav')
+            renderNav()
+            renderItemRows()
+            const groups2 = grouped(catalog)
+            document.getElementById('mainTitle').textContent = NAV_LABELS[activeNavKey] || activeNavKey
+            document.getElementById('mainCount').textContent = `${(groups2.get(activeNavKey) || []).length} položek`
+          })
+        })
+      }
+
+      /* ── RENDER CATALOG ITEMS ── */
+      function renderItemRows() {
         const body = document.getElementById('catalogBody')
-        const nav = document.getElementById('phaseNav')
         if (!catalog.length) {
-          body.innerHTML = `<div class="empty">Katalog je prázdný nebo pro tento dotaz nebyla nalezena žádná položka.</div>`
-          nav.innerHTML = '<div class="hint">Žádné kategorie k zobrazení</div>'
+          body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'
           return
         }
-        const groups = groupedCatalog(catalog)
-        const orderedPhases = NAV_ORDER.filter((key) => groups.has(key)).concat(Array.from(groups.keys()).filter((key) => !NAV_ORDER.includes(key)))
-        nav.innerHTML = orderedPhases.map((phaseKey) => {
-          const rows = groups.get(phaseKey) || []
-          const count = rows.length
-          return `<a href="#phase-${slug(phaseKey)}"><span>${esc(NAV_LABELS[phaseKey] || phaseKey)}</span><span class="phase-count">${count}</span></a>`
-        }).join('')
-        body.innerHTML = orderedPhases.map((phaseKey) => {
-          const rows = groups.get(phaseKey) || []
+        const groups = grouped(catalog)
+        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat(Array.from(groups.keys()).filter((k) => !NAV_ORDER.includes(k)))
+        const toRender = activeNavKey ? (groups.get(activeNavKey) ? [activeNavKey] : ordered) : ordered
+        if (!toRender.length || (activeNavKey && !groups.has(activeNavKey))) {
+          body.innerHTML = '<div class="empty">V této kategorii nejsou žádné položky.</div>'
+          return
+        }
+        body.innerHTML = toRender.map((key) => {
+          const items = groups.get(key) || []
           return `
-          <section class="phase-block">
-            <div class="phase-head" id="phase-${slug(phaseKey)}">
-              <div class="phase-title">${esc(NAV_LABELS[phaseKey] || phaseKey)}</div>
-              <div class="phase-count">${rows.length} položek</div>
-            </div>
-            <div class="cat-block">
-              ${rows.map((item) => {
+            <div class="cat-section" id="cat-${key}">
+              <div class="cat-section-head">
+                <div class="cat-section-title">${esc(NAV_LABELS[key] || key)}</div>
+                <div class="cat-section-sub">${items.length} položek</div>
+              </div>
+              ${items.map((item) => {
                 const line = catalogLine(item)
                 const qty = Number(line?.quantity || 0)
+                const rowTotal = qty * Number(item.basePrice || 0)
+                const inCart = qty > 0
                 return `
-                  <div class="catalog-item">
-                    <div>
-                      <div class="catalog-name">${esc(item.itemName)}</div>
-                      <div class="catalog-meta">
-                        <span class="pill">${esc(item.unit || 'ks')}</span>
-                        ${item.sourceCode ? `<span class="pill">${esc(item.sourceCode)}</span>` : ''}
-                      </div>
+                  <div class="item-row${inCart ? ' in-cart' : ''}">
+                    <div class="item-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/>
+                      </svg>
                     </div>
-                    <div class="price-col">
-                      <div class="price-main">${esc(String(item.basePrice || 0))} Kč</div>
-                      <div class="price-sub">základní cena</div>
+                    <div class="item-body">
+                      <div class="item-name">${esc(item.itemName)}</div>
+                      ${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}
                     </div>
-                    <div class="qty-box">
-                      <button class="qty-btn" data-minus="${item.id}">-</button>
-                      <div class="qty-val">${esc(String(qty))}</div>
-                      <button class="qty-btn" data-plus="${item.id}">+</button>
+                    <div class="item-price-col">
+                      <div class="item-price">${esc(String(item.basePrice || 0))} Kč</div>
+                      <div class="item-unit">/ ${esc(item.unit || 'ks')}</div>
+                    </div>
+                    <div class="item-qty-col">
+                      <button class="qty-btn qty-minus" data-minus="${esc(String(item.id))}">−</button>
+                      <span class="qty-val${qty > 0 ? ' nonzero' : ''}">${qty}</span>
+                      <button class="qty-btn qty-plus" data-plus="${esc(String(item.id))}">+</button>
+                    </div>
+                    <div class="item-total-col">
+                      <div class="item-total${qty > 0 ? ' nonzero' : ''}">${qty > 0 ? rowTotal.toFixed(0) + ' Kč' : '0 Kč'}</div>
+                      <div class="item-total-unit">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div>
                     </div>
                   </div>
                 `
               }).join('')}
             </div>
-          </section>
-        `}).join('')
+          `
+        }).join('')
         body.querySelectorAll('[data-plus]').forEach((btn) => {
           btn.addEventListener('click', () => {
-            const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-plus')))
-            if (item) upsertCatalogItem(item, 1)
+            const id = Number(btn.getAttribute('data-plus'))
+            const item = catalog.find((x) => Number(x.id) === id)
+            if (item) upsert(item, 1)
           })
         })
         body.querySelectorAll('[data-minus]').forEach((btn) => {
           btn.addEventListener('click', () => {
-            const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-minus')))
-            if (item) upsertCatalogItem(item, -1)
-          })
-        })
-        nav.querySelectorAll('a').forEach((link) => {
-          link.addEventListener('click', (e) => {
-            e.preventDefault()
-            const target = document.querySelector(link.getAttribute('href'))
-            if (!target) return
-            nav.querySelectorAll('a').forEach((a) => a.classList.remove('active'))
-            link.classList.add('active')
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            const id = Number(btn.getAttribute('data-minus'))
+            const item = catalog.find((x) => Number(x.id) === id)
+            if (item) upsert(item, -1)
           })
         })
       }
-      function renderEstimate() {
-        document.getElementById('estimateTitle').value = estimate.title || ''
-        document.getElementById('estimateNotes').value = estimate.notes || ''
-        document.getElementById('estimateMeta').textContent = `${estimate.estimateNo || ''} · klient č. ${lead?.clientNumber || '—'} · stav ${estimate.status || 'draft'}`
+
+      /* ── RENDER CART BAR ── */
+      function renderCartBar() {
+        const t = totals()
+        const bar = document.getElementById('cartBar')
+        bar.classList.toggle('show', t.count > 0)
+        document.getElementById('cartCount').textContent = String(t.count)
+        document.getElementById('cartCount2').textContent = String(t.count)
+        document.getElementById('cartNoVat').textContent = fmt(t.client)
+        document.getElementById('cartTotal').textContent = fmt(t.total)
+      }
+
+      /* ── RENDER ESTIMATE PANEL ── */
+      function renderEstimatePanel() {
+        const lines = estimate?.lines || []
         const host = document.getElementById('estimateLines')
-        if (!estimate.lines.length) {
-          host.innerHTML = '<div class="empty" style="margin-top:12px;">Zatím není přidána žádná položka. Použijte tlačítka plus v katalogu nebo přidejte ruční položku.</div>'
+        document.getElementById('estimateTitle').value = estimate?.title || ''
+        if (!lines.length) {
+          host.innerHTML = '<div style="padding:16px 0;text-align:center;color:var(--ink3);font-size:13px">Zatím žádné položky</div>'
         } else {
-          const grouped = {}
-          estimate.lines.forEach((line, idx) => {
-            const catKey = uiCategoryKey(line)
-            grouped[catKey] ||= []
-            grouped[catKey].push({ line, idx })
-          })
-          const ordered = NAV_ORDER.filter((key) => grouped[key]).concat(Object.keys(grouped).filter((key) => !NAV_ORDER.includes(key)))
-          host.innerHTML = ordered.map((catKey) => `
-            <section class="phase-block" style="margin-top:12px;">
-              <div class="phase-head">
-                <div class="phase-title">${esc(NAV_LABELS[catKey] || catKey)}</div>
-                <div class="phase-count">${grouped[catKey].length} položek</div>
+          host.innerHTML = lines.map((line, idx) => `
+            <div class="est-line">
+              <div>
+                <div class="est-line-name">${esc(line.itemName)}</div>
+                <div class="est-line-qty">${line.quantity} ${esc(line.unit || 'ks')} × ${esc(String(line.clientPrice || 0))} Kč</div>
               </div>
-              <div class="cat-block">
-                ${grouped[catKey].map(({ line, idx }) => `
-                  <div class="line-card">
-                    <div class="line-inline">
-                      <div style="font-weight:700">${esc(line.itemName)}</div>
-                      <button class="btn" data-remove="${idx}">Odstranit</button>
-                    </div>
-                    <div class="line-grid" style="margin-top:10px;">
-                      <input value="${esc(line.unit)}" data-field="unit" data-idx="${idx}" />
-                      <input type="number" step="0.01" value="${esc(String(line.quantity || 0))}" data-field="quantity" data-idx="${idx}" />
-                      <input type="number" step="0.01" value="${esc(String(line.basePrice || 0))}" data-field="basePrice" data-idx="${idx}" />
-                      <input type="number" step="0.01" value="${esc(String(line.clientPrice || 0))}" data-field="clientPrice" data-idx="${idx}" />
-                      <div class="pill">Součet: ${esc(String(line.totalClient || 0))} Kč</div>
-                    </div>
-                  </div>
-                `).join('')}
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="est-line-price">${(Number(line.totalClient||0)).toFixed(0)} Kč</div>
+                <button style="background:rgba(232,58,58,.15);border:none;color:var(--red);border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" data-remove="${idx}">✕</button>
               </div>
-            </section>
+            </div>
           `).join('')
         }
-        host.querySelectorAll('[data-field]').forEach((el) => {
-          el.addEventListener('input', () => {
-            const idx = Number(el.getAttribute('data-idx'))
-            const field = el.getAttribute('data-field')
-            const raw = el.value
-            const line = estimate.lines[idx]
-            if (!line) return
-            line[field] = ['quantity','basePrice','clientPrice'].includes(field) ? Number(raw || 0) : raw
-            line.totalBase = Number(line.quantity || 0) * Number(line.basePrice || 0)
-            line.totalClient = Number(line.quantity || 0) * Number(line.clientPrice || 0)
-            renderEstimate()
+        host.querySelectorAll('[data-remove]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            estimate.lines.splice(Number(btn.getAttribute('data-remove')), 1)
+            renderCartBar()
+            renderItemRows()
+            renderEstimatePanel()
           })
         })
-        host.querySelectorAll('[data-remove]').forEach((el) => {
-          el.addEventListener('click', () => {
-            estimate.lines.splice(Number(el.getAttribute('data-remove')), 1)
-            renderEstimate()
-          })
-        })
-        const s = totals(estimate.lines, estimate.vatRate || 21)
+        const t = totals()
         document.getElementById('estimateTotals').innerHTML = `
-          <div class="sum-row"><span>Základní součet</span><strong>${s.base.toFixed(2)} Kč</strong></div>
-          <div class="sum-row"><span>Cena pro klienta bez DPH</span><strong>${s.client.toFixed(2)} Kč</strong></div>
-          <div class="sum-row"><span>DPH ${(estimate.vatRate || 21)}%</span><strong>${s.vat.toFixed(2)} Kč</strong></div>
-          <div class="sum-row"><span>Celkem s DPH</span><strong>${s.total.toFixed(2)} Kč</strong></div>
+          <div class="est-sum-row"><span style="color:var(--ink2)">Bez DPH</span><strong>${fmt(t.client)}</strong></div>
+          <div class="est-sum-row"><span style="color:var(--ink2)">DPH ${estimate?.vatRate || 21} %</span><strong>${fmt(t.vat)}</strong></div>
+          <div class="est-sum-row"><span>Celkem s DPH</span><strong style="color:var(--green)">${fmt(t.total)}</strong></div>
         `
-        if (catalog.length) {
-          setTimeout(() => renderCatalog(), 0)
-        }
       }
+
+      /* ── LOAD ── */
       async function loadCatalog() {
         const p = new URLSearchParams()
-        if (document.getElementById('tradeType').value) p.set('tradeType', document.getElementById('tradeType').value)
-        if (document.getElementById('catalogSearch').value.trim()) p.set('search', document.getElementById('catalogSearch').value.trim())
+        const trade = document.getElementById('tradeType').value
+        const search = document.getElementById('catalogSearch').value.trim()
+        if (trade) p.set('tradeType', trade)
+        if (search) p.set('search', search)
         const r = await fetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
         const d = await json(r)
         catalog = (r.ok && d?.ok) ? (d.items || []) : []
-        renderCatalog()
+        renderNav()
+        if (!activeNavKey && catalog.length) {
+          const groups = grouped(catalog)
+          const ordered = NAV_ORDER.filter((k) => groups.has(k))
+          activeNavKey = ordered[0] || null
+          if (activeNavKey) {
+            document.getElementById('mainTitle').textContent = NAV_LABELS[activeNavKey] || activeNavKey
+            document.getElementById('mainCount').textContent = `${(groups.get(activeNavKey) || []).length} položek`
+          }
+        }
+        renderItemRows()
       }
       async function ensureEstimate() {
         if (estimateIdFromUrl) {
@@ -445,12 +531,10 @@
         const existing = await fetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(leadId))}`))
         const existingJson = await json(existing)
         if (existing.ok && existingJson?.ok && existingJson.estimates?.length) {
-          estimate = existingJson.estimates[0]
-          return
+          estimate = existingJson.estimates[0]; return
         }
         const create = await fetch(apiUrl('/api/crm/estimates/from-lead'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ leadId }),
         })
         const createJson = await json(create)
@@ -462,62 +546,59 @@
         const d = await json(r)
         if (!r.ok || !d?.ok) throw new Error('lead_failed')
         lead = d.lead
-        document.getElementById('leadSub').textContent = `${lead.fullName || lead.name || ''} · klient č. ${lead.clientNumber || '—'} · ${lead.brief?.objectType || lead.serviceType || '—'}`
+        document.getElementById('leadSub').textContent = `${lead.fullName || lead.name || ''} · č. ${lead.clientNumber || '—'}`
         document.getElementById('backClient').href = `./client-card.html?leadId=${encodeURIComponent(String(lead.id))}`
       }
       async function saveEstimate() {
+        if (!estimate) return
         estimate.title = document.getElementById('estimateTitle').value.trim() || estimate.title
-        estimate.notes = document.getElementById('estimateNotes').value
-        estimate.clientNumberSnapshot = lead?.clientNumber || null
         const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: estimate.title,
-            notes: estimate.notes,
-            tradeType: document.getElementById('tradeType').value,
-            clientNumberSnapshot: estimate.clientNumberSnapshot,
-            lines: estimate.lines,
-          }),
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: estimate.title, tradeType: document.getElementById('tradeType').value, clientNumberSnapshot: lead?.clientNumber || null, lines: estimate.lines }),
         })
         const d = await json(r)
-        if (!r.ok || !d?.ok) {
-          alert(d?.error || 'Rozpočet se nepodařilo uložit')
-          return
-        }
+        if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze uložit'); return }
         estimate = d.estimate
-        renderEstimate()
-        alert('Rozpočet byl uložen')
+        alert('Uloženo ✓')
       }
+
+      /* ── EVENTS ── */
       document.getElementById('addManualLine').addEventListener('click', () => {
-        estimate.lines.push({
-          itemName: document.getElementById('manualName').value.trim() || 'Nová položka',
-          unit: document.getElementById('manualUnit').value.trim() || 'ks',
-          quantity: Number(document.getElementById('manualQty').value || 0),
-          basePrice: Number(document.getElementById('manualBase').value || 0),
-          clientPrice: Number(document.getElementById('manualBase').value || 0),
-          phaseKey: 'service',
-          categoryKey: 'manual',
-        })
+        const name = document.getElementById('manualName').value.trim() || 'Nová položka'
+        const unit = document.getElementById('manualUnit').value.trim() || 'ks'
+        const price = Number(document.getElementById('manualBase').value || 0)
+        estimate.lines.push({ itemName: name, unit, quantity: 1, basePrice: price, clientPrice: price, totalBase: price, totalClient: price, phaseKey: 'service', categoryKey: 'manual', positionOrder: estimate.lines.length + 1 })
         document.getElementById('manualName').value = ''
-        renderEstimate()
+        renderCartBar(); renderItemRows(); renderEstimatePanel()
       })
       document.getElementById('saveEstimate').addEventListener('click', saveEstimate)
-      ;['tradeType','catalogSearch'].forEach((id) => {
-        document.getElementById(id).addEventListener('input', loadCatalog)
-        document.getElementById(id).addEventListener('change', loadCatalog)
+      const togglePanel = () => {
+        const p = document.getElementById('estimatePanel')
+        p.classList.toggle('show')
+        renderEstimatePanel()
+      }
+      document.getElementById('toggleEstimate').addEventListener('click', togglePanel)
+      document.getElementById('toggleEstimate2').addEventListener('click', togglePanel)
+      document.getElementById('closeEstimate').addEventListener('click', () => document.getElementById('estimatePanel').classList.remove('show'))
+      document.getElementById('tradeType').addEventListener('change', () => { activeNavKey = null; loadCatalog() })
+      let searchTimer
+      document.getElementById('catalogSearch').addEventListener('input', () => {
+        clearTimeout(searchTimer)
+        searchTimer = setTimeout(() => { activeNavKey = null; loadCatalog() }, 300)
       })
+
       ;(async () => {
         try {
           await loadLead()
           await ensureEstimate()
           document.getElementById('tradeType').value = estimate.tradeType || 'electro'
-          renderEstimate()
+          renderCartBar()
+          renderEstimatePanel()
           await loadCatalog()
         } catch (e) {
-          document.getElementById('leadSub').textContent = `Chyba: ${String(e && e.message ? e.message : e)}`
+          document.getElementById('leadSub').textContent = `Chyba: ${String(e?.message || e)}`
         }
       })()
     </script>
   </body>
-  </html>
+</html>
