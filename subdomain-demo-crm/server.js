@@ -78,6 +78,7 @@ const ESTIMATE_STATUS = {
   DRAFT: 'draft',
   REVIEW: 'review',
   APPROVED: 'approved',
+  SENT: 'sent',
   ARCHIVED: 'archived',
 }
 
@@ -1498,44 +1499,105 @@ function publicFileUrl(filePath) {
 async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   ensureDataDir()
   const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'TemoWeb CRM'
+  workbook.lastModifiedBy = 'TemoWeb CRM'
   const ws = workbook.addWorksheet('Rozpocet')
+  ws.views = [{ state: 'frozen', ySplit: 10, showGridLines: false }]
+  ws.pageSetup = {
+    paperSize: 9,
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
+  }
   ws.columns = [
-    { key: 'a', width: 12 },
-    { key: 'b', width: 42 },
-    { key: 'c', width: 34 },
+    { key: 'a', width: 12.5 },
+    { key: 'b', width: 34 },
+    { key: 'c', width: 29 },
     { key: 'd', width: 14 },
-    { key: 'e', width: 14 },
-    { key: 'f', width: 14 },
-    { key: 'g', width: 16 },
+    { key: 'e', width: 16 },
+    { key: 'f', width: 16 },
+    { key: 'g', width: 18 },
   ]
   const title = estimate?.title || `Rozpočet ${job?.internalNumber || lead?.clientNumber || ''}`.trim()
   const estimateDate = estimate?.estimateDate || new Date().toISOString().slice(0, 10)
   const lines = Array.isArray(estimate?.lines) ? estimate.lines.map((line, idx) => normalizeEstimateLine(line, idx)) : []
   const grouped = groupedEstimateLinesForExport(lines)
   const totals = computeEstimateTotals(lines, estimate?.vatRate || 21)
+  const supplierName = 'O&L Master Dom s.r.o.'
+  const supplierAddress = 'Evropský partnerský realizační tým'
+  const supplierContact = 'TemoWeb CRM · demo.temoweb.eu'
+  const customerName = customer?.name || estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
+  const customerCompany = estimate?.companyNameSnapshot || customer?.companyName || ''
+  const customerAddress = estimate?.customerAddressSnapshot || customer?.address || '—'
+  const customerIco = estimate?.customerIcoSnapshot || customer?.ico || ''
+  const note = estimate?.note || ''
 
   ws.mergeCells('A1:G1')
-  ws.getCell('A1').value = title
-  ws.getCell('A1').font = { name: 'Carlito', size: 16, bold: true }
-  ws.getCell('A1').alignment = { horizontal: 'left' }
-  ws.getCell('F2').value = `Datum: ${formatCzDate(new Date(estimateDate))}`
-  ws.getCell('F3').value = `Zakázka: ${job?.internalNumber || estimate?.jobNumberSnapshot || '—'}`
-  ws.getCell('F4').value = `Klient: ${estimate?.clientNumberSnapshot || lead?.clientNumber || '—'}`
-  ws.getCell('A3').value = `Klient: ${customer?.name || estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'}`
-  ws.getCell('A4').value = `Firma: ${estimate?.companyNameSnapshot || customer?.companyName || '—'}`
-  ws.getCell('A5').value = `Adresa: ${estimate?.customerAddressSnapshot || customer?.address || '—'}`
-  ws.getCell('A6').value = `IČO: ${estimate?.customerIcoSnapshot || customer?.ico || '—'}`
+  ws.getCell('A1').value = 'ROZPOCET'
+  ws.getCell('A1').font = { name: 'Carlito', size: 20, bold: true, color: { argb: 'FF123A76' } }
+  ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' }
+  ws.getRow(1).height = 28
 
-  const headerRow = 8
+  ws.mergeCells('A2:C2')
+  ws.getCell('A2').value = supplierName
+  ws.getCell('A2').font = { name: 'Carlito', size: 12, bold: true }
+  ws.mergeCells('A3:C3')
+  ws.getCell('A3').value = supplierAddress
+  ws.mergeCells('A4:C4')
+  ws.getCell('A4').value = supplierContact
+
+  ws.mergeCells('E2:G2')
+  ws.getCell('E2').value = 'Odberatel'
+  ws.getCell('E2').font = { name: 'Carlito', size: 12, bold: true }
+  ws.mergeCells('E3:G3')
+  ws.getCell('E3').value = customerCompany ? `${customerName} / ${customerCompany}` : customerName
+  ws.mergeCells('E4:G4')
+  ws.getCell('E4').value = customerAddress
+  ws.mergeCells('E5:G5')
+  ws.getCell('E5').value = customerIco ? `ICO: ${customerIco}` : ''
+
+  addBoxBorders(ws, 'A2:C5')
+  addBoxBorders(ws, 'E2:G5')
+
+  ws.mergeCells('A7:G7')
+  ws.getCell('A7').value = title
+  ws.getCell('A7').font = { name: 'Carlito', size: 16, bold: true, color: { argb: 'FF0B2548' } }
+  ws.getCell('A7').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }
+  ws.getCell('A7').alignment = { horizontal: 'center', vertical: 'middle' }
+  ws.getRow(7).height = 24
+
+  const headerMetaRow = 8
+  const metaPairs = [
+    ['Datum vystaveni', formatCzDate(new Date(estimateDate))],
+    ['Cislo rozpoctu', estimate?.estimateNo || '—'],
+    ['Cislo zakazky', job?.internalNumber || estimate?.jobNumberSnapshot || '—'],
+    ['Cislo klienta', estimate?.clientNumberSnapshot || lead?.clientNumber || '—'],
+  ]
+  for (let i = 0; i < metaPairs.length; i += 1) {
+    const [label, value] = metaPairs[i]
+    const row = headerMetaRow + i
+    ws.mergeCells(`A${row}:B${row}`)
+    ws.getCell(`A${row}`).value = label
+    ws.getCell(`A${row}`).font = { name: 'Carlito', size: 10, bold: true }
+    ws.mergeCells(`C${row}:G${row}`)
+    ws.getCell(`C${row}`).value = value
+    ws.getCell(`C${row}`).font = { name: 'Carlito', size: 10 }
+    addBoxBorders(ws, `A${row}:G${row}`)
+  }
+
+  const headerRow = 13
   const headers = ['Číslo položky', 'Popis práce', 'Popis materiálu', 'Množství / mj', 'Cena práce', 'Cena materiálu', 'Cena práce + materiálu']
   headers.forEach((h, idx) => {
     const cell = ws.getCell(headerRow, idx + 1)
     cell.value = h
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Carlito', size: 10 }
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F3070' } }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF143D7A' } }
     cell.alignment = { vertical: 'middle', horizontal: idx >= 3 ? 'center' : 'left', wrapText: true }
     cell.border = thinBorder()
   })
+  ws.getRow(headerRow).height = 24
 
   let rowNo = headerRow + 1
   for (const [groupKey, rows] of grouped) {
@@ -1561,14 +1623,25 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
         cell.value = val
         cell.font = { name: 'Carlito', size: 10 }
         cell.alignment = { vertical: 'top', horizontal: idx >= 4 ? 'right' : 'left', wrapText: true }
-        if (idx >= 4) cell.numFmt = '#,##0.00 Kč'
+        if (idx >= 4) cell.numFmt = MONEY_NUM_FMT
         cell.border = thinBorder()
       })
+      ws.getRow(rowNo).height = 34
       rowNo += 1
     }
+    ws.mergeCells(`A${rowNo}:F${rowNo}`)
+    ws.getCell(`A${rowNo}`).value = `Mezisoucet - ${estimateGroupLabel(groupKey)}`
+    ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10, bold: true, italic: true }
+    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right' }
+    ws.getCell(`G${rowNo}`).value = rows.reduce((sum, line) => sum + toNum(line.lineTotal, 0), 0)
+    ws.getCell(`G${rowNo}`).numFmt = MONEY_NUM_FMT
+    ws.getCell(`G${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
+    fillRow(ws, rowNo, 'FFF8FBFF')
+    for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
+    rowNo += 2
   }
 
-  rowNo += 1
+  const summaryStart = rowNo
   const summaryRows = [
     ['Součet práce', totals.laborTotal],
     ['Součet materiálu', totals.materialTotal],
@@ -1578,28 +1651,43 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     ['Celkem s DPH', totals.totalWithVat],
   ]
   for (const [label, amount] of summaryRows) {
-    ws.mergeCells(`A${rowNo}:F${rowNo}`)
     ws.getCell(`A${rowNo}`).value = label
+    ws.mergeCells(`A${rowNo}:F${rowNo}`)
     ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
+    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right' }
     ws.getCell(`G${rowNo}`).value = amount
-    ws.getCell(`G${rowNo}`).numFmt = '#,##0.00 Kč'
+    ws.getCell(`G${rowNo}`).numFmt = MONEY_NUM_FMT
     ws.getCell(`G${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
+    if (label === 'Celkem s DPH') fillRow(ws, rowNo, 'FFEAF6EA')
+    else fillRow(ws, rowNo, 'FFF6F9FE')
     for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
     rowNo += 1
   }
 
   rowNo += 1
-  ws.mergeCells(`A${rowNo}:G${rowNo + 1}`)
-  ws.getCell(`A${rowNo}`).value = estimate?.note || ''
+  ws.mergeCells(`A${rowNo}:G${rowNo}`)
+  ws.getCell(`A${rowNo}`).value = 'Poznámka a upřesnění'
+  ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 11, bold: true, color: { argb: 'FF0F3070' } }
+  ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }
+  for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
+  rowNo += 1
+  ws.mergeCells(`A${rowNo}:G${rowNo + 2}`)
+  ws.getCell(`A${rowNo}`).value = note || 'Rozpočet byl připraven v CRM. Ceny lze dále upravit přímo v kartě zakázky.'
   ws.getCell(`A${rowNo}`).alignment = { wrapText: true, vertical: 'top' }
   ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10 }
-  for (let r = rowNo; r <= rowNo + 1; r += 1) for (let c = 1; c <= 7; c += 1) ws.getCell(r, c).border = thinBorder()
+  for (let r = rowNo; r <= rowNo + 2; r += 1) for (let c = 1; c <= 7; c += 1) ws.getCell(r, c).border = thinBorder()
+
+  ws.headerFooter.oddFooter = '&LTemoWeb CRM&CStrana &P / &N&R' + String(estimate?.estimateNo || '')
+  ws.printArea = `A1:G${rowNo + 2}`
+  ws.autoFilter = `A${headerRow}:G${headerRow}`
 
   const safe = String(estimate?.estimateNo || `rozpocet-${estimate?.id || Date.now()}`).replace(/[^\w.-]+/g, '_')
   const xlsxPath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.xlsx`)
   await workbook.xlsx.writeFile(xlsxPath)
   return xlsxPath
 }
+
+const MONEY_NUM_FMT = '#,##0.00 "Kč"'
 
 function thinBorder() {
   return {
@@ -1610,21 +1698,53 @@ function thinBorder() {
   }
 }
 
+function addBoxBorders(ws, range) {
+  const [start, end] = range.split(':')
+  const startCell = ws.getCell(start)
+  const endCell = ws.getCell(end)
+  for (let row = startCell.row; row <= endCell.row; row += 1) {
+    for (let col = startCell.col; col <= endCell.col; col += 1) {
+      ws.getCell(row, col).border = thinBorder()
+      ws.getCell(row, col).font = { ...(ws.getCell(row, col).font || {}), name: 'Carlito', size: 10 }
+    }
+  }
+}
+
+function fillRow(ws, rowNo, color) {
+  for (let col = 1; col <= 7; col += 1) {
+    ws.getCell(rowNo, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } }
+  }
+}
+
 function estimateGroupLabel(key) {
   const map = {
-    grooves: 'Elektrikářské práce',
-    boxes: 'Elektrikářské práce',
-    cables: 'Elektrikářské práce',
-    switchboards: 'Elektrikářské práce',
-    outlets: 'Elektrikářské práce',
-    completion: 'Elektrikářské práce',
-    revision: 'Elektrikářské práce',
-    demolition: 'Elektrikářské práce',
-    systems: 'Elektrikářské práce',
+    grooves: 'Sekání šliců (drážek) a kapes',
+    boxes: 'Krabice a osazení',
+    cables: 'Tahání kabelů',
+    switchboards: 'Rozvaděče',
+    outlets: 'Zapojení zásuvek a vypínačů',
+    completion: 'Kompletace',
+    revision: 'Revize a měření',
+    demolition: 'Demontáže',
+    systems: 'Elektrikářské celky',
     hourly: 'Ostatní rozpočtové náklady',
     other: 'Ostatní rozpočtové náklady',
   }
   return map[key] || 'Rozpočet'
+}
+
+function getEstimateGeneratedFiles(estimate) {
+  if (!estimate) return { xlsx: null, pdf: null }
+  const safe = String(estimate.estimateNo || `rozpocet-${estimate.id}`).replace(/[^\w.-]+/g, '_')
+  const xlsxPath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.xlsx`)
+  const pdfPath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.pdf`)
+  const xlsx = fs.existsSync(xlsxPath)
+    ? { kind: 'xlsx', fileName: path.basename(xlsxPath), filePath: xlsxPath, url: publicFileUrl(xlsxPath) }
+    : null
+  const pdf = fs.existsSync(pdfPath)
+    ? { kind: 'pdf', fileName: path.basename(pdfPath), filePath: pdfPath, url: publicFileUrl(pdfPath) }
+    : null
+  return { xlsx, pdf }
 }
 
 function groupedEstimateLinesForExport(lines) {
@@ -3589,16 +3709,77 @@ app.post('/api/crm/estimates/:id/build-documents', authMiddleware, roleGuard(['a
   }
 })
 
+app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+  const estimate = await getEstimateById(id)
+  if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
+  const job = estimate.jobId ? await getJobById(estimate.jobId) : null
+  const customer = job?.customerId ? await getCustomerById(job.customerId) : null
+  const lead = estimate.leadId ? await getLeadById(estimate.leadId) : null
+  const { xlsx, pdf } = getEstimateGeneratedFiles(estimate)
+  if (!xlsx || !pdf) {
+    return res.status(400).json({ ok: false, error: 'Nejprve vygenerujte Excel i PDF rozpočtu.' })
+  }
+  const to = String(req.body?.email || customer?.email || lead?.email || '').trim().toLowerCase()
+  if (!to || !validEmail(to)) return res.status(400).json({ ok: false, error: 'Valid email is required' })
+  const subject = String(req.body?.subject || `Rozpočet ${estimate.estimateNo || ''}`).trim()
+  const text = String(
+    req.body?.text ||
+      `Dobrý den,\n\nv příloze zasíláme rozpočet ${estimate.estimateNo || ''} k zakázce ${job?.internalNumber || ''}.\nSoučástí je PDF pro klienta a Excel pro detailní rozpis.\n\nS pozdravem,\nO&L Master Dom`
+  ).trim()
+  const mail = await sendResendEmail({
+    to,
+    subject,
+    text,
+    attachments: [
+      { filename: pdf.fileName, content: fileToBase64(pdf.filePath) },
+      { filename: xlsx.fileName, content: fileToBase64(xlsx.filePath) },
+    ],
+  })
+  if (!mail.ok) {
+    await insertAudit(req.auth?.email || null, 'estimate_send_failed', 'estimate', id, { to, reason: mail.reason, details: mail.details || null })
+    return res.status(502).json({ ok: false, error: 'Failed to send estimate email', mail })
+  }
+  const updatedEstimate = await saveEstimate(id, { status: ESTIMATE_STATUS.SENT })
+  if (job?.id) {
+    await updateJob(job.id, {
+      pipelineStage: 'nabidka_odeslana',
+      stage: 'nabidka_odeslana',
+      waitingFor: 'client',
+      blockingFactor: 'waiting_offer_response',
+      offerSentAt: nowIso(),
+      lastInternalActionAt: nowIso(),
+      nextAction: 'Vyčkat na reakci klienta na rozpočet',
+      nextActionDueAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+    })
+    await addJobEvent(job.id, {
+      eventType: 'email_sent',
+      eventCode: 'estimate_sent_to_client',
+      actorType: 'user',
+      actor: req.auth?.email || null,
+      title: 'Rozpočet odeslán klientovi',
+      message: `Rozpočet ${estimate.estimateNo || ''} byl odeslán na ${to}`,
+      metadata: { estimateId: id, to, estimateNo: estimate.estimateNo || null },
+    })
+  }
+  if (lead) {
+    await updateLead(Number(lead.id), { status: STATUS.OFFER_SENT, wave: Math.max(2, Number(lead.wave || 1)) })
+  }
+  await insertAudit(req.auth?.email || null, 'estimate_sent_to_client', 'estimate', id, { to, estimateNo: estimate.estimateNo || null })
+  return res.json({ ok: true, estimate: updatedEstimate, mail, files: { xlsx, pdf } })
+})
+
 app.get('/api/crm/estimates/:id/file/:kind', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
   const id = Number(req.params.id)
   const kind = String(req.params.kind || '').trim().toLowerCase()
   if (!Number.isFinite(id) || !['xlsx','pdf'].includes(kind)) return res.status(400).json({ ok: false, error: 'Invalid params' })
   const estimate = await getEstimateById(id)
   if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
-  const safe = String(estimate.estimateNo || `rozpocet-${estimate.id}`).replace(/[^\w.-]+/g, '_')
-  const filePath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.${kind}`)
-  if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: 'File not found' })
-  return res.download(filePath, path.basename(filePath))
+  const files = getEstimateGeneratedFiles(estimate)
+  const file = kind === 'xlsx' ? files.xlsx : files.pdf
+  if (!file) return res.status(404).json({ ok: false, error: 'File not found' })
+  return res.download(file.filePath, file.fileName || path.basename(file.filePath))
 })
 
 app.get('/api/crm/suppliers', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
