@@ -2204,12 +2204,25 @@ async function saveEstimate(id, patch = {}) {
     )
     if (Array.isArray(patch.lines)) {
       await dbQuery('DELETE FROM crm_estimate_lines WHERE estimate_id = $1', [id])
-      for (const line of lines) {
+      if (lines.length) {
+        const values = []
+        const params = []
+        for (const line of lines) {
+          const row = [
+            id, line.catalogItemId, line.sourceCatalogCode, line.lineCode, line.sectionType, line.groupKey, line.groupLabel,
+            line.phaseKey, line.categoryKey, line.itemName, line.workDescription, line.materialDescription, line.unit,
+            line.quantity, line.laborUnitPrice, line.laborTotal, line.materialUnitPrice, line.materialTotal, line.lineTotal,
+            line.basePrice, line.clientPrice, line.totalBase, line.totalClient, line.positionOrder,
+          ]
+          const start = params.length + 1
+          params.push(...row)
+          values.push(`($${start},$${start + 1},$${start + 2},$${start + 3},$${start + 4},$${start + 5},$${start + 6},$${start + 7},$${start + 8},$${start + 9},$${start + 10},$${start + 11},$${start + 12},$${start + 13},$${start + 14},$${start + 15},$${start + 16},$${start + 17},$${start + 18},$${start + 19},$${start + 20},$${start + 21},$${start + 22},$${start + 23},now(),now())`)
+        }
         await dbQuery(
           `INSERT INTO crm_estimate_lines
           (estimate_id, catalog_item_id, source_catalog_code, line_code, section_type, group_key, group_label, phase_key, category_key, item_name, work_description, material_description, unit, quantity, labor_unit_price, labor_total, material_unit_price, material_total, line_total, base_price, client_price, total_base, total_client, position_order, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,now(),now())`,
-          [id, line.catalogItemId, line.sourceCatalogCode, line.lineCode, line.sectionType, line.groupKey, line.groupLabel, line.phaseKey, line.categoryKey, line.itemName, line.workDescription, line.materialDescription, line.unit, line.quantity, line.laborUnitPrice, line.laborTotal, line.materialUnitPrice, line.materialTotal, line.lineTotal, line.basePrice, line.clientPrice, line.totalBase, line.totalClient, line.positionOrder]
+          VALUES ${values.join(',')}`,
+          params
         )
       }
     }
