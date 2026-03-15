@@ -1595,7 +1595,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
       ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `${categoryKey === 'stavba' ? 'STV' : categoryKey === 'ostatni' ? 'OST' : 'ELE'}-${String(itemNo).padStart(3, '0')}`
       ws.getCell(`C${rowNo}`).value = itemNo
       ws.getCell(`D${rowNo}`).value = line.workDescription || ''
-      ws.getCell(`E${rowNo}`).value = line.materialDescription || ''
+      ws.getCell(`E${rowNo}`).value = line.materialDescription || 'bez materiálu'
       ws.getCell(`F${rowNo}`).value = line.unit || 'ks'
       ws.getCell(`G${rowNo}`).value = toNum(line.quantity, 0)
       ws.getCell(`G${rowNo}`).numFmt = '#,##0.##'
@@ -1677,7 +1677,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   return xlsxPath
 }
 
-const MONEY_NUM_FMT = '#,##0 "Kč"'
+const MONEY_NUM_FMT = '#,##0.00 "Kč"'
 
 function thinBorder() {
   return {
