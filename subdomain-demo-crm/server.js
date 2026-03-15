@@ -3938,11 +3938,12 @@ app.get('/api/crm/jobs/:id', authMiddleware, roleGuard(['admin', 'manager', 'vie
   const job = await getJobById(Number(req.params.id))
   if (!job) return res.status(404).json({ ok: false, error: 'Job not found' })
   const customer = job.customerId ? await getCustomerById(job.customerId) : null
+  const lead = job.leadId ? await getLeadById(job.leadId) : null
   const events = await listJobEvents(job.id)
   const documents = await listJobDocuments(job.id)
   const tasks = await listJobTasks(job.id)
   const invoices = await listJobInvoices(job.id)
-  return res.json({ ok: true, job: enrichJob(job), customer, events, documents, tasks, invoices })
+  return res.json({ ok: true, job: enrichJob(job), customer, lead, events, documents, tasks, invoices })
 })
 app.patch('/api/crm/jobs/:id', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
   const id = Number(req.params.id)
