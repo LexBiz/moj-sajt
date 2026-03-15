@@ -1556,7 +1556,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   ws.getCell('A3').font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF666666' } }
 
   ws.mergeCells('A4:L4')
-  ws.getCell('A4').value = `Klient: ${customerName} · Adresa objektu: ${estimate?.customerAddressSnapshot || customer?.address || '—'} · Projektový manažer: ${estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'}`
+  ws.getCell('A4').value = `Klient: ${customerName} · Adresa objektu: ${estimate?.customerAddressSnapshot || customer?.address || '—'} · Projektový manažer: ${estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'} · Telefon: ${customer?.phone || lead?.phone || '—'} · Email: ${customer?.email || lead?.email || '—'}`
   ws.getCell('A4').font = { name: 'Calibri', size: 10 }
 
   const headerRow = 6
@@ -1591,7 +1591,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     rowNo += 1
     for (const line of rows) {
       dataRows.push(rowNo)
-      ws.getCell(`A${rowNo}`).value = estimateCategoryLabel(categoryKey)
+      ws.getCell(`A${rowNo}`).value = ''
       ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `${categoryKey === 'stavba' ? 'STV' : categoryKey === 'ostatni' ? 'OST' : 'ELE'}-${String(itemNo).padStart(3, '0')}`
       ws.getCell(`C${rowNo}`).value = itemNo
       ws.getCell(`D${rowNo}`).value = line.workDescription || ''
@@ -1635,10 +1635,9 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   const finalRows = [
     ['Práce celkem', { formula: workSum }],
     ['Materiál celkem', { formula: materialSum }],
-    ['Celkem bez DPH', { formula: totalSum }],
     ['Mezisoučet', { formula: totalSum }],
-    [`DPH ${vatRate} %`, { formula: `L${rowNo + 3}*${vatRate / 100}` }],
-    ['Celkem s DPH', { formula: `L${rowNo + 3}+L${rowNo + 4}` }],
+    [`DPH ${vatRate} %`, { formula: `L${rowNo + 2}*${vatRate / 100}` }],
+    ['Celkem s DPH', { formula: `L${rowNo + 2}+L${rowNo + 3}` }],
   ]
   for (const [label, formula] of finalRows) {
     ws.mergeCells(`A${rowNo}:K${rowNo}`)

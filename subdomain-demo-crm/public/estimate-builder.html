@@ -31,13 +31,22 @@
       .main-top{position:sticky;top:56px;z-index:10;padding:16px 22px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95)}
       .main-title{font-size:19px;font-weight:800}.main-sub{font-size:12px;color:var(--ink2);margin-top:3px}
       .group-head{padding:16px 22px 12px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.015)}.group-title{font-size:16px;font-weight:800}.group-sub{font-size:12px;color:var(--ink3);margin-top:3px}
-      .item{display:grid;grid-template-columns:50px minmax(0,1fr) 110px 120px 110px;align-items:center;border-bottom:1px solid var(--b2)}
+      .item{display:grid;grid-template-columns:50px minmax(0,1fr) 110px 150px 120px 110px;align-items:center;border-bottom:1px solid var(--b2)}
       .item:hover{background:rgba(26,106,232,.04)} .item.incart{background:rgba(26,106,232,.06)}
       .item-icon{width:50px;height:56px;display:flex;align-items:center;justify-content:center;color:var(--ink3)}
       .item-body{padding:12px 14px 12px 0}.item-name{font-size:14px;font-weight:500;line-height:1.38}.item-code{font-size:11px;color:var(--ink3);margin-top:2px;font-family:monospace}
       .item-price,.item-total{padding:0 12px;text-align:right}.item-price-main,.item-total-main{font-size:14px;font-weight:700}.item-price-sub,.item-total-sub{font-size:11px;color:var(--ink3);margin-top:2px}
       .item-total-main.active{color:var(--green)}
+      .item-custom{padding:0 10px}
+      .item-custom input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:10px;color:var(--ink);padding:8px 10px;font:inherit;text-align:right}
+      .item-custom label{display:block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
       .item-qty{padding:0 10px;display:flex;justify-content:center;align-items:center;gap:10px}.qty-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;border:none;cursor:pointer}.qty-minus{background:rgba(232,58,58,.16);color:var(--red)}.qty-plus{background:rgba(26,106,232,.16);color:var(--blue3)}.qty-val{min-width:30px;text-align:center;font-size:15px;font-weight:700}.qty-val.active{color:var(--blue3)}
+      .cart-bar{position:fixed;left:18px;right:18px;bottom:18px;z-index:70;background:rgba(7,22,38,.96);border:1px solid var(--b2);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:14px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;backdrop-filter:blur(14px)}
+      .cart-bar-main{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+      .cart-pill{display:flex;flex-direction:column;gap:2px}
+      .cart-pill b{font-size:10px;color:var(--ink3);letter-spacing:.45px;text-transform:uppercase}
+      .cart-pill span{font-size:15px;font-weight:800;color:var(--ink)}
+      .cart-bar-actions{display:flex;gap:8px;flex-wrap:wrap}
       .sheet{background:var(--s);border:1px solid var(--b2);border-radius:18px;box-shadow:var(--sh);overflow:hidden;color:var(--ink)}
       .sheet-head{padding:20px 22px 12px;border-bottom:1px solid var(--b2);background:linear-gradient(180deg,rgba(26,106,232,.08),rgba(7,22,38,.35))}.sheet-title{font-size:22px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}.sheet-sub{font-size:12px;color:var(--ink2);margin-top:6px}
       .sheet-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.meta-card{background:var(--c);border:1px solid var(--b);padding:12px 14px}.meta-card:nth-child(2n){border-right:1px solid var(--b)}.meta-card b{display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.55px;margin-bottom:4px}.meta-card .v{font-size:14px;line-height:1.45;color:var(--ink)}
@@ -65,8 +74,8 @@
       .sheet .btn:hover{background:var(--c2)}
       .empty{padding:28px 18px;text-align:center;color:var(--ink2);font-size:14px}
       @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}}
-      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 110px 120px 100px}.item-icon{display:none}.editor{width:100%}}
-      @media(max-width:700px){.item{grid-template-columns:1fr auto auto}.item-price,.item-qty,.item-total{padding:0 6px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}}
+      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 110px 140px 120px 100px}.item-icon{display:none}.editor{width:100%}.cart-bar{left:10px;right:10px;bottom:10px}}
+      @media(max-width:700px){.item{grid-template-columns:1fr}.item-price,.item-qty,.item-total,.item-custom{padding:8px 12px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}.cart-bar{flex-direction:column;align-items:stretch}}
     </style>
   </head>
   <body>
@@ -110,7 +119,7 @@
               </div>
               <div class="sheet-input-block" style="width:min(420px,100%)">
                 <label class="sheet-label" for="estimateNote">Poznámka</label>
-                <textarea class="sheet-input" id="estimateNote" placeholder="Poznámka k rozpočtu / instrukce" style="min-height:62px;resize:vertical;border:1px solid var(--paper-line)"></textarea>
+                <textarea class="sheet-input" id="estimateNote" placeholder="Poznámka k rozpočtu / instrukce" style="min-height:96px;resize:vertical;border:1px solid var(--paper-line)"></textarea>
               </div>
             </div>
             <div class="paper-subhead">
@@ -171,6 +180,18 @@
         </div>
       </section>
     </div>
+    <div class="cart-bar" id="cartBar">
+      <div class="cart-bar-main">
+        <div class="cart-pill"><b>Položky</b><span id="cartCount">0</span></div>
+        <div class="cart-pill"><b>Práce</b><span id="cartLabor">0,00 Kč</span></div>
+        <div class="cart-pill"><b>Materiál</b><span id="cartMaterial">0,00 Kč</span></div>
+        <div class="cart-pill"><b>Celkem s DPH</b><span id="cartTotal">0,00 Kč</span></div>
+      </div>
+      <div class="cart-bar-actions">
+        <button class="btn" id="openCartBar">Otevřít košík</button>
+        <button class="btn primary" id="saveFromBar">Uložit rozpočet</button>
+      </div>
+    </div>
     <script>
       const params = new URLSearchParams(location.search)
       const leadId = Number(params.get('leadId') || 0)
@@ -184,6 +205,7 @@
       async function json(resp) { try { return await resp.json() } catch { return null } }
 
       let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null
+      const customPriceOverrides = new Map()
       const NAV_LABELS = { grooves:'Sekání šliců (drážek) a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zapojení zásuvek, vypínačů', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
       const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
       const CATEGORY_LABELS = { elektro: 'ELEKTRO', stavba: 'STAVBA', ostatni: 'OSTATNÍ' }
@@ -243,6 +265,10 @@
         return { labor, material, bezDph, dph, total }
       }
       function catalogLine(item) { return (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null }
+      function customLaborPrice(item) {
+        const raw = customPriceOverrides.get(Number(item.id))
+        return Number.isFinite(raw) ? raw : Number(item.basePrice || 0)
+      }
       function addCatalogItem(item, delta) {
         if (!estimate) return
         const existing = catalogLine(item)
@@ -250,9 +276,10 @@
         if (!existing) {
           const selectedTrade = document.getElementById('tradeType').value
           const category = selectedTrade === 'construction' ? 'stavba' : 'elektro'
-          estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, category, sectionType: category, groupKey: uiCategoryKey(item), groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní', phaseKey: item.phaseKey, categoryKey: item.categoryKey, itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: 1, laborUnitPrice: Number(item.basePrice || 0), materialUnitPrice: 0 })
+          estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, category, sectionType: category, groupKey: uiCategoryKey(item), groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní', phaseKey: item.phaseKey, categoryKey: item.categoryKey, itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: 1, laborUnitPrice: customLaborPrice(item), materialUnitPrice: 0 })
         } else {
           existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
+          existing.laborUnitPrice = customLaborPrice(item)
           if (existing.quantity <= 0) estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
         }
         estimate.lines = normalizeEstimateLines(estimate.lines)
@@ -277,10 +304,21 @@
         const visibleKeys = activeNavKey && groups.has(activeNavKey) ? [activeNavKey] : ordered
         body.innerHTML = visibleKeys.map((key) => {
           const items = groups.get(key) || []
-          return `<div class="group-head"><div class="group-title">${esc(NAV_LABELS[key] || key)}</div><div class="group-sub">${items.length} položek</div></div>${items.map((item) => { const line = catalogLine(item); const qty = Number(line?.quantity || 0); const total = qty * Number(item.basePrice || 0); return `<div class="item${qty > 0 ? ' incart' : ''}"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 3"></path></svg></div><div class="item-body"><div class="item-name">${esc(item.itemName)}</div>${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}</div><div class="item-price"><div class="item-price-main">${esc(String(item.basePrice || 0))} Kč</div><div class="item-price-sub">/ ${esc(item.unit || 'ks')}</div></div><div class="item-qty"><button class="qty-btn qty-minus" data-minus="${item.id}">−</button><div class="qty-val${qty > 0 ? ' active' : ''}">${qty}</div><button class="qty-btn qty-plus" data-plus="${item.id}">+</button></div><div class="item-total"><div class="item-total-main${qty > 0 ? ' active' : ''}">${qty > 0 ? total.toFixed(0) + ' Kč' : '0 Kč'}</div><div class="item-total-sub">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div></div></div>` }).join('')}`
+          return `<div class="group-head"><div class="group-title">${esc(NAV_LABELS[key] || key)}</div><div class="group-sub">${items.length} položek</div></div>${items.map((item) => { const line = catalogLine(item); const qty = Number(line?.quantity || 0); const effectivePrice = line ? Number(line.laborUnitPrice || 0) : customLaborPrice(item); const total = qty * effectivePrice; return `<div class="item${qty > 0 ? ' incart' : ''}"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 3"></path></svg></div><div class="item-body"><div class="item-name">${esc(item.itemName)}</div>${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}</div><div class="item-price"><div class="item-price-main">${esc(String(item.basePrice || 0))} Kč</div><div class="item-price-sub">základ / ${esc(item.unit || 'ks')}</div></div><div class="item-custom"><label>Moje cena</label><input type="number" step="0.01" data-price-input="${item.id}" value="${esc(String(effectivePrice || 0))}" /></div><div class="item-qty"><button class="qty-btn qty-minus" data-minus="${item.id}">−</button><div class="qty-val${qty > 0 ? ' active' : ''}">${qty}</div><button class="qty-btn qty-plus" data-plus="${item.id}">+</button></div><div class="item-total"><div class="item-total-main${qty > 0 ? ' active' : ''}">${qty > 0 ? total.toFixed(0) + ' Kč' : '0 Kč'}</div><div class="item-total-sub">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div></div></div>` }).join('')}`
         }).join('')
         body.querySelectorAll('[data-plus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-plus'))); if (item) addCatalogItem(item, 1) }))
         body.querySelectorAll('[data-minus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-minus'))); if (item) addCatalogItem(item, -1) }))
+        body.querySelectorAll('[data-price-input]').forEach((input) => input.addEventListener('input', () => {
+          const itemId = Number(input.getAttribute('data-price-input'))
+          const next = Number(input.value || 0)
+          customPriceOverrides.set(itemId, next)
+          const line = (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === itemId)
+          if (line) {
+            line.laborUnitPrice = next
+            estimate.lines = normalizeEstimateLines(estimate.lines)
+            renderAll()
+          }
+        }))
         document.getElementById('mainTitle').textContent = activeNavKey ? NAV_LABELS[activeNavKey] || activeNavKey : 'Vyberte kategorii zleva'
         document.getElementById('mainCount').textContent = activeNavKey && groups.has(activeNavKey) ? `${(groups.get(activeNavKey) || []).length} položek` : `${catalog.length} položek v databázi`
       }
@@ -299,7 +337,14 @@
         tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; if (field === 'category') line.sectionType = el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
         tbody.querySelectorAll('[data-remove]').forEach((btn) => btn.addEventListener('click', () => { const pos = Number(btn.getAttribute('data-remove')); estimate.lines = estimate.lines.filter((x) => Number(x.positionOrder) !== pos); estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
       }
-      function renderTotals() { const t = totals(estimate?.lines || []); document.getElementById('estimateTotals').innerHTML = `<div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div><div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div><div class="tot-row"><span>Celkem bez DPH</span><strong>${fmtMoney(t.bezDph)}</strong></div><div class="tot-row"><span>DPH ${estimate?.vatRate || 21} %</span><strong>${fmtMoney(t.dph)}</strong></div><div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>` }
+      function renderTotals() { const t = totals(estimate?.lines || []); document.getElementById('estimateTotals').innerHTML = `<div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div><div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div><div class="tot-row"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div><div class="tot-row"><span>DPH ${estimate?.vatRate || 21} %</span><strong>${fmtMoney(t.dph)}</strong></div><div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>` }
+      function renderCartBar() {
+        const t = totals(estimate?.lines || [])
+        document.getElementById('cartCount').textContent = String((estimate?.lines || []).length)
+        document.getElementById('cartLabor').textContent = fmtMoney(t.labor)
+        document.getElementById('cartMaterial').textContent = fmtMoney(t.material)
+        document.getElementById('cartTotal').textContent = fmtMoney(t.total)
+      }
       function updateHeaderInfo() {
         const estimateDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
         const objectName = estimate?.companyNameSnapshot || lead?.brief?.objectType || job?.title || 'Zakázka'
@@ -432,10 +477,12 @@
         p.href = pdf; p.style.display = 'inline-flex'
         alert(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel vygenerován, PDF se nepodařilo vytvořit')
       }
-      function renderAll() { updateHeaderInfo(); renderNav(); renderCatalogRows(); renderEstimateTable(); renderTotals() }
+      function renderAll() { updateHeaderInfo(); renderNav(); renderCatalogRows(); renderEstimateTable(); renderTotals(); renderCartBar() }
       document.getElementById('saveEstimate').addEventListener('click', saveEstimate)
       document.getElementById('buildDocs').addEventListener('click', buildEstimateDocs)
       document.getElementById('toggleSheet').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
+      document.getElementById('openCartBar').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
+      document.getElementById('saveFromBar').addEventListener('click', saveEstimate)
       document.getElementById('tradeType').addEventListener('change', () => { activeNavKey = null; loadCatalog() })
       let timer
       document.getElementById('catalogSearch').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { activeNavKey = null; loadCatalog() }, 250) })
