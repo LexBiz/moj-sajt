@@ -13,7 +13,7 @@
       body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
       .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px)}
       .header-inner{max-width:1900px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-      .logo{display:flex;align-items:center;gap:10px}.logo-mark{width:38px;height:38px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}.logo-mark img{width:100%;height:100%;object-fit:cover;display:block}.logo-name{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+      .logo{display:flex;align-items:center;gap:10px}.logo-mark{height:44px;min-width:44px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}.logo-mark img{height:44px;width:auto;max-width:160px;object-fit:contain;display:block}.logo-name{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
       .hdr-info{font-size:12px;color:var(--ink2);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:9px 16px;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
       .btn:hover{background:var(--c2)} .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none}
@@ -401,7 +401,32 @@
         tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; if (field === 'category') line.sectionType = el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
         tbody.querySelectorAll('[data-remove]').forEach((btn) => btn.addEventListener('click', () => { const pos = Number(btn.getAttribute('data-remove')); estimate.lines = estimate.lines.filter((x) => Number(x.positionOrder) !== pos); estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
       }
-      function renderTotals() { const t = totals(estimate?.lines || []); document.getElementById('estimateTotals').innerHTML = `<div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div><div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div><div class="tot-row"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div><div class="tot-row"><span>DPH ${estimate?.vatRate || 21} %</span><strong>${fmtMoney(t.dph)}</strong></div><div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>` }
+      function renderTotals() {
+        const t = totals(estimate?.lines || [])
+        const vr = Number(estimate?.vatRate || 21)
+        document.getElementById('estimateTotals').innerHTML = `
+          <div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div>
+          <div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div>
+          <div class="tot-row"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div>
+          <div class="tot-row" style="align-items:center">
+            <span style="display:flex;align-items:center;gap:6px">
+              DPH&nbsp;
+              <input id="dphRateInput" type="number" min="0" max="99" step="1" value="${vr}" title="Sazba DPH (%)" style="width:52px;background:rgba(255,255,255,.08);border:1px solid var(--b2);border-radius:6px;color:var(--ink);padding:3px 6px;font:inherit;font-size:13px;text-align:center" />
+              &nbsp;%
+            </span>
+            <strong>${fmtMoney(t.dph)}</strong>
+          </div>
+          <div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>
+        `
+        document.getElementById('dphRateInput')?.addEventListener('input', (e) => {
+          if (!estimate) return
+          estimate.vatRate = Number(e.target.value || 21)
+          const t2 = totals(estimate.lines || [])
+          document.querySelector('#estimateTotals .tot-row:nth-child(4) strong').textContent = fmtMoney(t2.dph)
+          document.querySelector('#estimateTotals .tot-row.final strong').textContent = fmtMoney(t2.total)
+          document.getElementById('cartTotal').textContent = fmtMoney(t2.total)
+        })
+      }
       function renderCartBar() {
         const t = totals(estimate?.lines || [])
         document.getElementById('cartCount').textContent = String((estimate?.lines || []).length)
@@ -521,6 +546,7 @@
           customerIcoSnapshot: estimate.customerIcoSnapshot || null,
           versionNo: estimate.versionNo || 1,
           projectManagerSnapshot: estimate.projectManagerSnapshot || job?.responsiblePerson || null,
+          vatRate: estimate.vatRate || 21,
           lines: estimate.lines,
         }
         const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })

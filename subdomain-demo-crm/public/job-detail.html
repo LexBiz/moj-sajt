@@ -15,8 +15,8 @@
       .hdr{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px)}
       .hdr-in{max-width:1600px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px}
       .logo{display:flex;align-items:center;gap:10px}
-      .logo-m{width:38px;height:38px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}
-      .logo-m img{width:100%;height:100%;object-fit:cover;display:block}
+      .logo-m{height:44px;min-width:44px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}
+      .logo-m img{height:44px;width:auto;max-width:160px;object-fit:contain;display:block}
       .logo-n{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-s{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
       .hdr-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
       .lang-switch{display:flex;gap:6px;align-items:center;margin-right:4px}
@@ -224,42 +224,98 @@
       function renderPrehled(job, customer, lead) {
         const c = customer || {}
         const brief = lead?.brief || {}
-        const fields = [
-          ['Klient', c.name || c.companyName || '—'],
-          ['IČO', c.ico || '—'],
-          ['Telefon', c.phone || '—'],
+        const isFirma = c.clientType === 'firma' || !!c.ico
+        const typeBadge = isFirma
+          ? `<span class="badge b-blue" style="margin-left:8px">Firma</span>`
+          : `<span class="badge b-green" style="margin-left:8px">Fyzická osoba</span>`
+
+        const contactFields = [
+          ['Jméno / Název', c.name || c.companyName || '—'],
           ['Email', c.email || '—'],
-          ['Adresa', c.address || '—'],
-          ['Typ klienta', c.clientType === 'firma' ? 'Firma' : 'Fyzická osoba'],
+          ['Telefon', c.phone || '—'],
+          ['Adresa / Sídlo', c.address || '—'],
+        ].filter(([,v]) => v && v !== '—')
+
+        const icoBlock = isFirma ? `
+          <div class="card-s" style="border-left:3px solid var(--blue)">
+            <div class="card-s-t">Firemní údaje (IČO)
+              ${c.ico ? `<button class="btn" id="fetchAresBtn" style="margin-left:auto;font-size:11px;padding:5px 12px">↻ Aktualizovat z ARES</button>` : ''}
+            </div>
+            <div class="meta-g">
+              <div class="meta-i"><b>IČO</b><div class="val" style="font-size:18px;font-weight:800">${esc(c.ico || '—')}</div></div>
+              <div class="meta-i"><b>DIČ</b><div class="val">${esc(c.dic || '—')}</div></div>
+              <div class="meta-i"><b>Název firmy</b><div class="val">${esc(c.companyName || c.name || '—')}</div></div>
+              <div class="meta-i"><b>Sídlo</b><div class="val">${esc(c.address || '—')}</div></div>
+            </div>
+          </div>` : ''
+
+        const briefFields = []
+        if (brief.objectType) briefFields.push(['Typ objektu', brief.objectType])
+        if (brief.realizationAddress) briefFields.push(['Adresa realizace', brief.realizationAddress])
+        if ((brief.requestTypes || []).length) briefFields.push(['Požadované práce', brief.requestTypes.join(', ')])
+        if (brief.requestOther) briefFields.push(['Jiné práce', brief.requestOther])
+        if (brief.scopeType) briefFields.push(['Rozsah zakázky', brief.scopeType])
+        if (brief.area) briefFields.push(['Plocha / rozsah (m²)', brief.area])
+        if (brief.budgetAmount) briefFields.push(['Orientační rozpočet', brief.budgetAmount])
+        if (brief.requestedTerm) briefFields.push(['Požadovaný termín', brief.requestedTerm])
+        if ((brief.documents || []).length) briefFields.push(['Podklady k dispozici', brief.documents.join(', ')])
+        if ((brief.sourceChannels || []).length) briefFields.push(['Jak nás našli', brief.sourceChannels.join(', ')])
+        if (brief.sourceOther) briefFields.push(['Zdroj (jiné)', brief.sourceOther])
+        if (brief.note) briefFields.push(['Poznámka klienta', brief.note])
+
+        const jobFields = [
           ['Typ zakázky', job.jobType === 'elektro' ? 'Elektro' : job.jobType === 'stavebni' ? 'Stavební' : 'Kombinovaná'],
-          ['Zdroj', job.source || '—'],
-          ['Odpovědná osoba', job.responsiblePerson || '—'],
           ['Priorita', job.priority || 'normal'],
+          ['Odpovědná osoba', job.responsiblePerson || '—'],
           ['Datum přijetí', fmt(job.receivedAt)],
           ['Plánované zahájení', job.plannedStart ? fmt(job.plannedStart) : '—'],
           ['Plánované dokončení', job.plannedEnd ? fmt(job.plannedEnd) : '—'],
-          ['Poslední kontakt klienta', job.lastClientContactAt ? fmtFull(job.lastClientContactAt) : '—'],
-          ['Poslední interní akce', job.lastInternalActionAt ? fmtFull(job.lastInternalActionAt) : '—'],
-          ['Zakázka se zastavila', job.stalledAt ? fmtFull(job.stalledAt) : '—'],
-          ['Důvod zastavení', job.stalledReason || '—'],
-        ].filter(([,v]) => v)
+          ['Poslední kontakt', job.lastClientContactAt ? fmtFull(job.lastClientContactAt) : '—'],
+        ].filter(([,v]) => v && v !== '—')
+
         document.getElementById('m-prehled').innerHTML = `
-          <div class="card-s"><div class="card-s-t">Informace o zakázce a klientovi</div>
-            <div class="meta-g">${fields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
+          <div class="card-s">
+            <div class="card-s-t">Klient ${typeBadge}</div>
+            <div class="meta-g">${contactFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
           </div>
-          <div class="card-s"><div class="card-s-t">Дані з формуляра клієнта</div>
-            <div class="meta-g">
-              <div class="meta-i"><b>Typ objektu</b><div class="val">${esc(brief.objectType || '—')}</div></div>
-              <div class="meta-i"><b>Adresa realizace</b><div class="val">${esc(brief.realizationAddress || brief.address || '—')}</div></div>
-              <div class="meta-i"><b>Požadované práce</b><div class="val">${esc((brief.requestTypes || []).join(', ') || brief.workType || '—')}</div></div>
-              <div class="meta-i"><b>Rozpočet klienta</b><div class="val">${esc(brief.budgetAmount || brief.budget || '—')}</div></div>
-              <div class="meta-i"><b>Termín</b><div class="val">${esc(brief.requestedTerm || brief.timeline || '—')}</div></div>
-              <div class="meta-i"><b>Plocha / rozsah</b><div class="val">${esc(brief.area || '—')}</div></div>
+          ${icoBlock}
+          ${briefFields.length ? `
+          <div class="card-s">
+            <div class="card-s-t">Formulář klienta — plné údaje</div>
+            <div class="meta-g">${briefFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
+          </div>` : ''}
+          <div class="card-s">
+            <div class="card-s-t">Informace o zakázce</div>
+            <div class="meta-g">${jobFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--b)">
+              <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Číslo zakázky — změnit</div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input id="editJobNum" style="background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:8px 12px;font:inherit;font-size:14px;max-width:280px;outline:none" value="${esc(job.internalNumber || '')}" placeholder="Číslo zakázky" />
+                <button class="btn btn-p" id="saveJobNum">Uložit číslo</button>
+              </div>
             </div>
-            ${brief.summaryText ? `<div style="margin-top:14px;font-size:13px;color:var(--ink2);line-height:1.7;white-space:pre-wrap">${esc(brief.summaryText)}</div>` : ''}
           </div>
-          ${job.notes ? `<div class="card-s"><div class="card-s-t">Poznámky</div><div style="font-size:14px;color:var(--ink2);line-height:1.6;white-space:pre-wrap">${esc(job.notes)}</div></div>` : ''}
+          ${job.notes || brief.summaryText ? `<div class="card-s"><div class="card-s-t">Poznámky</div>
+            ${job.notes ? `<div style="font-size:14px;color:var(--ink2);line-height:1.6;white-space:pre-wrap;margin-bottom:12px">${esc(job.notes)}</div>` : ''}
+            ${brief.summaryText ? `<details><summary style="cursor:pointer;font-size:13px;color:var(--ink3);font-weight:600;margin-bottom:6px">AI shrnutí formuláře ▾</summary><div style="font-size:12px;color:var(--ink3);line-height:1.65;white-space:pre-wrap;margin-top:8px;padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--b)">${esc(brief.summaryText)}</div></details>` : ''}
+          </div>` : ''}
         `
+
+        document.getElementById('saveJobNum')?.addEventListener('click', async () => {
+          const newNum = document.getElementById('editJobNum').value.trim()
+          if (!newNum) return
+          const r = await fetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ internalNumber: newNum }) })
+          if (r.ok) { document.getElementById('jobNum').textContent = newNum; alert('Číslo zakázky uloženo: ' + newNum) }
+          else alert('Nepodařilo se uložit číslo zakázky')
+        })
+        document.getElementById('fetchAresBtn')?.addEventListener('click', async () => {
+          const ico = c.ico; if (!ico) return
+          const r = await fetch(api(`/api/ares?ico=${encodeURIComponent(ico)}`))
+          const d = await j(r)
+          if (!r.ok || !d?.ok) { alert('ARES: firma nenalezena nebo služba nedostupná'); return }
+          alert(`ARES: ${d.companyName || ''}\n${d.address || ''}`)
+          loadJob()
+        })
       }
 
       function renderKomunikace(events) {

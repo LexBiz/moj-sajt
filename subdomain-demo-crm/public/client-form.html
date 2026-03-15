@@ -108,6 +108,18 @@
         .grid, .choice-list { grid-template-columns: 1fr; }
         form, .head { padding-left: 16px; padding-right: 16px; }
       }
+      .addr-wrap { position: relative; }
+      .addr-dropdown {
+        position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+        background: #0C1B31; border: 1px solid #254A80; border-radius: 10px;
+        box-shadow: 0 8px 28px rgba(0,0,0,.5); max-height: 210px; overflow-y: auto; display: none;
+      }
+      .addr-item {
+        padding: 10px 14px; font-size: 13px; cursor: pointer; color: #E8F1FF;
+        border-bottom: 1px solid rgba(37,74,128,.25); line-height: 1.4;
+      }
+      .addr-item:last-child { border-bottom: none; }
+      .addr-item:hover { background: rgba(68,144,238,.12); }
     </style>
   </head>
   <body>
@@ -143,10 +155,6 @@
                 <input id="companyIco" type="text" />
               </div>
               <div>
-                <label for="companyAddress">Adresa / sídlo firmy</label>
-                <input id="companyAddress" type="text" />
-              </div>
-              <div>
                 <label for="phone">Telefon</label>
                 <input id="phone" type="tel" placeholder="+420XXXXXXXXX" />
               </div>
@@ -154,13 +162,23 @@
                 <label for="clientEmail">E-mail *</label>
                 <input id="clientEmail" type="email" required />
               </div>
+              <div class="full">
+                <label for="companyAddress">Adresa / sídlo firmy</label>
+                <div class="addr-wrap">
+                  <input id="companyAddress" type="text" autocomplete="off" placeholder="Začněte psát ulici nebo město..." />
+                  <div id="companyAddrDropdown" class="addr-dropdown"></div>
+                </div>
+              </div>
             </div>
           </section>
 
           <section class="section">
             <h2>2) Lokalita realizace</h2>
             <label for="realizationAddress">Adresa realizace (město, ulice)</label>
-            <input id="realizationAddress" type="text" />
+            <div class="addr-wrap">
+              <input id="realizationAddress" type="text" autocomplete="off" placeholder="Začněte psát ulici nebo město..." />
+              <div id="addrDropdown" class="addr-dropdown"></div>
+            </div>
           </section>
 
           <section class="section">
@@ -281,6 +299,42 @@
       </div>
     </div>
     <script>
+      function setupAddressAutocomplete(inputId, dropdownId) {
+        const input = document.getElementById(inputId)
+        const drop = document.getElementById(dropdownId)
+        if (!input || !drop) return
+        let timer = null
+        function hideDropdown() { drop.style.display = 'none'; drop.innerHTML = '' }
+        input.addEventListener('input', () => {
+          clearTimeout(timer)
+          const q = input.value.trim()
+          if (q.length < 3) { hideDropdown(); return }
+          timer = setTimeout(async () => {
+            try {
+              const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=cz&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`
+              const r = await fetch(url, { headers: { 'Accept-Language': 'cs' } })
+              const results = await r.json()
+              if (!results.length) { hideDropdown(); return }
+              drop.innerHTML = results.map(res => {
+                const a = res.address || {}
+                const street = a.road ? (a.road + (a.house_number ? ' ' + a.house_number : '')) : ''
+                const city = a.city || a.town || a.village || ''
+                const zip = a.postcode || ''
+                const display = [street, city, zip].filter(Boolean).join(', ') || res.display_name.split(',').slice(0,3).join(',').trim()
+                return `<div class="addr-item" data-val="${display.replace(/"/g,'&quot;')}">${display}</div>`
+              }).join('')
+              drop.style.display = 'block'
+              drop.querySelectorAll('.addr-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => { e.preventDefault(); input.value = item.getAttribute('data-val'); hideDropdown() })
+              })
+            } catch { hideDropdown() }
+          }, 420)
+        })
+        input.addEventListener('blur', () => setTimeout(hideDropdown, 200))
+      }
+      setupAddressAutocomplete('realizationAddress', 'addrDropdown')
+      setupAddressAutocomplete('companyAddress', 'companyAddrDropdown')
+
       const form = document.getElementById('f')
       const ok = document.getElementById('ok')
       const err = document.getElementById('err')

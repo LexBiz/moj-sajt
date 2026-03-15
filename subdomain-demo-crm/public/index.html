@@ -15,8 +15,8 @@
       .hdr{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px)}
       .hdr-in{max-width:100%;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px}
       .logo{display:flex;align-items:center;gap:10px}
-      .logo-m{width:38px;height:38px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}
-      .logo-m img{width:100%;height:100%;object-fit:cover;display:block}
+      .logo-m{height:44px;min-width:44px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}
+      .logo-m img{height:44px;width:auto;max-width:160px;object-fit:contain;display:block}
       .logo-n{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-s{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
       .pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--green);background:rgba(20,201,138,.08);border:1px solid rgba(20,201,138,.2);border-radius:999px;padding:5px 12px}
       .hdr-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -90,6 +90,10 @@
       .registry-table td{padding:14px;border-top:1px solid var(--b);font-size:13px;vertical-align:middle}
       .registry-table tr:hover td{background:rgba(26,106,232,.04)}
       .registry-actions{display:flex;gap:8px;flex-wrap:wrap}
+      .date-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+      .df-btn{border:1px solid var(--b2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:var(--c);color:var(--ink2);font-family:inherit;transition:all .15s}
+      .df-btn.active{background:rgba(26,106,232,.2);color:var(--blue3);border-color:rgba(61,135,248,.4)}
+      .prob-info{padding:14px 16px;background:rgba(26,106,232,.07);border:1px solid rgba(61,135,248,.16);border-radius:12px;font-size:13px;color:var(--ink2);margin-bottom:16px;line-height:1.6}
       .empty{padding:40px 20px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:14px}
       .loading{padding:40px;text-align:center;color:var(--ink2)}
       @media(max-width:900px){.form-grid{grid-template-columns:1fr}.pipe{grid-auto-columns:200px}}
@@ -128,6 +132,14 @@
             <input class="search" id="pipeSearch" placeholder="Hledat klienta, číslo zakázky nebo typ..." />
           </div>
           <button class="btn" id="refreshPipe">↻ Obnovit</button>
+        </div>
+        <div class="date-filters" id="dateFilters">
+          <span style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-right:4px">Filtr:</span>
+          <button class="df-btn active" data-df="all">Vše</button>
+          <button class="df-btn" data-df="today">Dnes</button>
+          <button class="df-btn" data-df="yesterday">Včera</button>
+          <button class="df-btn" data-df="week">Tento týden</button>
+          <button class="df-btn" data-df="month">Tento měsíc</button>
         </div>
         <div class="summary" id="pipeSummary"></div>
         <div class="pipe-wrap"><div class="pipe" id="pipeBoard"><div class="loading">Načítání...</div></div></div>
@@ -190,6 +202,7 @@
           <div class="panel-t" style="margin:0">Dashboard problémů</div>
           <button class="btn" id="refreshProb">↻ Obnovit</button>
         </div>
+        <div class="prob-info"><strong style="color:var(--ink)">Co tato záložka dělá:</strong> Automaticky zobrazuje zakázky, které mají problémy — klient dlouho nereaguje, blokující faktor, prošlé termíny nebo nevyřešené finance. Kliknutím na řádek otevřete kartu zakázky. Sekce jsou:<br>• <strong>Bez odpovědi</strong> — klient nereaguje &gt; 5 dní &nbsp;• <strong>Finance</strong> — neuhrazené faktury &nbsp;• <strong>Realizace</strong> — zakázka čeká na akci &nbsp;• <strong>Po termínu</strong> — prošlé plánované datum</div>
         <div id="probBody"><div class="loading">Načítání...</div></div>
       </section>
     </div>
@@ -230,6 +243,20 @@
       }
       let uiLang = localStorage.getItem('crmUiLang') || 'uk'
       let lastPipelineData = null
+      let activeDateFilter = 'all'
+
+      function jobMatchesDateFilter(job) {
+        if (activeDateFilter === 'all') return true
+        const raw = job.receivedAt || job.createdAt
+        if (!raw) return true
+        const now = new Date()
+        const jd = new Date(raw)
+        if (activeDateFilter === 'today') return jd.toDateString() === now.toDateString()
+        if (activeDateFilter === 'yesterday') { const y = new Date(now); y.setDate(y.getDate()-1); return jd.toDateString() === y.toDateString() }
+        if (activeDateFilter === 'week') { const w = new Date(now); w.setDate(w.getDate()-7); return jd >= w }
+        if (activeDateFilter === 'month') return jd.getMonth() === now.getMonth() && jd.getFullYear() === now.getFullYear()
+        return true
+      }
 
       function applyUiLang() {
         const t = UI_TEXT[uiLang] || UI_TEXT.cs
@@ -297,10 +324,12 @@
         const { byStage, customers } = d
         const jobsAll = STAGES.flatMap((stage) => byStage[stage] || [])
         const rows = jobsAll.filter((job) => {
-          if (!q) return true
-          const c = customers[job.customerId] || {}
-          const hay = [job.internalNumber, job.title, job.jobType, job.waitingFor, c.name, c.companyName].map((x) => String(x || '').toLowerCase()).join(' ')
-          return hay.includes(q)
+          if (q) {
+            const c = customers[job.customerId] || {}
+            const hay = [job.internalNumber, job.title, job.jobType, job.waitingFor, c.name, c.companyName].map((x) => String(x || '').toLowerCase()).join(' ')
+            if (!hay.includes(q)) return false
+          }
+          return jobMatchesDateFilter(job)
         })
         document.getElementById('registryBody').innerHTML = rows.length ? rows.map((job) => {
           const c = customers[job.customerId] || {}
@@ -323,10 +352,12 @@
         const filteredByStage = {}
         for (const stage of STAGES) {
           filteredByStage[stage] = (byStage[stage] || []).filter((job) => {
-            if (!q) return true
-            const c = customers[job.customerId] || {}
-            const hay = [job.internalNumber, job.title, job.jobType, job.waitingFor, c.name, c.companyName].map((x) => String(x || '').toLowerCase()).join(' ')
-            return hay.includes(q)
+            if (q) {
+              const c = customers[job.customerId] || {}
+              const hay = [job.internalNumber, job.title, job.jobType, job.waitingFor, c.name, c.companyName].map((x) => String(x || '').toLowerCase()).join(' ')
+              if (!hay.includes(q)) return false
+            }
+            return jobMatchesDateFilter(job)
           })
         }
         const waiting = jobsAll.filter((j) => String(j.waitingFor || '') === 'client').length
@@ -423,6 +454,11 @@
 
       document.getElementById('refreshPipe').addEventListener('click', loadPipeline)
       document.getElementById('refreshRegistry').addEventListener('click', loadPipeline)
+      document.querySelectorAll('.df-btn').forEach((btn) => btn.addEventListener('click', () => {
+        activeDateFilter = btn.getAttribute('data-df') || 'all'
+        document.querySelectorAll('.df-btn').forEach((b) => b.classList.toggle('active', b === btn))
+        if (lastPipelineData) renderPipeline(lastPipelineData)
+      }))
       document.getElementById('refreshProb').addEventListener('click', loadProblems)
       document.getElementById('pipeSearch').addEventListener('input', () => { if (lastPipelineData) renderPipeline(lastPipelineData) })
       document.querySelectorAll('.lang-btn').forEach((btn) => btn.addEventListener('click', () => {
