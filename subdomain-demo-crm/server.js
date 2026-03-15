@@ -1565,7 +1565,21 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     const cell = ws.getCell(headerRow, idx + 1)
     cell.value = label
     cell.font = { name: 'Calibri', size: 10, bold: true }
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9EEF5' } }
+    const colorMap = {
+      1: 'FFE5E7EB',
+      2: 'FFE5E7EB',
+      3: 'FFE5E7EB',
+      4: 'FFD9E1F2',
+      5: 'FFC6E0B4',
+      6: 'FFE5E7EB',
+      7: 'FFE5E7EB',
+      8: 'FFBDD7EE',
+      9: 'FFBDD7EE',
+      10: 'FFF8CBAD',
+      11: 'FFF8CBAD',
+      12: 'FFD9D9D9',
+    }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorMap[idx + 1] || 'FFE5E7EB' } }
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
     cell.border = thinBorder()
   })
@@ -1613,6 +1627,11 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
         const cell = ws.getCell(rowNo, col)
         cell.border = thinBorder()
         cell.alignment = { vertical: 'top', horizontal: col >= 7 ? 'right' : 'left', wrapText: true }
+        if (col === 4) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }
+        if (col === 5) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6E0B4' } }
+        if (col === 8 || col === 9) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }
+        if (col === 10 || col === 11) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8CBAD' } }
+        if (col === 12) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } }
       }
       ws.getCell(`C${rowNo}`).alignment = { horizontal: 'center', vertical: 'top' }
       ws.getRow(rowNo).height = 30
@@ -1647,10 +1666,14 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     ws.getCell(`L${rowNo}`).value = formula
     ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
     ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
-    const fillColor = label === 'Celkem s DPH' ? 'FFE2F0D9' : 'FFF8F9FB'
+    const fillColor = label === 'Celkem s DPH' ? 'FF595959' : 'FFF8F9FB'
     for (let col = 1; col <= 12; col += 1) {
       ws.getCell(rowNo, col).border = thinBorder()
       ws.getCell(rowNo, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } }
+    }
+    if (label === 'Celkem s DPH') {
+      ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+      ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
     }
     rowNo += 1
   }
@@ -1667,7 +1690,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   ws.getCell(`A${rowNo}`).alignment = { vertical: 'top', wrapText: true }
   for (let r = rowNo; r <= rowNo + 2; r += 1) for (let c = 1; c <= 12; c += 1) ws.getCell(r, c).border = thinBorder()
 
-  ws.headerFooter.oddFooter = '&LTemoWeb CRM&CStrana &P / &N&R' + String(estimate?.estimateNo || '')
+  ws.headerFooter.oddFooter = `&L${formatCzDate(new Date(estimateDate))}&C${title}&RStrana &P / &N`
   ws.printArea = `A1:L${rowNo + 2}`
   ws.autoFilter = `A${headerRow}:L${headerRow}`
 
@@ -1876,6 +1899,10 @@ async function listServiceCatalogItems(filters = {}) {
       const idx2 = params.length
       where.push(`(item_name ILIKE $${idx1} OR coalesce(item_description, '') ILIKE $${idx2})`)
     }
+    if (filters.itemKind) {
+      params.push(String(filters.itemKind))
+      where.push(`coalesce(metadata->>'itemKind', 'work') = $${params.length}`)
+    }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
     const q = await dbQuery(
       `SELECT * FROM crm_service_catalog_items ${whereSql} ORDER BY sort_order ASC, item_name ASC LIMIT 5000`,
@@ -1897,6 +1924,9 @@ async function listServiceCatalogItems(filters = {}) {
   if (filters.search) {
     const q = String(filters.search).toLowerCase()
     rows = rows.filter((x) => [x.itemName, x.itemDescription].some((v) => String(v || '').toLowerCase().includes(q)))
+  }
+  if (filters.itemKind) {
+    rows = rows.filter((x) => String((x.metadata || {}).itemKind || 'work') === String(filters.itemKind))
   }
   return rows.map(normalizeServiceCatalogItem)
 }
@@ -3622,6 +3652,7 @@ app.get('/api/crm/catalog/items', authMiddleware, roleGuard(['admin', 'manager',
     phaseKey: req.query?.phaseKey ? String(req.query.phaseKey) : '',
     categoryKey: req.query?.categoryKey ? String(req.query.categoryKey) : '',
     search: req.query?.search ? String(req.query.search) : '',
+    itemKind: req.query?.itemKind ? String(req.query.itemKind) : '',
   })
   return res.json({ ok: true, items })
 })

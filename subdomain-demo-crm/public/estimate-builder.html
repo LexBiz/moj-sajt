@@ -28,6 +28,15 @@
       .nav-item{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:10px;color:var(--ink2);background:transparent;border:none;font:inherit;cursor:pointer;text-align:left;width:100%}
       .nav-item.active{background:rgba(26,106,232,.12);color:var(--blue3);font-weight:700}.nav-item:hover{background:rgba(26,106,232,.08);color:var(--ink)}
       .nav-count{font-size:11px;color:var(--ink3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:999px}
+      .mode-tabs{display:flex;gap:8px;padding:12px 16px 0;flex-wrap:wrap}
+      .mode-tab{border:1px solid var(--b2);background:var(--c);color:var(--ink2);padding:8px 12px;border-radius:10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+      .mode-tab.active{background:rgba(26,106,232,.16);color:var(--blue3);border-color:rgba(61,135,248,.35)}
+      .context-banner{padding:12px 16px 10px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.03)}
+      .context-banner-title{font-size:15px;font-weight:800}
+      .context-banner-sub{font-size:12px;color:var(--ink2);margin-top:4px}
+      .catalog-admin{margin:14px 16px 0;padding:14px;border:1px solid var(--b2);border-radius:14px;background:rgba(255,255,255,.03)}
+      .catalog-admin-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink2);margin-bottom:10px}
+      .catalog-admin-grid{display:grid;grid-template-columns:120px 1fr 80px 120px auto;gap:8px}
       .main-top{position:sticky;top:56px;z-index:10;padding:16px 22px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95)}
       .main-title{font-size:19px;font-weight:800}.main-sub{font-size:12px;color:var(--ink2);margin-top:3px}
       .group-head{padding:16px 22px 12px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.015)}.group-title{font-size:16px;font-weight:800}.group-sub{font-size:12px;color:var(--ink3);margin-top:3px}
@@ -69,6 +78,8 @@
       .paper-title-meta{font-size:12px;color:var(--ink2);text-align:right}
       .paper-subhead{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:14px}
       .paper-caption{font-size:12px;color:var(--ink3)}
+      .preview-card{padding:18px;border:1px solid var(--b2);border-radius:16px;background:rgba(255,255,255,.03)}
+      .preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
       .sheet .input,.sheet textarea,.sheet select{background:var(--c);border:1px solid var(--b2);color:var(--ink)}
       .sheet .btn{background:var(--c);color:var(--ink);border:1px solid var(--b2)}
       .sheet .btn:hover{background:var(--c2)}
@@ -91,9 +102,29 @@
     </div></header>
     <div class="page">
       <aside class="sidebar">
+        <div class="context-banner">
+          <div class="context-banner-title" id="contextTitle">Кошторис клієнта</div>
+          <div class="context-banner-sub" id="contextSub">Завантаження...</div>
+        </div>
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="work">Праця</button>
+          <button class="mode-tab" data-mode="material">Матеріал</button>
+          <button class="mode-tab" data-mode="other">Інші витрати</button>
+          <button class="mode-tab" data-mode="preview">Попередній перегляд</button>
+        </div>
         <div class="sidebar-sec"><select class="select" id="tradeType"><option value="electro">Електрика</option><option value="construction">Будівництво</option></select></div>
         <div class="sidebar-sec"><input class="input" id="catalogSearch" placeholder="Шукати позицію чеською..." /></div>
         <div class="sidebar-sec"><div class="sidebar-head">Категорії робіт</div><div id="navItems"></div></div>
+        <div class="catalog-admin">
+          <div class="catalog-admin-title">Додати позицію в базу</div>
+          <div class="catalog-admin-grid">
+            <input class="input" id="newItemCode" placeholder="Код" />
+            <input class="input" id="newItemName" placeholder="Назва позиції" />
+            <input class="input" id="newItemUnit" placeholder="MJ" value="ks" />
+            <input class="input" id="newItemPrice" type="number" step="0.01" placeholder="Базова ціна" />
+            <button class="btn" id="addCatalogItemBtn">Додати</button>
+          </div>
+        </div>
       </aside>
       <main class="main">
         <div class="main-top"><div><div class="main-title" id="mainTitle">Оберіть категорію зліва</div><div class="main-sub" id="mainCount"></div></div></div>
@@ -204,7 +235,7 @@
       const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' }) } catch { return '—' } }
       async function json(resp) { try { return await resp.json() } catch { return null } }
 
-      let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null
+      let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null, activeMode = 'work'
       const customPriceOverrides = new Map()
       const NAV_LABELS = { grooves:'Sekání šliců (drážek) a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zapojení zásuvek, vypínačů', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
       const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
@@ -229,6 +260,11 @@
         return 'other'
       }
       function groupedCatalog(items) { const map = new Map(); for (const item of items) { const key = uiCategoryKey(item); if (!map.has(key)) map.set(key, []); map.get(key).push(item) } return map }
+      function catalogItemKind() {
+        if (activeMode === 'material') return 'material'
+        if (activeMode === 'other') return 'other_cost'
+        return 'work'
+      }
       function estimateCategory(line) {
         const raw = String(line?.category || line?.sectionType || '').trim().toLowerCase()
         if (raw === 'stavba' || raw === 'construction') return 'stavba'
@@ -275,11 +311,30 @@
         if (!existing && delta <= 0) return
         if (!existing) {
           const selectedTrade = document.getElementById('tradeType').value
-          const category = selectedTrade === 'construction' ? 'stavba' : 'elektro'
-          estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, category, sectionType: category, groupKey: uiCategoryKey(item), groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní', phaseKey: item.phaseKey, categoryKey: item.categoryKey, itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: 1, laborUnitPrice: customLaborPrice(item), materialUnitPrice: 0 })
+          const category = activeMode === 'other' ? 'ostatni' : selectedTrade === 'construction' ? 'stavba' : 'elektro'
+          const isMaterial = activeMode === 'material'
+          const isOther = activeMode === 'other'
+          estimate.lines.push({
+            catalogItemId: item.id,
+            sourceCatalogCode: item.sourceCode || null,
+            category,
+            sectionType: category,
+            groupKey: uiCategoryKey(item),
+            groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní',
+            phaseKey: item.phaseKey,
+            categoryKey: item.categoryKey,
+            itemName: item.itemName,
+            workDescription: isMaterial ? '' : item.itemName,
+            materialDescription: isMaterial ? item.itemName : (isOther ? '' : ''),
+            unit: item.unit || 'ks',
+            quantity: 1,
+            laborUnitPrice: isMaterial ? 0 : customLaborPrice(item),
+            materialUnitPrice: isMaterial ? customLaborPrice(item) : 0,
+          })
         } else {
           existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
-          existing.laborUnitPrice = customLaborPrice(item)
+          if (activeMode === 'material') existing.materialUnitPrice = customLaborPrice(item)
+          else existing.laborUnitPrice = customLaborPrice(item)
           if (existing.quantity <= 0) estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
         }
         estimate.lines = normalizeEstimateLines(estimate.lines)
@@ -298,6 +353,14 @@
       }
       function renderCatalogRows() {
         const body = document.getElementById('catalogBody')
+        if (activeMode === 'preview') {
+          const t = totals(estimate?.lines || [])
+          body.innerHTML = `<div class="preview-card"><div class="context-banner-title">Попередній перегляд кошторису</div><div class="context-banner-sub">Клієнт: ${esc(estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—')} · Zakázka: ${esc(job?.internalNumber || estimate?.jobNumberSnapshot || '—')} · Версія ${esc(String(estimate?.versionNo || 1))}</div><div class="preview-grid"><div class="meta-card"><b>Позиції</b><div class="v">${esc(String((estimate?.lines || []).length))}</div></div><div class="meta-card"><b>Робота</b><div class="v">${esc(fmtMoney(t.labor))}</div></div><div class="meta-card"><b>Матеріал</b><div class="v">${esc(fmtMoney(t.material))}</div></div><div class="meta-card"><b>Разом з DPH</b><div class="v">${esc(fmtMoney(t.total))}</div></div></div><div style="margin-top:14px"><button class="btn primary" id="previewOpenCart">Відкрити кошик кошторису</button></div></div>`
+          document.getElementById('previewOpenCart')?.addEventListener('click', () => document.getElementById('editorSheet').classList.add('show'))
+          document.getElementById('mainTitle').textContent = 'Попередній перегляд'
+          document.getElementById('mainCount').textContent = 'Перед генерацією Excel/PDF перевірте підсумки.'
+          return
+        }
         if (!catalog.length) { body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'; return }
         const groups = groupedCatalog(catalog)
         const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
@@ -319,8 +382,9 @@
             renderAll()
           }
         }))
-        document.getElementById('mainTitle').textContent = activeNavKey ? NAV_LABELS[activeNavKey] || activeNavKey : 'Vyberte kategorii zleva'
-        document.getElementById('mainCount').textContent = activeNavKey && groups.has(activeNavKey) ? `${(groups.get(activeNavKey) || []).length} položek` : `${catalog.length} položek v databázi`
+        const titleMap = { work: 'Праця', material: 'Матеріал', other: 'Інші витрати' }
+        document.getElementById('mainTitle').textContent = activeNavKey ? `${titleMap[activeMode] || 'Каталог'} · ${NAV_LABELS[activeNavKey] || activeNavKey}` : (titleMap[activeMode] || 'Каталог')
+        document.getElementById('mainCount').textContent = activeNavKey && groups.has(activeNavKey) ? `${(groups.get(activeNavKey) || []).length} позицій` : `${catalog.length} позицій у базі`
       }
       function renderEstimateTable() {
         const tbody = document.getElementById('estimateRows')
@@ -364,8 +428,11 @@
         ]
         document.getElementById('sheetMeta').innerHTML = meta.map(([k, v]) => `<div class="meta-card"><b>${esc(k)}</b><div class="v">${esc(v)}</div></div>`).join('')
         document.getElementById('paperTopMeta').innerHTML = `${esc(estimateDate)}<br>${esc(estimate?.estimateNo || '')}`
-        document.getElementById('paperSectionInfo').textContent = 'Univerzální šablona rozpočtu: kategorie, položky a automatické součty.'
-        document.getElementById('leadSub').textContent = `${estimate?.lines?.length || 0} položek · ${fmtMoney(totals(estimate?.lines || []).total)}`
+        const modeMap = { work: 'Праця', material: 'Матеріал', other: 'Інші витрати', preview: 'Попередній перегляд' }
+        document.getElementById('paperSectionInfo').textContent = 'Універсальний шаблон кошторису: категорії, позиції та автоматичні підсумки.'
+        document.getElementById('leadSub').textContent = `${estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'} · ${job?.internalNumber || estimate?.jobNumberSnapshot || '—'} · ${modeMap[activeMode]}`
+        document.getElementById('contextTitle').textContent = `Клієнт: ${estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'}`
+        document.getElementById('contextSub').textContent = `Редагуєте кошторис ${estimate?.estimateNo || '—'} · zakázka ${job?.internalNumber || estimate?.jobNumberSnapshot || '—'} · версія ${estimate?.versionNo || 1}`
       }
       async function loadContext() {
         if (Number.isFinite(jobId) && jobId > 0) {
@@ -428,6 +495,7 @@
         const search = document.getElementById('catalogSearch').value.trim()
         if (trade) p.set('tradeType', trade)
         if (search) p.set('search', search)
+        p.set('itemKind', catalogItemKind())
         const r = await fetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
         const d = await json(r)
         catalog = (r.ok && d?.ok) ? (d.items || []) : []
@@ -484,8 +552,33 @@
       document.getElementById('openCartBar').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
       document.getElementById('saveFromBar').addEventListener('click', saveEstimate)
       document.getElementById('tradeType').addEventListener('change', () => { activeNavKey = null; loadCatalog() })
+      document.querySelectorAll('[data-mode]').forEach((btn) => btn.addEventListener('click', () => {
+        activeMode = btn.getAttribute('data-mode')
+        document.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('active', x === btn))
+        activeNavKey = null
+        loadCatalog()
+      }))
       let timer
       document.getElementById('catalogSearch').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { activeNavKey = null; loadCatalog() }, 250) })
+      document.getElementById('addCatalogItemBtn').addEventListener('click', async () => {
+        const payload = {
+          sourceCode: document.getElementById('newItemCode').value.trim() || null,
+          itemName: document.getElementById('newItemName').value.trim(),
+          unit: document.getElementById('newItemUnit').value.trim() || 'ks',
+          basePrice: Number(document.getElementById('newItemPrice').value || 0),
+          tradeType: document.getElementById('tradeType').value,
+          metadata: { itemKind: catalogItemKind() },
+        }
+        if (!payload.itemName) return
+        const r = await fetch(apiUrl('/api/crm/catalog/items'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const d = await json(r)
+        if (!r.ok || !d?.ok) { alert(d?.error || 'Не вдалося додати позицію'); return }
+        document.getElementById('newItemCode').value = ''
+        document.getElementById('newItemName').value = ''
+        document.getElementById('newItemUnit').value = 'ks'
+        document.getElementById('newItemPrice').value = ''
+        loadCatalog()
+      })
       document.getElementById('estimateNote').addEventListener('input', (e) => { if (estimate) estimate.note = e.target.value })
       document.getElementById('addManualLine').addEventListener('click', () => {
         if (!estimate) return
