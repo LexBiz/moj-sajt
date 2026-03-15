@@ -1513,15 +1513,17 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   }
   ws.columns = [
     { key: 'a', width: 14 },
-    { key: 'b', width: 10 },
-    { key: 'c', width: 38 },
-    { key: 'd', width: 31 },
-    { key: 'e', width: 11 },
-    { key: 'f', width: 14 },
-    { key: 'g', width: 15 },
+    { key: 'b', width: 14 },
+    { key: 'c', width: 10 },
+    { key: 'd', width: 38 },
+    { key: 'e', width: 31 },
+    { key: 'f', width: 9 },
+    { key: 'g', width: 11 },
     { key: 'h', width: 14 },
     { key: 'i', width: 15 },
-    { key: 'j', width: 16 },
+    { key: 'j', width: 14 },
+    { key: 'k', width: 15 },
+    { key: 'l', width: 16 },
   ]
   const title = estimate?.title || `Rozpočet ze dne ${formatCzDate(new Date())}`
   const estimateDate = estimate?.estimateDate || new Date().toISOString().slice(0, 10)
@@ -1533,28 +1535,32 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   const projectName = estimate?.companyNameSnapshot || customer?.companyName || customerName
   const headerRows = 500
   for (let row = 1; row <= headerRows; row += 1) {
-    for (let col = 1; col <= 10; col += 1) {
+    for (let col = 1; col <= 12; col += 1) {
       const cell = ws.getCell(row, col)
       cell.font = { name: 'Calibri', size: 10 }
       cell.alignment = { vertical: 'middle', wrapText: true }
     }
   }
 
-  ws.mergeCells('A1:J1')
+  ws.mergeCells('A1:L1')
   ws.getCell('A1').value = title
   ws.getCell('A1').font = { name: 'Calibri', size: 14, bold: true }
   ws.getRow(1).height = 22
 
-  ws.mergeCells('A2:J2')
+  ws.mergeCells('A2:L2')
   ws.getCell('A2').value = `Název rozpočtu: ${title} ${projectName}`.trim()
   ws.getCell('A2').font = { name: 'Calibri', size: 10 }
 
-  ws.mergeCells('A3:J3')
-  ws.getCell('A3').value = `${formatCzDate(new Date(estimateDate))} · ${estimate?.estimateNo || ''} · ${job?.internalNumber || estimate?.jobNumberSnapshot || ''}`
+  ws.mergeCells('A3:L3')
+  ws.getCell('A3').value = `${formatCzDate(new Date(estimateDate))} · ${estimate?.estimateNo || ''} · ${job?.internalNumber || estimate?.jobNumberSnapshot || ''} · Verze ${estimate?.versionNo || 1}`
   ws.getCell('A3').font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF666666' } }
 
-  const headerRow = 5
-  const headerLabels = ['Kategorie', 'Číslo položky', 'Popis práce', 'Popis materiálu', 'Množství', 'Cena práce (mj)', 'Cena práce (celkem)', 'Cena materiálu (mj)', 'Cena materiálu (celkem)', 'Cena celkem']
+  ws.mergeCells('A4:L4')
+  ws.getCell('A4').value = `Klient: ${customerName} · Adresa objektu: ${estimate?.customerAddressSnapshot || customer?.address || '—'} · Projektový manažer: ${estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'}`
+  ws.getCell('A4').font = { name: 'Calibri', size: 10 }
+
+  const headerRow = 6
+  const headerLabels = ['Kategorie', 'Kód položky', 'Číslo položky', 'Popis práce', 'Popis materiálu', 'MJ', 'Množství', 'Cena práce (MJ)', 'Cena práce (celkem)', 'Cena materiálu (MJ)', 'Cena materiálu (celkem)', 'Cena celkem']
   headerLabels.forEach((label, idx) => {
     const cell = ws.getCell(headerRow, idx + 1)
     cell.value = label
@@ -1563,8 +1569,8 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
     cell.border = thinBorder()
   })
-  const subHeaderRow = 6
-  ;['', '', '', '', '(mj)', '(mj)', '(celkem)', '(mj)', '(celkem)', '(celkem)'].forEach((label, idx) => {
+  const subHeaderRow = 7
+  ;['', '', '', '', '', '', '', '', '', '', '', ''].forEach((label, idx) => {
     const cell = ws.getCell(subHeaderRow, idx + 1)
     cell.value = label
     cell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF666666' } }
@@ -1573,67 +1579,77 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     cell.border = thinBorder()
   })
 
-  let rowNo = 7
+  let rowNo = 8
   const dataRows = []
   let itemNo = 1
   for (const [categoryKey, rows] of grouped) {
-    ws.mergeCells(`A${rowNo}:J${rowNo}`)
+    ws.mergeCells(`A${rowNo}:L${rowNo}`)
     ws.getCell(`A${rowNo}`).value = estimateCategoryLabel(categoryKey)
     ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
     ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: estimateCategoryColor(categoryKey) } }
-    for (let col = 1; col <= 10; col += 1) ws.getCell(rowNo, col).border = thinBorder()
+    for (let col = 1; col <= 12; col += 1) ws.getCell(rowNo, col).border = thinBorder()
     rowNo += 1
     for (const line of rows) {
       dataRows.push(rowNo)
-      ws.getCell(`A${rowNo}`).value = ''
-      ws.getCell(`B${rowNo}`).value = itemNo
-      ws.getCell(`C${rowNo}`).value = line.workDescription || ''
-      ws.getCell(`D${rowNo}`).value = line.materialDescription || ''
-      ws.getCell(`E${rowNo}`).value = toNum(line.quantity, 0)
-      ws.getCell(`E${rowNo}`).numFmt = '#,##0.##'
-      ws.getCell(`F${rowNo}`).value = toNum(line.laborUnitPrice, 0)
-      ws.getCell(`F${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`G${rowNo}`).value = { formula: `E${rowNo}*F${rowNo}` }
-      ws.getCell(`G${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`H${rowNo}`).value = toNum(line.materialUnitPrice, 0)
+      ws.getCell(`A${rowNo}`).value = estimateCategoryLabel(categoryKey)
+      ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `${categoryKey === 'stavba' ? 'STV' : categoryKey === 'ostatni' ? 'OST' : 'ELE'}-${String(itemNo).padStart(3, '0')}`
+      ws.getCell(`C${rowNo}`).value = itemNo
+      ws.getCell(`D${rowNo}`).value = line.workDescription || ''
+      ws.getCell(`E${rowNo}`).value = line.materialDescription || ''
+      ws.getCell(`F${rowNo}`).value = line.unit || 'ks'
+      ws.getCell(`G${rowNo}`).value = toNum(line.quantity, 0)
+      ws.getCell(`G${rowNo}`).numFmt = '#,##0.##'
+      ws.getCell(`H${rowNo}`).value = toNum(line.laborUnitPrice, 0)
       ws.getCell(`H${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`I${rowNo}`).value = { formula: `E${rowNo}*H${rowNo}` }
+      ws.getCell(`I${rowNo}`).value = { formula: `G${rowNo}*H${rowNo}` }
       ws.getCell(`I${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`J${rowNo}`).value = { formula: `G${rowNo}+I${rowNo}` }
+      ws.getCell(`J${rowNo}`).value = toNum(line.materialUnitPrice, 0)
       ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
-      for (let col = 1; col <= 10; col += 1) {
+      ws.getCell(`K${rowNo}`).value = { formula: `G${rowNo}*J${rowNo}` }
+      ws.getCell(`K${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`L${rowNo}`).value = { formula: `I${rowNo}+K${rowNo}` }
+      ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
+      for (let col = 1; col <= 12; col += 1) {
         const cell = ws.getCell(rowNo, col)
         cell.border = thinBorder()
-        cell.alignment = { vertical: 'top', horizontal: col >= 5 ? 'right' : 'left', wrapText: true }
+        cell.alignment = { vertical: 'top', horizontal: col >= 7 ? 'right' : 'left', wrapText: true }
       }
-      ws.getCell(`B${rowNo}`).alignment = { horizontal: 'center', vertical: 'top' }
+      ws.getCell(`C${rowNo}`).alignment = { horizontal: 'center', vertical: 'top' }
       ws.getRow(rowNo).height = 30
       rowNo += 1
       itemNo += 1
     }
+    ws.mergeCells(`A${rowNo}:K${rowNo}`)
+    ws.getCell(`A${rowNo}`).value = `${estimateCategoryLabel(categoryKey)} CELKEM`
+    ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    ws.getCell(`L${rowNo}`).value = { formula: rows.map((_line, offset) => `L${rowNo - rows.length + offset}`).join('+') || '0' }
+    ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
+    for (let col = 1; col <= 12; col += 1) ws.getCell(rowNo, col).border = thinBorder()
+    rowNo += 1
   }
 
-  const workSum = dataRows.length ? dataRows.map((r) => `G${r}`).join('+') : '0'
-  const materialSum = dataRows.length ? dataRows.map((r) => `I${r}`).join('+') : '0'
-  const totalSum = dataRows.length ? dataRows.map((r) => `J${r}`).join('+') : '0'
+  const workSum = dataRows.length ? dataRows.map((r) => `I${r}`).join('+') : '0'
+  const materialSum = dataRows.length ? dataRows.map((r) => `K${r}`).join('+') : '0'
+  const totalSum = dataRows.length ? dataRows.map((r) => `L${r}`).join('+') : '0'
   rowNo += 1
   const finalRows = [
     ['Práce celkem', { formula: workSum }],
     ['Materiál celkem', { formula: materialSum }],
     ['Celkem bez DPH', { formula: totalSum }],
-    [`DPH ${vatRate} %`, { formula: `J${rowNo + 2}*${vatRate / 100}` }],
-    ['Celkem s DPH', { formula: `J${rowNo + 2}+J${rowNo + 3}` }],
+    ['Mezisoučet', { formula: totalSum }],
+    [`DPH ${vatRate} %`, { formula: `L${rowNo + 3}*${vatRate / 100}` }],
+    ['Celkem s DPH', { formula: `L${rowNo + 3}+L${rowNo + 4}` }],
   ]
   for (const [label, formula] of finalRows) {
-    ws.mergeCells(`A${rowNo}:I${rowNo}`)
+    ws.mergeCells(`A${rowNo}:K${rowNo}`)
     ws.getCell(`A${rowNo}`).value = label
     ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
     ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right', vertical: 'middle' }
-    ws.getCell(`J${rowNo}`).value = formula
-    ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
-    ws.getCell(`J${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    ws.getCell(`L${rowNo}`).value = formula
+    ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
+    ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
     const fillColor = label === 'Celkem s DPH' ? 'FFE2F0D9' : 'FFF8F9FB'
-    for (let col = 1; col <= 10; col += 1) {
+    for (let col = 1; col <= 12; col += 1) {
       ws.getCell(rowNo, col).border = thinBorder()
       ws.getCell(rowNo, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } }
     }
@@ -1641,20 +1657,20 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   }
 
   rowNo += 1
-  ws.mergeCells(`A${rowNo}:J${rowNo}`)
+  ws.mergeCells(`A${rowNo}:L${rowNo}`)
   ws.getCell(`A${rowNo}`).value = 'Poznámka:'
   ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
-  for (let col = 1; col <= 10; col += 1) ws.getCell(rowNo, col).border = thinBorder()
+  for (let col = 1; col <= 12; col += 1) ws.getCell(rowNo, col).border = thinBorder()
   rowNo += 1
-  ws.mergeCells(`A${rowNo}:J${rowNo + 2}`)
+  ws.mergeCells(`A${rowNo}:L${rowNo + 2}`)
   ws.getCell(`A${rowNo}`).value = note || ''
   ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10 }
   ws.getCell(`A${rowNo}`).alignment = { vertical: 'top', wrapText: true }
-  for (let r = rowNo; r <= rowNo + 2; r += 1) for (let c = 1; c <= 10; c += 1) ws.getCell(r, c).border = thinBorder()
+  for (let r = rowNo; r <= rowNo + 2; r += 1) for (let c = 1; c <= 12; c += 1) ws.getCell(r, c).border = thinBorder()
 
   ws.headerFooter.oddFooter = '&LTemoWeb CRM&CStrana &P / &N&R' + String(estimate?.estimateNo || '')
-  ws.printArea = `A1:J${rowNo + 2}`
-  ws.autoFilter = `A${headerRow}:J${headerRow}`
+  ws.printArea = `A1:L${rowNo + 2}`
+  ws.autoFilter = `A${headerRow}:L${headerRow}`
 
   const safe = String(estimate?.estimateNo || `rozpocet-${estimate?.id || Date.now()}`).replace(/[^\w.-]+/g, '_')
   const xlsxPath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.xlsx`)
@@ -1972,6 +1988,8 @@ function normalizeEstimate(row, lines = []) {
     companyNameSnapshot: row.company_name_snapshot || row.companyNameSnapshot || null,
     customerAddressSnapshot: row.customer_address_snapshot || row.customerAddressSnapshot || null,
     customerIcoSnapshot: row.customer_ico_snapshot || row.customerIcoSnapshot || null,
+    versionNo: Number(row.version_no || row.versionNo || 1),
+    projectManagerSnapshot: row.project_manager_snapshot || row.projectManagerSnapshot || null,
     estimateKind: row.estimate_kind || row.estimateKind || 'standard',
     title: row.title || '',
     tradeType: row.trade_type || row.tradeType || 'electro',
@@ -2041,9 +2059,9 @@ async function createEstimateDraftForContext({ lead, job, customer }) {
   if (pool) {
     const q = await dbQuery(
       `INSERT INTO crm_estimates
-      (job_id, lead_id, estimate_no, estimate_date, job_number_snapshot, client_number_snapshot, client_name_snapshot, company_name_snapshot, customer_address_snapshot, customer_ico_snapshot, estimate_kind, title, trade_type, building_type, status, currency, vat_rate, notes, note,
+      (job_id, lead_id, estimate_no, estimate_date, job_number_snapshot, client_number_snapshot, client_name_snapshot, company_name_snapshot, customer_address_snapshot, customer_ico_snapshot, version_no, project_manager_snapshot, estimate_kind, title, trade_type, building_type, status, currency, vat_rate, notes, note,
        labor_total, material_total, other_costs_total, subtotal_base, subtotal_client, total_no_vat, vat_amount, total_with_vat, created_at, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,0,0,0,0,0,0,0,0,now(),now()) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,0,0,0,0,0,0,0,0,now(),now()) RETURNING *`,
       [
         job?.id || null,
         lead?.id || null,
@@ -2055,6 +2073,8 @@ async function createEstimateDraftForContext({ lead, job, customer }) {
         customer?.companyName || null,
         customer?.address || lead?.brief?.realizationAddress || null,
         customer?.ico || lead?.brief?.companyIco || null,
+        1,
+        job?.responsiblePerson || null,
         'standard',
         title,
         tradeType,
@@ -2081,6 +2101,8 @@ async function createEstimateDraftForContext({ lead, job, customer }) {
     companyNameSnapshot: customer?.companyName || null,
     customerAddressSnapshot: customer?.address || lead?.brief?.realizationAddress || null,
     customerIcoSnapshot: customer?.ico || lead?.brief?.companyIco || null,
+    versionNo: 1,
+    projectManagerSnapshot: job?.responsiblePerson || null,
     estimateKind: 'standard',
     title,
     tradeType,
@@ -2133,6 +2155,8 @@ async function saveEstimate(id, patch = {}) {
       companyNameSnapshot: patch.companyNameSnapshot !== undefined ? patch.companyNameSnapshot : cur.company_name_snapshot,
       customerAddressSnapshot: patch.customerAddressSnapshot !== undefined ? patch.customerAddressSnapshot : cur.customer_address_snapshot,
       customerIcoSnapshot: patch.customerIcoSnapshot !== undefined ? patch.customerIcoSnapshot : cur.customer_ico_snapshot,
+      versionNo: patch.versionNo != null ? Number(patch.versionNo) : Number(cur.version_no || 1),
+      projectManagerSnapshot: patch.projectManagerSnapshot !== undefined ? patch.projectManagerSnapshot : cur.project_manager_snapshot,
       estimateKind: patch.estimateKind !== undefined ? patch.estimateKind : cur.estimate_kind,
       title: patch.title != null ? String(patch.title || '').trim() : cur.title,
       tradeType: patch.tradeType != null ? String(patch.tradeType || '').trim() : cur.trade_type,
@@ -2146,9 +2170,9 @@ async function saveEstimate(id, patch = {}) {
     }
     await dbQuery(
       `UPDATE crm_estimates
-       SET estimate_date=$1,job_number_snapshot=$2,client_number_snapshot=$3,client_name_snapshot=$4,company_name_snapshot=$5,customer_address_snapshot=$6,customer_ico_snapshot=$7,estimate_kind=$8,title=$9,trade_type=$10,building_type=$11,status=$12,currency=$13,vat_rate=$14,notes=$15,note=$16,
-           labor_total=$17,material_total=$18,other_costs_total=$19,subtotal_base=$20,subtotal_client=$21,total_no_vat=$22,vat_amount=$23,total_with_vat=$24,updated_at=now()
-       WHERE id=$25`,
+       SET estimate_date=$1,job_number_snapshot=$2,client_number_snapshot=$3,client_name_snapshot=$4,company_name_snapshot=$5,customer_address_snapshot=$6,customer_ico_snapshot=$7,version_no=$8,project_manager_snapshot=$9,estimate_kind=$10,title=$11,trade_type=$12,building_type=$13,status=$14,currency=$15,vat_rate=$16,notes=$17,note=$18,
+           labor_total=$19,material_total=$20,other_costs_total=$21,subtotal_base=$22,subtotal_client=$23,total_no_vat=$24,vat_amount=$25,total_with_vat=$26,updated_at=now()
+       WHERE id=$27`,
       [
         merged.estimateDate,
         merged.jobNumberSnapshot,
@@ -2157,6 +2181,8 @@ async function saveEstimate(id, patch = {}) {
         merged.companyNameSnapshot,
         merged.customerAddressSnapshot,
         merged.customerIcoSnapshot,
+        merged.versionNo,
+        merged.projectManagerSnapshot,
         merged.estimateKind,
         merged.title,
         merged.tradeType,
@@ -2199,6 +2225,8 @@ async function saveEstimate(id, patch = {}) {
   rows[idx] = {
     ...current,
     ...patch,
+    versionNo: patch.versionNo != null ? Number(patch.versionNo) : Number(current.versionNo || 1),
+    projectManagerSnapshot: patch.projectManagerSnapshot !== undefined ? patch.projectManagerSnapshot : current.projectManagerSnapshot,
     lines,
     laborTotal: totals.laborTotal,
     materialTotal: totals.materialTotal,

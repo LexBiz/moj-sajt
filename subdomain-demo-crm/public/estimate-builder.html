@@ -17,10 +17,11 @@
       .hdr-info{font-size:12px;color:var(--ink2);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:9px 16px;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
       .btn:hover{background:var(--c2)} .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none}
-      .page{max-width:1900px;margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr) 820px;min-height:calc(100vh - 56px)}
+      .page{max-width:1900px;margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:calc(100vh - 56px)}
       .sidebar{background:var(--s);border-right:1px solid var(--b2);padding:18px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
-      .main{min-width:0;border-right:1px solid var(--b2)}
-      .editor{background:var(--bg);padding:18px 20px 120px;overflow:auto}
+      .main{min-width:0;border-right:none}
+      .editor{position:fixed;top:56px;right:0;bottom:0;width:min(1100px,100%);background:rgba(2,12,24,.98);padding:18px 20px 120px;overflow:auto;z-index:55;display:none;border-left:1px solid var(--b2)}
+      .editor.show{display:block}
       .sidebar-sec{padding:0 16px 14px}.sidebar-head{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
       .input,.select,textarea{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:10px 12px;font:inherit;outline:none}
       .input::placeholder,textarea::placeholder{color:var(--ink3)}
@@ -37,35 +38,35 @@
       .item-price,.item-total{padding:0 12px;text-align:right}.item-price-main,.item-total-main{font-size:14px;font-weight:700}.item-price-sub,.item-total-sub{font-size:11px;color:var(--ink3);margin-top:2px}
       .item-total-main.active{color:var(--green)}
       .item-qty{padding:0 10px;display:flex;justify-content:center;align-items:center;gap:10px}.qty-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;border:none;cursor:pointer}.qty-minus{background:rgba(232,58,58,.16);color:var(--red)}.qty-plus{background:rgba(26,106,232,.16);color:var(--blue3)}.qty-val{min-width:30px;text-align:center;font-size:15px;font-weight:700}.qty-val.active{color:var(--blue3)}
-      .sheet{background:var(--paper);border:1px solid rgba(0,0,0,.08);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden;color:var(--paper-ink)}
-      .sheet-head{padding:24px 28px 12px;border-bottom:1px solid var(--paper-line);background:linear-gradient(180deg,#fff,#fafcff)}.sheet-title{font-size:28px;font-weight:800;letter-spacing:-.5px;color:#10294F}.sheet-sub{font-size:13px;color:var(--paper-muted);margin-top:6px}
-      .sheet-meta{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:18px;border:1px solid var(--paper-line);border-bottom:none}.meta-card{background:#fff;border-right:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line);padding:12px 14px}.meta-card:nth-child(2n){border-right:none}.meta-card b{display:block;font-size:10px;font-weight:700;color:#6A7382;text-transform:uppercase;letter-spacing:.55px;margin-bottom:4px}.meta-card .v{font-size:14px;line-height:1.45;color:#111827}
+      .sheet{background:var(--s);border:1px solid var(--b2);border-radius:18px;box-shadow:var(--sh);overflow:hidden;color:var(--ink)}
+      .sheet-head{padding:20px 22px 12px;border-bottom:1px solid var(--b2);background:linear-gradient(180deg,rgba(26,106,232,.08),rgba(7,22,38,.35))}.sheet-title{font-size:22px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}.sheet-sub{font-size:12px;color:var(--ink2);margin-top:6px}
+      .sheet-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.meta-card{background:var(--c);border:1px solid var(--b);padding:12px 14px}.meta-card:nth-child(2n){border-right:1px solid var(--b)}.meta-card b{display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.55px;margin-bottom:4px}.meta-card .v{font-size:14px;line-height:1.45;color:var(--ink)}
       .sheet-body{padding:18px 28px 28px}
       .sheet-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap}
       .sheet-toolbar-left{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
       .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #D7DEE8;background:#F5F8FC;color:#415066}
       .paper-note{font-size:12px;color:var(--paper-muted);line-height:1.5}
-      .table-wrap{overflow:auto;border:1px solid var(--paper-line);border-radius:0}
-      .sheet-table{width:100%;border-collapse:collapse;min-width:1180px;background:#fff}
-      .sheet-table th{padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:#425064;letter-spacing:.35px;background:var(--paper-head);border:1px solid var(--paper-line);white-space:nowrap}
-      .sheet-table td{padding:8px;border:1px solid var(--paper-line);vertical-align:top;color:#1F2937}
-      .sheet-table tr:hover td{background:#FAFCFF}
-      .sheet-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;color:#111827;padding:6px 7px;font:inherit;outline:none}.sheet-input:focus{background:#F8FBFF;border-color:#AFC8F7}.sheet-input.num{text-align:right}.small-code{font-size:11px;color:#6B7280;font-family:monospace}.section-row td{font-weight:700;color:#163A6A}.cat-elektro td{background:#A9D08E;color:#1E3A16}.cat-stavba td{background:#F4B084;color:#5A210C}.cat-ostatni td{background:#D9E2F3;color:#21324B}
-      .totals{display:grid;gap:0;margin-top:18px;border:1px solid var(--paper-line)}.tot-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:10px 12px;border-top:1px solid var(--paper-line)}.tot-row:first-child{border-top:none}.tot-row strong{font-size:15px}.tot-row.final{font-size:17px;font-weight:800;background:#F3F8F0}
-      .manual-sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--paper-line)}.manual-grid{display:grid;grid-template-columns:120px 1.2fr 1fr 90px 120px 120px auto;gap:8px;align-items:end}
+      .table-wrap{overflow:auto;border:1px solid var(--b2);border-radius:12px}
+      .sheet-table{width:100%;border-collapse:collapse;min-width:1480px;background:transparent}
+      .sheet-table th{padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.35px;background:var(--s2);border:1px solid var(--b2);white-space:nowrap}
+      .sheet-table td{padding:8px;border:1px solid var(--b2);vertical-align:top;color:var(--ink)}
+      .sheet-table tr:hover td{background:rgba(26,106,232,.04)}
+      .sheet-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;color:var(--ink);padding:6px 7px;font:inherit;outline:none}.sheet-input:focus{background:var(--c2);border-color:#AFC8F7}.sheet-input.num{text-align:right}.small-code{font-size:11px;color:var(--ink3);font-family:monospace}.section-row td{font-weight:700;color:#163A6A}.cat-elektro td{background:#A9D08E;color:#1E3A16}.cat-stavba td{background:#F4B084;color:#5A210C}.cat-ostatni td{background:#D9E2F3;color:#21324B}
+      .totals{display:grid;gap:0;margin-top:18px;border:1px solid var(--b2);border-radius:12px;overflow:hidden}.tot-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:10px 12px;border-top:1px solid var(--b2);background:var(--c)}.tot-row:first-child{border-top:none}.tot-row strong{font-size:15px}.tot-row.final{font-size:17px;font-weight:800;background:rgba(20,201,138,.12)}
+      .manual-sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--b2)}.manual-grid{display:grid;grid-template-columns:120px 1.2fr 1fr 80px 90px 120px 120px auto;gap:8px;align-items:end}
       .sheet-input-block{display:flex;flex-direction:column;gap:6px}
       .sheet-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#6B7280}
       .paper-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
-      .paper-title-meta{font-size:12px;color:var(--paper-muted);text-align:right}
+      .paper-title-meta{font-size:12px;color:var(--ink2);text-align:right}
       .paper-subhead{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:14px}
-      .paper-caption{font-size:12px;color:#6B7280}
-      .sheet .input,.sheet textarea,.sheet select{background:#fff;border:1px solid var(--paper-line);color:#111827}
-      .sheet .btn{background:#fff;color:#17345F;border:1px solid #CAD5E4}
-      .sheet .btn:hover{background:#F7FAFE}
+      .paper-caption{font-size:12px;color:var(--ink3)}
+      .sheet .input,.sheet textarea,.sheet select{background:var(--c);border:1px solid var(--b2);color:var(--ink)}
+      .sheet .btn{background:var(--c);color:var(--ink);border:1px solid var(--b2)}
+      .sheet .btn:hover{background:var(--c2)}
       .empty{padding:28px 18px;text-align:center;color:var(--ink2);font-size:14px}
-      @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}.editor{position:fixed;inset:56px 0 0 auto;width:min(860px,100%);z-index:35;background:rgba(2,12,24,.96);display:none}.editor.show{display:block}}
-      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.main{border-right:none}.editor{position:fixed;inset:56px 0 0 0;width:100%}.item{grid-template-columns:0 minmax(0,1fr) 110px 120px 100px}.item-icon{display:none}}
-      @media(max-width:700px){.item{grid-template-columns:1fr auto auto}.item-price,.item-qty,.item-total{padding:0 6px}.sheet-meta{grid-template-columns:1fr}.meta-card{border-right:none}.manual-grid{grid-template-columns:1fr 1fr}.table-wrap{border-radius:0}.paper-subhead{grid-template-columns:1fr}}
+      @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}}
+      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 110px 120px 100px}.item-icon{display:none}.editor{width:100%}}
+      @media(max-width:700px){.item{grid-template-columns:1fr auto auto}.item-price,.item-qty,.item-total{padding:0 6px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}}
     </style>
   </head>
   <body>
@@ -74,7 +75,7 @@
       <div class="hdr-info" id="leadSub">Kalkulační list zakázky</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <a class="btn" id="backLink" href="./index.html">← Ke kartě</a>
-        <button class="btn" id="toggleSheet">Zobrazit editor</button>
+        <button class="btn" id="toggleSheet">Košík rozpočtu</button>
         <button class="btn" id="buildDocs">Vygenerovat Excel/PDF</button>
         <button class="btn primary" id="saveEstimate">Uložit rozpočet</button>
       </div>
@@ -121,18 +122,22 @@
                 <thead>
                   <tr>
                     <th style="width:110px">Kategorie</th>
+                    <th style="width:108px">Kód položky</th>
                     <th style="width:72px">Číslo položky</th>
                     <th>Popis práce</th>
                     <th>Popis materiálu</th>
+                    <th style="width:72px">MJ</th>
                     <th style="width:95px">Množství</th>
-                    <th style="width:120px">Cena práce (mj)</th>
+                    <th style="width:120px">Cena práce (MJ)</th>
                     <th style="width:130px">Cena práce (celkem)</th>
-                    <th style="width:120px">Cena materiálu (mj)</th>
+                    <th style="width:120px">Cena materiálu (MJ)</th>
                     <th style="width:130px">Cena materiálu (celkem)</th>
                     <th style="width:140px">Cena celkem</th>
                     <th style="width:54px"></th>
                   </tr>
                   <tr>
+                    <th></th>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>
@@ -151,9 +156,10 @@
             </div>
             <div class="manual-sec">
               <div class="manual-grid">
-                <select class="select" id="manualCategory"><option value="elektro">ELEKTRO</option><option value="stavba">STAVBA</option></select>
+                <select class="select" id="manualCategory"><option value="elektro">ELEKTRO</option><option value="stavba">STAVBA</option><option value="ostatni">OSTATNÍ NÁKLADY</option></select>
                 <input class="input" id="manualWork" placeholder="Popis práce" />
                 <input class="input" id="manualMaterial" placeholder="Popis materiálu" />
+                <input class="input" id="manualUnit" value="ks" placeholder="MJ" />
                 <input class="input" id="manualQty" type="number" step="0.01" value="1" placeholder="Množství" />
                 <input class="input" id="manualLabor" type="number" step="0.01" value="0" placeholder="Cena práce" />
                 <input class="input" id="manualMaterialPrice" type="number" step="0.01" value="0" placeholder="Cena materiálu" />
@@ -207,6 +213,12 @@
         if (raw === 'ostatni' || raw === 'ostatni_naklady' || raw === 'other') return 'ostatni'
         return 'elektro'
       }
+      function lineItemCode(line, index) {
+        const explicit = String(line?.sourceCatalogCode || line?.lineCode || '').trim()
+        if (explicit) return explicit
+        const prefix = estimateCategory(line) === 'stavba' ? 'STV' : estimateCategory(line) === 'ostatni' ? 'OST' : 'ELE'
+        return `${prefix}-${String(index + 1).padStart(3, '0')}`
+      }
       function normalizeEstimateLines(lines) {
         return (lines || []).map((line, idx) => {
           const category = estimateCategory(line)
@@ -216,7 +228,7 @@
           const laborTotal = +(quantity * laborUnitPrice).toFixed(2)
           const materialTotal = +(quantity * materialUnitPrice).toFixed(2)
           const lineTotal = +(laborTotal + materialTotal).toFixed(2)
-          return { ...line, sectionType: category, category, workDescription: line.workDescription || line.itemName || '', materialDescription: line.materialDescription || '', quantity, laborUnitPrice, materialUnitPrice, laborTotal, materialTotal, lineTotal, totalClient: lineTotal, totalBase: laborTotal, groupKey: line.groupKey || uiCategoryKey(line), groupLabel: line.groupLabel || NAV_LABELS[uiCategoryKey(line)] || 'Ostatní', positionOrder: idx + 1 }
+          return { ...line, lineCode: lineItemCode(line, idx), sectionType: category, category, workDescription: line.workDescription || line.itemName || '', materialDescription: line.materialDescription || '', unit: line.unit || 'ks', quantity, laborUnitPrice, materialUnitPrice, laborTotal, materialTotal, lineTotal, totalClient: lineTotal, totalBase: laborTotal, groupKey: line.groupKey || uiCategoryKey(line), groupLabel: line.groupLabel || NAV_LABELS[uiCategoryKey(line)] || 'Ostatní', positionOrder: idx + 1 }
         })
       }
       function groupedEstimate(lines) { const map = new Map(); for (const line of normalizeEstimateLines(lines)) { const key = estimateCategory(line); if (!map.has(key)) map.set(key, []); map.get(key).push(line) } return map }
@@ -276,13 +288,13 @@
         const tbody = document.getElementById('estimateRows')
         const lines = normalizeEstimateLines(estimate?.lines || [])
         estimate.lines = lines
-        if (!lines.length) { tbody.innerHTML = `<tr><td colspan="11"><div class="empty">Rozpočet zatím neobsahuje žádné řádky. Přidávejte položky z katalogu vlevo a upravujte je přímo v tabulce.</div></td></tr>`; return }
+        if (!lines.length) { tbody.innerHTML = `<tr><td colspan="13"><div class="empty">Rozpočet zatím neobsahuje žádné řádky. Přidávejte položky z katalogu vlevo a upravujte je přímo v tabulce.</div></td></tr>`; return }
         const groups = groupedEstimate(lines)
         const ordered = ['elektro', 'stavba', 'ostatni'].filter((k) => groups.has(k))
         tbody.innerHTML = ordered.map((key) => {
           const rows = groups.get(key) || []
           const subtotal = rows.reduce((sum, line) => sum + Number(line.lineTotal || 0), 0)
-          return `<tr class="section-row ${CATEGORY_ROW_CLASS[key] || ''}"><td colspan="11">${esc(CATEGORY_LABELS[key] || key)}</td></tr>${rows.map((line) => `<tr data-pos="${line.positionOrder}"><td><select class="sheet-input" data-field="category" data-pos="${line.positionOrder}"><option value="elektro" ${estimateCategory(line)==='elektro'?'selected':''}>ELEKTRO</option><option value="stavba" ${estimateCategory(line)==='stavba'?'selected':''}>STAVBA</option></select></td><td><div style="padding:6px 4px;text-align:center;font-weight:700">${line.positionOrder}</div></td><td><textarea class="sheet-input" data-field="workDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.workDescription || '')}</textarea></td><td><textarea class="sheet-input" data-field="materialDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.materialDescription || '')}</textarea></td><td><input class="sheet-input num" data-field="quantity" data-pos="${line.positionOrder}" value="${esc(String(line.quantity || 0))}" /><input class="sheet-input" data-field="unit" data-pos="${line.positionOrder}" value="${esc(line.unit || 'ks')}" style="margin-top:6px" /></td><td><input class="sheet-input num" data-field="laborUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.laborUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.laborTotal || 0)}</div></td><td><input class="sheet-input num" data-field="materialUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.materialUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.materialTotal || 0)}</div></td><td><div class="small-code" style="padding:6px 4px;text-align:right;font-weight:700;color:#111827">${fmtMoney(line.lineTotal || 0)}</div></td><td><button class="btn" data-remove="${line.positionOrder}" style="padding:7px 9px;background:#fff;color:#7B1D1D;border:1px solid #E7C7C7">✕</button></td></tr>`).join('')}<tr><td colspan="9" style="text-align:right;font-weight:700;background:#FAFCFF">Celkem ${esc(CATEGORY_LABELS[key] || key)}</td><td style="font-weight:800;text-align:right;background:#FAFCFF">${fmtMoney(subtotal)}</td><td style="background:#FAFCFF"></td></tr>`
+          return `<tr class="section-row ${CATEGORY_ROW_CLASS[key] || ''}"><td colspan="13">${esc(CATEGORY_LABELS[key] || key)}</td></tr>${rows.map((line, idx) => `<tr data-pos="${line.positionOrder}"><td><select class="sheet-input" data-field="category" data-pos="${line.positionOrder}"><option value="elektro" ${estimateCategory(line)==='elektro'?'selected':''}>ELEKTRO</option><option value="stavba" ${estimateCategory(line)==='stavba'?'selected':''}>STAVBA</option><option value="ostatni" ${estimateCategory(line)==='ostatni'?'selected':''}>OSTATNÍ</option></select></td><td><input class="sheet-input small-code" data-field="lineCode" data-pos="${line.positionOrder}" value="${esc(line.lineCode || lineItemCode(line, idx))}" /></td><td><div style="padding:6px 4px;text-align:center;font-weight:700">${line.positionOrder}</div></td><td><textarea class="sheet-input" data-field="workDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.workDescription || '')}</textarea></td><td><textarea class="sheet-input" data-field="materialDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.materialDescription || '')}</textarea></td><td><input class="sheet-input" data-field="unit" data-pos="${line.positionOrder}" value="${esc(line.unit || 'ks')}" /></td><td><input class="sheet-input num" data-field="quantity" data-pos="${line.positionOrder}" value="${esc(String(line.quantity || 0))}" /></td><td><input class="sheet-input num" data-field="laborUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.laborUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.laborTotal || 0)}</div></td><td><input class="sheet-input num" data-field="materialUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.materialUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.materialTotal || 0)}</div></td><td><div class="small-code" style="padding:6px 4px;text-align:right;font-weight:700;color:var(--ink)">${fmtMoney(line.lineTotal || 0)}</div></td><td><button class="btn" data-remove="${line.positionOrder}" style="padding:7px 9px;color:#F7B0B0;border:1px solid rgba(232,58,58,.3);background:rgba(232,58,58,.08)">✕</button></td></tr>`).join('')}<tr><td colspan="11" style="text-align:right;font-weight:700;background:rgba(255,255,255,.04)">${esc(CATEGORY_LABELS[key] || key)} CELKEM</td><td style="font-weight:800;text-align:right;background:rgba(255,255,255,.04)">${fmtMoney(subtotal)}</td><td style="background:rgba(255,255,255,.04)"></td></tr>`
         }).join('')
         tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; if (field === 'category') line.sectionType = el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
         tbody.querySelectorAll('[data-remove]').forEach((btn) => btn.addEventListener('click', () => { const pos = Number(btn.getAttribute('data-remove')); estimate.lines = estimate.lines.filter((x) => Number(x.positionOrder) !== pos); estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
@@ -300,13 +312,15 @@
           ['Číslo klienta', estimate?.clientNumberSnapshot || lead?.clientNumber || job?.clientNumberSnapshot || '—'],
           ['Klient', estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'],
           ['Firma', estimate?.companyNameSnapshot || '—'],
-          ['IČO', estimate?.customerIcoSnapshot || '—'],
           ['Adresa', estimate?.customerAddressSnapshot || '—'],
+          ['Projektový manažer', estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'],
+          ['Verze', String(estimate?.versionNo || 1)],
+          ['IČO', estimate?.customerIcoSnapshot || '—'],
         ]
         document.getElementById('sheetMeta').innerHTML = meta.map(([k, v]) => `<div class="meta-card"><b>${esc(k)}</b><div class="v">${esc(v)}</div></div>`).join('')
         document.getElementById('paperTopMeta').innerHTML = `${esc(estimateDate)}<br>${esc(estimate?.estimateNo || '')}`
         document.getElementById('paperSectionInfo').textContent = 'Univerzální šablona rozpočtu: kategorie, položky a automatické součty.'
-        document.getElementById('leadSub').textContent = 'Kalkulační list zakázky'
+        document.getElementById('leadSub').textContent = `${estimate?.lines?.length || 0} položek · ${fmtMoney(totals(estimate?.lines || []).total)}`
       }
       async function loadContext() {
         if (Number.isFinite(jobId) && jobId > 0) {
@@ -392,6 +406,8 @@
           companyNameSnapshot: estimate.companyNameSnapshot || null,
           customerAddressSnapshot: estimate.customerAddressSnapshot || null,
           customerIcoSnapshot: estimate.customerIcoSnapshot || null,
+          versionNo: estimate.versionNo || 1,
+          projectManagerSnapshot: estimate.projectManagerSnapshot || job?.responsiblePerson || null,
           lines: estimate.lines,
         }
         const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -436,13 +452,14 @@
           workDescription: document.getElementById('manualWork').value.trim() || 'Nová položka',
           materialDescription: document.getElementById('manualMaterial').value.trim(),
           quantity: Number(document.getElementById('manualQty').value || 0),
-          unit: 'ks',
+          unit: document.getElementById('manualUnit').value.trim() || 'ks',
           laborUnitPrice: Number(document.getElementById('manualLabor').value || 0),
           materialUnitPrice: Number(document.getElementById('manualMaterialPrice').value || 0),
         })
         estimate.lines = normalizeEstimateLines(estimate.lines)
         document.getElementById('manualWork').value = ''
         document.getElementById('manualMaterial').value = ''
+        document.getElementById('manualUnit').value = 'ks'
         renderAll()
       })
       ;(async () => {
