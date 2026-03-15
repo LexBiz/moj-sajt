@@ -50,9 +50,9 @@
       .sheet-table th{padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:#425064;letter-spacing:.35px;background:var(--paper-head);border:1px solid var(--paper-line);white-space:nowrap}
       .sheet-table td{padding:8px;border:1px solid var(--paper-line);vertical-align:top;color:#1F2937}
       .sheet-table tr:hover td{background:#FAFCFF}
-      .sheet-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;color:#111827;padding:6px 7px;font:inherit;outline:none}.sheet-input:focus{background:#F8FBFF;border-color:#AFC8F7}.sheet-input.num{text-align:right}.small-code{font-size:11px;color:#6B7280;font-family:monospace}.section-row td{background:#F7FAFE;font-weight:700;color:#163A6A}
+      .sheet-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;color:#111827;padding:6px 7px;font:inherit;outline:none}.sheet-input:focus{background:#F8FBFF;border-color:#AFC8F7}.sheet-input.num{text-align:right}.small-code{font-size:11px;color:#6B7280;font-family:monospace}.section-row td{font-weight:700;color:#163A6A}.cat-elektro td{background:#A9D08E;color:#1E3A16}.cat-stavba td{background:#F4B084;color:#5A210C}.cat-ostatni td{background:#D9E2F3;color:#21324B}
       .totals{display:grid;gap:0;margin-top:18px;border:1px solid var(--paper-line)}.tot-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:10px 12px;border-top:1px solid var(--paper-line)}.tot-row:first-child{border-top:none}.tot-row strong{font-size:15px}.tot-row.final{font-size:17px;font-weight:800;background:#F3F8F0}
-      .manual-sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--paper-line)}.manual-grid{display:grid;grid-template-columns:1fr 70px 100px 120px auto;gap:8px;align-items:end}
+      .manual-sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--paper-line)}.manual-grid{display:grid;grid-template-columns:120px 1.2fr 1fr 90px 120px 120px auto;gap:8px;align-items:end}
       .sheet-input-block{display:flex;flex-direction:column;gap:6px}
       .sheet-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#6B7280}
       .paper-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
@@ -120,23 +120,29 @@
               <table class="sheet-table">
                 <thead>
                   <tr>
-                    <th style="width:72px">Kód</th>
+                    <th style="width:110px">Kategorie</th>
+                    <th style="width:72px">Číslo položky</th>
                     <th>Popis práce</th>
                     <th>Popis materiálu</th>
-                    <th style="width:95px">Množství / mj</th>
-                    <th style="width:132px">Cena práce</th>
-                    <th style="width:132px">Cena materiálu</th>
-                    <th style="width:144px">Cena práce + materiálu</th>
+                    <th style="width:95px">Množství</th>
+                    <th style="width:120px">Cena práce (mj)</th>
+                    <th style="width:130px">Cena práce (celkem)</th>
+                    <th style="width:120px">Cena materiálu (mj)</th>
+                    <th style="width:130px">Cena materiálu (celkem)</th>
+                    <th style="width:140px">Cena celkem</th>
                     <th style="width:54px"></th>
                   </tr>
                   <tr>
                     <th></th>
                     <th></th>
                     <th></th>
-                    <th>(mj)</th>
-                    <th>(mj) / (celkem)</th>
-                    <th>(mj) / (celkem)</th>
-                    <th>(mj) / (celkem)</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                     <th></th>
                   </tr>
                 </thead>
@@ -145,10 +151,12 @@
             </div>
             <div class="manual-sec">
               <div class="manual-grid">
+                <select class="select" id="manualCategory"><option value="elektro">ELEKTRO</option><option value="stavba">STAVBA</option></select>
                 <input class="input" id="manualWork" placeholder="Popis práce" />
-                <input class="input" id="manualUnit" placeholder="MJ" value="ks" />
+                <input class="input" id="manualMaterial" placeholder="Popis materiálu" />
                 <input class="input" id="manualQty" type="number" step="0.01" value="1" placeholder="Množství" />
                 <input class="input" id="manualLabor" type="number" step="0.01" value="0" placeholder="Cena práce" />
+                <input class="input" id="manualMaterialPrice" type="number" step="0.01" value="0" placeholder="Cena materiálu" />
                 <button class="btn" id="addManualLine">Přidat ruční řádek</button>
               </div>
             </div>
@@ -172,7 +180,8 @@
       let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null
       const NAV_LABELS = { grooves:'Sekání šliců (drážek) a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zapojení zásuvek, vypínačů', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
       const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
-      const SECTION_TYPES = { grooves:'elektro', boxes:'elektro', cables:'elektro', switchboards:'elektro', outlets:'elektro', completion:'elektro', revision:'elektro', demolition:'elektro', hourly:'ostatni_naklady', systems:'elektro', other:'elektro' }
+      const CATEGORY_LABELS = { elektro: 'ELEKTRO', stavba: 'STAVBA', ostatni: 'OSTATNÍ' }
+      const CATEGORY_ROW_CLASS = { elektro: 'cat-elektro', stavba: 'cat-stavba', ostatni: 'cat-ostatni' }
 
       function uiCategoryKey(item) {
         const name = String(item?.itemName || item?.workDescription || '').toLowerCase()
@@ -192,32 +201,34 @@
         return 'other'
       }
       function groupedCatalog(items) { const map = new Map(); for (const item of items) { const key = uiCategoryKey(item); if (!map.has(key)) map.set(key, []); map.get(key).push(item) } return map }
-      function buildLineCode(sectionType, index) { if (sectionType === 'stavba') return `stav ${index}`; if (sectionType === 'ostatni_naklady') return `ost ${index}`; return `ele ${index}` }
+      function estimateCategory(line) {
+        const raw = String(line?.category || line?.sectionType || '').trim().toLowerCase()
+        if (raw === 'stavba' || raw === 'construction') return 'stavba'
+        if (raw === 'ostatni' || raw === 'ostatni_naklady' || raw === 'other') return 'ostatni'
+        return 'elektro'
+      }
       function normalizeEstimateLines(lines) {
-        const counters = { elektro: 0, stavba: 0, ostatni_naklady: 0 }
         return (lines || []).map((line, idx) => {
-          const sectionType = line.sectionType || SECTION_TYPES[uiCategoryKey(line)] || 'elektro'
-          counters[sectionType] = (counters[sectionType] || 0) + 1
+          const category = estimateCategory(line)
           const quantity = Number(line.quantity || 0)
           const laborUnitPrice = Number(line.laborUnitPrice ?? line.clientPrice ?? 0)
           const materialUnitPrice = Number(line.materialUnitPrice || 0)
           const laborTotal = +(quantity * laborUnitPrice).toFixed(2)
           const materialTotal = +(quantity * materialUnitPrice).toFixed(2)
           const lineTotal = +(laborTotal + materialTotal).toFixed(2)
-          return { ...line, lineCode: line.lineCode || buildLineCode(sectionType, counters[sectionType]), sectionType, workDescription: line.workDescription || line.itemName || '', materialDescription: line.materialDescription || '', quantity, laborUnitPrice, materialUnitPrice, laborTotal, materialTotal, lineTotal, totalClient: lineTotal, totalBase: laborTotal, groupKey: line.groupKey || uiCategoryKey(line), groupLabel: line.groupLabel || NAV_LABELS[uiCategoryKey(line)] || 'Ostatní', positionOrder: idx + 1 }
+          return { ...line, sectionType: category, category, workDescription: line.workDescription || line.itemName || '', materialDescription: line.materialDescription || '', quantity, laborUnitPrice, materialUnitPrice, laborTotal, materialTotal, lineTotal, totalClient: lineTotal, totalBase: laborTotal, groupKey: line.groupKey || uiCategoryKey(line), groupLabel: line.groupLabel || NAV_LABELS[uiCategoryKey(line)] || 'Ostatní', positionOrder: idx + 1 }
         })
       }
-      function groupedEstimate(lines) { const map = new Map(); for (const line of normalizeEstimateLines(lines)) { const key = line.groupKey || 'other'; if (!map.has(key)) map.set(key, []); map.get(key).push(line) } return map }
+      function groupedEstimate(lines) { const map = new Map(); for (const line of normalizeEstimateLines(lines)) { const key = estimateCategory(line); if (!map.has(key)) map.set(key, []); map.get(key).push(line) } return map }
       function totals(lines) {
         const normalized = normalizeEstimateLines(lines)
         const labor = normalized.reduce((s, l) => s + Number(l.laborTotal || 0), 0)
         const material = normalized.reduce((s, l) => s + Number(l.materialTotal || 0), 0)
-        const other = normalized.filter(x => x.sectionType === 'ostatni_naklady').reduce((s, l) => s + Number(l.lineTotal || 0), 0)
-        const bezDph = labor + material + other
+        const bezDph = labor + material
         const dphRate = Number(estimate?.vatRate || 21)
         const dph = +(bezDph * (dphRate / 100)).toFixed(2)
         const total = +(bezDph + dph).toFixed(2)
-        return { labor, material, other, bezDph, dph, total }
+        return { labor, material, bezDph, dph, total }
       }
       function catalogLine(item) { return (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null }
       function addCatalogItem(item, delta) {
@@ -225,7 +236,9 @@
         const existing = catalogLine(item)
         if (!existing && delta <= 0) return
         if (!existing) {
-          estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, sectionType: SECTION_TYPES[uiCategoryKey(item)] || 'elektro', groupKey: uiCategoryKey(item), groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní', phaseKey: item.phaseKey, categoryKey: item.categoryKey, itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: 1, laborUnitPrice: Number(item.basePrice || 0), materialUnitPrice: 0 })
+          const selectedTrade = document.getElementById('tradeType').value
+          const category = selectedTrade === 'construction' ? 'stavba' : 'elektro'
+          estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, category, sectionType: category, groupKey: uiCategoryKey(item), groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní', phaseKey: item.phaseKey, categoryKey: item.categoryKey, itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: 1, laborUnitPrice: Number(item.basePrice || 0), materialUnitPrice: 0 })
         } else {
           existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
           if (existing.quantity <= 0) estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
@@ -263,18 +276,18 @@
         const tbody = document.getElementById('estimateRows')
         const lines = normalizeEstimateLines(estimate?.lines || [])
         estimate.lines = lines
-        if (!lines.length) { tbody.innerHTML = `<tr><td colspan="8"><div class="empty">Rozpočet zatím neobsahuje žádné řádky. Přidávejte položky z katalogu vlevo a upravujte je přímo v tabulce.</div></td></tr>`; return }
+        if (!lines.length) { tbody.innerHTML = `<tr><td colspan="11"><div class="empty">Rozpočet zatím neobsahuje žádné řádky. Přidávejte položky z katalogu vlevo a upravujte je přímo v tabulce.</div></td></tr>`; return }
         const groups = groupedEstimate(lines)
-        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
+        const ordered = ['elektro', 'stavba', 'ostatni'].filter((k) => groups.has(k))
         tbody.innerHTML = ordered.map((key) => {
           const rows = groups.get(key) || []
           const subtotal = rows.reduce((sum, line) => sum + Number(line.lineTotal || 0), 0)
-          return `<tr class="section-row"><td colspan="8">${esc(NAV_LABELS[key] || key)}</td></tr>${rows.map((line) => `<tr data-pos="${line.positionOrder}"><td><input class="sheet-input small-code" data-field="lineCode" data-pos="${line.positionOrder}" value="${esc(line.lineCode || '')}" /></td><td><textarea class="sheet-input" data-field="workDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.workDescription || '')}</textarea></td><td><textarea class="sheet-input" data-field="materialDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.materialDescription || '')}</textarea></td><td><input class="sheet-input num" data-field="quantity" data-pos="${line.positionOrder}" value="${esc(String(line.quantity || 0))}" /><input class="sheet-input" data-field="unit" data-pos="${line.positionOrder}" value="${esc(line.unit || 'ks')}" style="margin-top:6px" /></td><td><input class="sheet-input num" data-field="laborUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.laborUnitPrice || 0))}" /><div class="small-code" style="margin-top:6px;text-align:right">${fmtMoney(line.laborTotal || 0)}</div></td><td><input class="sheet-input num" data-field="materialUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.materialUnitPrice || 0))}" /><div class="small-code" style="margin-top:6px;text-align:right">${fmtMoney(line.materialTotal || 0)}</div></td><td><div style="font-weight:700;text-align:right">${fmtMoney((Number(line.laborUnitPrice || 0) + Number(line.materialUnitPrice || 0)))}</div><div class="small-code" style="margin-top:6px;text-align:right">${fmtMoney(line.lineTotal || 0)}</div></td><td><button class="btn" data-remove="${line.positionOrder}" style="padding:7px 9px;background:#fff;color:#7B1D1D;border:1px solid #E7C7C7">✕</button></td></tr>`).join('')}<tr><td colspan="6" style="text-align:right;font-weight:700;background:#FAFCFF">Celkem ${esc(NAV_LABELS[key] || key)}</td><td style="font-weight:800;text-align:right;background:#FAFCFF">${fmtMoney(subtotal)}</td><td style="background:#FAFCFF"></td></tr>`
+          return `<tr class="section-row ${CATEGORY_ROW_CLASS[key] || ''}"><td colspan="11">${esc(CATEGORY_LABELS[key] || key)}</td></tr>${rows.map((line) => `<tr data-pos="${line.positionOrder}"><td><select class="sheet-input" data-field="category" data-pos="${line.positionOrder}"><option value="elektro" ${estimateCategory(line)==='elektro'?'selected':''}>ELEKTRO</option><option value="stavba" ${estimateCategory(line)==='stavba'?'selected':''}>STAVBA</option></select></td><td><div style="padding:6px 4px;text-align:center;font-weight:700">${line.positionOrder}</div></td><td><textarea class="sheet-input" data-field="workDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.workDescription || '')}</textarea></td><td><textarea class="sheet-input" data-field="materialDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.materialDescription || '')}</textarea></td><td><input class="sheet-input num" data-field="quantity" data-pos="${line.positionOrder}" value="${esc(String(line.quantity || 0))}" /><input class="sheet-input" data-field="unit" data-pos="${line.positionOrder}" value="${esc(line.unit || 'ks')}" style="margin-top:6px" /></td><td><input class="sheet-input num" data-field="laborUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.laborUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.laborTotal || 0)}</div></td><td><input class="sheet-input num" data-field="materialUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.materialUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.materialTotal || 0)}</div></td><td><div class="small-code" style="padding:6px 4px;text-align:right;font-weight:700;color:#111827">${fmtMoney(line.lineTotal || 0)}</div></td><td><button class="btn" data-remove="${line.positionOrder}" style="padding:7px 9px;background:#fff;color:#7B1D1D;border:1px solid #E7C7C7">✕</button></td></tr>`).join('')}<tr><td colspan="9" style="text-align:right;font-weight:700;background:#FAFCFF">Celkem ${esc(CATEGORY_LABELS[key] || key)}</td><td style="font-weight:800;text-align:right;background:#FAFCFF">${fmtMoney(subtotal)}</td><td style="background:#FAFCFF"></td></tr>`
         }).join('')
-        tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
+        tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; if (field === 'category') line.sectionType = el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
         tbody.querySelectorAll('[data-remove]').forEach((btn) => btn.addEventListener('click', () => { const pos = Number(btn.getAttribute('data-remove')); estimate.lines = estimate.lines.filter((x) => Number(x.positionOrder) !== pos); estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
       }
-      function renderTotals() { const t = totals(estimate?.lines || []); document.getElementById('estimateTotals').innerHTML = `<div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div><div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div><div class="tot-row"><span>Ostatní</span><strong>${fmtMoney(t.other)}</strong></div><div class="tot-row"><span>Celkem bez DPH</span><strong>${fmtMoney(t.bezDph)}</strong></div><div class="tot-row"><span>DPH ${estimate?.vatRate || 21} %</span><strong>${fmtMoney(t.dph)}</strong></div><div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>` }
+      function renderTotals() { const t = totals(estimate?.lines || []); document.getElementById('estimateTotals').innerHTML = `<div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div><div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div><div class="tot-row"><span>Celkem bez DPH</span><strong>${fmtMoney(t.bezDph)}</strong></div><div class="tot-row"><span>DPH ${estimate?.vatRate || 21} %</span><strong>${fmtMoney(t.dph)}</strong></div><div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>` }
       function updateHeaderInfo() {
         const estimateDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
         const objectName = estimate?.companyNameSnapshot || lead?.brief?.objectType || job?.title || 'Zakázka'
@@ -292,7 +305,7 @@
         ]
         document.getElementById('sheetMeta').innerHTML = meta.map(([k, v]) => `<div class="meta-card"><b>${esc(k)}</b><div class="v">${esc(v)}</div></div>`).join('')
         document.getElementById('paperTopMeta').innerHTML = `${esc(estimateDate)}<br>${esc(estimate?.estimateNo || '')}`
-        document.getElementById('paperSectionInfo').textContent = estimate?.tradeType === 'construction' ? 'Stavební práce a rozpad cen upravujete přímo zde.' : 'Elektrikářské práce a rozpad cen upravujete přímo zde.'
+        document.getElementById('paperSectionInfo').textContent = 'Univerzální šablona rozpočtu: kategorie, položky a automatické součty.'
         document.getElementById('leadSub').textContent = 'Kalkulační list zakázky'
       }
       async function loadContext() {
@@ -413,9 +426,23 @@
       document.getElementById('estimateNote').addEventListener('input', (e) => { if (estimate) estimate.note = e.target.value })
       document.getElementById('addManualLine').addEventListener('click', () => {
         if (!estimate) return
-        estimate.lines.push({ lineCode: null, sectionType: 'ostatni_naklady', groupKey: 'other', groupLabel: 'Ostatní', workDescription: document.getElementById('manualWork').value.trim() || 'Nová položka', materialDescription: '', quantity: Number(document.getElementById('manualQty').value || 0), unit: document.getElementById('manualUnit').value.trim() || 'ks', laborUnitPrice: Number(document.getElementById('manualLabor').value || 0), materialUnitPrice: 0 })
+        const category = document.getElementById('manualCategory').value || 'elektro'
+        estimate.lines.push({
+          lineCode: null,
+          category,
+          sectionType: category,
+          groupKey: category === 'stavba' ? 'other' : 'systems',
+          groupLabel: CATEGORY_LABELS[category] || 'ELEKTRO',
+          workDescription: document.getElementById('manualWork').value.trim() || 'Nová položka',
+          materialDescription: document.getElementById('manualMaterial').value.trim(),
+          quantity: Number(document.getElementById('manualQty').value || 0),
+          unit: 'ks',
+          laborUnitPrice: Number(document.getElementById('manualLabor').value || 0),
+          materialUnitPrice: Number(document.getElementById('manualMaterialPrice').value || 0),
+        })
         estimate.lines = normalizeEstimateLines(estimate.lines)
         document.getElementById('manualWork').value = ''
+        document.getElementById('manualMaterial').value = ''
         renderAll()
       })
       ;(async () => {

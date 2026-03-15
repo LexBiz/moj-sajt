@@ -1505,181 +1505,156 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   ws.views = [{ state: 'frozen', ySplit: 10, showGridLines: false }]
   ws.pageSetup = {
     paperSize: 9,
-    orientation: 'portrait',
+    orientation: 'landscape',
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,
     margins: { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
   }
   ws.columns = [
-    { key: 'a', width: 12.5 },
-    { key: 'b', width: 34 },
-    { key: 'c', width: 29 },
-    { key: 'd', width: 14 },
-    { key: 'e', width: 16 },
-    { key: 'f', width: 16 },
-    { key: 'g', width: 18 },
+    { key: 'a', width: 14 },
+    { key: 'b', width: 10 },
+    { key: 'c', width: 38 },
+    { key: 'd', width: 31 },
+    { key: 'e', width: 11 },
+    { key: 'f', width: 14 },
+    { key: 'g', width: 15 },
+    { key: 'h', width: 14 },
+    { key: 'i', width: 15 },
+    { key: 'j', width: 16 },
   ]
-  const title = estimate?.title || `Rozpočet ${job?.internalNumber || lead?.clientNumber || ''}`.trim()
+  const title = estimate?.title || `Rozpočet ze dne ${formatCzDate(new Date())}`
   const estimateDate = estimate?.estimateDate || new Date().toISOString().slice(0, 10)
   const lines = Array.isArray(estimate?.lines) ? estimate.lines.map((line, idx) => normalizeEstimateLine(line, idx)) : []
-  const grouped = groupedEstimateLinesForExport(lines)
-  const totals = computeEstimateTotals(lines, estimate?.vatRate || 21)
-  const supplierName = 'O&L Master Dom s.r.o.'
-  const supplierAddress = 'Evropský partnerský realizační tým'
-  const supplierContact = 'TemoWeb CRM · demo.temoweb.eu'
-  const customerName = customer?.name || estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
-  const customerCompany = estimate?.companyNameSnapshot || customer?.companyName || ''
-  const customerAddress = estimate?.customerAddressSnapshot || customer?.address || '—'
-  const customerIco = estimate?.customerIcoSnapshot || customer?.ico || ''
+  const grouped = groupedEstimateLinesForUniversalTemplate(lines)
+  const vatRate = toNum(estimate?.vatRate, 21)
   const note = estimate?.note || ''
-
-  ws.mergeCells('A1:G1')
-  ws.getCell('A1').value = 'ROZPOCET'
-  ws.getCell('A1').font = { name: 'Carlito', size: 20, bold: true, color: { argb: 'FF123A76' } }
-  ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' }
-  ws.getRow(1).height = 28
-
-  ws.mergeCells('A2:C2')
-  ws.getCell('A2').value = supplierName
-  ws.getCell('A2').font = { name: 'Carlito', size: 12, bold: true }
-  ws.mergeCells('A3:C3')
-  ws.getCell('A3').value = supplierAddress
-  ws.mergeCells('A4:C4')
-  ws.getCell('A4').value = supplierContact
-
-  ws.mergeCells('E2:G2')
-  ws.getCell('E2').value = 'Odberatel'
-  ws.getCell('E2').font = { name: 'Carlito', size: 12, bold: true }
-  ws.mergeCells('E3:G3')
-  ws.getCell('E3').value = customerCompany ? `${customerName} / ${customerCompany}` : customerName
-  ws.mergeCells('E4:G4')
-  ws.getCell('E4').value = customerAddress
-  ws.mergeCells('E5:G5')
-  ws.getCell('E5').value = customerIco ? `ICO: ${customerIco}` : ''
-
-  addBoxBorders(ws, 'A2:C5')
-  addBoxBorders(ws, 'E2:G5')
-
-  ws.mergeCells('A7:G7')
-  ws.getCell('A7').value = title
-  ws.getCell('A7').font = { name: 'Carlito', size: 16, bold: true, color: { argb: 'FF0B2548' } }
-  ws.getCell('A7').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }
-  ws.getCell('A7').alignment = { horizontal: 'center', vertical: 'middle' }
-  ws.getRow(7).height = 24
-
-  const headerMetaRow = 8
-  const metaPairs = [
-    ['Datum vystaveni', formatCzDate(new Date(estimateDate))],
-    ['Cislo rozpoctu', estimate?.estimateNo || '—'],
-    ['Cislo zakazky', job?.internalNumber || estimate?.jobNumberSnapshot || '—'],
-    ['Cislo klienta', estimate?.clientNumberSnapshot || lead?.clientNumber || '—'],
-  ]
-  for (let i = 0; i < metaPairs.length; i += 1) {
-    const [label, value] = metaPairs[i]
-    const row = headerMetaRow + i
-    ws.mergeCells(`A${row}:B${row}`)
-    ws.getCell(`A${row}`).value = label
-    ws.getCell(`A${row}`).font = { name: 'Carlito', size: 10, bold: true }
-    ws.mergeCells(`C${row}:G${row}`)
-    ws.getCell(`C${row}`).value = value
-    ws.getCell(`C${row}`).font = { name: 'Carlito', size: 10 }
-    addBoxBorders(ws, `A${row}:G${row}`)
+  const customerName = customer?.name || estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
+  const projectName = estimate?.companyNameSnapshot || customer?.companyName || customerName
+  const headerRows = 500
+  for (let row = 1; row <= headerRows; row += 1) {
+    for (let col = 1; col <= 10; col += 1) {
+      const cell = ws.getCell(row, col)
+      cell.font = { name: 'Calibri', size: 10 }
+      cell.alignment = { vertical: 'middle', wrapText: true }
+    }
   }
 
-  const headerRow = 13
-  const headers = ['Číslo položky', 'Popis práce', 'Popis materiálu', 'Množství / mj', 'Cena práce', 'Cena materiálu', 'Cena práce + materiálu']
-  headers.forEach((h, idx) => {
+  ws.mergeCells('A1:J1')
+  ws.getCell('A1').value = title
+  ws.getCell('A1').font = { name: 'Calibri', size: 14, bold: true }
+  ws.getRow(1).height = 22
+
+  ws.mergeCells('A2:J2')
+  ws.getCell('A2').value = `Název rozpočtu: ${title} ${projectName}`.trim()
+  ws.getCell('A2').font = { name: 'Calibri', size: 10 }
+
+  ws.mergeCells('A3:J3')
+  ws.getCell('A3').value = `${formatCzDate(new Date(estimateDate))} · ${estimate?.estimateNo || ''} · ${job?.internalNumber || estimate?.jobNumberSnapshot || ''}`
+  ws.getCell('A3').font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF666666' } }
+
+  const headerRow = 5
+  const headerLabels = ['Kategorie', 'Číslo položky', 'Popis práce', 'Popis materiálu', 'Množství', 'Cena práce (mj)', 'Cena práce (celkem)', 'Cena materiálu (mj)', 'Cena materiálu (celkem)', 'Cena celkem']
+  headerLabels.forEach((label, idx) => {
     const cell = ws.getCell(headerRow, idx + 1)
-    cell.value = h
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Carlito', size: 10 }
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF143D7A' } }
-    cell.alignment = { vertical: 'middle', horizontal: idx >= 3 ? 'center' : 'left', wrapText: true }
+    cell.value = label
+    cell.font = { name: 'Calibri', size: 10, bold: true }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9EEF5' } }
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
     cell.border = thinBorder()
   })
-  ws.getRow(headerRow).height = 24
+  const subHeaderRow = 6
+  ;['', '', '', '', '(mj)', '(mj)', '(celkem)', '(mj)', '(celkem)', '(celkem)'].forEach((label, idx) => {
+    const cell = ws.getCell(subHeaderRow, idx + 1)
+    cell.value = label
+    cell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF666666' } }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF7F9FC' } }
+    cell.alignment = { horizontal: 'center', vertical: 'middle' }
+    cell.border = thinBorder()
+  })
 
-  let rowNo = headerRow + 1
-  for (const [groupKey, rows] of grouped) {
-    ws.mergeCells(`A${rowNo}:G${rowNo}`)
-    const titleCell = ws.getCell(`A${rowNo}`)
-    titleCell.value = estimateGroupLabel(groupKey)
-    titleCell.font = { bold: true, color: { argb: 'FF0F3070' }, name: 'Carlito', size: 11 }
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }
-    titleCell.border = thinBorder()
+  let rowNo = 7
+  const dataRows = []
+  let itemNo = 1
+  for (const [categoryKey, rows] of grouped) {
+    ws.mergeCells(`A${rowNo}:J${rowNo}`)
+    ws.getCell(`A${rowNo}`).value = estimateCategoryLabel(categoryKey)
+    ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: estimateCategoryColor(categoryKey) } }
+    for (let col = 1; col <= 10; col += 1) ws.getCell(rowNo, col).border = thinBorder()
     rowNo += 1
     for (const line of rows) {
-      const vals = [
-        line.lineCode || '',
-        line.workDescription || '',
-        line.materialDescription || '',
-        `${line.quantity || 0} ${line.unit || ''}`.trim(),
-        line.laborTotal || 0,
-        line.materialTotal || 0,
-        line.lineTotal || 0,
-      ]
-      vals.forEach((val, idx) => {
-        const cell = ws.getCell(rowNo, idx + 1)
-        cell.value = val
-        cell.font = { name: 'Carlito', size: 10 }
-        cell.alignment = { vertical: 'top', horizontal: idx >= 4 ? 'right' : 'left', wrapText: true }
-        if (idx >= 4) cell.numFmt = MONEY_NUM_FMT
+      dataRows.push(rowNo)
+      ws.getCell(`A${rowNo}`).value = ''
+      ws.getCell(`B${rowNo}`).value = itemNo
+      ws.getCell(`C${rowNo}`).value = line.workDescription || ''
+      ws.getCell(`D${rowNo}`).value = line.materialDescription || ''
+      ws.getCell(`E${rowNo}`).value = toNum(line.quantity, 0)
+      ws.getCell(`E${rowNo}`).numFmt = '#,##0.##'
+      ws.getCell(`F${rowNo}`).value = toNum(line.laborUnitPrice, 0)
+      ws.getCell(`F${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`G${rowNo}`).value = { formula: `E${rowNo}*F${rowNo}` }
+      ws.getCell(`G${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`H${rowNo}`).value = toNum(line.materialUnitPrice, 0)
+      ws.getCell(`H${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`I${rowNo}`).value = { formula: `E${rowNo}*H${rowNo}` }
+      ws.getCell(`I${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`J${rowNo}`).value = { formula: `G${rowNo}+I${rowNo}` }
+      ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
+      for (let col = 1; col <= 10; col += 1) {
+        const cell = ws.getCell(rowNo, col)
         cell.border = thinBorder()
-      })
-      ws.getRow(rowNo).height = 34
+        cell.alignment = { vertical: 'top', horizontal: col >= 5 ? 'right' : 'left', wrapText: true }
+      }
+      ws.getCell(`B${rowNo}`).alignment = { horizontal: 'center', vertical: 'top' }
+      ws.getRow(rowNo).height = 30
       rowNo += 1
+      itemNo += 1
     }
-    ws.mergeCells(`A${rowNo}:F${rowNo}`)
-    ws.getCell(`A${rowNo}`).value = `Mezisoucet - ${estimateGroupLabel(groupKey)}`
-    ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10, bold: true, italic: true }
-    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right' }
-    ws.getCell(`G${rowNo}`).value = rows.reduce((sum, line) => sum + toNum(line.lineTotal, 0), 0)
-    ws.getCell(`G${rowNo}`).numFmt = MONEY_NUM_FMT
-    ws.getCell(`G${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
-    fillRow(ws, rowNo, 'FFF8FBFF')
-    for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
-    rowNo += 2
   }
 
-  const summaryStart = rowNo
-  const summaryRows = [
-    ['Součet práce', totals.laborTotal],
-    ['Součet materiálu', totals.materialTotal],
-    ['Ostatní rozpočtové náklady', totals.otherCostsTotal],
-    ['Celkem bez DPH', totals.totalNoVat],
-    [`DPH ${estimate?.vatRate || 21} %`, totals.vatAmount],
-    ['Celkem s DPH', totals.totalWithVat],
+  const workSum = dataRows.length ? dataRows.map((r) => `G${r}`).join('+') : '0'
+  const materialSum = dataRows.length ? dataRows.map((r) => `I${r}`).join('+') : '0'
+  const totalSum = dataRows.length ? dataRows.map((r) => `J${r}`).join('+') : '0'
+  rowNo += 1
+  const finalRows = [
+    ['Práce celkem', { formula: workSum }],
+    ['Materiál celkem', { formula: materialSum }],
+    ['Celkem bez DPH', { formula: totalSum }],
+    [`DPH ${vatRate} %`, { formula: `J${rowNo + 2}*${vatRate / 100}` }],
+    ['Celkem s DPH', { formula: `J${rowNo + 2}+J${rowNo + 3}` }],
   ]
-  for (const [label, amount] of summaryRows) {
+  for (const [label, formula] of finalRows) {
+    ws.mergeCells(`A${rowNo}:I${rowNo}`)
     ws.getCell(`A${rowNo}`).value = label
-    ws.mergeCells(`A${rowNo}:F${rowNo}`)
-    ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
-    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right' }
-    ws.getCell(`G${rowNo}`).value = amount
-    ws.getCell(`G${rowNo}`).numFmt = MONEY_NUM_FMT
-    ws.getCell(`G${rowNo}`).font = { name: 'Carlito', size: 10, bold: true }
-    if (label === 'Celkem s DPH') fillRow(ws, rowNo, 'FFEAF6EA')
-    else fillRow(ws, rowNo, 'FFF6F9FE')
-    for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
+    ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right', vertical: 'middle' }
+    ws.getCell(`J${rowNo}`).value = formula
+    ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
+    ws.getCell(`J${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    const fillColor = label === 'Celkem s DPH' ? 'FFE2F0D9' : 'FFF8F9FB'
+    for (let col = 1; col <= 10; col += 1) {
+      ws.getCell(rowNo, col).border = thinBorder()
+      ws.getCell(rowNo, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } }
+    }
     rowNo += 1
   }
 
   rowNo += 1
-  ws.mergeCells(`A${rowNo}:G${rowNo}`)
-  ws.getCell(`A${rowNo}`).value = 'Poznámka a upřesnění'
-  ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 11, bold: true, color: { argb: 'FF0F3070' } }
-  ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }
-  for (let c = 1; c <= 7; c += 1) ws.getCell(rowNo, c).border = thinBorder()
+  ws.mergeCells(`A${rowNo}:J${rowNo}`)
+  ws.getCell(`A${rowNo}`).value = 'Poznámka:'
+  ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+  for (let col = 1; col <= 10; col += 1) ws.getCell(rowNo, col).border = thinBorder()
   rowNo += 1
-  ws.mergeCells(`A${rowNo}:G${rowNo + 2}`)
-  ws.getCell(`A${rowNo}`).value = note || 'Rozpočet byl připraven v CRM. Ceny lze dále upravit přímo v kartě zakázky.'
-  ws.getCell(`A${rowNo}`).alignment = { wrapText: true, vertical: 'top' }
-  ws.getCell(`A${rowNo}`).font = { name: 'Carlito', size: 10 }
-  for (let r = rowNo; r <= rowNo + 2; r += 1) for (let c = 1; c <= 7; c += 1) ws.getCell(r, c).border = thinBorder()
+  ws.mergeCells(`A${rowNo}:J${rowNo + 2}`)
+  ws.getCell(`A${rowNo}`).value = note || ''
+  ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10 }
+  ws.getCell(`A${rowNo}`).alignment = { vertical: 'top', wrapText: true }
+  for (let r = rowNo; r <= rowNo + 2; r += 1) for (let c = 1; c <= 10; c += 1) ws.getCell(r, c).border = thinBorder()
 
   ws.headerFooter.oddFooter = '&LTemoWeb CRM&CStrana &P / &N&R' + String(estimate?.estimateNo || '')
-  ws.printArea = `A1:G${rowNo + 2}`
-  ws.autoFilter = `A${headerRow}:G${headerRow}`
+  ws.printArea = `A1:J${rowNo + 2}`
+  ws.autoFilter = `A${headerRow}:J${headerRow}`
 
   const safe = String(estimate?.estimateNo || `rozpocet-${estimate?.id || Date.now()}`).replace(/[^\w.-]+/g, '_')
   const xlsxPath = path.join(GENERATED_ESTIMATES_DIR, `${safe}.xlsx`)
@@ -1687,7 +1662,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   return xlsxPath
 }
 
-const MONEY_NUM_FMT = '#,##0.00 "Kč"'
+const MONEY_NUM_FMT = '#,##0 "Kč"'
 
 function thinBorder() {
   return {
@@ -1695,24 +1670,6 @@ function thinBorder() {
     left: { style: 'thin', color: { argb: 'FF9EB2CC' } },
     bottom: { style: 'thin', color: { argb: 'FF9EB2CC' } },
     right: { style: 'thin', color: { argb: 'FF9EB2CC' } },
-  }
-}
-
-function addBoxBorders(ws, range) {
-  const [start, end] = range.split(':')
-  const startCell = ws.getCell(start)
-  const endCell = ws.getCell(end)
-  for (let row = startCell.row; row <= endCell.row; row += 1) {
-    for (let col = startCell.col; col <= endCell.col; col += 1) {
-      ws.getCell(row, col).border = thinBorder()
-      ws.getCell(row, col).font = { ...(ws.getCell(row, col).font || {}), name: 'Carlito', size: 10 }
-    }
-  }
-}
-
-function fillRow(ws, rowNo, color) {
-  for (let col = 1; col <= 7; col += 1) {
-    ws.getCell(rowNo, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } }
   }
 }
 
@@ -1733,6 +1690,25 @@ function estimateGroupLabel(key) {
   return map[key] || 'Rozpočet'
 }
 
+function estimateCategoryKey(line) {
+  const raw = String(line?.category || line?.sectionType || '').trim().toLowerCase()
+  if (raw === 'stavba' || raw === 'construction') return 'stavba'
+  if (raw === 'ostatni_naklady' || raw === 'other') return 'ostatni'
+  return 'elektro'
+}
+
+function estimateCategoryLabel(key) {
+  if (key === 'stavba') return 'STAVBA'
+  if (key === 'ostatni') return 'OSTATNÍ'
+  return 'ELEKTRO'
+}
+
+function estimateCategoryColor(key) {
+  if (key === 'stavba') return 'FFF4B084'
+  if (key === 'ostatni') return 'FFD9E2F3'
+  return 'FFA9D08E'
+}
+
 function getEstimateGeneratedFiles(estimate) {
   if (!estimate) return { xlsx: null, pdf: null }
   const safe = String(estimate.estimateNo || `rozpocet-${estimate.id}`).replace(/[^\w.-]+/g, '_')
@@ -1747,14 +1723,14 @@ function getEstimateGeneratedFiles(estimate) {
   return { xlsx, pdf }
 }
 
-function groupedEstimateLinesForExport(lines) {
+function groupedEstimateLinesForUniversalTemplate(lines) {
   const map = new Map()
   for (const line of lines) {
-    const key = line.groupKey || 'other'
+    const key = estimateCategoryKey(line)
     if (!map.has(key)) map.set(key, [])
     map.get(key).push(line)
   }
-  const ordered = ['grooves','boxes','cables','switchboards','outlets','completion','revision','demolition','hourly','systems','other']
+  const ordered = ['elektro', 'stavba', 'ostatni']
   const result = []
   for (const key of ordered) if (map.has(key)) result.push([key, map.get(key)])
   for (const [k, v] of map.entries()) if (!ordered.includes(k)) result.push([k, v])
@@ -1767,13 +1743,15 @@ function buildEstimateNo(jobIdOrLeadId) {
   return `RZP-${year}-${String(jobIdOrLeadId || 'X')}-${tail}`
 }
 function estimateLineFromRow(row) {
+  const category = String(row.category || row.section_type || 'elektro').trim() || 'elektro'
   return {
     id: row.id != null ? Number(row.id) : null,
     estimateId: row.estimate_id != null ? Number(row.estimate_id) : null,
     catalogItemId: row.catalog_item_id != null ? Number(row.catalog_item_id) : null,
     sourceCatalogCode: row.source_catalog_code || null,
     lineCode: row.line_code || null,
-    sectionType: row.section_type || 'elektro',
+    sectionType: category,
+    category,
     groupKey: row.group_key || row.category_key || 'other',
     groupLabel: row.group_label || row.group_key || row.category_key || 'Ostatní',
     phaseKey: row.phase_key || row.phaseKey || 'preparation',
@@ -1796,6 +1774,7 @@ function estimateLineFromRow(row) {
   }
 }
 function normalizeEstimateLine(input = {}, idx = 0) {
+  const category = String(input.category || input.sectionType || 'elektro').trim() || 'elektro'
   const quantity = roundMoney(toNum(input.quantity, 0))
   const laborUnitPrice = roundMoney(toNum(input.laborUnitPrice != null ? input.laborUnitPrice : input.clientPrice, 0))
   const materialUnitPrice = roundMoney(toNum(input.materialUnitPrice, 0))
@@ -1807,7 +1786,8 @@ function normalizeEstimateLine(input = {}, idx = 0) {
     catalogItemId: input.catalogItemId != null ? Number(input.catalogItemId) : null,
     sourceCatalogCode: input.sourceCatalogCode ? String(input.sourceCatalogCode).trim() : null,
     lineCode: input.lineCode ? String(input.lineCode).trim() : null,
-    sectionType: String(input.sectionType || 'elektro').trim() || 'elektro',
+    sectionType: category,
+    category,
     groupKey: String(input.groupKey || input.categoryKey || 'other').trim() || 'other',
     groupLabel: String(input.groupLabel || input.groupKey || 'Ostatní').trim() || 'Ostatní',
     phaseKey: String(input.phaseKey || 'preparation').trim() || 'preparation',
