@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>O&L Master Dom · Rozpočet</title>
+    <title>O&L Master Dom · Кошторис</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -80,23 +80,23 @@
   </head>
   <body>
     <header class="header"><div class="header-inner">
-      <div class="logo"><div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="logo-name">O&amp;L Master Dom</div><div class="logo-sub">Rozpočet</div></div></div>
+      <div class="logo"><div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V14h6v8" stroke="rgba(180,215,255,.9)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="logo-name">O&amp;L Master Dom</div><div class="logo-sub">Кошторис</div></div></div>
       <div class="hdr-info" id="leadSub">Kalkulační list zakázky</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a class="btn" id="backLink" href="./index.html">← Ke kartě</a>
-        <button class="btn" id="toggleSheet">Košík rozpočtu</button>
-        <button class="btn" id="buildDocs">Vygenerovat Excel/PDF</button>
-        <button class="btn primary" id="saveEstimate">Uložit rozpočet</button>
+        <a class="btn" id="backLink" href="./index.html">← До картки</a>
+        <button class="btn" id="toggleSheet">Кошик кошторису</button>
+        <button class="btn" id="buildDocs">Згенерувати Excel/PDF</button>
+        <button class="btn primary" id="saveEstimate">Зберегти кошторис</button>
       </div>
     </div></header>
     <div class="page">
       <aside class="sidebar">
-        <div class="sidebar-sec"><select class="select" id="tradeType"><option value="electro">Elektrika</option><option value="construction">Stavba</option></select></div>
-        <div class="sidebar-sec"><input class="input" id="catalogSearch" placeholder="Vyhledat položku česky..." /></div>
-        <div class="sidebar-sec"><div class="sidebar-head">Kategorie prací</div><div id="navItems"></div></div>
+        <div class="sidebar-sec"><select class="select" id="tradeType"><option value="electro">Електрика</option><option value="construction">Будівництво</option></select></div>
+        <div class="sidebar-sec"><input class="input" id="catalogSearch" placeholder="Шукати позицію чеською..." /></div>
+        <div class="sidebar-sec"><div class="sidebar-head">Категорії робіт</div><div id="navItems"></div></div>
       </aside>
       <main class="main">
-        <div class="main-top"><div><div class="main-title" id="mainTitle">Vyberte kategorii zleva</div><div class="main-sub" id="mainCount"></div></div></div>
+        <div class="main-top"><div><div class="main-title" id="mainTitle">Оберіть категорію зліва</div><div class="main-sub" id="mainCount"></div></div></div>
         <div id="catalogBody"><div class="empty">Načítání katalogu...</div></div>
       </main>
       <section class="editor" id="editorSheet">
@@ -118,12 +118,12 @@
                 <a class="chip" id="pdfLink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">PDF</a>
               </div>
               <div class="sheet-input-block" style="width:min(420px,100%)">
-                <label class="sheet-label" for="estimateNote">Poznámka</label>
-                <textarea class="sheet-input" id="estimateNote" placeholder="Poznámka k rozpočtu / instrukce" style="min-height:96px;resize:vertical;border:1px solid var(--paper-line)"></textarea>
+                <label class="sheet-label" for="estimateNote">Примітка</label>
+                <textarea class="sheet-input" id="estimateNote" placeholder="Примітка до кошторису / інструкції" style="min-height:96px;resize:vertical;border:1px solid var(--paper-line)"></textarea>
               </div>
             </div>
             <div class="paper-subhead">
-              <div class="paper-caption">Elektrikářské práce</div>
+              <div class="paper-caption">Електромонтажні роботи</div>
               <div class="paper-caption" id="paperSectionInfo">Ceny práce a materiálu upravujete přímo zde.</div>
             </div>
             <div class="table-wrap">
@@ -165,14 +165,14 @@
             </div>
             <div class="manual-sec">
               <div class="manual-grid">
-                <select class="select" id="manualCategory"><option value="elektro">ELEKTRO</option><option value="stavba">STAVBA</option><option value="ostatni">OSTATNÍ NÁKLADY</option></select>
-                <input class="input" id="manualWork" placeholder="Popis práce" />
-                <input class="input" id="manualMaterial" placeholder="Popis materiálu" />
+                <select class="select" id="manualCategory"><option value="elektro">ELEKTRO</option><option value="stavba">STAVBA</option><option value="ostatni">ІНШІ ВИТРАТИ</option></select>
+                <input class="input" id="manualWork" placeholder="Опис роботи" />
+                <input class="input" id="manualMaterial" placeholder="Опис матеріалу" />
                 <input class="input" id="manualUnit" value="ks" placeholder="MJ" />
-                <input class="input" id="manualQty" type="number" step="0.01" value="1" placeholder="Množství" />
-                <input class="input" id="manualLabor" type="number" step="0.01" value="0" placeholder="Cena práce" />
-                <input class="input" id="manualMaterialPrice" type="number" step="0.01" value="0" placeholder="Cena materiálu" />
-                <button class="btn" id="addManualLine">Přidat ruční řádek</button>
+                <input class="input" id="manualQty" type="number" step="0.01" value="1" placeholder="Кількість" />
+                <input class="input" id="manualLabor" type="number" step="0.01" value="0" placeholder="Ціна роботи" />
+                <input class="input" id="manualMaterialPrice" type="number" step="0.01" value="0" placeholder="Ціна матеріалу" />
+                <button class="btn" id="addManualLine">Додати ручний рядок</button>
               </div>
             </div>
             <div class="totals" id="estimateTotals"></div>
@@ -182,14 +182,14 @@
     </div>
     <div class="cart-bar" id="cartBar">
       <div class="cart-bar-main">
-        <div class="cart-pill"><b>Položky</b><span id="cartCount">0</span></div>
-        <div class="cart-pill"><b>Práce</b><span id="cartLabor">0,00 Kč</span></div>
-        <div class="cart-pill"><b>Materiál</b><span id="cartMaterial">0,00 Kč</span></div>
-        <div class="cart-pill"><b>Celkem s DPH</b><span id="cartTotal">0,00 Kč</span></div>
+        <div class="cart-pill"><b>Позиції</b><span id="cartCount">0</span></div>
+        <div class="cart-pill"><b>Робота</b><span id="cartLabor">0,00 Kč</span></div>
+        <div class="cart-pill"><b>Матеріал</b><span id="cartMaterial">0,00 Kč</span></div>
+        <div class="cart-pill"><b>Разом з DPH</b><span id="cartTotal">0,00 Kč</span></div>
       </div>
       <div class="cart-bar-actions">
-        <button class="btn" id="openCartBar">Otevřít košík</button>
-        <button class="btn primary" id="saveFromBar">Uložit rozpočet</button>
+        <button class="btn" id="openCartBar">Відкрити кошик</button>
+        <button class="btn primary" id="saveFromBar">Зберегти кошторис</button>
       </div>
     </div>
     <script>
