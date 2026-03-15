@@ -1593,10 +1593,18 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     cell.border = thinBorder()
   })
 
+  // Separate main categories (elektro, stavba) from ostatni (other costs)
+  const mainCatGroups = new Map()
+  const ostatniRows = []
+  for (const [key, rows] of grouped) {
+    if (key === 'ostatni') { ostatniRows.push(...rows) } else { mainCatGroups.set(key, rows) }
+  }
+
   let rowNo = 8
   const dataRows = []
   let itemNo = 1
-  for (const [categoryKey, rows] of grouped) {
+  // --- Main table (ELEKTRO + STAVBA) ---
+  for (const [categoryKey, rows] of mainCatGroups) {
     ws.mergeCells(`A${rowNo}:L${rowNo}`)
     ws.getCell(`A${rowNo}`).value = estimateCategoryLabel(categoryKey)
     ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
@@ -1606,7 +1614,7 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     for (const line of rows) {
       dataRows.push(rowNo)
       ws.getCell(`A${rowNo}`).value = ''
-      ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `${categoryKey === 'stavba' ? 'STV' : categoryKey === 'ostatni' ? 'OST' : 'ELE'}-${String(itemNo).padStart(3, '0')}`
+      ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `${categoryKey === 'stavba' ? 'STV' : 'ELE'}-${String(itemNo).padStart(3, '0')}`
       ws.getCell(`C${rowNo}`).value = itemNo
       ws.getCell(`D${rowNo}`).value = line.workDescription || ''
       ws.getCell(`E${rowNo}`).value = line.materialDescription || 'bez materiálu'
@@ -1638,26 +1646,93 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
       rowNo += 1
       itemNo += 1
     }
+    // Category subtotal row
     ws.mergeCells(`A${rowNo}:K${rowNo}`)
     ws.getCell(`A${rowNo}`).value = `${estimateCategoryLabel(categoryKey)} CELKEM`
     ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: estimateCategoryColor(categoryKey) } }
+    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right', vertical: 'middle' }
     ws.getCell(`L${rowNo}`).value = { formula: rows.map((_line, offset) => `L${rowNo - rows.length + offset}`).join('+') || '0' }
     ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
+    ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
     for (let col = 1; col <= 12; col += 1) ws.getCell(rowNo, col).border = thinBorder()
     rowNo += 1
   }
 
+  // --- Ostatní rozpočtové náklady (Other budget costs) — separate block ---
+  const ostatniDataRows = []
+  if (ostatniRows.length > 0) {
+    rowNo += 1
+    ws.mergeCells(`A${rowNo}:L${rowNo}`)
+    ws.getCell(`A${rowNo}`).value = 'Ostatní rozpočtové náklady'
+    ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 11, bold: true }
+    ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: estimateCategoryColor('ostatni') } }
+    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'left', vertical: 'middle' }
+    for (let col = 1; col <= 12; col += 1) ws.getCell(rowNo, col).border = thinBorder()
+    ws.getRow(rowNo).height = 20
+    rowNo += 1
+    let ostItemNo = 1
+    for (const line of ostatniRows) {
+      ostatniDataRows.push(rowNo)
+      ws.getCell(`A${rowNo}`).value = ''
+      ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `OST-${String(ostItemNo).padStart(3, '0')}`
+      ws.getCell(`C${rowNo}`).value = ostItemNo
+      ws.getCell(`D${rowNo}`).value = line.workDescription || ''
+      ws.getCell(`E${rowNo}`).value = line.materialDescription || ''
+      ws.getCell(`F${rowNo}`).value = line.unit || 'ks'
+      ws.getCell(`G${rowNo}`).value = toNum(line.quantity, 0)
+      ws.getCell(`G${rowNo}`).numFmt = '#,##0.##'
+      ws.getCell(`H${rowNo}`).value = toNum(line.laborUnitPrice, 0)
+      ws.getCell(`H${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`I${rowNo}`).value = { formula: `G${rowNo}*H${rowNo}` }
+      ws.getCell(`I${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`J${rowNo}`).value = toNum(line.materialUnitPrice, 0)
+      ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`K${rowNo}`).value = { formula: `G${rowNo}*J${rowNo}` }
+      ws.getCell(`K${rowNo}`).numFmt = MONEY_NUM_FMT
+      ws.getCell(`L${rowNo}`).value = { formula: `I${rowNo}+K${rowNo}` }
+      ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
+      for (let col = 1; col <= 12; col += 1) {
+        const cell = ws.getCell(rowNo, col)
+        cell.border = thinBorder()
+        cell.alignment = { vertical: 'top', horizontal: col >= 7 ? 'right' : 'left', wrapText: true }
+        if (col === 12) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } }
+      }
+      ws.getCell(`C${rowNo}`).alignment = { horizontal: 'center', vertical: 'top' }
+      ws.getRow(rowNo).height = 26
+      rowNo += 1
+      ostItemNo += 1
+    }
+    // Ostatní subtotal
+    ws.mergeCells(`A${rowNo}:K${rowNo}`)
+    ws.getCell(`A${rowNo}`).value = 'Ostatní náklady CELKEM'
+    ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    ws.getCell(`A${rowNo}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E2F3' } }
+    ws.getCell(`A${rowNo}`).alignment = { horizontal: 'right', vertical: 'middle' }
+    ws.getCell(`L${rowNo}`).value = { formula: ostatniDataRows.map((r) => `L${r}`).join('+') || '0' }
+    ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
+    ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
+    for (let col = 1; col <= 12; col += 1) ws.getCell(rowNo, col).border = thinBorder()
+    rowNo += 1
+  }
+
+  const allDataRows = [...dataRows, ...ostatniDataRows]
   const workSum = dataRows.length ? dataRows.map((r) => `I${r}`).join('+') : '0'
   const materialSum = dataRows.length ? dataRows.map((r) => `K${r}`).join('+') : '0'
-  const totalSum = dataRows.length ? dataRows.map((r) => `L${r}`).join('+') : '0'
+  const ostatniSum = ostatniDataRows.length ? ostatniDataRows.map((r) => `L${r}`).join('+') : '0'
+  const totalSumNoOst = dataRows.length ? dataRows.map((r) => `L${r}`).join('+') : '0'
+  const totalSum = allDataRows.length ? allDataRows.map((r) => `L${r}`).join('+') : '0'
   rowNo += 1
+  const meziSoucetRowNo = rowNo + 2
+  const dphRowNo = rowNo + 3
   const finalRows = [
     ['Práce celkem', { formula: workSum }],
     ['Materiál celkem', { formula: materialSum }],
+    ostatniDataRows.length ? ['Ostatní náklady', { formula: ostatniSum }] : null,
     ['Mezisoučet', { formula: totalSum }],
-    [`DPH ${vatRate} %`, { formula: `L${rowNo + 2}*${vatRate / 100}` }],
-    ['Celkem s DPH', { formula: `L${rowNo + 2}+L${rowNo + 3}` }],
-  ]
+    [`DPH ${vatRate} %`, { formula: `L${rowNo + (ostatniDataRows.length ? 3 : 2)}*${vatRate / 100}` }],
+    ['Celkem s DPH', { formula: `L${rowNo + (ostatniDataRows.length ? 3 : 2)}+L${rowNo + (ostatniDataRows.length ? 4 : 3)}` }],
+  ].filter(Boolean)
   for (const [label, formula] of finalRows) {
     ws.mergeCells(`A${rowNo}:K${rowNo}`)
     ws.getCell(`A${rowNo}`).value = label
@@ -1666,14 +1741,15 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
     ws.getCell(`L${rowNo}`).value = formula
     ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
     ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true }
-    const fillColor = label === 'Celkem s DPH' ? 'FF595959' : 'FFF8F9FB'
+    const fillColor = label === 'Celkem s DPH' ? 'FF595959' : label === 'Mezisoučet' ? 'FFE2EFDA' : 'FFF8F9FB'
     for (let col = 1; col <= 12; col += 1) {
       ws.getCell(rowNo, col).border = thinBorder()
       ws.getCell(rowNo, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } }
     }
     if (label === 'Celkem s DPH') {
-      ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
-      ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+      ws.getCell(`A${rowNo}`).font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FFFFFFFF' } }
+      ws.getCell(`L${rowNo}`).font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FFFFFFFF' } }
+      ws.getRow(rowNo).height = 22
     }
     rowNo += 1
   }

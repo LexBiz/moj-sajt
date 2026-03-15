@@ -40,7 +40,7 @@
       .main-top{position:sticky;top:56px;z-index:10;padding:16px 22px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95)}
       .main-title{font-size:19px;font-weight:800}.main-sub{font-size:12px;color:var(--ink2);margin-top:3px}
       .group-head{padding:16px 22px 12px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.015)}.group-title{font-size:16px;font-weight:800}.group-sub{font-size:12px;color:var(--ink3);margin-top:3px}
-      .item{display:grid;grid-template-columns:50px minmax(0,1fr) 110px 150px 120px 110px;align-items:center;border-bottom:1px solid var(--b2)}
+      .item{display:grid;grid-template-columns:50px minmax(0,1fr) 100px 88px 140px 120px 100px;align-items:center;border-bottom:1px solid var(--b2)}
       .item:hover{background:rgba(26,106,232,.04)} .item.incart{background:rgba(26,106,232,.06)}
       .item-icon{width:50px;height:56px;display:flex;align-items:center;justify-content:center;color:var(--ink3)}
       .item-body{padding:12px 14px 12px 0}.item-name{font-size:14px;font-weight:500;line-height:1.38}.item-code{font-size:11px;color:var(--ink3);margin-top:2px;font-family:monospace}
@@ -84,20 +84,34 @@
       .sheet .btn{background:var(--c);color:var(--ink);border:1px solid var(--b2)}
       .sheet .btn:hover{background:var(--c2)}
       .empty{padding:28px 18px;text-align:center;color:var(--ink2);font-size:14px}
+      .item-markup{padding:0 6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+      .mup{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.2px}
+      .mup.pos{background:rgba(20,201,138,.15);color:var(--green)}.mup.neg{background:rgba(232,58,58,.15);color:var(--red)}.mup.zero{background:rgba(255,255,255,.07);color:var(--ink3)}
+      .status-wrap{display:flex;align-items:center;gap:8px}
+      .status-badge{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;font-family:inherit}
+      .status-draft{background:rgba(255,255,255,.05);color:var(--ink2);border-color:var(--b2)}
+      .status-ready{background:rgba(20,201,138,.12);color:var(--green);border-color:rgba(20,201,138,.3)}
+      .status-sent{background:rgba(26,106,232,.12);color:var(--blue3);border-color:rgba(61,135,248,.3)}
+      .send-popover{position:absolute;bottom:calc(100% + 10px);right:0;width:380px;background:rgba(7,22,42,.98);border:1px solid var(--b2);border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.6);display:none;z-index:80}
+      .send-popover.show{display:block}
+      .markup-global{padding:12px 16px;border-bottom:1px solid var(--b2);background:rgba(20,201,138,.04)}
+      .markup-global-inner{display:flex;align-items:center;gap:10px}
+      .markup-value{font-size:22px;font-weight:800;color:var(--green);min-width:52px;text-align:center}
       @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}}
-      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 110px 140px 120px 100px}.item-icon{display:none}.editor{width:100%}.cart-bar{left:10px;right:10px;bottom:10px}}
-      @media(max-width:700px){.item{grid-template-columns:1fr}.item-price,.item-qty,.item-total,.item-custom{padding:8px 12px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}.cart-bar{flex-direction:column;align-items:stretch}}
+      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 90px 80px 130px 110px 90px}.item-icon{display:none}.editor{width:100%}.cart-bar{left:10px;right:10px;bottom:10px}}
+      @media(max-width:700px){.item{grid-template-columns:1fr}.item-price,.item-qty,.item-total,.item-custom,.item-markup{padding:8px 12px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}.cart-bar{flex-direction:column;align-items:stretch}}
     </style>
   </head>
   <body>
     <header class="header"><div class="header-inner">
       <div class="logo"><div class="logo-mark"><img src="./logo.jpg" alt="O&L Master Dom logo" /></div><div><div class="logo-name">O&amp;L Master Dom</div><div class="logo-sub">Кошторис</div></div></div>
       <div class="hdr-info" id="leadSub">Kalkulační list zakázky</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="status-wrap">
+        <span class="status-badge status-draft" id="estimateStatusBadge" title="Кликніть для зміни статусу">● Draft</span>
         <a class="btn" id="backLink" href="./index.html">← До картки</a>
-        <button class="btn" id="toggleSheet">Кошик кошторису</button>
-        <button class="btn" id="buildDocs">Згенерувати Excel/PDF</button>
-        <button class="btn primary" id="saveEstimate">Зберегти кошторис</button>
+        <button class="btn" id="toggleSheet">📋 Кошик</button>
+        <button class="btn" id="buildDocs">⚡ Excel / PDF</button>
+        <button class="btn primary" id="saveEstimate">💾 Зберегти</button>
       </div>
     </div></header>
     <div class="page">
@@ -113,7 +127,15 @@
           <button class="mode-tab" data-mode="preview">Попередній перегляд</button>
         </div>
         <div class="sidebar-sec"><select class="select" id="tradeType"><option value="electro">Електрика</option><option value="construction">Будівництво</option></select></div>
-        <div class="sidebar-sec"><input class="input" id="catalogSearch" placeholder="Шукати позицію чеською..." /></div>
+        <div class="markup-global">
+          <div class="sidebar-head" style="margin-bottom:8px">Přirážka práce % — глобально</div>
+          <div class="markup-global-inner">
+            <input class="input" id="globalMarkup" type="number" step="1" value="0" min="-100" max="500" style="width:72px;text-align:center;font-size:18px;font-weight:800;padding:8px" />
+            <div class="markup-value" id="globalMarkupDisplay">+0%</div>
+            <div style="font-size:11px;color:var(--ink3);line-height:1.5">Застос.<br>до нових</div>
+          </div>
+        </div>
+        <div class="sidebar-sec" style="padding-top:12px"><input class="input" id="catalogSearch" placeholder="🔍 Шукати позицію..." /></div>
         <div class="sidebar-sec"><div class="sidebar-head">Категорії робіт</div><div id="navItems"></div></div>
         <div class="catalog-admin">
           <div class="catalog-admin-title">Додати позицію в базу</div>
@@ -145,8 +167,8 @@
           <div class="sheet-body">
             <div class="sheet-toolbar">
               <div class="sheet-toolbar-left">
-                <a class="chip" id="xlsxLink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">Excel</a>
-                <a class="chip" id="pdfLink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">PDF</a>
+                <button class="btn primary" id="buildDocsSheet" style="font-size:12px;padding:8px 14px">⚡ Генерувати Excel / PDF</button>
+                <button class="btn" id="saveEstimateSheet" style="font-size:12px;padding:8px 14px">💾 Зберегти</button>
               </div>
               <div class="sheet-input-block" style="width:min(420px,100%)">
                 <label class="sheet-label" for="estimateNote">Примітка</label>
@@ -211,16 +233,27 @@
         </div>
       </section>
     </div>
-    <div class="cart-bar" id="cartBar">
+    <div class="cart-bar" id="cartBar" style="position:relative">
       <div class="cart-bar-main">
-        <div class="cart-pill"><b>Позиції</b><span id="cartCount">0</span></div>
+        <div class="cart-pill"><b>Позицій</b><span id="cartCount">0</span></div>
         <div class="cart-pill"><b>Робота</b><span id="cartLabor">0,00 Kč</span></div>
         <div class="cart-pill"><b>Матеріал</b><span id="cartMaterial">0,00 Kč</span></div>
-        <div class="cart-pill"><b>Разом з DPH</b><span id="cartTotal">0,00 Kč</span></div>
+        <div class="cart-pill" style="border-left:2px solid rgba(20,201,138,.4);padding-left:14px"><b>Разом с DPH</b><span id="cartTotal" style="color:var(--green)">0,00 Kč</span></div>
       </div>
       <div class="cart-bar-actions">
-        <button class="btn" id="openCartBar">Відкрити кошик</button>
-        <button class="btn primary" id="saveFromBar">Зберегти кошторис</button>
+        <button class="btn" id="openCartBar">📋 Кошик</button>
+        <button class="btn" id="buildDocsBar">⚡ Генерувати</button>
+        <button class="btn" id="sendToggleBtn">✉ Надіслати кл.</button>
+        <button class="btn primary" id="saveFromBar">💾 Зберегти</button>
+      </div>
+      <div class="send-popover" id="sendPopover">
+        <div style="font-size:14px;font-weight:800;margin-bottom:6px;color:var(--ink)">✉ Надіслати PDF клієнту</div>
+        <div style="font-size:12px;color:var(--ink2);margin-bottom:14px;line-height:1.5">Кошторис збережеться, згенерується PDF і відправиться на email клієнта</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="sendEmailBuilder" type="email" class="input" placeholder="Email klienta..." style="flex:1;min-width:200px" />
+          <button class="btn primary" id="sendFromBuilderBtn" style="white-space:nowrap">Відправити PDF →</button>
+        </div>
+        <div style="font-size:11px;color:var(--ink3)">або: <a id="xlsxLink" href="#" target="_blank" rel="noopener" style="display:none;color:var(--blue3)">Стягнути Excel</a> <a id="pdfLink" href="#" target="_blank" rel="noopener" style="display:none;color:var(--blue3)">Стягнути PDF</a></div>
       </div>
     </div>
     <script>
@@ -236,6 +269,7 @@
       async function json(resp) { try { return await resp.json() } catch { return null } }
 
       let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null, activeMode = 'work'
+      let globalMarkup = 0
       const customPriceOverrides = new Map()
       const NAV_LABELS = { grooves:'Sekání šliců (drážek) a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zapojení zásuvek, vypínačů', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
       const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
@@ -328,8 +362,8 @@
             materialDescription: isMaterial ? item.itemName : (isOther ? '' : ''),
             unit: item.unit || 'ks',
             quantity: 1,
-            laborUnitPrice: isMaterial ? 0 : customLaborPrice(item),
-            materialUnitPrice: isMaterial ? customLaborPrice(item) : 0,
+            laborUnitPrice: isMaterial ? 0 : +(customLaborPrice(item) * (1 + globalMarkup / 100)).toFixed(2),
+            materialUnitPrice: isMaterial ? +(customLaborPrice(item) * (1 + globalMarkup / 100)).toFixed(2) : 0,
           })
         } else {
           existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
@@ -367,7 +401,7 @@
         const visibleKeys = activeNavKey && groups.has(activeNavKey) ? [activeNavKey] : ordered
         body.innerHTML = visibleKeys.map((key) => {
           const items = groups.get(key) || []
-          return `<div class="group-head"><div class="group-title">${esc(NAV_LABELS[key] || key)}</div><div class="group-sub">${items.length} položek</div></div>${items.map((item) => { const line = catalogLine(item); const qty = Number(line?.quantity || 0); const effectivePrice = line ? Number(line.laborUnitPrice || 0) : customLaborPrice(item); const total = qty * effectivePrice; return `<div class="item${qty > 0 ? ' incart' : ''}"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 3"></path></svg></div><div class="item-body"><div class="item-name">${esc(item.itemName)}</div>${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}</div><div class="item-price"><div class="item-price-main">${esc(String(item.basePrice || 0))} Kč</div><div class="item-price-sub">základ / ${esc(item.unit || 'ks')}</div></div><div class="item-custom"><label>Moje cena</label><input type="number" step="0.01" data-price-input="${item.id}" value="${esc(String(effectivePrice || 0))}" /></div><div class="item-qty"><button class="qty-btn qty-minus" data-minus="${item.id}">−</button><div class="qty-val${qty > 0 ? ' active' : ''}">${qty}</div><button class="qty-btn qty-plus" data-plus="${item.id}">+</button></div><div class="item-total"><div class="item-total-main${qty > 0 ? ' active' : ''}">${qty > 0 ? total.toFixed(0) + ' Kč' : '0 Kč'}</div><div class="item-total-sub">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div></div></div>` }).join('')}`
+          return `<div class="group-head"><div class="group-title">${esc(NAV_LABELS[key] || key)}</div><div class="group-sub">${items.length} položek</div></div>${items.map((item) => { const line = catalogLine(item); const qty = Number(line?.quantity || 0); const effectivePrice = line ? Number(line.laborUnitPrice || 0) : customLaborPrice(item); const total = qty * effectivePrice; const _bP = Number(item.basePrice || 0); const _mk = _bP > 0 ? Math.round(((effectivePrice - _bP) / _bP) * 100) : 0; const _mc = _mk > 0 ? 'pos' : _mk < 0 ? 'neg' : 'zero'; return `<div class="item${qty > 0 ? ' incart' : ''}"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 3"></path></svg></div><div class="item-body"><div class="item-name">${esc(item.itemName)}</div>${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}</div><div class="item-price"><div class="item-price-main">${esc(String(item.basePrice || 0))} Kč</div><div class="item-price-sub">základ / ${esc(item.unit || 'ks')}</div></div><div class="item-markup"><span class="mup ${_mc}" title="Přirážka oproti základní ceně">${_mk >= 0 ? '+' : ''}${_mk}%</span><div class="item-price-sub">přirážka</div></div><div class="item-custom"><label>Moje cena</label><input type="number" step="0.01" data-price-input="${item.id}" data-base="${_bP}" value="${esc(String(effectivePrice || 0))}" /></div><div class="item-qty"><button class="qty-btn qty-minus" data-minus="${item.id}">−</button><div class="qty-val${qty > 0 ? ' active' : ''}">${qty}</div><button class="qty-btn qty-plus" data-plus="${item.id}">+</button></div><div class="item-total"><div class="item-total-main${qty > 0 ? ' active' : ''}">${qty > 0 ? total.toFixed(0) + ' Kč' : '0 Kč'}</div><div class="item-total-sub">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div></div></div>` }).join('')}`
         }).join('')
         body.querySelectorAll('[data-plus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-plus'))); if (item) addCatalogItem(item, 1) }))
         body.querySelectorAll('[data-minus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-minus'))); if (item) addCatalogItem(item, -1) }))
@@ -559,24 +593,107 @@
       }
       async function buildEstimateDocs() {
         if (!estimate?.id) return
-        await saveEstimate()
-        const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-        const d = await json(r)
-        if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze vygenerovat dokumenty'); return }
-        const xlsx = `${apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)}`
-        const pdf = `${apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`)}`
-        const x = document.getElementById('xlsxLink')
-        const p = document.getElementById('pdfLink')
-        x.href = xlsx; x.style.display = 'inline-flex'
-        p.href = pdf; p.style.display = 'inline-flex'
-        alert(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel vygenerován, PDF se nepodařilo vytvořit')
+        const btn = document.getElementById('buildDocs')
+        const barBtn = document.getElementById('buildDocsBar')
+        if (btn) { btn.disabled = true; btn.textContent = '...' }
+        if (barBtn) { barBtn.disabled = true; barBtn.textContent = '...' }
+        try {
+          await saveEstimate()
+          const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+          const d = await json(r)
+          if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze vygenerovat dokumenty'); return }
+          const xlsxUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)
+          const pdfUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`)
+          const x = document.getElementById('xlsxLink')
+          const p = document.getElementById('pdfLink')
+          if (x) { x.href = xlsxUrl; x.style.display = 'inline' }
+          if (p) { p.href = pdfUrl; p.style.display = 'inline' }
+          document.getElementById('sendPopover').classList.add('show')
+          const emailEl = document.getElementById('sendEmailBuilder')
+          if (emailEl && !emailEl.value) emailEl.value = lead?.email || ''
+          alert(d?.pdf?.ok ? '✓ Excel i PDF vygenerovány. Můžete odeslat klientovi.' : 'Excel vygenerován, PDF se nepodařilo vytvořit')
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = '⚡ Excel / PDF' }
+          if (barBtn) { barBtn.disabled = false; barBtn.textContent = '⚡ Генерувати' }
+        }
       }
-      function renderAll() { updateHeaderInfo(); renderNav(); renderCatalogRows(); renderEstimateTable(); renderTotals(); renderCartBar() }
+      function updateStatusBadge() {
+        const el = document.getElementById('estimateStatusBadge')
+        if (!el || !estimate) return
+        const s = estimate.status || 'draft'
+        const labels = { draft: '● Draft', ready: '✓ Připraveno', sent: '✉ Odesláno' }
+        const cls = { draft: 'status-draft', ready: 'status-ready', sent: 'status-sent' }
+        el.textContent = labels[s] || ('● ' + s)
+        el.className = `status-badge ${cls[s] || 'status-draft'}`
+      }
+      async function sendFromBuilder() {
+        const email = (document.getElementById('sendEmailBuilder').value || '').trim()
+          || lead?.email || job?.customerEmail || ''
+        if (!email) { alert('Задайте email клієнта'); return }
+        const btn = document.getElementById('sendFromBuilderBtn')
+        btn.disabled = true; btn.textContent = '...'
+        try {
+          await saveEstimate()
+          const r1 = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+          const d1 = await json(r1)
+          if (!r1.ok || !d1?.ok) throw new Error(d1?.error || 'Nelze vygenerovat PDF')
+          const xlsxEl = document.getElementById('xlsxLink'), pdfEl = document.getElementById('pdfLink')
+          if (xlsxEl) { xlsxEl.href = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`); xlsxEl.style.display = 'inline' }
+          if (pdfEl) { pdfEl.href = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`); pdfEl.style.display = 'inline' }
+          const r2 = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/send-to-client`), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, subject: `Rozpočet ${estimate.estimateNo || ''}`, text: `Dobrý den,\nv příloze zasíláme rozpočet k zakázce ${job?.internalNumber || '—'}.\n\nS pozdravem,\nO&L Master Dom` })
+          })
+          const d2 = await json(r2)
+          if (r2.ok && d2?.ok) {
+            if (estimate) { estimate.status = 'sent'; updateStatusBadge() }
+            alert(`✓ PDF odesláno na ${email}`)
+            document.getElementById('sendPopover').classList.remove('show')
+          } else throw new Error(d2?.error || 'Nelze odeslat')
+        } catch (e) { alert(String(e?.message || e)) }
+        finally { btn.disabled = false; btn.textContent = 'Відправити PDF →' }
+      }
+      function renderAll() { updateHeaderInfo(); renderNav(); renderCatalogRows(); renderEstimateTable(); renderTotals(); renderCartBar(); updateStatusBadge() }
       document.getElementById('saveEstimate').addEventListener('click', saveEstimate)
       document.getElementById('buildDocs').addEventListener('click', buildEstimateDocs)
       document.getElementById('toggleSheet').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
       document.getElementById('openCartBar').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
       document.getElementById('saveFromBar').addEventListener('click', saveEstimate)
+      document.getElementById('buildDocsBar').addEventListener('click', buildEstimateDocs)
+      document.getElementById('sendToggleBtn').addEventListener('click', (e) => {
+        e.stopPropagation()
+        const pop = document.getElementById('sendPopover')
+        pop.classList.toggle('show')
+        if (pop.classList.contains('show')) {
+          const emailEl = document.getElementById('sendEmailBuilder')
+          if (!emailEl.value) emailEl.value = lead?.email || ''
+        }
+      })
+      document.getElementById('sendFromBuilderBtn').addEventListener('click', sendFromBuilder)
+      document.getElementById('buildDocsSheet')?.addEventListener('click', buildEstimateDocs)
+      document.getElementById('saveEstimateSheet')?.addEventListener('click', saveEstimate)
+      document.getElementById('globalMarkup').addEventListener('input', (e) => {
+        globalMarkup = Number(e.target.value || 0)
+        const disp = document.getElementById('globalMarkupDisplay')
+        if (disp) disp.textContent = (globalMarkup >= 0 ? '+' : '') + globalMarkup + '%'
+        disp.style.color = globalMarkup > 0 ? 'var(--green)' : globalMarkup < 0 ? 'var(--red)' : 'var(--ink3)'
+      })
+      document.getElementById('estimateStatusBadge')?.addEventListener('click', async () => {
+        const statuses = ['draft', 'ready', 'sent']
+        const labels = { draft: 'Draft (чернетка)', ready: 'Připraveno (готово)', sent: 'Odesláno (відправлено)' }
+        const cur = estimate?.status || 'draft'
+        const idx = statuses.indexOf(cur)
+        const next = statuses[(idx + 1) % statuses.length]
+        if (!estimate) return
+        estimate.status = next
+        updateStatusBadge()
+        await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: next }) }).catch(() => {})
+      })
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#sendPopover') && !e.target.closest('#sendToggleBtn')) {
+          document.getElementById('sendPopover')?.classList.remove('show')
+        }
+      })
       document.getElementById('tradeType').addEventListener('change', () => { activeNavKey = null; loadCatalog() })
       document.querySelectorAll('[data-mode]').forEach((btn) => btn.addEventListener('click', () => {
         activeMode = btn.getAttribute('data-mode')
