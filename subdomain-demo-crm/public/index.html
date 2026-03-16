@@ -96,9 +96,25 @@
       .prob-info{padding:14px 16px;background:rgba(26,106,232,.07);border:1px solid rgba(61,135,248,.16);border-radius:12px;font-size:13px;color:var(--ink2);margin-bottom:16px;line-height:1.6}
       .empty{padding:40px 20px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:14px}
       .loading{padding:40px;text-align:center;color:var(--ink2)}
+      .user-chip{display:flex;align-items:center;gap:8px;background:var(--c);border:1px solid var(--b2);border-radius:999px;padding:5px 12px 5px 8px;font-size:12px;font-weight:600;cursor:default}
+      .user-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+      .user-role{font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+      .btn-logout{border:1px solid rgba(232,58,58,.25);background:rgba(232,58,58,.06);color:#F07070;border-radius:999px;padding:5px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+      .btn-logout:hover{background:rgba(232,58,58,.14)}
       @media(max-width:900px){.form-grid{grid-template-columns:1fr}.pipe{grid-auto-columns:200px}}
       @media(max-width:600px){.hdr-in,.nav-in,.wrap{padding-left:14px;padding-right:14px}.tab{padding:10px 12px;font-size:12px}}
     </style>
+    <script>
+      // Auth guard — runs before page renders
+      ;(function(){
+        const tok = localStorage.getItem('crmToken')
+        if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
+        try {
+          const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
+          if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
+        } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
+      })()
+    </script>
   </head>
   <body>
     <header class="hdr">
@@ -113,6 +129,11 @@
             <button class="lang-btn" data-lang="uk">UA</button>
           </div>
           <div class="pill" id="systemPill">Systém aktivní</div>
+          <div class="user-chip" id="userChip">
+            <div class="user-avatar" id="userAvatar">?</div>
+            <div><div id="userName" style="line-height:1.2">—</div><div class="user-role" id="userRole">—</div></div>
+          </div>
+          <button class="btn-logout" id="logoutBtn">Odhlásit</button>
         </div>
       </div>
     </header>
@@ -239,6 +260,23 @@
     <script>
       const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
       const api = (p) => `${base}${p}`
+      const crmToken = () => localStorage.getItem('crmToken') || ''
+      const apiFetch = (url, opts = {}) => fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) } })
+      // Show user info
+      ;(function(){
+        try {
+          const u = JSON.parse(localStorage.getItem('crmUser') || '{}')
+          const roleMap = { owner: 'Vlastník', manager: 'Manažer', pm: 'Proj. manažer', viewer: 'Zobrazení' }
+          document.getElementById('userName').textContent = u.name || u.email || '—'
+          document.getElementById('userRole').textContent = roleMap[u.role] || u.role || '—'
+          const initials = (u.name || u.email || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+          document.getElementById('userAvatar').textContent = initials
+        } catch {}
+      })()
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser')
+        location.replace('./login.html')
+      })
       const esc = (s) => String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
       async function j(r) { try { return await r.json() } catch { return null } }
       const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ',{day:'2-digit',month:'2-digit',year:'numeric'}) } catch { return '—' } }

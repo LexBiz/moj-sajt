@@ -97,10 +97,68 @@
       .markup-global{padding:12px 16px;border-bottom:1px solid var(--b2);background:rgba(20,201,138,.04)}
       .markup-global-inner{display:flex;align-items:center;gap:10px}
       .markup-value{font-size:22px;font-weight:800;color:var(--green);min-width:52px;text-align:center}
+      .user-chip{display:flex;align-items:center;gap:8px;background:var(--c);border:1px solid var(--b2);border-radius:999px;padding:5px 12px 5px 8px;font-size:12px;font-weight:600}
+      .user-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+      .user-role-txt{font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+      .btn-logout{border:1px solid rgba(232,58,58,.25);background:rgba(232,58,58,.06);color:#F07070;border-radius:999px;padding:5px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+      /* Preview PDF-like table with sub-columns */
+      .preview-wrap{background:#f0f2f5;padding:20px;min-height:calc(100vh - 56px)}
+      .pdf-paper{background:#fff;max-width:1200px;margin:0 auto;padding:28px 32px;box-shadow:0 4px 24px rgba(0,0,0,.12);border-radius:4px;color:#1A1A1A;font-family:'Inter',sans-serif}
+      .pdf-header{margin-bottom:22px;border-bottom:2px solid #1A1A1A;padding-bottom:14px}
+      .pdf-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+      .pdf-logo{height:40px;width:auto;object-fit:contain}
+      .pdf-title{font-size:20px;font-weight:800;color:#1A1A1A;margin-bottom:4px}
+      .pdf-meta-row{font-size:12px;color:#555;margin-bottom:2px}
+      .pdf-meta-row strong{color:#1A1A1A}
+      .pdf-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+      .pdf-info-box{background:#f5f7fa;border:1px solid #D9DEE7;border-radius:4px;padding:8px 10px}
+      .pdf-info-box .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888;margin-bottom:2px}
+      .pdf-info-box .val{font-size:13px;font-weight:600;color:#1A1A1A}
+      /* editable fields in preview */
+      .pdf-editable{border:1px dashed #c0c8d4;border-radius:3px;padding:2px 5px;min-width:40px;outline:none;background:transparent;cursor:text;font:inherit;color:inherit}
+      .pdf-editable:focus{border-color:#1A6AE8;background:rgba(26,106,232,.05)}
+      /* PDF table */
+      .pdf-table-wrap{overflow-x:auto;margin-top:18px}
+      .pdf-table{width:100%;border-collapse:collapse;font-size:11px}
+      .pdf-table th,.pdf-table td{border:1px solid #9CA3AF;padding:5px 6px;vertical-align:middle}
+      .pdf-table thead tr.th1 th{background:#E5E7EB;font-weight:700;font-size:10px;text-align:center}
+      .pdf-table thead tr.th2 th{background:#EFF2F7;font-weight:700;font-size:10px;text-align:center;font-style:italic;color:#555}
+      .pdf-table tbody tr.cat-elektro-row td{background:#B7D7A8;font-weight:700;color:#1E3A16;font-size:11px}
+      .pdf-table tbody tr.cat-stavba-row td{background:#F4B183;font-weight:700;color:#5A210C;font-size:11px}
+      .pdf-table tbody tr.cat-ostatni-row td{background:#D9E2F3;font-weight:700;color:#21324B;font-size:11px}
+      .pdf-table tbody tr.subtotal-row td{background:#F0F4FF;font-weight:700;font-style:italic}
+      .pdf-table td.num{text-align:right;font-family:monospace;font-size:11px}
+      .pdf-table td.prace-bg{background:#D9E1F2}
+      .pdf-table td.mat-bg{background:#C6E0B4}
+      .pdf-table td.total-bg{background:#D9D9D9;font-weight:700}
+      .pdf-table td.cena-prace-bg{background:#BDD7EE}
+      .pdf-table td.cena-mat-bg{background:#F8CBAD}
+      .pdf-totals{margin-top:18px;display:flex;justify-content:flex-end}
+      .pdf-totals-box{border:1px solid #9CA3AF;border-radius:4px;overflow:hidden;min-width:320px}
+      .pdf-tot-row{display:flex;justify-content:space-between;padding:7px 14px;border-top:1px solid #D9DEE7;font-size:13px}
+      .pdf-tot-row:first-child{border-top:none}
+      .pdf-tot-row.final{background:#1A6AE8;color:#fff;font-weight:800;font-size:15px}
+      .pdf-ostatni-box{margin-top:16px;border:1.5px solid #9CA3AF;border-radius:4px;overflow:hidden}
+      .pdf-ostatni-head{background:#D9E2F3;padding:8px 14px;font-weight:700;font-size:12px;color:#21324B}
+      .pdf-footer{margin-top:22px;padding-top:12px;border-top:1px solid #D9DEE7;display:flex;justify-content:space-between;font-size:11px;color:#888}
+      .preview-actions{max-width:1200px;margin:0 auto 14px;display:flex;gap:8px;flex-wrap:wrap}
+      .ostatni-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(217,226,243,.1);border:1px solid var(--b2);border-radius:10px;margin:10px 16px 4px;cursor:pointer}
+      .ostatni-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
+      .ostatni-toggle label{font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
       @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}}
       @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 90px 80px 130px 110px 90px}.item-icon{display:none}.editor{width:100%}.cart-bar{left:10px;right:10px;bottom:10px}}
       @media(max-width:700px){.item{grid-template-columns:1fr}.item-price,.item-qty,.item-total,.item-custom,.item-markup{padding:8px 12px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}.cart-bar{flex-direction:column;align-items:stretch}}
     </style>
+    <script>
+      ;(function(){
+        const tok = localStorage.getItem('crmToken')
+        if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
+        try {
+          const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
+          if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
+        } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
+      })()
+    </script>
   </head>
   <body>
     <header class="header"><div class="header-inner">
@@ -112,6 +170,11 @@
         <button class="btn" id="toggleSheet">📋 Кошик</button>
         <button class="btn" id="buildDocs">⚡ Excel / PDF</button>
         <button class="btn primary" id="saveEstimate">💾 Зберегти</button>
+        <div class="user-chip">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <div><div id="userName" style="line-height:1.2;font-size:12px">—</div><div class="user-role-txt" id="userRole">—</div></div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">↩</button>
       </div>
     </div></header>
     <div class="page">
@@ -134,6 +197,10 @@
             <div class="markup-value" id="globalMarkupDisplay">+0%</div>
             <div style="font-size:11px;color:var(--ink3);line-height:1.5">Застос.<br>до нових</div>
           </div>
+        </div>
+        <div class="ostatni-toggle">
+          <input type="checkbox" id="toggleOstatni" />
+          <label for="toggleOstatni">+ Ostatní práce (остання рамка)</label>
         </div>
         <div class="sidebar-sec" style="padding-top:12px"><input class="input" id="catalogSearch" placeholder="🔍 Шукати позицію..." /></div>
         <div class="sidebar-sec"><div class="sidebar-head">Категорії робіт</div><div id="navItems"></div></div>
@@ -390,115 +457,199 @@
         if (activeMode === 'preview') {
           const t = totals(estimate?.lines || [])
           const pvLines = normalizeEstimateLines(estimate?.lines || [])
-          const pvGroups = groupedEstimate(pvLines)
+          // Separate main lines vs ostatni_naklady
+          const mainLines = pvLines.filter(l => l.sectionType !== 'ostatni_naklady')
+          const ostatniLines = pvLines.filter(l => l.sectionType === 'ostatni_naklady')
+          const pvGroupsMain = groupedEstimate(mainLines)
           const vr = Number(estimate?.vatRate || 21)
-          const pvClientName = esc(estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—')
-          const pvJobNum = esc(job?.internalNumber || estimate?.jobNumberSnapshot || '—')
-          const pvDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
-          const pvTitle = esc(estimate?.title || `Rozpočet ze dne ${pvDate}`)
-          const pvNo = esc(estimate?.estimateNo || '—')
-          const pvPm = esc(estimate?.projectManagerSnapshot || job?.responsiblePerson || '—')
-          const pvAddr = esc(estimate?.customerAddressSnapshot || lead?.brief?.realizationAddress || '—')
-          const pvNote = esc(estimate?.note || '')
-          const catColors = { elektro:'#A9D08E', stavba:'#F4B084', ostatni:'#D9E2F3' }
+          const showOstatni = document.getElementById('toggleOstatni')?.checked || ostatniLines.length > 0
+          // Build main table body with 2-row header
+          const catColors = { elektro:'#B7D7A8', stavba:'#F4B183', ostatni:'#D9E2F3' }
           const catTextColors = { elektro:'#1E3A16', stavba:'#5A210C', ostatni:'#21324B' }
-          const catLabels = { elektro:'ELEKTRO', stavba:'STAVBA', ostatni:'OSTATNÍ' }
-          const pvOrdered = ['elektro','stavba','ostatni'].filter(k => pvGroups.has(k))
+          const catCelkemLabels = { elektro:'Elektrikářské práce celkem', stavba:'Stavební práce celkem', ostatni:'Ostatní celkem' }
+          const pvOrdered = ['elektro','stavba'].filter(k => pvGroupsMain.has(k))
+          // Also include any other categories
+          const allCats = [...pvGroupsMain.keys()]
+          const extraCats = allCats.filter(k => !['elektro','stavba'].includes(k))
+          const orderedAll = [...pvOrdered, ...extraCats]
           let tableBodyHtml = ''
-          for (const cat of pvOrdered) {
-            const pvRows = pvGroups.get(cat) || []
-            const cLabel = catLabels[cat]; const cBg = catColors[cat]; const cFg = catTextColors[cat]
-            tableBodyHtml += `<tr><td colspan="10" style="background:${cBg};color:${cFg};font-weight:700;padding:7px 8px">${cLabel}</td></tr>`
-            let catTotal = 0
+          let rowNum = 1
+          for (const cat of orderedAll) {
+            const pvRows = pvGroupsMain.get(cat) || []
+            if (!pvRows.length) continue
+            const cBg = catColors[cat] || '#E5E7EB'; const cFg = catTextColors[cat] || '#1A1A1A'
+            const catLabel = pvRows[0]?.groupLabel || (cat === 'elektro' ? 'Elektrikářské práce' : cat === 'stavba' ? 'Stavební práce' : cat)
+            tableBodyHtml += `<tr><td colspan="11" style="background:${cBg};color:${cFg};font-weight:700;padding:7px 8px;font-size:11px">${catLabel.toUpperCase()}</td></tr>`
+            let catLaborTotal = 0, catMatTotal = 0, catLineTotal = 0
             for (const line of pvRows) {
-              const lT = line.lineTotal || 0; catTotal += lT
+              const lT = line.lineTotal || 0; const lLab = line.laborTotal || 0; const lMat = line.materialTotal || 0
+              catLaborTotal += lLab; catMatTotal += lMat; catLineTotal += lT
               const matDesc = line.materialDescription || ''
-              tableBodyHtml += `<tr style="border-bottom:1px solid #E5E7EB">
-                <td style="font-size:9px;color:#6B7280;font-family:monospace;padding:5px 6px">${esc(line.lineCode||'')}</td>
-                <td style="text-align:center;font-weight:700;padding:5px 6px">${esc(String(line.positionOrder||''))}</td>
-                <td style="background:#EFF3FA;padding:5px 6px">${esc(line.workDescription||'')}</td>
-                <td style="background:#EDF5E8;padding:5px 6px;color:${matDesc?'#1A1A1A':'#9CA3AF'}">${esc(matDesc||'bez materiálu')}</td>
-                <td style="text-align:center;padding:5px 6px">${esc(String(line.quantity||0))} ${esc(line.unit||'ks')}</td>
-                <td style="text-align:right;background:#E8F1F9;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
-                <td style="text-align:right;background:#E8F1F9;padding:5px 6px">${fmtMoney(line.laborTotal||0)}</td>
-                <td style="text-align:right;background:#FEF1E8;padding:5px 6px">${fmtMoney(line.materialUnitPrice||0)}</td>
-                <td style="text-align:right;background:#FEF1E8;padding:5px 6px">${fmtMoney(line.materialTotal||0)}</td>
-                <td style="text-align:right;background:#EDEDED;font-weight:700;padding:5px 6px">${fmtMoney(lT)}</td>
+              const unitQty = `${String(line.quantity||0)} ${line.unit||'ks'}`
+              tableBodyHtml += `<tr>
+                <td style="font-size:9px;font-family:monospace;padding:5px 6px;color:#555;white-space:nowrap">${esc(line.sourceCatalogCode||line.lineCode||'')}</td>
+                <td style="text-align:center;font-weight:700;padding:5px 6px">${rowNum++}</td>
+                <td style="background:#D9E1F2;padding:5px 6px;min-width:180px"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
+                <td style="background:#C6E0B4;padding:5px 6px;min-width:140px;color:${matDesc?'#1A1A1A':'#9CA3AF'}"><span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(matDesc||'bez materiálu')}</span></td>
+                <td style="text-align:center;padding:5px 6px;white-space:nowrap">${esc(unitQty)}</td>
+                <td style="text-align:right;background:#BDD7EE;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
+                <td style="text-align:right;background:#BDD7EE;padding:5px 6px;font-weight:600">${fmtMoney(lLab)}</td>
+                <td style="text-align:right;background:#F8CBAD;padding:5px 6px">${fmtMoney(line.materialUnitPrice||0)}</td>
+                <td style="text-align:right;background:#F8CBAD;padding:5px 6px;font-weight:600">${fmtMoney(lMat)}</td>
+                <td style="text-align:right;background:#D9D9D9;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
+                <td style="text-align:right;background:#D9D9D9;font-weight:700;padding:5px 6px">${fmtMoney(lT)}</td>
               </tr>`
             }
-            tableBodyHtml += `<tr style="font-weight:800;background:#F3F4F6">
-              <td colspan="9" style="text-align:right;padding:6px 8px">${cLabel} CELKEM</td>
-              <td style="text-align:right;background:#EDEDED;padding:6px 8px">${fmtMoney(catTotal)}</td>
+            tableBodyHtml += `<tr style="background:#F0F0F0">
+              <td colspan="6" style="text-align:right;padding:6px 8px;font-weight:700;font-style:italic;color:#333;font-size:11px">${catCelkemLabels[cat]||catLabel+' celkem'}</td>
+              <td style="text-align:right;background:#BDD7EE;padding:6px 8px;font-weight:800">${fmtMoney(catLaborTotal)}</td>
+              <td style="text-align:right;background:#F8CBAD;padding:6px 8px"></td>
+              <td style="text-align:right;background:#F8CBAD;padding:6px 8px;font-weight:800">${fmtMoney(catMatTotal)}</td>
+              <td style="text-align:right;background:#D9D9D9;padding:6px 8px"></td>
+              <td style="text-align:right;background:#D9D9D9;padding:6px 8px;font-weight:800">${fmtMoney(catLineTotal)}</td>
             </tr>`
           }
-          body.innerHTML = `
-            <div style="background:#fff;color:#1A1A1A;border-radius:16px;padding:28px 32px;margin:16px;box-shadow:0 8px 48px rgba(0,0,0,.45);font-family:'Calibri',Inter,sans-serif;font-size:11px;line-height:1.4">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #374151">
-                <div>
-                  <img src="./logo.jpg" style="height:44px;object-fit:contain;border-radius:8px;display:block;margin-bottom:6px" alt="O&L" />
-                  <div style="font-size:17px;font-weight:800;color:#111827">O&amp;L Master Dom</div>
-                  <div style="font-size:10px;color:#6B7280;margin-top:2px">Elektromontážní a stavební práce</div>
-                </div>
-                <div style="text-align:right">
-                  <div style="font-size:22px;font-weight:900;color:#111827;letter-spacing:-.5px">ROZPOČET</div>
-                  <table style="margin-left:auto;margin-top:8px;border-collapse:collapse;font-size:10px">
-                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Název:</td><td style="font-weight:700">${pvTitle}</td></tr>
-                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Číslo:</td><td>${pvNo}</td></tr>
-                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Datum:</td><td>${pvDate}</td></tr>
-                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Zakázka:</td><td>${pvJobNum}</td></tr>
-                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Verze:</td><td>${esc(String(estimate?.versionNo||1))}</td></tr>
-                  </table>
-                </div>
-              </div>
-              <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:11px;color:#374151;margin-bottom:18px;padding:10px 14px;background:#F9FAFB;border-radius:8px;border:1px solid #E5E7EB">
-                <div><span style="color:#6B7280;font-weight:600">Klient:</span> ${pvClientName}</div>
-                <div><span style="color:#6B7280;font-weight:600">Adresa:</span> ${pvAddr}</div>
-                <div><span style="color:#6B7280;font-weight:600">Projektový manažer:</span> ${pvPm}</div>
-              </div>
-              <div style="overflow-x:auto;margin-bottom:20px">
-                <table style="width:100%;border-collapse:collapse;min-width:800px;font-size:10px">
+          // Ostatní náklady block
+          const showOstatniBlock = showOstatni && ostatniLines.length > 0
+          let ostatniHtml = ''
+          if (showOstatniBlock) {
+            let ostatniTotal = 0
+            ostatniLines.forEach((line, i) => { ostatniTotal += line.lineTotal||0 })
+            ostatniHtml = `
+              <div style="margin-top:16px;border:1.5px solid #9CA3AF;border-radius:4px;overflow:hidden">
+                <div style="background:#D9E2F3;padding:8px 14px;font-weight:700;font-size:12px;color:#21324B">Ostatní rozpočtové náklady</div>
+                <table style="width:100%;border-collapse:collapse;font-size:11px">
                   <thead>
                     <tr>
-                      <th style="width:80px;background:#E5E7EB;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Kód pol.</th>
-                      <th style="width:40px;background:#E5E7EB;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">č.</th>
-                      <th style="background:#D9E1F2;border:1px solid #9CA3AF;padding:7px 6px;font-weight:700;font-size:9px;text-align:left;min-width:160px">Popis práce</th>
-                      <th style="background:#C6E0B4;border:1px solid #9CA3AF;padding:7px 6px;font-weight:700;font-size:9px;text-align:left;min-width:130px">Popis materiálu</th>
-                      <th style="width:78px;background:#E5E7EB;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">MJ/ks</th>
-                      <th style="width:85px;background:#BDD7EE;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Práce MJ</th>
-                      <th style="width:95px;background:#BDD7EE;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Práce celk.</th>
-                      <th style="width:85px;background:#F8CBAD;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Mat. MJ</th>
-                      <th style="width:95px;background:#F8CBAD;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Mat. celk.</th>
-                      <th style="width:100px;background:#D9D9D9;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Celkem</th>
+                      <th style="background:#EEF2FA;border:1px solid #9CA3AF;padding:5px 8px;text-align:left">Popis</th>
+                      <th style="background:#EEF2FA;border:1px solid #9CA3AF;padding:5px 8px;text-align:center;width:80px">MJ</th>
+                      <th style="background:#EEF2FA;border:1px solid #9CA3AF;padding:5px 8px;text-align:right;width:120px">Celkem Kč</th>
                     </tr>
                   </thead>
-                  <tbody>${tableBodyHtml}</tbody>
+                  <tbody>
+                    ${ostatniLines.map(l => `<tr><td style="border:1px solid #D9DEE7;padding:5px 8px">${esc(l.workDescription||l.itemName||'')}</td><td style="border:1px solid #D9DEE7;padding:5px 8px;text-align:center">${esc(l.unit||'ks')}</td><td style="border:1px solid #D9DEE7;padding:5px 8px;text-align:right;font-weight:700">${fmtMoney(l.lineTotal||0)}</td></tr>`).join('')}
+                    <tr style="background:#F0F4FF;font-weight:800"><td colspan="2" style="border:1px solid #9CA3AF;padding:6px 8px;text-align:right">Ostatní náklady celkem</td><td style="border:1px solid #9CA3AF;padding:6px 8px;text-align:right">${fmtMoney(ostatniTotal)}</td></tr>
+                  </tbody>
                 </table>
+              </div>`
+          }
+          const pvDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
+          const pvTitle = estimate?.title || `Rozpočet ze dne ${pvDate}`
+          const pvClientName = estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
+          const pvJobNum = job?.internalNumber || estimate?.jobNumberSnapshot || '—'
+          const pvPm = estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'
+          const pvAddr = estimate?.customerAddressSnapshot || lead?.brief?.realizationAddress || '—'
+          const pvNote = estimate?.note || ''
+          body.innerHTML = `
+            <div class="preview-wrap">
+              <div class="preview-actions">
+                <button id="previewOpenCart" class="btn" style="background:#fff;color:#374151;border-color:#D1D5DB">✏ Upravit pozice</button>
+                <button id="previewBuildBtn" class="btn" style="background:#1D4ED8;color:#fff;border:none">⚡ Excel / PDF</button>
+                <button id="previewSendBtn" class="btn" style="background:#059669;color:#fff;border:none">✉ Odeslat klientovi</button>
+                <button id="previewSaveEdits" class="btn" style="background:#D97706;color:#fff;border:none">💾 Uložit úpravy</button>
+                <span style="font-size:12px;color:#555;padding:8px 4px">← Pole lze kliknout a editovat přímo v náhledu</span>
               </div>
-              <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
-                <div style="border:1px solid #D1D5DB;border-radius:12px;overflow:hidden;min-width:300px">
-                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB"><span>Práce celkem</span><span style="font-weight:700">${fmtMoney(t.labor)}</span></div>
-                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB"><span>Materiál celkem</span><span style="font-weight:700">${fmtMoney(t.material)}</span></div>
-                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB;background:#F9FAFB"><span style="font-weight:600">Mezisoučet</span><span style="font-weight:700">${fmtMoney(t.bezDph)}</span></div>
-                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB"><span>DPH ${vr} %</span><span style="font-weight:700">${fmtMoney(t.dph)}</span></div>
-                  <div style="display:flex;justify-content:space-between;padding:13px 16px;font-size:15px;font-weight:800;background:#1F2937;color:#fff"><span>Celkem s DPH</span><span>${fmtMoney(t.total)}</span></div>
+              <div class="pdf-paper">
+                <!-- HEADER -->
+                <div class="pdf-header">
+                  <div class="pdf-header-top">
+                    <div>
+                      <img src="./logo.jpg" class="pdf-logo" alt="O&L Master Dom" />
+                      <div style="font-size:16px;font-weight:800;margin-top:6px">O&amp;L Master Dom</div>
+                      <div style="font-size:11px;color:#6B7280;margin-top:2px">Elektromontážní a stavební práce</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-size:24px;font-weight:900;color:#111827;letter-spacing:-.5px">ROZPOČET</div>
+                      <div style="margin-top:6px;font-size:12px;color:#555">
+                        <div>Název: <strong contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</strong></div>
+                        <div>Číslo: <strong>${esc(estimate?.estimateNo||'—')}</strong></div>
+                        <div>Datum: <strong contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</strong></div>
+                        <div>Zakázka: <strong>${esc(pvJobNum)}</strong></div>
+                        <div>Verze: <strong contenteditable="true" class="pdf-editable" id="pvVersionEdit">${esc(String(estimate?.versionNo||1))}</strong></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pdf-info-grid" style="margin-top:12px">
+                    <div class="pdf-info-box"><div class="lbl">Klient</div><div class="val" contenteditable="true" id="pvClientEdit">${esc(pvClientName)}</div></div>
+                    <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="val" contenteditable="true" id="pvAddrEdit">${esc(pvAddr)}</div></div>
+                    <div class="pdf-info-box"><div class="lbl">Projektový manažer</div><div class="val" contenteditable="true" id="pvPmEdit">${esc(pvPm)}</div></div>
+                  </div>
                 </div>
-              </div>
-              ${pvNote ? `<div style="font-size:11px;color:#374151;padding:10px 14px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;margin-bottom:16px"><b>Poznámka:</b> ${pvNote}</div>` : ''}
-              <div style="display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:10px;margin-bottom:18px">
-                <span>${pvDate}</span><span>${pvTitle}</span><span>Strana 1 / 1</span>
-              </div>
-              <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid #E5E7EB;padding-top:14px">
-                <button id="previewOpenCart" style="border:1px solid #D1D5DB;border-radius:10px;padding:10px 18px;font:600 13px Inter,sans-serif;cursor:pointer;background:#fff;color:#374151">✏ Upravit pozice</button>
-                <button id="previewBuildBtn" style="border:none;border-radius:10px;padding:10px 18px;font:700 13px Inter,sans-serif;cursor:pointer;background:#1D4ED8;color:#fff">⚡ Generovat Excel / PDF</button>
-                <button id="previewSendBtn" style="border:none;border-radius:10px;padding:10px 18px;font:700 13px Inter,sans-serif;cursor:pointer;background:#059669;color:#fff">✉ Odeslat klientovi</button>
+                <!-- MAIN TABLE with 2-row header -->
+                <div class="pdf-table-wrap">
+                  <table class="pdf-table">
+                    <thead>
+                      <tr class="th1">
+                        <th rowspan="2" style="width:70px">Kategorie</th>
+                        <th rowspan="2" style="width:80px">Kód položky</th>
+                        <th rowspan="2" style="width:40px">č.</th>
+                        <th rowspan="2" style="background:#D9E1F2;min-width:160px;text-align:left">Popis práce</th>
+                        <th rowspan="2" style="background:#C6E0B4;min-width:130px;text-align:left">Popis materiálu</th>
+                        <th rowspan="2" style="width:80px">Množství / MJ</th>
+                        <th colspan="2" style="background:#BDD7EE">Cena práce</th>
+                        <th colspan="2" style="background:#F8CBAD">Cena materiálu</th>
+                        <th colspan="2" style="background:#D9D9D9">Cena práce + materiálu</th>
+                      </tr>
+                      <tr class="th2">
+                        <th style="background:#BDD7EE;width:90px">(mj)</th>
+                        <th style="background:#BDD7EE;width:100px">(celkem)</th>
+                        <th style="background:#F8CBAD;width:90px">(mj)</th>
+                        <th style="background:#F8CBAD;width:100px">(celkem)</th>
+                        <th style="background:#D9D9D9;width:90px">(mj)</th>
+                        <th style="background:#D9D9D9;width:100px">(celkem)</th>
+                      </tr>
+                    </thead>
+                    <tbody>${tableBodyHtml}</tbody>
+                  </table>
+                </div>
+                <!-- OSTATNÍ block -->
+                ${ostatniHtml}
+                <!-- TOTALS -->
+                <div class="pdf-totals">
+                  <div class="pdf-totals-box">
+                    <div class="pdf-tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div>
+                    <div class="pdf-tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div>
+                    <div class="pdf-tot-row" style="background:#F9FAFB;font-weight:700"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div>
+                    <div class="pdf-tot-row"><span>DPH <span contenteditable="true" class="pdf-editable" id="pvVatEdit">${vr}</span> %</span><strong id="pvDphVal">${fmtMoney(t.dph)}</strong></div>
+                    <div class="pdf-tot-row final"><span>Celkem s DPH</span><strong id="pvTotalVal">${fmtMoney(t.total)}</strong></div>
+                  </div>
+                </div>
+                ${pvNote ? `<div style="margin-top:16px;font-size:12px;color:#374151;padding:10px 14px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 4px 4px 0"><b>Poznámka:</b> <span contenteditable="true" class="pdf-editable" id="pvNoteEdit">${esc(pvNote)}</span></div>` : ''}
+                <!-- FOOTER -->
+                <div class="pdf-footer">
+                  <span>${esc(pvDate)}</span>
+                  <span>${esc(pvTitle)}</span>
+                  <span>Strana 1 / 1</span>
+                </div>
               </div>
             </div>
           `
+          // Wire up preview editable save
           document.getElementById('previewOpenCart')?.addEventListener('click', () => { document.getElementById('editorSheet').classList.add('show') })
           document.getElementById('previewBuildBtn')?.addEventListener('click', buildEstimateDocs)
           document.getElementById('previewSendBtn')?.addEventListener('click', () => {
             document.getElementById('sendPopover').classList.add('show')
             const em = document.getElementById('sendEmailBuilder'); if (em && !em.value) em.value = lead?.email || ''
+          })
+          document.getElementById('previewSaveEdits')?.addEventListener('click', () => {
+            if (!estimate) return
+            const g = (id) => (document.getElementById(id)?.textContent || '').trim()
+            estimate.title = g('pvTitleEdit') || estimate.title
+            estimate.estimateDate = g('pvDateEdit') || estimate.estimateDate
+            estimate.versionNo = Number(g('pvVersionEdit') || estimate.versionNo)
+            estimate.clientNameSnapshot = g('pvClientEdit') || estimate.clientNameSnapshot
+            estimate.customerAddressSnapshot = g('pvAddrEdit') || estimate.customerAddressSnapshot
+            estimate.projectManagerSnapshot = g('pvPmEdit') || estimate.projectManagerSnapshot
+            estimate.note = g('pvNoteEdit') || estimate.note
+            estimate.vatRate = Number(g('pvVatEdit') || estimate.vatRate || 21)
+            // Save edits to line descriptions
+            body.querySelectorAll('[data-field][data-lid]').forEach(el => {
+              const lid = el.getAttribute('data-lid')
+              const field = el.getAttribute('data-field')
+              const line = (estimate.lines||[]).find(l => String(l.id||'') === lid)
+              if (line && field) line[field] = (el.textContent||'').trim()
+            })
+            saveEstimate().then(() => alert('Úpravy uloženy')).catch(e => alert('Chyba: '+e))
           })
           document.getElementById('mainTitle').textContent = 'Попередній перегляд документу'
           document.getElementById('mainCount').textContent = `${pvLines.length} позицій · ${fmtMoney(t.total)} · Розмір як в PDF`
@@ -854,6 +1005,24 @@
         document.getElementById('manualUnit').value = 'ks'
         renderAll()
       })
+      // User display + logout
+      ;(function(){
+        try {
+          const u = JSON.parse(localStorage.getItem('crmUser') || '{}')
+          const roleMap = { owner: 'Vlastník', manager: 'Manažer', pm: 'Proj. manažer', viewer: 'Zobrazení' }
+          document.getElementById('userName').textContent = u.name || u.email || '—'
+          document.getElementById('userRole').textContent = roleMap[u.role] || u.role || '—'
+          const initials = (u.name || u.email || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+          document.getElementById('userAvatar').textContent = initials
+        } catch {}
+      })()
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser')
+        location.replace('./login.html')
+      })
+      // Ostatní toggle rerenders preview
+      document.getElementById('toggleOstatni')?.addEventListener('change', () => { if (activeMode === 'preview') renderAll() })
+
       ;(async () => {
         try {
           await loadContext()

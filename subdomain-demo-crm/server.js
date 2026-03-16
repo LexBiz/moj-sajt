@@ -1895,6 +1895,9 @@ function normalizeEstimateLine(input = {}, idx = 0) {
   const laborTotal = roundMoney(quantity * laborUnitPrice)
   const materialTotal = roundMoney(quantity * materialUnitPrice)
   const lineTotal = roundMoney(laborTotal + materialTotal)
+  // Derive sensible groupKey/groupLabel from category when not explicitly provided
+  const defaultGroupKey = category === 'stavba' ? 'stavba' : category === 'ostatni_naklady' ? 'ostatni_naklady' : 'elektro'
+  const defaultGroupLabel = category === 'stavba' ? 'Stavební práce' : category === 'ostatni_naklady' ? 'Ostatní náklady' : 'Elektrikářské práce'
   return {
     id: input.id != null ? Number(input.id) : null,
     catalogItemId: input.catalogItemId != null ? Number(input.catalogItemId) : null,
@@ -1902,8 +1905,8 @@ function normalizeEstimateLine(input = {}, idx = 0) {
     lineCode: input.lineCode ? String(input.lineCode).trim() : null,
     sectionType: category,
     category,
-    groupKey: String(input.groupKey || input.categoryKey || 'other').trim() || 'other',
-    groupLabel: String(input.groupLabel || input.groupKey || 'Ostatní').trim() || 'Ostatní',
+    groupKey: String(input.groupKey || input.categoryKey || defaultGroupKey).trim() || defaultGroupKey,
+    groupLabel: String(input.groupLabel || input.groupKey || defaultGroupLabel).trim() || defaultGroupLabel,
     phaseKey: String(input.phaseKey || 'preparation').trim() || 'preparation',
     categoryKey: String(input.categoryKey || 'general').trim() || 'general',
     itemName: String(input.itemName || input.workDescription || '').trim(),
@@ -2979,18 +2982,25 @@ app.post('/api/auth/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ ok: false, error: 'Missing credentials' })
   let user = null
   if (pool) {
-    const q = await dbQuery('SELECT id, email, role, password_hash FROM crm_users WHERE email = $1 LIMIT 1', [email])
+    const q = await dbQuery('SELECT id, email, role, full_name, password_hash FROM crm_users WHERE email = $1 LIMIT 1', [email])
     user = q.rowCount ? q.rows[0] : null
   } else {
     user = readArrayFile('users').find((x) => String(x.email || '').toLowerCase() === email) || null
   }
-  if (!user) return res.status(401).json({ ok: false, error: 'Invalid credentials' })
+  if (!user) return res.status(401).json({ ok: false, error: 'Neplatné přihlašovací údaje' })
   const valid = await bcrypt.compare(password, String(user.password_hash || user.passwordHash || ''))
-  if (!valid) return res.status(401).json({ ok: false, error: 'Invalid credentials' })
-  const token = jwt.sign({ sub: String(user.id), email: user.email, role: user.role || 'viewer' }, JWT_SECRET, {
-    expiresIn: '8h',
+  if (!valid) return res.status(401).json({ ok: false, error: 'Neplatné přihlašovací údaje' })
+  const fullName = user.full_name || user.fullName || user.email.split('@')[0]
+  const token = jwt.sign({ sub: String(user.id), email: user.email, role: user.role || 'viewer', name: fullName }, JWT_SECRET, {
+    expiresIn: '30d',
   })
-  return res.json({ ok: true, token, user: { email: user.email, role: user.role || 'viewer' } })
+  // Log the login event
+  if (pool) {
+    await dbQuery(`INSERT INTO crm_audit_log (actor_email, action, entity_type, entity_id, data, created_at) VALUES ($1,'login','user',$2,$3,now())`,
+      [user.email, String(user.id), JSON.stringify({ ip: null, role: user.role })]
+    ).catch(() => {})
+  }
+  return res.json({ ok: true, token, user: { id: String(user.id), email: user.email, role: user.role || 'viewer', name: fullName } })
 })
 
 app.get('/api/auth/me', authMiddleware, async (req, res) => {

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O&L Master Dom · Přihlášení</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#020C18;--s:#071626;--c:#0C1E38;--c2:#0F2442;--b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;--blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;--green:#14C98A;--red:#E83A3A;--r:10px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;background-image:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(26,106,232,.18) 0%,transparent 60%)}
+    .box{width:100%;max-width:420px;padding:20px 16px}
+    .brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px}
+    .logo-m{height:52px;width:52px;border-radius:14px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(26,106,232,.35);background:#0B1730}
+    .logo-m img{height:52px;width:auto;max-width:120px;object-fit:contain;display:block}
+    .brand-text{text-align:left}
+    .brand-name{font-size:20px;font-weight:800;letter-spacing:-.4px}
+    .brand-sub{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+    .card{background:var(--s);border:1px solid var(--b2);border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .card-title{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-.4px}
+    .card-sub{font-size:13px;color:var(--ink2);margin-bottom:28px}
+    .field{margin-bottom:18px}
+    .field label{display:block;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+    .field input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:13px 14px;font:inherit;font-size:15px;outline:none;transition:border-color .15s}
+    .field input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
+    .field input::placeholder{color:var(--ink3)}
+    .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+    .role-btn{border:1px solid var(--b2);background:var(--c);color:var(--ink2);border-radius:10px;padding:10px 6px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s}
+    .role-btn:hover{border-color:var(--b2);background:var(--c2)}
+    .role-btn.active{background:rgba(26,106,232,.2);color:var(--blue3);border-color:rgba(61,135,248,.4)}
+    .role-icon{font-size:18px;display:block;margin-bottom:4px}
+    .role-name{display:block;font-size:11px}
+    .submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;border-radius:var(--r);font:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s;box-shadow:0 4px 18px rgba(26,106,232,.4)}
+    .submit-btn:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF);transform:translateY(-1px)}
+    .submit-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .err-msg{margin-top:14px;padding:12px 14px;background:rgba(232,58,58,.1);border:1px solid rgba(232,58,58,.25);border-radius:var(--r);color:#F07070;font-size:13px;display:none}
+    .err-msg.show{display:block}
+    .hints{margin-top:20px;padding:14px;background:rgba(26,106,232,.06);border:1px solid rgba(61,135,248,.14);border-radius:var(--r);font-size:12px;color:var(--ink2);line-height:1.7}
+    .hints strong{color:var(--ink)}
+    .hint-row{display:flex;justify-content:space-between;gap:8px}
+    .hint-pw{font-family:monospace;background:rgba(255,255,255,.07);padding:2px 7px;border-radius:5px;color:var(--blue3)}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="brand">
+      <div class="logo-m"><img src="./logo.jpg" alt="O&L Master Dom" /></div>
+      <div class="brand-text">
+        <div class="brand-name">O&amp;L Master Dom</div>
+        <div class="brand-sub">Enterprise CRM</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Přihlášení</div>
+      <div class="card-sub">Přihlaste se svým pracovním účtem</div>
+
+      <div class="roles" id="roleHints">
+        <button class="role-btn" data-email="owner@ol-masterdom.cz" data-pw="owner123">
+          <span class="role-icon">👑</span>
+          <span class="role-name">Vlastník</span>
+        </button>
+        <button class="role-btn" data-email="manager@ol-masterdom.cz" data-pw="manager123">
+          <span class="role-icon">📋</span>
+          <span class="role-name">Manažer</span>
+        </button>
+        <button class="role-btn" data-email="pm@ol-masterdom.cz" data-pw="pm123">
+          <span class="role-icon">🔧</span>
+          <span class="role-name">Proj. manažer</span>
+        </button>
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="email@ol-masterdom.cz" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>Heslo</label>
+        <input type="password" id="loginPassword" placeholder="Vaše heslo" autocomplete="current-password" />
+      </div>
+
+      <button class="submit-btn" id="loginBtn">Přihlásit se</button>
+      <div class="err-msg" id="errMsg"></div>
+
+      <div class="hints">
+        <strong>Přihlašovací údaje:</strong><br>
+        <div class="hint-row"><span>👑 Vlastník</span><span class="hint-pw">owner123</span></div>
+        <div class="hint-row"><span>📋 Manažer</span><span class="hint-pw">manager123</span></div>
+        <div class="hint-row"><span>🔧 Proj. manažer</span><span class="hint-pw">pm123</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+
+    // If already logged in, redirect
+    const tok = localStorage.getItem('crmToken')
+    if (tok) {
+      const redir = new URLSearchParams(location.search).get('next') || './index.html'
+      location.replace(redir)
+    }
+
+    document.querySelectorAll('.role-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'))
+        btn.classList.add('active')
+        document.getElementById('loginEmail').value = btn.getAttribute('data-email')
+        document.getElementById('loginPassword').value = btn.getAttribute('data-pw')
+      })
+    })
+
+    document.getElementById('loginPassword').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('loginBtn').click()
+    })
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('loginEmail').value.trim()
+      const password = document.getElementById('loginPassword').value
+      const err = document.getElementById('errMsg')
+      const btn = document.getElementById('loginBtn')
+      err.classList.remove('show')
+      if (!email || !password) { err.textContent = 'Vyplňte email a heslo'; err.classList.add('show'); return }
+      btn.disabled = true; btn.textContent = 'Přihlašuji...'
+      try {
+        const r = await fetch(base + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        })
+        const d = await r.json()
+        if (!r.ok || !d.ok) {
+          err.textContent = d.error || 'Neplatné přihlašovací údaje'
+          err.classList.add('show')
+          btn.disabled = false; btn.textContent = 'Přihlásit se'
+          return
+        }
+        localStorage.setItem('crmToken', d.token)
+        localStorage.setItem('crmUser', JSON.stringify(d.user))
+        const next = new URLSearchParams(location.search).get('next') || './index.html'
+        location.replace(next)
+      } catch {
+        err.textContent = 'Chyba sítě. Zkuste znovu.'
+        err.classList.add('show')
+        btn.disabled = false; btn.textContent = 'Přihlásit se'
+      }
+    })
+  </script>
+</body>
+</html>

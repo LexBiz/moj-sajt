@@ -121,6 +121,16 @@
       .addr-item:last-child { border-bottom: none; }
       .addr-item:hover { background: rgba(68,144,238,.12); }
     </style>
+    <script>
+      ;(function(){
+        const tok = localStorage.getItem('crmToken')
+        if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
+        try {
+          const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
+          if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
+        } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
+      })()
+    </script>
   </head>
   <body>
     <div class="wrap">
