@@ -1111,15 +1111,26 @@
 
     // ── INIT ──
     ;(async () => {
+      // Catalog always loads — regardless of job/lead context
+      loadCatalog().catch(e => {
+        document.getElementById('catList').innerHTML = `<div class="cat-empty">Помилка завантаження каталогу.<br>${esc(String(e?.message||e))}</div>`
+      })
+
+      // Context + estimate loading (requires jobId or leadId)
       try {
         await loadContext()
         await ensureEstimate()
         estimate.lines = normalizeLines(estimate.lines || [])
         renderAll()
-        await loadCatalog()
       } catch (e) {
-        document.getElementById('ctxSub').textContent = 'Помилка: ' + String(e?.message || e)
-        document.getElementById('catList').innerHTML = `<div class="cat-empty">Помилка завантаження.<br>${esc(String(e?.message||e))}<br><br><a class="btn primary" href="./index.html" style="margin:0 auto">← Повернутись</a></div>`
+        const msg = String(e?.message || e)
+        document.getElementById('ctxSub').textContent = '⚠ ' + msg
+        document.getElementById('ctxTitle').textContent = 'Перегляд каталогу'
+        // Don't block catalog — just disable save/preview/generate buttons
+        document.getElementById('btnSave').disabled = true
+        document.getElementById('btnSave').title = 'Відкрийте з картки замовлення'
+        document.getElementById('btnGenerate').disabled = true
+        document.getElementById('btnPreview').disabled = true
       }
     })()
   </script>
