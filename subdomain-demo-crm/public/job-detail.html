@@ -165,6 +165,11 @@
       const jobId = Number(params.get('jobId') || 0)
       const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
       const api = (p) => `${base}${p}`
+      const crmToken = () => localStorage.getItem('crmToken') || ''
+      const apiFetch = (url, opts = {}) => {
+        const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
+        return fetch(url, { ...opts, headers: h })
+      }
       const esc = (s) => String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
       async function j(r) { try { return await r.json() } catch { return null } }
       const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ',{day:'2-digit',month:'2-digit',year:'numeric'}) } catch { return '—' } }
@@ -324,13 +329,13 @@
         document.getElementById('saveJobNum')?.addEventListener('click', async () => {
           const newNum = document.getElementById('editJobNum').value.trim()
           if (!newNum) return
-          const r = await fetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ internalNumber: newNum }) })
+          const r = await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', , body: JSON.stringify({ internalNumber: newNum }) })
           if (r.ok) { document.getElementById('jobNum').textContent = newNum; alert('Číslo zakázky uloženo: ' + newNum) }
           else alert('Nepodařilo se uložit číslo zakázky')
         })
         document.getElementById('fetchAresBtn')?.addEventListener('click', async () => {
           const ico = c.ico; if (!ico) return
-          const r = await fetch(api(`/api/ares?ico=${encodeURIComponent(ico)}`))
+          const r = await apiFetch(api(`/api/ares?ico=${encodeURIComponent(ico)}`))
           const d = await j(r)
           if (!r.ok || !d?.ok) { alert('ARES: firma nenalezena nebo služba nedostupná'); return }
           alert(`ARES: ${d.companyName || ''}\n${d.address || ''}`)
@@ -365,7 +370,7 @@
         document.getElementById('addNote')?.addEventListener('click', async () => {
           const title = document.getElementById('noteTitle').value.trim()
           if (!title) return
-          await fetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventType: 'note', title, description: document.getElementById('noteDesc').value.trim() }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', , body: JSON.stringify({ eventType: 'note', title, description: document.getElementById('noteDesc').value.trim() }) })
           document.getElementById('noteTitle').value = ''; document.getElementById('noteDesc').value = ''
           loadJob()
         })
@@ -377,7 +382,7 @@
 
       async function ensureEstimateForJob() {
         if (activeEstimate?.id) return activeEstimate
-        const r = await fetch(api(`/api/crm/estimates/from-job`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId }) })
+        const r = await apiFetch(api(`/api/crm/estimates/from-job`), { method: 'POST', , body: JSON.stringify({ jobId }) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze vytvořit rozpočet')
         activeEstimate = d.estimate
@@ -386,7 +391,7 @@
 
       async function buildEstimateDocs() {
         const estimate = await ensureEstimateForJob()
-        const r = await fetch(api(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+        const r = await apiFetch(api(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', , body: JSON.stringify({}) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze vygenerovat dokumenty')
         alert(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel byl vygenerován, ale PDF se nepodařilo vytvořit')
@@ -398,9 +403,9 @@
         const email = (document.getElementById('estimateEmail')?.value || data?.customer?.email || '').trim()
         const subject = (document.getElementById('estimateSubject')?.value || '').trim()
         const text = (document.getElementById('estimateText')?.value || '').trim()
-        const r = await fetch(api(`/api/crm/estimates/${estimate.id}/send-to-client`), {
+        const r = await apiFetch(api(`/api/crm/estimates/${estimate.id}/send-to-client`), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          ,
           body: JSON.stringify({ email, subject, text }),
         })
         const d = await j(r)
@@ -489,7 +494,7 @@
         document.getElementById('addDoc')?.addEventListener('click', async () => {
           const fn = document.getElementById('docName').value.trim()
           if (!fn) return
-          await fetch(api(`/api/crm/jobs/${jobId}/documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileName: fn, documentType: document.getElementById('docType').value, status: document.getElementById('docStatus').value, signatureMode: document.getElementById('docSignatureMode').value, uploadedBy: 'internal_sales', source: 'manual', isFinal: document.getElementById('docStatus').value === 'signed_both', sentAt: document.getElementById('docStatus').value === 'sent' ? new Date().toISOString() : null, signedAt: ['signed_client','signed_both'].includes(document.getElementById('docStatus').value) ? new Date().toISOString() : null }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/documents`), { method: 'POST', , body: JSON.stringify({ fileName: fn, documentType: document.getElementById('docType').value, status: document.getElementById('docStatus').value, signatureMode: document.getElementById('docSignatureMode').value, uploadedBy: 'internal_sales', source: 'manual', isFinal: document.getElementById('docStatus').value === 'signed_both', sentAt: document.getElementById('docStatus').value === 'sent' ? new Date().toISOString() : null, signedAt: ['signed_client','signed_both'].includes(document.getElementById('docStatus').value) ? new Date().toISOString() : null }) })
           document.getElementById('docName').value = ''; loadJob()
         })
         document.getElementById('buildEstimateDocs')?.addEventListener('click', async () => {
@@ -535,11 +540,11 @@
           const depositAmount = Number(document.getElementById('finDeposit').value || 0)
           const costs = Number(document.getElementById('finCosts').value || 0)
           const profit = totalPrice - costs
-          await fetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ totalPrice, depositAmount, costs, profit }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', , body: JSON.stringify({ totalPrice, depositAmount, costs, profit }) })
           loadJob()
         })
         document.getElementById('addInv')?.addEventListener('click', async () => {
-          await fetch(api(`/api/crm/jobs/${jobId}/invoices`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoiceType: document.getElementById('invType').value, amount: Number(document.getElementById('invAmount').value || 0), invoiceNumber: document.getElementById('invNumber').value.trim(), status: 'issued', issuedAt: new Date().toISOString() }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/invoices`), { method: 'POST', , body: JSON.stringify({ invoiceType: document.getElementById('invType').value, amount: Number(document.getElementById('invAmount').value || 0), invoiceNumber: document.getElementById('invNumber').value.trim(), status: 'issued', issuedAt: new Date().toISOString() }) })
           loadJob()
         })
       }
@@ -578,7 +583,7 @@
         `
         el.querySelectorAll('[data-rstatus]').forEach(btn => {
           btn.addEventListener('click', async () => {
-            await fetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ realizationStatus: btn.getAttribute('data-rstatus') }) })
+            await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', , body: JSON.stringify({ realizationStatus: btn.getAttribute('data-rstatus') }) })
             loadJob()
           })
         })
@@ -586,14 +591,14 @@
           btn.addEventListener('click', async () => {
             const tid = Number(btn.getAttribute('data-task'))
             const isDone = btn.classList.contains('done')
-            await fetch(api(`/api/crm/jobs/${jobId}/tasks/${tid}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: isDone ? 'pending' : 'done', completedAt: isDone ? null : new Date().toISOString() }) })
+            await apiFetch(api(`/api/crm/jobs/${jobId}/tasks/${tid}`), { method: 'PATCH', , body: JSON.stringify({ status: isDone ? 'pending' : 'done', completedAt: isDone ? null : new Date().toISOString() }) })
             loadJob()
           })
         })
         document.getElementById('addTask')?.addEventListener('click', async () => {
           const title = document.getElementById('taskTitle').value.trim()
           if (!title) return
-          await fetch(api(`/api/crm/jobs/${jobId}/tasks`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, taskType: document.getElementById('taskType').value, priority: document.getElementById('taskPriority').value }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/tasks`), { method: 'POST', , body: JSON.stringify({ title, taskType: document.getElementById('taskType').value, priority: document.getElementById('taskPriority').value }) })
           document.getElementById('taskTitle').value = ''; loadJob()
         })
       }
@@ -601,8 +606,8 @@
       async function loadJob() {
         if (!jobId) { document.getElementById('jobTitle').textContent = 'jobId chybí'; return }
         const [r, er] = await Promise.all([
-          fetch(api(`/api/crm/jobs/${jobId}`)),
-          fetch(api(`/api/crm/estimates?jobId=${jobId}`)),
+          apiFetch(api(`/api/crm/jobs/${jobId}`)),
+          apiFetch(api(`/api/crm/estimates?jobId=${jobId}`)),
         ])
         const d = await j(r)
         const ed = await j(er)
@@ -627,7 +632,7 @@
 
       document.getElementById('moveBtn').addEventListener('click', async () => {
         const stage = document.getElementById('moveStage').value
-        const r = await fetch(api(`/api/crm/jobs/${jobId}/move`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage }) })
+        const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), { method: 'POST', , body: JSON.stringify({ stage }) })
         const d = await j(r)
         if (r.ok && d?.ok) { alert((UI_TEXT[uiLang] || UI_TEXT.cs).moved); loadJob() }
         else alert(d?.error || (UI_TEXT[uiLang] || UI_TEXT.cs).moveError)

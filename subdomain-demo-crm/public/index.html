@@ -475,15 +475,18 @@
         renderRegistry(d)
       }
       async function loadPipeline() {
-        const r = await fetch(api('/api/crm/pipeline'))
+        const r = await apiFetch(api('/api/crm/pipeline'))
         const d = await j(r)
-        if (!r.ok || !d?.ok) { document.getElementById('pipeBoard').innerHTML = '<div class="empty">Chyba načítání pipeline</div>'; return }
+        if (!r.ok || !d?.ok) {
+          if (r.status === 401) { localStorage.removeItem('crmToken'); location.replace('./login.html'); return }
+          document.getElementById('pipeBoard').innerHTML = '<div class="empty">Chyba načítání pipeline</div>'; return
+        }
         lastPipelineData = d
         renderPipeline(d)
       }
 
       async function loadProblems() {
-        const r = await fetch(api('/api/crm/problems'))
+        const r = await apiFetch(api('/api/crm/problems'))
         const d = await j(r)
         if (!r.ok || !d?.ok) { document.getElementById('probBody').innerHTML = '<div class="empty">Chyba načítání</div>'; return }
         const { problems, grouped, customers } = d
@@ -527,7 +530,7 @@
         const body = { lang: 'cz', name: document.getElementById('fName').value.trim(), phone: document.getElementById('fPhone').value.trim(), email: document.getElementById('fEmail').value.trim(), serviceType: document.getElementById('fType').value, comment: document.getElementById('fComment').value.trim() }
         const btn = document.getElementById('submitLead'); const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = 'Odesílám...'
         try {
-          const r = await fetch(api('/api/leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          const r = await apiFetch(api('/api/leads'), { method: 'POST', body: JSON.stringify(body) })
           const d = await j(r); btn.disabled = false; btn.innerHTML = orig
           if (!r.ok || !d?.ok) { msg.className = 'msg err'; msg.textContent = d?.error || 'Chyba'; return }
           msg.className = 'msg ok'; msg.textContent = `Poptávka vytvořena. Zakázka: ${d.job?.internalNumber || '—'}`

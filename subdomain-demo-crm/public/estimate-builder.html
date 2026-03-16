@@ -330,6 +330,11 @@
       const estimateIdFromUrl = Number(params.get('estimateId') || 0)
       const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
       const apiUrl = (p) => `${base}${p}`
+      const crmToken = () => localStorage.getItem('crmToken') || ''
+      const apiFetch = (url, opts = {}) => {
+        const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
+        return fetch(url, { ...opts, headers: h })
+      }
       const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
       const fmtMoney = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`
       const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' }) } catch { return '—' } }
@@ -755,12 +760,12 @@
       }
       async function loadContext() {
         if (Number.isFinite(jobId) && jobId > 0) {
-          const jr = await fetch(apiUrl(`/api/crm/jobs/${jobId}`))
+          const jr = await apiFetch(apiUrl(`/api/crm/jobs/${jobId}`))
           const jd = await json(jr)
           if (!jr.ok || !jd?.ok) throw new Error('job_failed')
           job = jd.job
           if (job?.leadId) {
-            const lr = await fetch(apiUrl(`/api/leads/${job.leadId}`))
+            const lr = await apiFetch(apiUrl(`/api/leads/${job.leadId}`))
             const ld = await json(lr)
             if (lr.ok && ld?.ok) lead = ld.lead
           }
@@ -768,11 +773,11 @@
           return
         }
         if (Number.isFinite(leadId) && leadId > 0) {
-          const lr = await fetch(apiUrl(`/api/leads/${leadId}`))
+          const lr = await apiFetch(apiUrl(`/api/leads/${leadId}`))
           const ld = await json(lr)
           if (!lr.ok || !ld?.ok) throw new Error('lead_failed')
           lead = ld.lead
-          const jr = await fetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
+          const jr = await apiFetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
           const jd = await json(jr)
           if (jr.ok && jd?.ok && jd.jobs?.length) job = jd.jobs[0]
           document.getElementById('backLink').href = job ? `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}` : './index.html'
@@ -782,25 +787,25 @@
       }
       async function ensureEstimate() {
         if (estimateIdFromUrl) {
-          const r = await fetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
+          const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
           const d = await json(r)
           if (r.ok && d?.ok) { estimate = d.estimate; return }
         }
         if (job?.id) {
-          const ex = await fetch(apiUrl(`/api/crm/estimates?jobId=${encodeURIComponent(String(job.id))}`))
+          const ex = await apiFetch(apiUrl(`/api/crm/estimates?jobId=${encodeURIComponent(String(job.id))}`))
           const dx = await json(ex)
           if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
-          const cr = await fetch(apiUrl('/api/crm/estimates/from-job'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: job.id }) })
+          const cr = await apiFetch(apiUrl('/api/crm/estimates/from-job'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: job.id }) })
           const cd = await json(cr)
           if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'estimate_create_failed')
           estimate = cd.estimate
           return
         }
         if (lead?.id) {
-          const ex = await fetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(lead.id))}`))
+          const ex = await apiFetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(lead.id))}`))
           const dx = await json(ex)
           if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
-          const cr = await fetch(apiUrl('/api/crm/estimates/from-lead'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
+          const cr = await apiFetch(apiUrl('/api/crm/estimates/from-lead'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
           const cd = await json(cr)
           if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'estimate_create_failed')
           estimate = cd.estimate
@@ -815,7 +820,7 @@
         if (trade) p.set('tradeType', trade)
         if (search) p.set('search', search)
         p.set('itemKind', catalogItemKind())
-        const r = await fetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
+        const r = await apiFetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
         const d = await json(r)
         catalog = (r.ok && d?.ok) ? (d.items || []) : []
         const groups = groupedCatalog(catalog)
@@ -843,7 +848,7 @@
           vatRate: estimate.vatRate || 21,
           lines: estimate.lines,
         }
-        const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         const d = await json(r)
         if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze uložit rozpočet'); return }
         estimate = d.estimate
@@ -859,7 +864,7 @@
         if (barBtn) { barBtn.disabled = true; barBtn.textContent = '...' }
         try {
           await saveEstimate()
-          const r = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+          const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
           const d = await json(r)
           if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze vygenerovat dokumenty'); return }
           const xlsxUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)
@@ -894,13 +899,13 @@
         btn.disabled = true; btn.textContent = '...'
         try {
           await saveEstimate()
-          const r1 = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+          const r1 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
           const d1 = await json(r1)
           if (!r1.ok || !d1?.ok) throw new Error(d1?.error || 'Nelze vygenerovat PDF')
           const xlsxEl = document.getElementById('xlsxLink'), pdfEl = document.getElementById('pdfLink')
           if (xlsxEl) { xlsxEl.href = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`); xlsxEl.style.display = 'inline' }
           if (pdfEl) { pdfEl.href = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`); pdfEl.style.display = 'inline' }
-          const r2 = await fetch(apiUrl(`/api/crm/estimates/${estimate.id}/send-to-client`), {
+          const r2 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/send-to-client`), {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, subject: `Rozpočet ${estimate.estimateNo || ''}`, text: `Dobrý den,\nv příloze zasíláme rozpočet k zakázce ${job?.internalNumber || '—'}.\n\nS pozdravem,\nO&L Master Dom` })
           })
@@ -947,7 +952,7 @@
         if (!estimate) return
         estimate.status = next
         updateStatusBadge()
-        await fetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: next }) }).catch(() => {})
+        await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: next }) }).catch(() => {})
       })
       document.addEventListener('click', (e) => {
         if (!e.target.closest('#sendPopover') && !e.target.closest('#sendToggleBtn')) {
@@ -973,7 +978,7 @@
           metadata: { itemKind: catalogItemKind() },
         }
         if (!payload.itemName) return
-        const r = await fetch(apiUrl('/api/crm/catalog/items'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const r = await apiFetch(apiUrl('/api/crm/catalog/items'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         const d = await json(r)
         if (!r.ok || !d?.ok) { alert(d?.error || 'Не вдалося додати позицію'); return }
         document.getElementById('newItemCode').value = ''
