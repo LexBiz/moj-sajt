@@ -1003,31 +1003,35 @@
       location.replace('./login.html')
     })
 
-    // ── MATERIAL MODAL ──
-    let materialCache = null
+    // ── MATERIAL MODAL (server-side search, 510k+ items) ──
     let matModalPos = null
     let matSelected = null
+    let matSearchTimer = null
+    let matResultsCache = []  // current search results
 
     function closeMatModal() {
       document.getElementById('matModal').style.display = 'none'
       matModalPos = null
       matSelected = null
+      matResultsCache = []
+      clearTimeout(matSearchTimer)
     }
 
-    function renderMatResults(q) {
-      const items = (materialCache || []).filter(it => {
-        if (!q) return true
-        const ql = q.toLowerCase()
-        return (it.itemName||'').toLowerCase().includes(ql) || (it.sourceCode||'').toLowerCase().includes(ql)
-      })
+    function renderMatResults(items, q, loading) {
       const el = document.getElementById('matResults')
-      if (!items.length) {
-        el.innerHTML = materialCache === null
-          ? '<div class="mat-modal-empty">Завантаження...</div>'
-          : `<div class="mat-modal-empty">${q ? `Nic nenalezeno pro „<b>${esc(q)}</b>"` : 'Katalog materiálů je prázdný.<br>Nahrajte ceník přes <a href="./catalog-import.html" target="_blank" style="color:var(--blue3)">Správu katalogu</a>.'}</div>`
+      if (loading) {
+        el.innerHTML = '<div class="mat-modal-empty">🔍 Hledám...</div>'
         return
       }
-      el.innerHTML = items.slice(0, 80).map(it => `
+      if (!q || q.length < 2) {
+        el.innerHTML = '<div class="mat-modal-empty">Zadejte alespoň 2 znaky pro hledání materiálu.<br><small style="color:var(--ink3)">V katalogu je 510 000+ položek.</small></div>'
+        return
+      }
+      if (!items.length) {
+        el.innerHTML = `<div class="mat-modal-empty">Nic nenalezeno pro „<b>${esc(q)}</b>".<br><a href="./catalog-import.html" target="_blank" style="color:var(--blue3)">Přidat materiál do katalogu →</a></div>`
+        return
+      }
+      el.innerHTML = items.map(it => `
         <div class="mat-item${matSelected?.id === it.id ? ' selected':''}" data-mat-pick="${it.id}">
           <div>
             <div class="mat-item-name">${esc(it.itemName)}</div>
@@ -1041,31 +1045,35 @@
       el.querySelectorAll('[data-mat-pick]').forEach(el2 => {
         el2.addEventListener('click', () => {
           const id = Number(el2.getAttribute('data-mat-pick'))
-          matSelected = (materialCache||[]).find(x => x.id === id) || null
+          matSelected = matResultsCache.find(x => x.id === id) || null
           document.getElementById('matConfirmBtn').disabled = !matSelected
-          renderMatResults(document.getElementById('matSearchInput').value.trim())
+          renderMatResults(matResultsCache, document.getElementById('matSearchInput').value.trim(), false)
         })
       })
     }
 
-    async function openMatModal(pos) {
+    async function doMatSearch(q) {
+      if (!q || q.length < 2) { renderMatResults([], q, false); return }
+      renderMatResults([], q, true)
+      try {
+        const r = await apiFetch(apiUrl(`/api/crm/catalog/items?itemKind=material&search=${encodeURIComponent(q)}&limit=40`))
+        const d = await jParse(r)
+        matResultsCache = (r.ok && d?.ok) ? (d.items || []) : []
+      } catch { matResultsCache = [] }
+      renderMatResults(matResultsCache, q, false)
+    }
+
+    function openMatModal(pos) {
       matModalPos = pos
       matSelected = null
+      matResultsCache = []
       document.getElementById('matModal').style.display = ''
       document.getElementById('matConfirmBtn').disabled = true
       document.getElementById('matSearchInput').value = ''
       const line = estimate?.lines?.find(x => x.positionOrder === pos)
       document.getElementById('matModalForLine').textContent = line ? (line.workDescription || line.itemName || '') : ''
-      renderMatResults('')
-      if (!materialCache) {
-        try {
-          const r = await apiFetch(apiUrl('/api/crm/catalog/items?itemKind=material&limit=500'))
-          const d = await jParse(r)
-          materialCache = (r.ok && d?.ok) ? (d.items || []) : []
-        } catch { materialCache = [] }
-      }
-      renderMatResults('')
-      document.getElementById('matSearchInput').focus()
+      renderMatResults([], '', false)
+      setTimeout(() => document.getElementById('matSearchInput').focus(), 50)
     }
 
     document.getElementById('matModalBg').addEventListener('click', e => {
@@ -1092,7 +1100,12 @@
       closeMatModal()
     })
     document.getElementById('matSearchInput').addEventListener('input', e => {
-      renderMatResults(e.target.value.trim())
+      const q = e.target.value.trim()
+      clearTimeout(matSearchTimer)
+      matSearchTimer = setTimeout(() => doMatSearch(q), 300)
+    })
+    document.getElementById('matSearchInput').addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeMatModal()
     })
 
     // ── INIT ──
