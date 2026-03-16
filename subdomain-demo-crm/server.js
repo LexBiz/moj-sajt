@@ -261,7 +261,13 @@ function authMiddleware(req, res, next) {
   }
 }
 function roleGuard(roles) {
+  // 'owner' has access to everything; expand viewer/admin aliases
   const allowed = new Set(roles)
+  allowed.add('owner') // owner always has full access
+  // treat 'admin' same as 'owner'
+  if (allowed.has('admin')) allowed.add('owner')
+  // treat 'pm' as viewer by default (read access)
+  if (allowed.has('viewer')) allowed.add('pm')
   return (req, res, next) => {
     if (!REQUIRE_AUTH) return next()
     if (!req.auth || !allowed.has(req.auth.role)) {
@@ -3982,7 +3988,7 @@ app.post('/api/crm/fakturoid/invoices/create-and-send', authMiddleware, roleGuar
    ZAKAZKA PIPELINE API ROUTES
    ══════════════════════════════════════════════════════════════════ */
 
-app.get('/api/crm/pipeline', async (_req, res) => {
+app.get('/api/crm/pipeline', authMiddleware, roleGuard(['admin', 'manager', 'viewer', 'pm', 'owner']), async (_req, res) => {
   const jobs = await listJobs()
   const enriched = jobs.map(enrichJob)
   const byStage = {}
