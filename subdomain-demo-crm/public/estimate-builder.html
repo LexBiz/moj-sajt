@@ -47,11 +47,16 @@
     .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
     .btn-logout{border:1px solid rgba(232,58,58,.25);background:rgba(232,58,58,.06);color:#F07070;border-radius:999px;padding:5px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 
-    /* LAYOUT */
-    .layout{position:fixed;top:56px;left:0;right:0;bottom:0;display:grid;grid-template-columns:1fr 380px}
+    /* LAYOUT — catalog takes full screen */
+    .layout{position:fixed;top:56px;left:0;right:0;bottom:0}
+    .cat-panel{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
 
-    /* LEFT: CATALOG */
-    .cat-panel{display:flex;flex-direction:column;border-right:1px solid var(--b2);overflow:hidden}
+    /* CART DRAWER */
+    .drawer-backdrop{position:fixed;inset:0;top:56px;background:rgba(0,0,0,.45);z-index:79;display:none;cursor:pointer}
+    .drawer-backdrop.show{display:block}
+    .cart-drawer{position:fixed;top:56px;bottom:0;right:0;width:500px;max-width:calc(100vw - 40px);background:var(--s);border-left:2px solid var(--b2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:80;box-shadow:-12px 0 60px rgba(0,0,0,.55)}
+    .cart-drawer.open{transform:translateX(0)}
+    .cart-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;background:var(--green);color:#fff;font-size:11px;font-weight:800;padding:0 5px;margin-left:4px}
     .cat-search{padding:12px 16px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95);flex-shrink:0;display:flex;gap:10px}
     .cat-search input{flex:1;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:10px 14px;font:inherit;font-size:14px;outline:none}
     .cat-search input:focus{border-color:var(--blue);background:var(--c2)}
@@ -81,8 +86,7 @@
     .q-val.has{color:var(--green)}
     .cat-empty{padding:48px 24px;text-align:center;color:var(--ink3);font-size:14px}
 
-    /* RIGHT: CART */
-    .cart-panel{display:flex;flex-direction:column;background:var(--s);overflow:hidden}
+    /* (cart is now in a drawer) */
     .cart-head{padding:14px 18px;border-bottom:1px solid var(--b2);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;background:rgba(7,22,38,.95)}
     .cart-head-title{font-size:16px;font-weight:800}
     .cart-head-count{font-size:12px;color:var(--ink2)}
@@ -147,7 +151,7 @@
     .ostatni-add input::placeholder{color:var(--ink3)}
     .ostatni-add .amt{width:90px;text-align:right}
 
-    @media(max-width:900px){.layout{grid-template-columns:1fr}.cart-panel{display:none}}
+    @media(max-width:600px){.cart-drawer{width:100%;max-width:100%}}
   </style>
 </head>
 <body>
@@ -165,7 +169,8 @@
       <a href="./index.html" id="backLink" class="btn">← Pipeline</a>
       <button id="btnSave" class="btn">💾 Зберегти</button>
       <button id="btnGenerate" class="btn orange">⚡ Excel / PDF</button>
-      <button id="btnPreview" class="btn green">👁 Перегляд</button>
+      <button id="btnPreview" class="btn">👁 Перегляд</button>
+      <button id="cartToggle" class="btn green" style="font-weight:800">🧾 Кошик<span class="cart-badge" id="cartCountBadge">0</span></button>
       <div class="user-chip">
         <div class="user-avatar" id="userAvatar">?</div>
         <div>
@@ -177,9 +182,11 @@
     </div>
   </header>
 
-  <!-- MAIN LAYOUT -->
+  <!-- BACKDROP -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <!-- MAIN LAYOUT: fullscreen catalog -->
   <div class="layout">
-    <!-- LEFT: CATALOG -->
     <div class="cat-panel">
       <div class="cat-search">
         <input id="searchInput" type="search" placeholder="🔍  Hledat pozici v katalogu..." autocomplete="off" />
@@ -199,24 +206,28 @@
         <div class="cat-empty">Načítání katalogu...</div>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT: CART / ESTIMATE -->
-    <div class="cart-panel">
-      <div class="cart-head">
-        <div>
-          <div class="cart-head-title">Kошторис</div>
-          <div class="cart-head-count" id="cartCount">0 položek</div>
-        </div>
+  <!-- CART DRAWER (slide-out from right) -->
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-head">
+      <div>
+        <div class="cart-head-title">🧾 Кошторис</div>
+        <div class="cart-head-count" id="cartCount">0 položek</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
         <button class="btn sm" id="btnAddOstatni" title="Ostatní rozpočtové náklady">+ Ostatní</button>
+        <button class="btn sm" id="drawerClose" style="font-size:16px;padding:6px 10px">✕</button>
       </div>
-      <div class="cart-body" id="cartBody">
-        <div class="cart-empty">Vyberte položky z katalogu vlevo.</div>
-      </div>
-      <div class="cart-footer">
-        <div class="cart-totals" id="cartTotals"></div>
-        <div class="cart-btns">
-          <button class="btn green" id="cartPreviewBtn" style="justify-content:center;font-size:14px;padding:12px">👁 Попередній перегляд</button>
-        </div>
+    </div>
+    <div class="cart-body" id="cartBody">
+      <div class="cart-empty">Vyberte položky z katalogu.</div>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-totals" id="cartTotals"></div>
+      <div class="cart-btns">
+        <button class="btn green" id="cartPreviewBtn" style="justify-content:center;font-size:14px;padding:12px">👁 Попередній перегляд</button>
+        <button class="btn primary" id="cartSaveBtn" style="justify-content:center;font-size:13px;padding:10px">💾 Зберегти кошторис</button>
       </div>
     </div>
   </div>
@@ -265,7 +276,19 @@
     async function jParse(resp) { try { return await resp.json() } catch { return null } }
 
     let lead = null, job = null, estimate = null, catalog = [], customPriceOverrides = new Map()
-    let activeGroup = 'all', searchQ = ''
+    let activeGroup = 'all', searchQ = '', cartOpen = false
+
+    function openCart() {
+      cartOpen = true
+      document.getElementById('cartDrawer').classList.add('open')
+      document.getElementById('drawerBackdrop').classList.add('show')
+    }
+    function closeCart() {
+      cartOpen = false
+      document.getElementById('cartDrawer').classList.remove('open')
+      document.getElementById('drawerBackdrop').classList.remove('show')
+    }
+    function toggleCart() { cartOpen ? closeCart() : openCart() }
 
     // ── LABELS ──
     const NAV_LABELS = { grooves:'Sekání šliců a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zásuvky a vypínače', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
@@ -374,6 +397,9 @@
       }
       estimate.lines = normalizeLines(estimate.lines)
       renderAll()
+      // Flash the cart badge to signal item was added
+      const badge = document.getElementById('cartCountBadge')
+      if (badge) { badge.style.transform = 'scale(1.4)'; setTimeout(() => badge.style.transform = '', 200) }
     }
 
     // ── RENDER CATALOG ──
@@ -443,6 +469,8 @@
       const ostatniLines = lines.filter(l => l.sectionType === 'ostatni_naklady')
 
       document.getElementById('cartCount').textContent = `${lines.length} položek`
+      document.getElementById('cartCountBadge').textContent = lines.length
+      document.getElementById('cartCountBadge').style.background = lines.length > 0 ? 'var(--green)' : 'var(--ink3)'
 
       if (!mainLines.length && !ostatniLines.length) {
         body.innerHTML = '<div class="cart-empty">Vyberte položky z katalogu vlevo.</div>'
@@ -851,10 +879,14 @@
     }
 
     // ── EVENTS ──
+    document.getElementById('cartToggle').addEventListener('click', toggleCart)
+    document.getElementById('drawerClose').addEventListener('click', closeCart)
+    document.getElementById('drawerBackdrop').addEventListener('click', closeCart)
+    document.getElementById('cartSaveBtn').addEventListener('click', saveEstimate)
     document.getElementById('btnSave').addEventListener('click', saveEstimate)
     document.getElementById('btnGenerate').addEventListener('click', buildEstimateDocs)
     document.getElementById('btnPreview').addEventListener('click', renderPreview)
-    document.getElementById('cartPreviewBtn').addEventListener('click', renderPreview)
+    document.getElementById('cartPreviewBtn').addEventListener('click', () => { closeCart(); renderPreview() })
     document.getElementById('pvGenerate').addEventListener('click', buildEstimateDocs)
     document.getElementById('pvSend').addEventListener('click', () => { document.getElementById('sendPopover').style.display='block'; const e=document.getElementById('sendEmail'); if(e&&!e.value) e.value=lead?.email||'' })
     document.getElementById('closePreview').addEventListener('click', () => {

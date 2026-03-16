@@ -491,34 +491,53 @@
         if (!r.ok || !d?.ok) { document.getElementById('probBody').innerHTML = '<div class="empty">Chyba načítání</div>'; return }
         const { problems, grouped, customers } = d
         if (!problems.length) { document.getElementById('probBody').innerHTML = '<div class="empty">Žádné problémy. Vše je v pořádku.</div>'; return }
-        const labels = { bez_odpovedi: 'Bez odpovědi', finance: 'Finance', dokumenty: 'Dokumenty', realizace: 'Realizace', po_terminu: 'Po termínu' }
-        const sections = Object.entries(grouped || {}).filter(([, rows]) => Array.isArray(rows) && rows.length)
-        document.getElementById('probBody').innerHTML = sections.map(([key, rows]) => `
+        const labels = {
+          brzy_start: '⚠️ Termín za méně než 5 dní',
+          ceka_odpoved: '📨 Čekáme na odpověď klienta',
+          bez_odpovedi: '🔇 Klient nereaguje',
+          finance: '💳 Finance',
+          dokumenty: '📄 Dokumenty',
+          realizace: '🔧 Realizace',
+          po_terminu: '🚨 Po termínu'
+        }
+        const sectionColors = {
+          brzy_start: '#E83A3A', ceka_odpoved: '#F59E0B', bez_odpovedi: '#D97706',
+          finance: '#3B82F6', dokumenty: '#8B5CF6', realizace: '#14B8A6', po_terminu: '#EF4444'
+        }
+        const ORDER = ['brzy_start','ceka_odpoved','bez_odpovedi','po_terminu','finance','dokumenty','realizace']
+        const sections = ORDER.map(k => [k, (grouped || {})[k] || []]).filter(([,rows]) => rows.length > 0)
+        document.getElementById('probBody').innerHTML = sections.length ? sections.map(([key, rows]) => `
           <div class="panel" style="padding:0; overflow:hidden; margin-bottom:16px;">
-            <div style="padding:14px 16px; border-bottom:1px solid var(--b); background:var(--s2); font-size:13px; font-weight:700;">${esc(labels[key] || key)} · ${rows.length}</div>
+            <div style="padding:12px 16px; border-bottom:1px solid var(--b); background:rgba(${key==='brzy_start'?'232,58,58':key==='ceka_odpoved'?'245,158,11':key==='po_terminu'?'239,68,68':'26,106,232'},.12); font-size:13px; font-weight:800; color:${sectionColors[key]||'var(--ink)'};">${esc(labels[key] || key)} <span style="opacity:.6;font-weight:600">· ${rows.length} zakázek</span></div>
             <div style="overflow:auto;">
               <table class="prob-table">
                 <thead><tr>
-                  <th>Zakázka</th><th>Klient</th><th>Etapa</th><th>Riziko</th><th>Blokace</th><th>Čekáme na</th><th>Další krok</th>
+                  <th>Zakázka</th><th>Klient</th><th>Etapa</th><th>Čas</th><th>Čekáme na</th><th>Další krok</th>
                 </tr></thead>
                 <tbody>
                   ${rows.map(p => {
                     const c = (customers || {})[p.customerId] || {}
+                    const t = p.timers || {}
+                    let timeStr = '—'
+                    if (key === 'brzy_start') timeStr = t.daysToStart != null ? `Za ${t.daysToStart} dní` : '—'
+                    else if (key === 'ceka_odpoved') timeStr = t.daysSinceOfferSent != null ? `${t.daysSinceOfferSent} dní` : '—'
+                    else if (key === 'bez_odpovedi') timeStr = t.daysWithoutClientReply != null ? `${t.daysWithoutClientReply} dní` : '—'
+                    else if (key === 'po_terminu') timeStr = t.daysOverdue != null ? `+${t.daysOverdue} dní` : '—'
+                    const urgentStyle = (key === 'brzy_start' || key === 'po_terminu') ? 'color:#EF4444;font-weight:800' : 'color:var(--ink2)'
                     return `<tr style="cursor:pointer" data-prob-job="${p.id}">
-                      <td><strong>${esc(p.internalNumber || '')}</strong><br><span style="color:var(--ink2)">${esc(p.title || '')}</span></td>
-                      <td>${esc(c.name || '—')}</td>
-                      <td><span class="badge ${STAGE_COLORS[p.pipelineStage || p.stage] || 'b-grey'}">${esc(STAGE_LABELS[p.pipelineStage || p.stage] || p.pipelineStage || p.stage)}</span></td>
-                      <td>${riskBadge(p.computedRisk)}</td>
-                      <td style="color:var(--ink2)">${esc(p.computedBlocking || '—')}</td>
+                      <td><strong>${esc(p.internalNumber || '—')}</strong><br><span style="color:var(--ink2);font-size:11px">${esc(p.title || '')}</span></td>
+                      <td>${esc(c.name || p.clientNameSnapshot || '—')}</td>
+                      <td><span class="badge ${STAGE_COLORS[p.pipelineStage || p.stage] || 'b-grey'}">${esc(STAGE_LABELS[p.pipelineStage || p.stage] || p.pipelineStage || p.stage || '—')}</span></td>
+                      <td><span style="${urgentStyle}">${esc(timeStr)}</span></td>
                       <td style="color:var(--ink2)">${esc(p.waitingFor || '—')}</td>
-                      <td style="font-weight:600">${esc(p.nextAction || '—')}</td>
+                      <td style="font-weight:600;font-size:12px">${esc(p.nextAction || '—')}</td>
                     </tr>`
                   }).join('')}
                 </tbody>
               </table>
             </div>
           </div>
-        `).join('')
+        `).join('') : '<div class="empty" style="padding:40px;text-align:center">✅ Žádné problémy. Vše v pořádku!</div>'
         document.getElementById('probBody').querySelectorAll('[data-prob-job]').forEach(el => {
           el.addEventListener('click', () => { window.location.href = `./job-detail.html?jobId=${el.getAttribute('data-prob-job')}` })
         })

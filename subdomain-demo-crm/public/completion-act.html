@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O&L Master Dom · Akt o provedení prací</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,sans-serif;background:#F3F4F6;color:#111;min-height:100vh}
+    .page-hdr{background:#020C18;padding:16px 24px;display:flex;align-items:center;gap:14px}
+    .page-hdr img{height:40px;width:auto;object-fit:contain;border-radius:8px}
+    .page-hdr-name{font-size:16px;font-weight:800;color:#E6F0FF}
+    .page-hdr-sub{font-size:12px;color:#7AA2C4}
+    .container{max-width:760px;margin:32px auto;padding:0 16px 80px}
+    .act-paper{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);padding:40px 48px;margin-bottom:24px}
+    @media(max-width:600px){.act-paper{padding:24px 20px}}
+    .act-title{font-size:22px;font-weight:800;color:#111;margin-bottom:6px}
+    .act-subtitle{font-size:14px;color:#6B7280;margin-bottom:28px}
+    .act-section{margin-bottom:24px}
+    .act-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E5E7EB}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:500px){.info-grid{grid-template-columns:1fr}}
+    .info-item{display:flex;flex-direction:column;gap:3px}
+    .info-item label{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.4px}
+    .info-item span{font-size:15px;font-weight:600;color:#111}
+    .work-list{border:1px solid #E5E7EB;border-radius:8px;overflow:hidden}
+    .work-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #F3F4F6;font-size:14px}
+    .work-row:last-child{border-bottom:none}
+    .work-row-name{color:#374151;flex:1}
+    .work-row-amt{font-weight:700;color:#111;flex-shrink:0;margin-left:16px}
+    .work-row.total{background:#F9FAFB;font-weight:800;font-size:15px}
+    .confirm-box{background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:20px 24px;margin-bottom:24px}
+    .confirm-box p{font-size:14px;line-height:1.6;color:#166534;margin-bottom:12px}
+    .confirm-check{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#166534;cursor:pointer}
+    .confirm-check input{margin-top:3px;width:18px;height:18px;cursor:pointer;accent-color:#16A34A}
+    .sig-section{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.1);padding:32px;margin-bottom:24px}
+    .sig-title{font-size:16px;font-weight:700;margin-bottom:6px}
+    .sig-sub{font-size:13px;color:#6B7280;margin-bottom:18px}
+    .sig-name-input{width:100%;padding:12px 16px;border:1.5px solid #D1D5DB;border-radius:10px;font:inherit;font-size:15px;margin-bottom:14px;transition:border-color .15s}
+    .sig-name-input:focus{outline:none;border-color:#2563EB}
+    .canvas-wrap{border:2px solid #D1D5DB;border-radius:10px;background:#FAFAFA;position:relative;overflow:hidden;cursor:crosshair}
+    .canvas-wrap canvas{display:block;touch-action:none;user-select:none}
+    .canvas-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#9CA3AF;font-size:13px;pointer-events:none;user-select:none;text-align:center}
+    .sig-actions{display:flex;gap:10px;margin-top:10px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1.5px solid #D1D5DB;background:#fff;color:#374151;text-decoration:none;transition:all .15s}
+    .btn:hover{background:#F9FAFB}
+    .btn.primary{background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;border:none;padding:14px 32px;font-size:16px;font-weight:800;width:100%;justify-content:center;border-radius:12px}
+    .btn.primary:hover{opacity:.9}
+    .btn.primary:disabled{opacity:.5;cursor:not-allowed}
+    .btn.red{border-color:#FCA5A5;color:#DC2626;background:#FFF5F5}
+    .msg{padding:16px 20px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:16px;display:none}
+    .msg.ok{background:#F0FDF4;border:1px solid #86EFAC;color:#166534;display:block}
+    .msg.err{background:#FFF5F5;border:1px solid #FCA5A5;color:#DC2626;display:block}
+    .loading-state{text-align:center;padding:80px 24px;color:#6B7280}
+    .loading-spinner{font-size:32px;margin-bottom:12px}
+    .error-state{text-align:center;padding:80px 24px;color:#DC2626}
+  </style>
+</head>
+<body>
+  <div class="page-hdr">
+    <img src="./logo.jpg" alt="O&L" />
+    <div>
+      <div class="page-hdr-name">O&amp;L Master Dom</div>
+      <div class="page-hdr-sub">Akt o provedení prací</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="loadingState" class="loading-state">
+      <div class="loading-spinner">⏳</div>
+      <div>Načítání aktu...</div>
+    </div>
+
+    <div id="errorState" class="error-state" style="display:none">
+      <div style="font-size:32px;margin-bottom:12px">❌</div>
+      <div id="errorMsg">Odkaz je neplatný nebo byl již použit.</div>
+    </div>
+
+    <div id="actContent" style="display:none">
+      <div id="msgBox" class="msg"></div>
+
+      <div class="act-paper" id="actPaper">
+        <div class="act-title">Akt o provedení prací</div>
+        <div class="act-subtitle" id="actSubtitle">O&L Master Dom</div>
+
+        <div class="act-section">
+          <div class="act-section-title">Informace o zakázce</div>
+          <div class="info-grid">
+            <div class="info-item"><label>Číslo zakázky</label><span id="jobNumber">—</span></div>
+            <div class="info-item"><label>Datum</label><span id="actDate">—</span></div>
+            <div class="info-item"><label>Adresa realizace</label><span id="actAddress">—</span></div>
+            <div class="info-item"><label>Projektový manažer</label><span id="actManager">—</span></div>
+          </div>
+        </div>
+
+        <div class="act-section">
+          <div class="act-section-title">Zákazník</div>
+          <div class="info-grid">
+            <div class="info-item"><label>Jméno / Firma</label><span id="clientName">—</span></div>
+            <div class="info-item"><label>Email</label><span id="clientEmail">—</span></div>
+            <div class="info-item"><label>IČO</label><span id="clientIco">—</span></div>
+            <div class="info-item"><label>Adresa</label><span id="clientAddress">—</span></div>
+          </div>
+        </div>
+
+        <div class="act-section">
+          <div class="act-section-title">Provedené práce</div>
+          <div class="work-list" id="workList">
+            <div class="work-row"><span class="work-row-name" style="color:#9CA3AF">Načítání...</span></div>
+          </div>
+        </div>
+
+        <div class="act-section">
+          <div class="act-section-title">Dodavatel</div>
+          <div class="info-grid">
+            <div class="info-item"><label>Firma</label><span>O&L Master Dom s.r.o.</span></div>
+            <div class="info-item"><label>IČO</label><span id="supplierIco">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-box">
+        <p>Přečtením a podepsáním tohoto dokumentu potvrzuji, že uvedené práce byly provedeny řádně a v souladu s dohodou. Nemám žádné reklamace ani výhrady k provedení prací.</p>
+        <label class="confirm-check">
+          <input type="checkbox" id="confirmCheck" />
+          <span>Souhlasím s podmínkami a potvrzuji převzetí prací</span>
+        </label>
+      </div>
+
+      <div class="sig-section">
+        <div class="sig-title">✍️ Podpis zákazníka</div>
+        <div class="sig-sub">Napište své jméno a podepište se myší nebo prstem na dotykové obrazovce.</div>
+        <input type="text" class="sig-name-input" id="signerName" placeholder="Jméno a příjmení podepisující osoby" />
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="sigCanvas" width="660" height="180"></canvas>
+          <div class="canvas-hint" id="canvasHint">Podepište se zde</div>
+        </div>
+        <div class="sig-actions">
+          <button class="btn red" id="clearSig">🗑 Smazat podpis</button>
+        </div>
+      </div>
+
+      <div id="msgBox2" class="msg"></div>
+      <button class="btn primary" id="submitSignature" disabled>✍️ Podepsat a potvrdit přijetí prací</button>
+      <div style="margin-top:12px;text-align:center;font-size:12px;color:#9CA3AF">
+        Podpisem vzniká elektronický záznam. Tento akt bude uložen jako PDF dokument.
+      </div>
+    </div>
+
+    <div id="successState" style="display:none;text-align:center;padding:60px 24px">
+      <div style="font-size:48px;margin-bottom:16px">✅</div>
+      <div style="font-size:22px;font-weight:800;color:#111;margin-bottom:8px">Akt byl úspěšně podepsán!</div>
+      <div style="font-size:15px;color:#6B7280;line-height:1.6">Děkujeme za potvrzení. Podepsaný akt byl uložen a odeslán na Váš email.<br>Těšíme se na další spolupráci.</div>
+      <div style="margin-top:32px;font-size:13px;color:#9CA3AF">Tuto stránku můžete zavřít.</div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search)
+    const token = params.get('token') || ''
+    const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+    const api = (p) => `${base}${p}`
+
+    let actData = null
+    let signaturePad = null
+
+    // ── Simple signature pad implementation ──
+    class SignaturePad {
+      constructor(canvas) {
+        this.canvas = canvas
+        this.ctx = canvas.getContext('2d')
+        this.drawing = false
+        this.empty = true
+        this.ctx.strokeStyle = '#1D4ED8'
+        this.ctx.lineWidth = 2.5
+        this.ctx.lineCap = 'round'
+        this.ctx.lineJoin = 'round'
+        canvas.addEventListener('mousedown', e => { this.start(e); this._hideHint() })
+        canvas.addEventListener('mousemove', e => this.draw(e))
+        canvas.addEventListener('mouseup', () => this.stop())
+        canvas.addEventListener('mouseleave', () => this.stop())
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; this.start(t); this._hideHint() }, { passive: false })
+        canvas.addEventListener('touchmove', e => { e.preventDefault(); const t = e.touches[0]; this.draw(t) }, { passive: false })
+        canvas.addEventListener('touchend', () => this.stop())
+      }
+      _hideHint() { document.getElementById('canvasHint').style.display = 'none' }
+      _pos(e) {
+        const r = this.canvas.getBoundingClientRect()
+        const scaleX = this.canvas.width / r.width
+        const scaleY = this.canvas.height / r.height
+        return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY }
+      }
+      start(e) { this.drawing = true; this.empty = false; const p = this._pos(e); this.ctx.beginPath(); this.ctx.moveTo(p.x, p.y) }
+      draw(e) { if (!this.drawing) return; const p = this._pos(e); this.ctx.lineTo(p.x, p.y); this.ctx.stroke() }
+      stop() { this.drawing = false }
+      clear() { this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.empty = true; document.getElementById('canvasHint').style.display = 'block' }
+      toDataURL() { return this.canvas.toDataURL('image/png') }
+      isEmpty() { return this.empty }
+    }
+
+    function showMsg(id, type, text) {
+      const el = document.getElementById(id)
+      el.className = `msg ${type}`
+      el.textContent = text
+    }
+
+    function fmt(iso) {
+      try { return new Date(iso).toLocaleDateString('cs-CZ') } catch { return '—' }
+    }
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+    async function loadAct() {
+      if (!token) { showError('Chybí ověřovací token v URL.'); return }
+      try {
+        const r = await fetch(api(`/api/crm/completion-act/view?token=${encodeURIComponent(token)}`))
+        const d = await r.json()
+        if (!r.ok || !d?.ok) { showError(d?.error || 'Akt nebyl nalezen nebo je odkaz neplatný.'); return }
+        actData = d
+        renderAct(d)
+      } catch (e) {
+        showError('Chyba načítání: ' + String(e?.message || e))
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('loadingState').style.display = 'none'
+      document.getElementById('errorState').style.display = 'block'
+      document.getElementById('errorMsg').textContent = msg
+    }
+
+    function renderAct(d) {
+      document.getElementById('loadingState').style.display = 'none'
+      document.getElementById('actContent').style.display = 'block'
+
+      const job = d.job || {}
+      const customer = d.customer || {}
+      const estimate = d.estimate || {}
+
+      document.title = `Akt o provedení prací — ${job.internalNumber || 'zakázka'}`
+      document.getElementById('actSubtitle').textContent = `Zakázka ${job.internalNumber || '—'} · ${fmt(new Date().toISOString())}`
+      document.getElementById('jobNumber').textContent = job.internalNumber || '—'
+      document.getElementById('actDate').textContent = fmt(new Date().toISOString())
+      document.getElementById('actAddress').textContent = job.realizationAddress || customer.address || '—'
+      document.getElementById('actManager').textContent = job.responsiblePerson || '—'
+      document.getElementById('clientName').textContent = customer.name || '—'
+      document.getElementById('clientEmail').textContent = customer.email || d.clientEmail || '—'
+      document.getElementById('clientIco').textContent = customer.ico || '—'
+      document.getElementById('clientAddress').textContent = customer.address || '—'
+
+      // Work list — from estimate lines or job summary
+      const lines = estimate.lines || []
+      const workListEl = document.getElementById('workList')
+      if (lines.length) {
+        const mainLines = lines.filter(l => l.sectionType !== 'ostatni_naklady')
+        const total = mainLines.reduce((s, l) => s + (l.lineTotal || 0), 0)
+        const dph = total * 0.21
+        workListEl.innerHTML = mainLines.slice(0, 10).map(l => `
+          <div class="work-row">
+            <span class="work-row-name">${esc(l.workDescription || l.itemName || '—')}</span>
+            <span class="work-row-amt">${Number(l.lineTotal||0).toLocaleString('cs-CZ')} Kč</span>
+          </div>
+        `).join('') + (mainLines.length > 10 ? `<div class="work-row"><span class="work-row-name" style="color:#9CA3AF">...a dalších ${mainLines.length - 10} položek</span></div>` : '') + `
+          <div class="work-row total">
+            <span class="work-row-name">Celkem bez DPH</span>
+            <span class="work-row-amt">${total.toLocaleString('cs-CZ')} Kč</span>
+          </div>
+          <div class="work-row total" style="background:#EFF6FF">
+            <span class="work-row-name" style="color:#1D4ED8">DPH 21%</span>
+            <span class="work-row-amt" style="color:#1D4ED8">${dph.toLocaleString('cs-CZ')} Kč</span>
+          </div>
+          <div class="work-row total" style="background:#1D4ED8;color:#fff">
+            <span class="work-row-name">Celkem s DPH</span>
+            <span class="work-row-amt">${(total+dph).toLocaleString('cs-CZ')} Kč</span>
+          </div>`
+      } else {
+        workListEl.innerHTML = `<div class="work-row"><span class="work-row-name">${esc(job.title || 'Viz smlouva a nabídka')}</span><span class="work-row-amt">${Number(job.totalPrice||0).toLocaleString('cs-CZ')} Kč</span></div>`
+      }
+
+      // Init signature pad
+      const canvas = document.getElementById('sigCanvas')
+      const wrap = document.getElementById('canvasWrap')
+      canvas.width = wrap.clientWidth || 660
+      signaturePad = new SignaturePad(canvas)
+
+      // Pre-fill signer name
+      if (customer.name) document.getElementById('signerName').value = customer.name
+
+      // Validation
+      const check = document.getElementById('confirmCheck')
+      const submitBtn = document.getElementById('submitSignature')
+      function validateForm() {
+        submitBtn.disabled = !check.checked
+      }
+      check.addEventListener('change', validateForm)
+      document.getElementById('clearSig').addEventListener('click', () => signaturePad.clear())
+      document.getElementById('signerName').addEventListener('input', validateForm)
+
+      submitBtn.addEventListener('click', submitSignature)
+    }
+
+    async function submitSignature() {
+      const name = document.getElementById('signerName').value.trim()
+      if (!name) { showMsg('msgBox2', 'err', 'Zadejte jméno podepisující osoby'); return }
+      if (!document.getElementById('confirmCheck').checked) { showMsg('msgBox2', 'err', 'Potvrďte souhlas s podmínkami'); return }
+      if (signaturePad.isEmpty()) { showMsg('msgBox2', 'err', 'Prosím podepište se na ploše pro podpis'); return }
+
+      const btn = document.getElementById('submitSignature')
+      btn.disabled = true
+      btn.textContent = '⏳ Ukládám podpis...'
+      showMsg('msgBox2', '', '')
+
+      try {
+        const signatureImage = signaturePad.toDataURL()
+        const r = await fetch(api(`/api/crm/completion-act/sign`), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, signerName: name, signatureImage })
+        })
+        const d = await r.json()
+        if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba při ukládání podpisu')
+        document.getElementById('actContent').style.display = 'none'
+        document.getElementById('successState').style.display = 'block'
+      } catch (e) {
+        showMsg('msgBox2', 'err', 'Chyba: ' + String(e?.message || e))
+        btn.disabled = false
+        btn.textContent = '✍️ Podepsat a potvrdit přijetí prací'
+      }
+    }
+
+    // Resize canvas on load
+    window.addEventListener('resize', () => {
+      if (signaturePad) {
+        const wrap = document.getElementById('canvasWrap')
+        const canvas = document.getElementById('sigCanvas')
+        canvas.width = wrap.clientWidth || 660
+        signaturePad.clear()
+      }
+    })
+
+    loadAct()
+  </script>
+</body>
+</html>

@@ -340,26 +340,56 @@
         })
       }
 
-      function renderKomunikace(events) {
+      async function renderKomunikace(events) {
         const el = document.getElementById('m-komunikace')
+        // Load email correspondence
+        let emails = []
+        try {
+          const er = await apiFetch(api(`/api/crm/jobs/${jobId}/emails`))
+          const ed = await er.json()
+          if (er.ok && ed?.ok) emails = ed.emails || []
+        } catch {}
+
+        const EV_ICONS = { note:'📝', stage_change:'🔄', email_sent:'✉️', document_added:'📄', brief_received:'📋', finance_update:'💰', inbound_email_linked:'📨' }
         el.innerHTML = `
+          ${emails.length ? `<div class="card-s">
+            <div class="card-s-t">✉️ Emailová korespondence <span style="color:var(--ink2);font-weight:400;font-size:12px">(${emails.length})</span></div>
+            <div class="ev-list">${emails.map(em => `
+              <div class="ev-item" style="border-left:3px solid ${em.direction==='inbound'?'var(--green)':'var(--blue3)'}">
+                <div class="ev-dot" style="background:${em.direction==='inbound'?'var(--green)':'var(--blue3)'}"></div>
+                <div style="flex:1;min-width:0">
+                  <div class="ev-title" style="display:flex;align-items:center;gap:8px">
+                    <span>${em.direction==='inbound'?'📨 Příchozí':'📤 Odchozí'}</span>
+                    <span style="font-weight:600">${esc(em.subject||'(bez předmětu)')}</span>
+                    <span class="badge b-grey" style="font-size:10px;padding:2px 6px">${esc(em.status||'sent')}</span>
+                  </div>
+                  <div class="ev-meta" style="margin-top:4px">
+                    <span>${em.direction==='inbound'?'Od: ':'Komu: '} <strong>${esc(em.direction==='inbound'?em.fromAddr:em.toAddr)}</strong></span>
+                    <span style="margin-left:10px">${esc(fmtFull(em.sentAt))}</span>
+                  </div>
+                  ${em.body ? `<div style="margin-top:6px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:8px;font-size:12px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;max-height:100px;overflow:auto">${esc(em.body.slice(0,500))}${em.body.length>500?'…':''}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}</div>
+          </div>` : '<div class="card-s"><div class="empty" style="padding:20px;text-align:center">Žádná emailová korespondence</div></div>'}
+
           <div class="card-s">
-            <div class="card-s-t">Historie událostí</div>
+            <div class="card-s-t">📋 Historie událostí <span style="color:var(--ink2);font-weight:400;font-size:12px">(${events.length})</span></div>
             ${events.length ? `<div class="ev-list">${events.map(e => `
               <div class="ev-item">
                 <div class="ev-dot"></div>
                 <div>
-                  <div class="ev-title">${esc(e.title)}</div>
-                  <div class="ev-meta">${esc(fmtFull(e.createdAt))}${e.actorType ? ' · ' + esc(e.actorType) : ''}${e.actor ? ' · ' + esc(e.actor) : ''}${e.eventCode ? ' · ' + esc(e.eventCode) : ''}${e.message ? '<br>' + esc(e.message) : ''}${e.description && e.description !== e.message ? '<br>' + esc(e.description) : ''}</div>
+                  <div class="ev-title">${esc(EV_ICONS[e.eventType]||'•')} ${esc(e.title)}</div>
+                  <div class="ev-meta">${esc(fmtFull(e.createdAt))}${e.actor ? ' · ' + esc(e.actor) : ''}${e.message ? '<br>' + esc(e.message) : ''}${e.description && e.description !== e.message ? '<br>' + esc(e.description) : ''}</div>
                 </div>
               </div>
             `).join('')}</div>` : '<div class="empty">Žádné události</div>'}
           </div>
           <div class="card-s">
-            <div class="card-s-t">Přidat poznámku</div>
+            <div class="card-s-t">➕ Přidat poznámku</div>
             <div class="add-row">
-              <input id="noteTitle" placeholder="Název poznámky" />
-              <input id="noteDesc" placeholder="Popis (volitelné)" />
+              <input id="noteTitle" placeholder="Název poznámky" style="flex:2" />
+              <input id="noteDesc" placeholder="Popis (volitelné)" style="flex:3" />
               <button class="btn btn-p" id="addNote">Přidat</button>
             </div>
           </div>
@@ -464,33 +494,68 @@
 
       function renderDokumenty(docs, estimates, customer, job) {
         const el = document.getElementById('m-dokumenty')
+        const DOC_TYPE_LABELS = { formular:'Formulář', kalkulace:'Kalkulace', nabidka:'Nabídka', objednavka:'Objednávka', faktura:'Faktura', protokol:'Protokol', foto:'Fotografie', plan:'Plán', smlouva:'Smlouva', akt:'Akt o dílo', other:'Jiné' }
+        const STATUS_COLORS = { uploaded:'#14C98A', created:'#7AA2C4', sent:'#F59E0B', signed_client:'#A78BFA', signed_both:'#34D399', received:'#60A5FF' }
         el.innerHTML = `
           ${renderEstimateHero(job, customer, estimates, docs)}
           <div class="card-s">
-            <div class="card-s-t">Dokumenty zakázky</div>
+            <div class="card-s-t">Dokumenty zakázky <span style="color:var(--ink2);font-weight:400;font-size:12px">(${docs.length})</span></div>
             ${docs.length ? `<div class="doc-list">${docs.map(d => `
               <div class="doc-item">
-                <div><div class="doc-item-name">${esc(d.fileName)}</div><div class="doc-item-type">${esc(d.docType)} · stav: ${esc(d.status || 'created')} · verze ${esc(String(d.version || 1))}${d.signatureMode ? ' · ' + esc(d.signatureMode) : ''}${d.isFinal ? ' · final' : ''}${d.sentAt ? ' · odesláno ' + esc(fmtFull(d.sentAt)) : ''}${d.signedAt ? ' · podepsáno ' + esc(fmtFull(d.signedAt)) : ''}</div></div>
-                ${d.fileUrl ? `<a class="btn" href="${esc(d.fileUrl)}" target="_blank" rel="noopener">Otevřít</a>` : ''}
+                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+                  <div style="font-size:20px">${d.documentType==='foto'?'🖼️':d.documentType==='faktura'?'🧾':d.documentType==='smlouva'?'📝':d.documentType==='akt'?'✍️':'📄'}</div>
+                  <div style="min-width:0">
+                    <div class="doc-item-name">${esc(d.fileName)}</div>
+                    <div class="doc-item-type" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">
+                      <span>${esc(DOC_TYPE_LABELS[d.documentType] || d.docType || '—')}</span>
+                      <span style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;background:${STATUS_COLORS[d.status]||'#3D618A'}22;color:${STATUS_COLORS[d.status]||'#7AA2C4'}">${esc(d.status||'created')}</span>
+                      ${d.sentAt?`<span>odesláno ${esc(fmt(d.sentAt))}</span>`:''}
+                      ${d.signedAt?`<span>✍ podepsáno ${esc(fmt(d.signedAt))}</span>`:''}
+                    </div>
+                  </div>
+                </div>
+                ${d.fileUrl ? `<a class="btn" href="${esc(d.fileUrl)}" target="_blank" rel="noopener" style="flex-shrink:0;padding:6px 12px;font-size:12px">⬇ Otevřít</a>` : ''}
               </div>
             `).join('')}</div>` : '<div class="empty">Žádné dokumenty</div>'}
           </div>
           <div class="card-s">
-            <div class="card-s-t">Přidat dokument</div>
-            <div class="add-row">
-              <input id="docName" placeholder="Název souboru" />
-              <select id="docType"><option value="formular">Formulář</option><option value="kalkulace">Kalkulace</option><option value="nabidka">Nabídka</option><option value="objednavka">Objednávka</option><option value="faktura">Faktura</option><option value="protokol">Protokol</option><option value="foto">Fotografie</option><option value="plan">Plán</option><option value="other">Jiné</option></select>
-              <select id="docStatus"><option value="created">Vytvořeno</option><option value="sent">Odesláno</option><option value="signed_client">Podepsal klient</option><option value="signed_both">Podepsáno oběma stranami</option></select>
-              <select id="docSignatureMode"><option value=\"online\">online</option><option value=\"physical\">physical</option></select>
-              <button class="btn btn-p" id="addDoc">Přidat</button>
+            <div class="card-s-t">📤 Nahrát soubor</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="add-row" style="flex-wrap:wrap">
+                <label style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink2)">
+                  Soubor (max 20 MB)
+                  <input id="fileUploadInput" type="file" style="background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:8px;font-size:12px;cursor:pointer" />
+                </label>
+                <label style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink2)">
+                  Typ dokumentu
+                  <select id="docTypeUpload" style="background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:10px;font:inherit">
+                    <option value="other">Jiné</option><option value="smlouva">Smlouva</option><option value="formular">Formulář</option><option value="kalkulace">Kalkulace</option><option value="nabidka">Nabídka</option><option value="faktura">Faktura</option><option value="protokol">Protokol</option><option value="akt">Akt o dílo</option><option value="foto">Fotografie</option><option value="plan">Plán</option>
+                  </select>
+                </label>
+                <div style="align-self:flex-end"><button class="btn btn-p" id="uploadFileBtn">📤 Nahrát</button></div>
+              </div>
+              <div id="uploadProgress" style="display:none;font-size:12px;color:var(--green)"></div>
             </div>
           </div>
         `
-        document.getElementById('addDoc')?.addEventListener('click', async () => {
-          const fn = document.getElementById('docName').value.trim()
-          if (!fn) return
-          await apiFetch(api(`/api/crm/jobs/${jobId}/documents`), { method: 'POST', body: JSON.stringify({ fileName: fn, documentType: document.getElementById('docType').value, status: document.getElementById('docStatus').value, signatureMode: document.getElementById('docSignatureMode').value, uploadedBy: 'internal_sales', source: 'manual', isFinal: document.getElementById('docStatus').value === 'signed_both', sentAt: document.getElementById('docStatus').value === 'sent' ? new Date().toISOString() : null, signedAt: ['signed_client','signed_both'].includes(document.getElementById('docStatus').value) ? new Date().toISOString() : null }) })
-          document.getElementById('docName').value = ''; loadJob()
+        document.getElementById('uploadFileBtn')?.addEventListener('click', async () => {
+          const file = document.getElementById('fileUploadInput').files?.[0]
+          if (!file) { alert('Vyberte soubor'); return }
+          const btn = document.getElementById('uploadFileBtn')
+          const prog = document.getElementById('uploadProgress')
+          btn.disabled = true; btn.textContent = 'Nahrávám...'
+          prog.style.display = 'block'; prog.textContent = `Nahrávám ${file.name} (${Math.round(file.size/1024)} kB)...`
+          try {
+            const fd = new FormData()
+            fd.append('file', file)
+            fd.append('documentType', document.getElementById('docTypeUpload').value)
+            const r = await fetch(api(`/api/crm/jobs/${jobId}/documents/upload`), { method: 'POST', headers: { 'Authorization': 'Bearer ' + crmToken() }, body: fd })
+            const d = await r.json()
+            if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba nahrávání')
+            prog.textContent = `✓ Soubor ${file.name} nahrán úspěšně`
+            setTimeout(() => { prog.style.display='none'; loadJob() }, 1500)
+          } catch (e) { prog.style.color='#EF4444'; prog.textContent = 'Chyba: ' + String(e?.message || e) }
+          finally { btn.disabled = false; btn.textContent = '📤 Nahrát' }
         })
         document.getElementById('buildEstimateDocs')?.addEventListener('click', async () => {
           try { await buildEstimateDocs() } catch (e) { alert(String(e?.message || e)) }
@@ -502,21 +567,43 @@
 
       function renderFinance(job, invoices) {
         const el = document.getElementById('m-finance')
-        const items = [
-          ['Cena zakázky', `${job.totalPrice || 0} Kč`],
-          ['Výše zálohy', `${job.depositAmount || 0} Kč`],
-          ['Zálohová faktura', job.depositInvoiceId || '—'],
-          ['Záloha uhrazena', job.depositPaid ? 'Ano' : 'Ne'],
-          ['Finální faktura', job.finalInvoiceId || '—'],
-          ['Finální uhrazeno', job.finalPaid ? 'Ano' : 'Ne'],
-          ['Náklady', `${job.costs || 0} Kč`],
-          ['Zisk', `${job.profit || 0} Kč`],
+        const INV_STATUS_COLOR = { draft:'#7AA2C4', issued:'#F59E0B', paid:'#14C98A', overdue:'#E83A3A', cancelled:'#6B7280' }
+        const INV_TYPE_LABEL = { advance:'Záloha', final:'Finální', credit_note:'Dobropis' }
+        const finItems = [
+          { k:'Cena zakázky', v:`${(job.totalPrice||0).toLocaleString('cs-CZ')} Kč`, icon:'💰' },
+          { k:'Výše zálohy', v:`${(job.depositAmount||0).toLocaleString('cs-CZ')} Kč`, icon:'⏩' },
+          { k:'Záloha uhrazena', v:job.depositPaid?'✅ Ano':'❌ Ne', icon:'💳' },
+          { k:'Náklady', v:`${(job.costs||0).toLocaleString('cs-CZ')} Kč`, icon:'📦' },
+          { k:'Zisk', v:`${(job.profit||0).toLocaleString('cs-CZ')} Kč`, icon:'📈', style:job.profit > 0 ? 'color:#14C98A;font-weight:800' : 'color:#E83A3A;font-weight:800' },
         ]
-        el.innerHTML = `<div class="card-s"><div class="card-s-t">Finanční přehled</div>
-          <div class="fin-grid">${items.map(([k,v]) => `<div class="fin-item"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
-          ${Array.isArray(invoices) && invoices.length ? `<div class="invoice-list">${invoices.map(inv => `<div class="invoice-item"><div><div class="doc-item-name">${esc(inv.invoiceNumber || inv.invoiceType)}</div><div class="doc-item-type">${esc(inv.invoiceType)} · ${esc(inv.status)}${inv.dueAt ? ' · splatnost ' + esc(fmt(inv.dueAt)) : ''}</div></div><div style="font-weight:700">${esc(String(inv.amount || 0))} ${esc(inv.currency || 'CZK')}</div></div>`).join('')}</div>` : '<div class="empty" style="margin-top:12px">Žádné faktury</div>'}
+        el.innerHTML = `
+        <div class="card-s">
+          <div class="card-s-t">💰 Finanční přehled</div>
+          <div class="fin-grid">${finItems.map(({k,v,icon,style}) => `<div class="fin-item"><b>${icon} ${esc(k)}</b><div class="val" ${style?`style="${style}"`:''}>${esc(v)}</div></div>`).join('')}</div>
         </div>
-        <div class="card-s"><div class="card-s-t">Upravit finance</div>
+        <div class="card-s">
+          <div class="card-s-t" style="display:flex;justify-content:space-between;align-items:center">
+            <span>🧾 Faktury <span style="color:var(--ink2);font-weight:400;font-size:12px">(${invoices.length})</span></span>
+            <button class="btn" id="btnFakturoid" style="font-size:12px;padding:6px 12px;background:rgba(20,201,138,.12);border-color:rgba(20,201,138,.3);color:#14C98A">⚡ Vytvořit zálohu (Fakturoid)</button>
+          </div>
+          ${Array.isArray(invoices) && invoices.length ? `<div class="invoice-list">${invoices.map(inv => `
+            <div class="invoice-item" style="align-items:flex-start">
+              <div style="flex:1">
+                <div class="doc-item-name">${esc(inv.invoiceNumber || '—')} <span style="color:var(--ink2);font-weight:400;font-size:11px">${esc(INV_TYPE_LABEL[inv.invoiceType]||inv.invoiceType)}</span></div>
+                <div class="doc-item-type" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:3px">
+                  <span style="display:inline-block;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${INV_STATUS_COLOR[inv.status]||'#3D618A'}22;color:${INV_STATUS_COLOR[inv.status]||'#7AA2C4'}">${esc(inv.status)}</span>
+                  ${inv.dueAt?`<span>splatnost ${esc(fmt(inv.dueAt))}</span>`:''}
+                  ${inv.paidAt?`<span style="color:#14C98A">💚 uhrazeno ${esc(fmt(inv.paidAt))}</span>`:''}
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-weight:800;font-size:15px">${(Number(inv.amount||0)).toLocaleString('cs-CZ')} ${esc(inv.currency||'CZK')}</div>
+                ${inv.status === 'issued' ? `<button class="btn" data-mark-paid="${inv.id}" style="font-size:11px;padding:4px 8px;margin-top:4px;color:#14C98A;border-color:rgba(20,201,138,.3)">✓ Uhrazeno</button>` : ''}
+              </div>
+            </div>
+          `).join('')}</div>` : '<div class="empty" style="margin-top:12px">Žádné faktury</div>'}
+        </div>
+        <div class="card-s"><div class="card-s-t">✏️ Upravit finance</div>
           <div class="add-row">
             <input id="finPrice" type="number" placeholder="Cena zakázky" value="${job.totalPrice||0}" />
             <input id="finDeposit" type="number" placeholder="Výše zálohy" value="${job.depositAmount||0}" />
@@ -524,9 +611,10 @@
             <button class="btn btn-p" id="saveFin">Uložit</button>
           </div>
           <div class="add-row" style="margin-top:10px">
-            <select id="invType"><option value="advance">advance</option><option value="final">final</option><option value="credit_note">credit_note</option></select>
-            <input id="invAmount" type="number" placeholder="Částka" />
+            <select id="invType"><option value="advance">Záloha</option><option value="final">Finální</option><option value="credit_note">Dobropis</option></select>
+            <input id="invAmount" type="number" placeholder="Částka (Kč)" />
             <input id="invNumber" placeholder="Číslo faktury" />
+            <input id="invDueDate" type="date" title="Splatnost" />
             <button class="btn" id="addInv">Přidat fakturu</button>
           </div>
         </div>`
@@ -539,48 +627,131 @@
           loadJob()
         })
         document.getElementById('addInv')?.addEventListener('click', async () => {
-          await apiFetch(api(`/api/crm/jobs/${jobId}/invoices`), { method: 'POST', body: JSON.stringify({ invoiceType: document.getElementById('invType').value, amount: Number(document.getElementById('invAmount').value || 0), invoiceNumber: document.getElementById('invNumber').value.trim(), status: 'issued', issuedAt: new Date().toISOString() }) })
+          const dueDate = document.getElementById('invDueDate').value
+          await apiFetch(api(`/api/crm/jobs/${jobId}/invoices`), { method: 'POST', body: JSON.stringify({ invoiceType: document.getElementById('invType').value, amount: Number(document.getElementById('invAmount').value || 0), invoiceNumber: document.getElementById('invNumber').value.trim(), status: 'issued', issuedAt: new Date().toISOString(), dueAt: dueDate ? new Date(dueDate).toISOString() : null }) })
           loadJob()
+        })
+        document.getElementById('btnFakturoid')?.addEventListener('click', async () => {
+          const btn = document.getElementById('btnFakturoid')
+          btn.disabled = true; btn.textContent = '⏳ Odesílám...'
+          try {
+            const r = await apiFetch(api(`/api/crm/fakturoid/invoices/create-and-send`), { method: 'POST', body: JSON.stringify({ jobId, invoiceType: 'advance', amount: job.depositAmount || job.totalPrice || 0, clientEmail: job.clientEmail || customer?.email || '' }) })
+            const d = await r.json()
+            if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba Fakturoid')
+            alert(`✓ Faktura vytvořena a odeslána přes Fakturoid\nID: ${d.invoice?.fakturoid_id || d.fakturoidId || '—'}`)
+            loadJob()
+          } catch (e) { alert('Fakturoid chyba: ' + String(e?.message || e)) }
+          finally { btn.disabled = false; btn.textContent = '⚡ Vytvořit zálohu (Fakturoid)' }
+        })
+        el.querySelectorAll('[data-mark-paid]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const invId = btn.getAttribute('data-mark-paid')
+            await apiFetch(api(`/api/crm/jobs/${jobId}/invoices/${invId}/paid`), { method: 'POST' })
+            loadJob()
+          })
         })
       }
 
       function renderRealizace(job, tasks) {
         const el = document.getElementById('m-realizace')
-        const statuses = ['priprava', 'realizace', 'kontrola', 'dokoncovani']
-        const statusLabels = { priprava: 'Příprava', realizace: 'Realizace', kontrola: 'Kontrola', dokoncovani: 'Dokončování' }
+        // 5-day start warning
+        const daysToStart = job.plannedStart ? Math.ceil((new Date(job.plannedStart) - new Date()) / 86400000) : null
+        const showUrgent = daysToStart !== null && daysToStart <= 5 && daysToStart >= 0
+        const showOverdue = daysToStart !== null && daysToStart < 0
+
+        const stage = job.pipelineStage || job.stage
+        const isPriprava = stage === 'zaloha_priprava'
+        const isRealizace = stage === 'realizace'
+        const isDone = ['predani_fakturace','dokonceno'].includes(stage)
+
         el.innerHTML = `
-          <div class="card-s"><div class="card-s-t">Stav realizace</div>
-            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-              ${statuses.map(s => `<button class="btn ${job.realizationStatus === s ? 'btn-p' : ''}" data-rstatus="${s}">${esc(statusLabels[s])}</button>`).join('')}
+          ${showUrgent ? `<div style="background:rgba(232,58,58,.15);border:1.5px solid rgba(232,58,58,.5);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">⚠️</span>
+            <div><div style="font-size:15px;font-weight:800;color:#EF4444">Termín zahájení za ${daysToStart} ${daysToStart === 1 ? 'den' : daysToStart <= 4 ? 'dny' : 'dní'}!</div><div style="font-size:13px;color:var(--ink2);margin-top:3px">Plánované zahájení: ${esc(fmt(job.plannedStart))} — Je potřeba akce!</div></div>
+          </div>` : ''}
+          ${showOverdue ? `<div style="background:rgba(239,68,68,.18);border:2px solid #EF4444;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">🚨</span>
+            <div><div style="font-size:15px;font-weight:800;color:#EF4444">Termín zahájení prošel o ${Math.abs(daysToStart)} dní!</div><div style="font-size:13px;color:var(--ink2);margin-top:3px">Plánované zahájení bylo: ${esc(fmt(job.plannedStart))}</div></div>
+          </div>` : ''}
+
+          <div class="card-s">
+            <div class="card-s-t">🏗️ Etapy realizace</div>
+            <div style="display:flex;gap:0;margin-bottom:18px;border-radius:12px;overflow:hidden;border:1px solid var(--b2)">
+              ${[
+                { key:'zaloha_priprava', label:'1. Příprava', icon:'📋', desc:'Klient potvrdil, čekáme na zálohu a přípravu' },
+                { key:'realizace', label:'2. Realizace', icon:'🔧', desc:'Práce probíhají' },
+                { key:'predani_fakturace', label:'3. Předání', icon:'✅', desc:'Předání zakázky klientovi' },
+              ].map((s, idx) => {
+                const active = stage === s.key
+                const done = ['realizace','predani_fakturace','dokonceno'].includes(stage) && idx === 0
+                  || ['predani_fakturace','dokonceno'].includes(stage) && idx <= 1
+                return `<div style="flex:1;padding:14px 16px;background:${active?'rgba(26,106,232,.18)':done?'rgba(20,201,138,.08)':'rgba(255,255,255,.02)'};border-right:1px solid var(--b2);cursor:pointer;transition:background .15s" data-move-stage="${s.key}" title="${esc(s.desc)}">
+                  <div style="font-size:18px;margin-bottom:4px">${s.icon}${active?' 📍':done?' ✓':''}</div>
+                  <div style="font-size:12px;font-weight:800;color:${active?'var(--blue3)':done?'var(--green)':'var(--ink2)'}">${s.label}</div>
+                  <div style="font-size:10px;color:var(--ink3);margin-top:2px">${s.desc}</div>
+                </div>`
+              }).join('')}
             </div>
+
             <div class="meta-g">
-              <div class="meta-i"><b>Plánované zahájení</b><div class="val">${job.plannedStart ? fmt(job.plannedStart) : '—'}</div></div>
-              <div class="meta-i"><b>Plánované dokončení</b><div class="val">${job.plannedEnd ? fmt(job.plannedEnd) : '—'}</div></div>
+              <div class="meta-i">
+                <b>📅 Plánované zahájení</b>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                  <input id="plannedStartInput" type="date" style="background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:6px 10px;font:inherit;font-size:13px" value="${job.plannedStart ? job.plannedStart.slice(0,10) : ''}" />
+                  <button class="btn" id="savePlannedStart" style="padding:6px 12px;font-size:12px">Uložit</button>
+                </div>
+              </div>
+              <div class="meta-i"><b>Plánované dokončení</b>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                  <input id="plannedEndInput" type="date" style="background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:6px 10px;font:inherit;font-size:13px" value="${job.plannedEnd ? job.plannedEnd.slice(0,10) : ''}" />
+                  <button class="btn" id="savePlannedEnd" style="padding:6px 12px;font-size:12px">Uložit</button>
+                </div>
+              </div>
               <div class="meta-i"><b>Skutečné zahájení</b><div class="val">${job.actualStart ? fmt(job.actualStart) : '—'}</div></div>
               <div class="meta-i"><b>Skutečné dokončení</b><div class="val">${job.actualEnd ? fmt(job.actualEnd) : '—'}</div></div>
             </div>
           </div>
-          <div class="card-s"><div class="card-s-t">Úkoly</div>
+
+          <div class="card-s"><div class="card-s-t">✅ Úkoly <span style="color:var(--ink2);font-weight:400;font-size:12px">(${tasks.filter(t=>t.status==='done').length}/${tasks.length})</span></div>
             ${tasks.length ? `<div class="task-list">${tasks.map(t => `
               <div class="task-item">
                 <div class="task-check ${t.status === 'done' ? 'done' : ''}" data-task="${t.id}">${t.status === 'done' ? '✓' : ''}</div>
-                <div style="flex:1"><div class="task-title ${t.status === 'done' ? 'done' : ''}">${esc(t.title)}</div><div class="task-due">${esc(t.taskType || 'manual')} · ${esc(t.priority || 'normal')}${t.description ? ' · ' + esc(t.description) : ''}</div></div>
-                ${t.dueDate ? `<div class="task-due">${esc(fmt(t.dueDate))}</div>` : ''}
+                <div style="flex:1"><div class="task-title ${t.status === 'done' ? 'done' : ''}">${esc(t.title)}</div><div class="task-due">${esc(t.taskType||'manual')} · ${esc(t.priority||'normal')}${t.dueDate ? ' · 📅 ' + esc(fmt(t.dueDate)) : ''}</div></div>
               </div>
             `).join('')}</div>` : '<div class="empty">Žádné úkoly</div>'}
             <div class="add-row" style="margin-top:12px">
-              <input id="taskTitle" placeholder="Nový úkol" />
-              <select id="taskType"><option value="manual">manual</option><option value="reminder_client">reminder_client</option><option value="invoice">invoice</option><option value="schedule">schedule</option><option value="handover_protocol">handover_protocol</option></select>
-              <select id="taskPriority"><option value="normal">normal</option><option value="high">high</option><option value="urgent">urgent</option></select>
+              <input id="taskTitle" placeholder="Nový úkol" style="flex:2" />
+              <select id="taskType"><option value="manual">Manuální</option><option value="reminder_client">Upomínka klienta</option><option value="invoice">Faktura</option><option value="schedule">Plán</option><option value="handover_protocol">Předávací protokol</option></select>
+              <select id="taskPriority"><option value="normal">Normální</option><option value="high">Vysoká</option><option value="urgent">Urgentní</option></select>
               <button class="btn btn-p" id="addTask">Přidat</button>
             </div>
           </div>
+          <div class="card-s">
+            <div class="card-s-t">🏁 Dokončení zakázky</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button id="btnSendAct" class="btn btn-p" style="justify-content:center;padding:12px">✍️ Odeslat akt o dílo klientovi</button>
+              <button id="btnSendReview" class="btn" style="justify-content:center;padding:12px;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#F59E0B">⭐ Odeslat žádost o recenzi (Google Maps)</button>
+            </div>
+          </div>
         `
-        el.querySelectorAll('[data-rstatus]').forEach(btn => {
+        el.querySelectorAll('[data-move-stage]').forEach(btn => {
           btn.addEventListener('click', async () => {
-            await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ realizationStatus: btn.getAttribute('data-rstatus') }) })
+            const newStage = btn.getAttribute('data-move-stage')
+            if (newStage === stage) return
+            if (!confirm(`Posunout zakázku do etapy "${newStage}"?`)) return
+            await apiFetch(api(`/api/crm/jobs/${jobId}/move`), { method: 'POST', body: JSON.stringify({ stage: newStage }) })
             loadJob()
           })
+        })
+        document.getElementById('savePlannedStart')?.addEventListener('click', async () => {
+          const v = document.getElementById('plannedStartInput').value
+          await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ plannedStart: v ? new Date(v).toISOString() : null }) })
+          loadJob()
+        })
+        document.getElementById('savePlannedEnd')?.addEventListener('click', async () => {
+          const v = document.getElementById('plannedEndInput').value
+          await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ plannedEnd: v ? new Date(v).toISOString() : null }) })
+          loadJob()
         })
         el.querySelectorAll('[data-task]').forEach(btn => {
           btn.addEventListener('click', async () => {
@@ -596,6 +767,38 @@
           await apiFetch(api(`/api/crm/jobs/${jobId}/tasks`), { method: 'POST', body: JSON.stringify({ title, taskType: document.getElementById('taskType').value, priority: document.getElementById('taskPriority').value }) })
           document.getElementById('taskTitle').value = ''; loadJob()
         })
+
+        // Completion act + review buttons
+        const actBtn = el.querySelector('#btnSendAct')
+        if (actBtn) {
+          actBtn.addEventListener('click', async () => {
+            const email = prompt('Email klienta pro odeslání aktu:', data?.customer?.email || '')
+            if (!email) return
+            actBtn.disabled = true; actBtn.textContent = '⏳...'
+            try {
+              const r = await apiFetch(api(`/api/crm/jobs/${jobId}/completion-act/prepare`), { method: 'POST', body: JSON.stringify({ clientEmail: email }) })
+              const d = await r.json()
+              if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
+              alert(`✓ Akt odeslán!\nOdkaz: ${d.actUrl}`)
+            } catch (e) { alert('Chyba: ' + String(e?.message || e)) }
+            finally { actBtn.disabled = false; actBtn.textContent = '✍️ Odeslat akt o dílo klientovi' }
+          })
+        }
+        const reviewBtn = el.querySelector('#btnSendReview')
+        if (reviewBtn) {
+          reviewBtn.addEventListener('click', async () => {
+            const email = prompt('Email klienta pro žádost o hodnocení:', data?.customer?.email || '')
+            if (!email) return
+            reviewBtn.disabled = true; reviewBtn.textContent = '⏳...'
+            try {
+              const r = await apiFetch(api(`/api/crm/jobs/${jobId}/send-review-request`), { method: 'POST', body: JSON.stringify({ clientEmail: email }) })
+              const d = await r.json()
+              if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
+              alert('✓ Žádost o hodnocení odeslána!')
+            } catch (e) { alert('Chyba: ' + String(e?.message || e)) }
+            finally { reviewBtn.disabled = false; reviewBtn.textContent = '⭐ Odeslat žádost o recenzi (Google Maps)' }
+          })
+        }
       }
 
       async function loadJob() {
@@ -619,7 +822,7 @@
         renderStageBar(job.stage)
         renderCtrl(job)
         renderPrehled(job, customer, lead)
-        renderKomunikace(d.events || [])
+        await renderKomunikace(d.events || [])
         renderDokumenty(d.documents || [], d.estimates || [], customer, job)
         renderFinance(job, d.invoices || [])
         renderRealizace(job, d.tasks || [])

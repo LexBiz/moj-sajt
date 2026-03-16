@@ -44,6 +44,7 @@ const DATA_DIR = path.join(__dirname, 'data')
 const GENERATED_DIR = path.join(__dirname, 'generated')
 const GENERATED_OFFERS_DIR = path.join(GENERATED_DIR, 'offers')
 const GENERATED_ESTIMATES_DIR = path.join(GENERATED_DIR, 'estimates')
+const UPLOADS_DIR = path.join(__dirname, 'uploads')
 const OFFER_TEMPLATES_DIR = String(process.env.CRM_OFFER_TEMPLATES_DIR || path.join(__dirname, 'templates', 'offers')).trim()
 const CRM_PUBLIC_BASE_URL = String(process.env.CRM_PUBLIC_BASE_URL || `http://localhost:${PORT}`).trim().replace(/\/+$/, '')
 const DB_URL = String(process.env.CRM_DATABASE_URL || process.env.DATABASE_URL || '').trim()
@@ -129,6 +130,7 @@ function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
   if (!fs.existsSync(GENERATED_OFFERS_DIR)) fs.mkdirSync(GENERATED_OFFERS_DIR, { recursive: true })
   if (!fs.existsSync(GENERATED_ESTIMATES_DIR)) fs.mkdirSync(GENERATED_ESTIMATES_DIR, { recursive: true })
+  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true })
 }
 function fileStorePath(name) {
   ensureDataDir()
@@ -330,6 +332,26 @@ async function sendResendEmail({ to, subject, text, attachments }) {
   } catch (e) {
     return { attempted: true, ok: false, reason: 'email_exception', details: String(e?.message || e) }
   }
+}
+
+async function logJobEmail({ jobId, leadId, direction, subject, fromAddr, toAddr, body, resendId, status, rawPayload }) {
+  if (!pool) return null
+  try {
+    const q = await dbQuery(
+      `INSERT INTO crm_job_emails (job_id,lead_id,direction,subject,from_addr,to_addr,body,sent_at,resend_id,status,raw_payload,created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,now(),$8,$9,$10,now()) RETURNING id`,
+      [jobId || null, leadId || null, direction || 'outbound', subject || null, fromAddr || null, toAddr || null, body || null, resendId || null, status || 'sent', rawPayload ? JSON.stringify(rawPayload) : null]
+    )
+    return q.rows[0]?.id || null
+  } catch { return null }
+}
+
+async function listJobEmailsDb(jobId) {
+  if (!pool) return []
+  try {
+    const q = await dbQuery(`SELECT * FROM crm_job_emails WHERE job_id=$1 ORDER BY sent_at DESC LIMIT 200`, [jobId])
+    return q.rows.map(r => ({ id: r.id, jobId: r.job_id, leadId: r.lead_id, direction: r.direction, subject: r.subject, fromAddr: r.from_addr, toAddr: r.to_addr, body: r.body, sentAt: r.sent_at, resendId: r.resend_id, status: r.status }))
+  } catch { return [] }
 }
 
 async function sendWhatsAppLead(lead) {
@@ -2540,7 +2562,8 @@ async function openAiExtractCommercialCase({ lead, formText }) {
 }
 
 async function queueLeadDelivery(lead) {
-  const wa = await sendWhatsAppLead(lead)
+  // WhatsApp notification is intentionally NOT sent here —
+  // it fires when the client RETURNS the form (in /api/client-brief handler)
   const mail = await sendResendEmail({
     to: lead.email,
     subject: buildClientMail(lead).subject,
@@ -2553,7 +2576,7 @@ async function queueLeadDelivery(lead) {
     proposalSentAt: emailState.state === 'sent' ? nowIso() : null,
     proposalError: emailState.errorText,
   })
-  return { wa, mail, lead: updated }
+  return { mail, lead: updated }
 }
 
 function publicError(lang, key) {
@@ -2879,7 +2902,7 @@ async function listProblems() {
     const t = j.timers || {}
     if (t.daysWithoutClientReply != null && t.daysWithoutClientReply >= 3) return true
     if (t.daysSinceOfferSent != null && t.daysSinceOfferSent >= 5 && (j.pipelineStage || j.stage) === 'nabidka_odeslana') return true
-    if (t.daysToStart != null && t.daysToStart <= 3 && t.daysToStart >= 0) return true
+    if (t.daysToStart != null && t.daysToStart <= 5 && t.daysToStart >= 0) return true  // 5-day start warning
     if (t.daysOverdue != null && t.daysOverdue > 0) return true
     if (j.computedBlocking && j.computedBlocking !== 'none') return true
     if (j.computedRisk !== 'none') return true
@@ -2888,14 +2911,20 @@ async function listProblems() {
 }
 
 function groupProblemsByType(items = []) {
-  const groups = { bez_odpovedi: [], finance: [], dokumenty: [], realizace: [], po_terminu: [] }
+  const groups = { brzy_start: [], bez_odpovedi: [], ceka_odpoved: [], finance: [], dokumenty: [], realizace: [], po_terminu: [] }
   for (const job of items) {
     const t = job.timers || {}
     const blocking = job.computedBlocking || 'none'
+    const stage = job.pipelineStage || job.stage
+    // Urgent: start within 5 days
+    if (t.daysToStart != null && t.daysToStart <= 5 && t.daysToStart >= 0) { groups.brzy_start.push(job); continue }
+    // Waiting for client response after offer sent
+    if (stage === 'nabidka_odeslana' && t.daysSinceOfferSent != null && t.daysSinceOfferSent >= 3) { groups.ceka_odpoved.push(job); continue }
+    // Client not responding
     if (t.daysWithoutClientReply != null && t.daysWithoutClientReply >= 3) { groups.bez_odpovedi.push(job); continue }
     if (['waiting_advance_payment', 'overdue_invoice'].includes(blocking)) { groups.finance.push(job); continue }
     if (['missing_form', 'missing_contract', 'missing_protocol', 'waiting_signature'].includes(blocking)) { groups.dokumenty.push(job); continue }
-    if ((job.pipelineStage || job.stage) === 'realizace' || ['missing_material'].includes(blocking)) { groups.realizace.push(job); continue }
+    if (stage === 'realizace' || ['missing_material'].includes(blocking)) { groups.realizace.push(job); continue }
     if (t.daysOverdue != null && t.daysOverdue > 0) { groups.po_terminu.push(job); continue }
     groups.realizace.push(job)
   }
@@ -2948,6 +2977,7 @@ app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static(path.join(__dirname, 'public')))
 app.use('/generated', express.static(path.join(__dirname, 'generated')))
+app.use('/uploads', express.static(UPLOADS_DIR))
 
 app.get('/api/ops/status', async (_req, res) => {
   try {
@@ -3307,8 +3337,13 @@ app.post('/api/client-brief', async (req, res) => {
       }
     }
     const dispatch = await sendBriefToOwner({ company, goal, details: summaryText })
+    // Send WhatsApp notification to internal team when client RETURNS the form
+    let waResult = { attempted: false }
+    if (updatedLead) {
+      waResult = await sendWhatsAppLead(updatedLead).catch(() => ({ attempted: false, ok: false, reason: 'error' }))
+    }
     if (!dispatch.ok) return res.status(502).json({ ok: false, error: 'Failed to send brief email.', dispatch })
-    return res.json({ ok: true, dispatch, linkedLead: updatedLead, offerDraft })
+    return res.json({ ok: true, dispatch, whatsapp: waResult, linkedLead: updatedLead, offerDraft })
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) })
   }
@@ -3910,6 +3945,10 @@ app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['ad
     await updateLead(Number(lead.id), { status: STATUS.OFFER_SENT, wave: Math.max(2, Number(lead.wave || 1)) })
   }
   await insertAudit(req.auth?.email || null, 'estimate_sent_to_client', 'estimate', id, { to, estimateNo: estimate.estimateNo || null })
+  // Log email to correspondence table
+  if (job?.id) {
+    await logJobEmail({ jobId: job.id, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: text, status: 'sent' })
+  }
   return res.json({ ok: true, estimate: updatedEstimate, mail, files: { xlsx, pdf } })
 })
 
@@ -4124,6 +4163,50 @@ app.get('/api/crm/jobs/:id/documents', authMiddleware, roleGuard(['admin', 'mana
   return res.json({ ok: true, documents: await listJobDocuments(Number(req.params.id)) })
 })
 
+// File upload for job documents (max 20MB)
+const jobFileUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = path.join(UPLOADS_DIR, 'jobs', String(req.params.id))
+      fs.mkdirSync(dir, { recursive: true })
+      cb(null, dir)
+    },
+    filename: (req, file, cb) => {
+      const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_\u0400-\u04FF]/g, '_')
+      cb(null, `${Date.now()}_${safe}`)
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+})
+app.post('/api/crm/jobs/:id/documents/upload', authMiddleware, roleGuard(['admin', 'manager']), jobFileUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ ok: false, error: 'No file uploaded' })
+    const jobId = Number(req.params.id)
+    const relPath = path.relative(path.join(__dirname), req.file.path).replace(/\\/g, '/')
+    const fileUrl = `/${relPath}`
+    const docType = req.body?.documentType || 'other'
+    const doc = await addJobDocument(jobId, {
+      fileName: req.file.originalname,
+      filePath: req.file.path,
+      fileUrl,
+      storageKey: relPath,
+      documentType: docType,
+      status: 'uploaded',
+      uploadedBy: req.auth?.email || 'user',
+      source: 'manual_upload',
+      isFinal: false,
+    })
+    await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'document_uploaded', actorType: 'user', title: `Soubor nahrán: ${req.file.originalname}`, actor: req.auth?.email, message: `Nahráno: ${req.file.originalname} (${Math.round(req.file.size / 1024)} kB)`, metadata: { documentType: docType } })
+    return res.json({ ok: true, document: doc })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e?.message || e) })
+  }
+})
+
+app.get('/api/crm/jobs/:id/emails', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  return res.json({ ok: true, emails: await listJobEmailsDb(Number(req.params.id)) })
+})
+
 app.post('/api/crm/jobs/:id/events', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
   const ev = await addJobEvent(Number(req.params.id), { ...(req.body || {}), actor: req.auth?.email || req.body?.actor, actorType: req.body?.actorType || 'user' })
   return res.json({ ok: true, event: ev })
@@ -4166,6 +4249,126 @@ app.post('/api/crm/jobs/:id/invoices', authMiddleware, roleGuard(['admin', 'mana
 
 app.get('/api/crm/jobs/:id/invoices', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
   return res.json({ ok: true, invoices: await listJobInvoices(Number(req.params.id)) })
+})
+
+app.post('/api/crm/jobs/:id/invoices/:invId/paid', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const invId = Number(req.params.invId)
+  const jobId = Number(req.params.id)
+  if (pool) {
+    await dbQuery(`UPDATE crm_job_invoices SET status='paid', paid_at=now(), updated_at=now() WHERE id=$1`, [invId])
+  }
+  await addJobEvent(jobId, { eventType: 'finance_update', eventCode: 'invoice_paid', actorType: 'user', title: 'Faktura označena jako uhrazena', actor: req.auth?.email, message: `Faktura ID ${invId} uhrazena`, metadata: { invoiceId: invId } })
+  return res.json({ ok: true })
+})
+
+// ── GOOGLE MAPS REVIEW ──────────────────────────────────────────────────────
+
+app.post('/api/crm/jobs/:id/send-review-request', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const jobId = Number(req.params.id)
+  if (!Number.isFinite(jobId)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+  const job = await getJobById(jobId)
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' })
+  const customer = job.customerId ? await getCustomerById(job.customerId) : null
+  const clientEmail = String(req.body?.clientEmail || customer?.email || '').trim().toLowerCase()
+  if (!clientEmail) return res.status(400).json({ ok: false, error: 'Client email is required' })
+  const reviewUrl = String(process.env.GOOGLE_MAPS_REVIEW_URL || 'https://search.google.com/local/writereview').trim()
+  const subject = `Zpětná vazba — O&L Master Dom`
+  const text = `Dobrý den,\n\nděkujeme za využití našich služeb!\nByli bychom Vám vděčni, pokud byste nám zanechali hodnocení na Google Maps:\n\n${reviewUrl}\n\nVaše hodnocení nám pomáhá zlepšovat naše služby.\n\nDěkujeme,\nTým O&L Master Dom`
+  const mail = await sendResendEmail({ to: clientEmail, subject, text })
+  if (pool) {
+    await logJobEmail({ jobId, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: clientEmail, body: text, status: mail.ok ? 'sent' : 'failed' })
+  }
+  await addJobEvent(jobId, { eventType: 'email_sent', eventCode: 'review_requested', actorType: 'user', actor: req.auth?.email, title: 'Žádost o hodnocení odeslána', message: `Odkaz na Google Maps hodnocení odeslán na ${clientEmail}`, metadata: { reviewUrl } })
+  return res.json({ ok: true, mail })
+})
+
+// ── COMPLETION ACT ──────────────────────────────────────────────────────────
+
+app.post('/api/crm/jobs/:id/completion-act/prepare', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const jobId = Number(req.params.id)
+  if (!Number.isFinite(jobId)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+  const job = await getJobById(jobId)
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' })
+  const customer = job.customerId ? await getCustomerById(job.customerId) : null
+  const clientEmail = String(req.body?.clientEmail || customer?.email || '').trim().toLowerCase()
+  if (!clientEmail) return res.status(400).json({ ok: false, error: 'Client email is required' })
+  const token = crypto.randomBytes(32).toString('hex')
+  const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
+  if (pool) {
+    await dbQuery(
+      `INSERT INTO crm_completion_acts (job_id, token, client_email, status, expires_at, created_at) VALUES ($1,$2,$3,'pending',$4,now())`,
+      [jobId, token, clientEmail, expiresAt]
+    )
+  }
+  const actUrl = `${process.env.PUBLIC_BASE_URL || 'https://demo.temoweb.eu'}/completion-act.html?token=${token}`
+  // Send email to client
+  const subject = `Akt o provedení prací — zakázka ${job.internalNumber || jobId}`
+  const text = `Dobrý den,\n\nzakázka ${job.internalNumber || ''} je dokončena.\nProsíme Vás o prostudování a podpis aktu o provedení prací na adrese:\n\n${actUrl}\n\nAkt bude platný 30 dní.\n\nDěkujeme za spolupráci,\nO&L Master Dom`
+  const mail = await sendResendEmail({ to: clientEmail, subject, text })
+  if (job?.id) {
+    await logJobEmail({ jobId: job.id, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: clientEmail, body: text, status: mail.ok ? 'sent' : 'failed' })
+    await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'completion_act_sent', actorType: 'user', actor: req.auth?.email, title: 'Akt o provedení prací odeslán', message: `Odkaz na podpis aktu byl odeslán na ${clientEmail}`, metadata: { token, actUrl } })
+  }
+  return res.json({ ok: true, actUrl, token, mail })
+})
+
+app.get('/api/crm/completion-act/view', async (req, res) => {
+  const token = String(req.query.token || '').trim()
+  if (!token) return res.status(400).json({ ok: false, error: 'Missing token' })
+  let act = null
+  if (pool) {
+    const q = await dbQuery(`SELECT * FROM crm_completion_acts WHERE token=$1 LIMIT 1`, [token])
+    act = q.rows[0]
+  }
+  if (!act) return res.status(404).json({ ok: false, error: 'Act not found' })
+  if (act.status === 'signed') return res.status(400).json({ ok: false, error: 'Tento akt byl již podepsán.', alreadySigned: true })
+  if (act.expires_at && new Date(act.expires_at) < new Date()) return res.status(400).json({ ok: false, error: 'Platnost odkazu vypršela.' })
+  const job = await getJobById(Number(act.job_id))
+  const customer = job?.customerId ? await getCustomerById(job.customerId) : null
+  const estimates = await listEstimates({ jobId: job?.id })
+  const estimate = estimates?.[0] || null
+  return res.json({ ok: true, job, customer, estimate, clientEmail: act.client_email })
+})
+
+app.post('/api/crm/completion-act/sign', async (req, res) => {
+  const token = String(req.body?.token || '').trim()
+  const signerName = String(req.body?.signerName || '').trim()
+  const signatureImage = String(req.body?.signatureImage || '').trim()
+  if (!token) return res.status(400).json({ ok: false, error: 'Missing token' })
+  if (!signerName) return res.status(400).json({ ok: false, error: 'Signer name is required' })
+  if (!signatureImage || !signatureImage.startsWith('data:image/')) return res.status(400).json({ ok: false, error: 'Invalid signature image' })
+  let act = null
+  if (pool) {
+    const q = await dbQuery(`SELECT * FROM crm_completion_acts WHERE token=$1 LIMIT 1`, [token])
+    act = q.rows[0]
+  }
+  if (!act) return res.status(404).json({ ok: false, error: 'Act not found' })
+  if (act.status === 'signed') return res.status(400).json({ ok: false, error: 'Tento akt byl již podepsán.' })
+  if (act.expires_at && new Date(act.expires_at) < new Date()) return res.status(400).json({ ok: false, error: 'Platnost odkazu vypršela.' })
+  // Save signature image
+  const sigDir = path.join(UPLOADS_DIR, 'signatures')
+  fs.mkdirSync(sigDir, { recursive: true })
+  const sigFileName = `sig_${act.job_id}_${Date.now()}.png`
+  const sigPath = path.join(sigDir, sigFileName)
+  const base64Data = signatureImage.replace(/^data:image\/\w+;base64,/, '')
+  fs.writeFileSync(sigPath, Buffer.from(base64Data, 'base64'))
+  // Update act status
+  if (pool) {
+    await dbQuery(
+      `UPDATE crm_completion_acts SET status='signed', signer_name=$1, signed_at=now(), signature_image_path=$2 WHERE token=$3`,
+      [signerName, sigPath, token]
+    )
+  }
+  const jobId = Number(act.job_id)
+  await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'completion_act_signed', actorType: 'customer', title: 'Akt o provedení prací podepsán', message: `Podepsáno: ${signerName}`, metadata: { signerName, signedAt: new Date().toISOString() } })
+  await addJobDocument(jobId, { documentType: 'akt', fileName: `Akt_${signerName.replace(/\s/g,'_')}_podpis.png`, filePath: sigPath, fileUrl: `/uploads/signatures/${sigFileName}`, storageKey: `uploads/signatures/${sigFileName}`, status: 'signed_client', signatureMode: 'online', isFinal: true, signedAt: new Date().toISOString() })
+  // Notify company by email
+  const job = await getJobById(jobId)
+  const ownerEmail = process.env.COMPANY_EMAIL || process.env.RESEND_FROM || ''
+  if (ownerEmail) {
+    await sendResendEmail({ to: ownerEmail, subject: `✅ Akt podepsán — ${job?.internalNumber || jobId}`, text: `Zákazník ${signerName} podepsal akt o provedení prací pro zakázku ${job?.internalNumber || jobId}.` }).catch(() => {})
+  }
+  return res.json({ ok: true, message: 'Akt byl úspěšně podepsán' })
 })
 
 async function bootstrap() {
