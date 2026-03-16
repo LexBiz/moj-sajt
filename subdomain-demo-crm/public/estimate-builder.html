@@ -472,82 +472,21 @@
         if (activeMode === 'preview') {
           const t = totals(estimate?.lines || [])
           const pvLines = normalizeEstimateLines(estimate?.lines || [])
-          // Separate main lines vs ostatni_naklady
-          const mainLines = pvLines.filter(l => l.sectionType !== 'ostatni_naklady')
+          const mainLines = pvLines.filter(l => estimateCategory(l) !== 'ostatni' && l.sectionType !== 'ostatni_naklady')
           const ostatniLines = pvLines.filter(l => l.sectionType === 'ostatni_naklady')
           const pvGroupsMain = groupedEstimate(mainLines)
           const vr = Number(estimate?.vatRate || 21)
-          const showOstatni = document.getElementById('toggleOstatni')?.checked || ostatniLines.length > 0
-          // Build main table body with 2-row header
-          const catColors = { elektro:'#B7D7A8', stavba:'#F4B183', ostatni:'#D9E2F3' }
-          const catTextColors = { elektro:'#1E3A16', stavba:'#5A210C', ostatni:'#21324B' }
-          const catCelkemLabels = { elektro:'Elektrikářské práce celkem', stavba:'Stavební práce celkem', ostatni:'Ostatní celkem' }
-          const pvOrdered = ['elektro','stavba'].filter(k => pvGroupsMain.has(k))
-          // Also include any other categories
-          const allCats = [...pvGroupsMain.keys()]
-          const extraCats = allCats.filter(k => !['elektro','stavba'].includes(k))
+          const showOstatniBlock = (document.getElementById('toggleOstatni')?.checked || ostatniLines.length > 0) && ostatniLines.length > 0
+          // Category config — always derive label from cat key, never from potentially corrupt groupLabel
+          const CAT_LABEL = { elektro:'Elektrikářské práce', stavba:'Stavební práce', ostatni:'Ostatní práce' }
+          const CAT_COLOR = { elektro:'#A9D08E', stavba:'#F4B183', ostatni:'#CFD8E8' }
+          const CAT_TEXT  = { elektro:'#1A3A12', stavba:'#5A210C', ostatni:'#21324B' }
+          const CAT_CELKEM= { elektro:'Elektrikářské práce celkem', stavba:'Stavební práce celkem', ostatni:'Ostatní práce celkem' }
+          const CAT_ABBR  = { elektro:'ele', stavba:'stav', ostatni:'ost' }
+          const pvOrdered = ['elektro','stavba','ostatni'].filter(k => pvGroupsMain.has(k))
+          const extraCats = [...pvGroupsMain.keys()].filter(k => !pvOrdered.includes(k))
           const orderedAll = [...pvOrdered, ...extraCats]
-          let tableBodyHtml = ''
-          let rowNum = 1
-          for (const cat of orderedAll) {
-            const pvRows = pvGroupsMain.get(cat) || []
-            if (!pvRows.length) continue
-            const cBg = catColors[cat] || '#E5E7EB'; const cFg = catTextColors[cat] || '#1A1A1A'
-            const catLabel = pvRows[0]?.groupLabel || (cat === 'elektro' ? 'Elektrikářské práce' : cat === 'stavba' ? 'Stavební práce' : cat)
-            tableBodyHtml += `<tr><td colspan="11" style="background:${cBg};color:${cFg};font-weight:700;padding:7px 8px;font-size:11px">${catLabel.toUpperCase()}</td></tr>`
-            let catLaborTotal = 0, catMatTotal = 0, catLineTotal = 0
-            for (const line of pvRows) {
-              const lT = line.lineTotal || 0; const lLab = line.laborTotal || 0; const lMat = line.materialTotal || 0
-              catLaborTotal += lLab; catMatTotal += lMat; catLineTotal += lT
-              const matDesc = line.materialDescription || ''
-              const unitQty = `${String(line.quantity||0)} ${line.unit||'ks'}`
-              tableBodyHtml += `<tr>
-                <td style="font-size:9px;font-family:monospace;padding:5px 6px;color:#555;white-space:nowrap">${esc(line.sourceCatalogCode||line.lineCode||'')}</td>
-                <td style="text-align:center;font-weight:700;padding:5px 6px">${rowNum++}</td>
-                <td style="background:#D9E1F2;padding:5px 6px;min-width:180px"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
-                <td style="background:#C6E0B4;padding:5px 6px;min-width:140px;color:${matDesc?'#1A1A1A':'#9CA3AF'}"><span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(matDesc||'bez materiálu')}</span></td>
-                <td style="text-align:center;padding:5px 6px;white-space:nowrap">${esc(unitQty)}</td>
-                <td style="text-align:right;background:#BDD7EE;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
-                <td style="text-align:right;background:#BDD7EE;padding:5px 6px;font-weight:600">${fmtMoney(lLab)}</td>
-                <td style="text-align:right;background:#F8CBAD;padding:5px 6px">${fmtMoney(line.materialUnitPrice||0)}</td>
-                <td style="text-align:right;background:#F8CBAD;padding:5px 6px;font-weight:600">${fmtMoney(lMat)}</td>
-                <td style="text-align:right;background:#D9D9D9;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
-                <td style="text-align:right;background:#D9D9D9;font-weight:700;padding:5px 6px">${fmtMoney(lT)}</td>
-              </tr>`
-            }
-            tableBodyHtml += `<tr style="background:#F0F0F0">
-              <td colspan="6" style="text-align:right;padding:6px 8px;font-weight:700;font-style:italic;color:#333;font-size:11px">${catCelkemLabels[cat]||catLabel+' celkem'}</td>
-              <td style="text-align:right;background:#BDD7EE;padding:6px 8px;font-weight:800">${fmtMoney(catLaborTotal)}</td>
-              <td style="text-align:right;background:#F8CBAD;padding:6px 8px"></td>
-              <td style="text-align:right;background:#F8CBAD;padding:6px 8px;font-weight:800">${fmtMoney(catMatTotal)}</td>
-              <td style="text-align:right;background:#D9D9D9;padding:6px 8px"></td>
-              <td style="text-align:right;background:#D9D9D9;padding:6px 8px;font-weight:800">${fmtMoney(catLineTotal)}</td>
-            </tr>`
-          }
-          // Ostatní náklady block
-          const showOstatniBlock = showOstatni && ostatniLines.length > 0
-          let ostatniHtml = ''
-          if (showOstatniBlock) {
-            let ostatniTotal = 0
-            ostatniLines.forEach((line, i) => { ostatniTotal += line.lineTotal||0 })
-            ostatniHtml = `
-              <div style="margin-top:16px;border:1.5px solid #9CA3AF;border-radius:4px;overflow:hidden">
-                <div style="background:#D9E2F3;padding:8px 14px;font-weight:700;font-size:12px;color:#21324B">Ostatní rozpočtové náklady</div>
-                <table style="width:100%;border-collapse:collapse;font-size:11px">
-                  <thead>
-                    <tr>
-                      <th style="background:#EEF2FA;border:1px solid #9CA3AF;padding:5px 8px;text-align:left">Popis</th>
-                      <th style="background:#EEF2FA;border:1px solid #9CA3AF;padding:5px 8px;text-align:center;width:80px">MJ</th>
-                      <th style="background:#EEF2FA;border:1px solid #9CA3AF;padding:5px 8px;text-align:right;width:120px">Celkem Kč</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${ostatniLines.map(l => `<tr><td style="border:1px solid #D9DEE7;padding:5px 8px">${esc(l.workDescription||l.itemName||'')}</td><td style="border:1px solid #D9DEE7;padding:5px 8px;text-align:center">${esc(l.unit||'ks')}</td><td style="border:1px solid #D9DEE7;padding:5px 8px;text-align:right;font-weight:700">${fmtMoney(l.lineTotal||0)}</td></tr>`).join('')}
-                    <tr style="background:#F0F4FF;font-weight:800"><td colspan="2" style="border:1px solid #9CA3AF;padding:6px 8px;text-align:right">Ostatní náklady celkem</td><td style="border:1px solid #9CA3AF;padding:6px 8px;text-align:right">${fmtMoney(ostatniTotal)}</td></tr>
-                  </tbody>
-                </table>
-              </div>`
-          }
+
           const pvDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
           const pvTitle = estimate?.title || `Rozpočet ze dne ${pvDate}`
           const pvClientName = estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
@@ -555,6 +494,112 @@
           const pvPm = estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'
           const pvAddr = estimate?.customerAddressSnapshot || lead?.brief?.realizationAddress || '—'
           const pvNote = estimate?.note || ''
+
+          // Reusable 2-row table header HTML
+          const tableHead = `<thead>
+            <tr class="th1">
+              <th rowspan="2" style="width:44px;text-align:center">Číslo<br>pol.</th>
+              <th rowspan="2" style="width:36px;text-align:center">č.</th>
+              <th rowspan="2" style="background:#D4DDEF;min-width:200px;text-align:left;padding-left:8px">Popis práce</th>
+              <th rowspan="2" style="background:#C2DAAC;min-width:160px;text-align:left;padding-left:8px">Popis materiálu</th>
+              <th rowspan="2" style="width:76px;text-align:center">Množství<br>/ MJ</th>
+              <th colspan="2" style="background:#BBCFE8;text-align:center">Cena práce</th>
+              <th colspan="2" style="background:#F5C4A5;text-align:center">Cena materiálu</th>
+              <th colspan="2" style="background:#D5D5D5;text-align:center">Cena práce + materiálu</th>
+            </tr>
+            <tr class="th2">
+              <th style="background:#BBCFE8;width:82px">(mj)</th>
+              <th style="background:#BBCFE8;width:92px">(celkem)</th>
+              <th style="background:#F5C4A5;width:82px">(mj)</th>
+              <th style="background:#F5C4A5;width:92px">(celkem)</th>
+              <th style="background:#D5D5D5;width:82px">(mj)</th>
+              <th style="background:#D5D5D5;width:92px">(celkem)</th>
+            </tr>
+          </thead>`
+
+          // Build sections HTML — one table per category (matches PDF template)
+          let globalRowNum = 1
+          let sectionsHtml = ''
+          for (const cat of orderedAll) {
+            const pvRows = pvGroupsMain.get(cat) || []
+            if (!pvRows.length) continue
+            const cBg = CAT_COLOR[cat] || '#E5E7EB'
+            const cFg = CAT_TEXT[cat] || '#1A1A1A'
+            const catLabel = CAT_LABEL[cat] || cat
+            const catCelkem = CAT_CELKEM[cat] || (catLabel + ' celkem')
+            const abbr = CAT_ABBR[cat] || cat.slice(0,3)
+            let catLaborTotal = 0, catMatTotal = 0, catLineTotal = 0
+            let rowsHtml = ''
+            for (const line of pvRows) {
+              const lT = line.lineTotal || 0; const lLab = line.laborTotal || 0; const lMat = line.materialTotal || 0
+              catLaborTotal += lLab; catMatTotal += lMat; catLineTotal += lT
+              const matDesc = line.materialDescription || ''
+              const unitQty = `${String(line.quantity||0)} ${line.unit||'ks'}`
+              const noMat = !matDesc
+              rowsHtml += `<tr>
+                <td style="text-align:center;font-size:10px;font-weight:700;color:#555;padding:5px 4px;white-space:nowrap;background:${cBg}22">${esc(abbr)}</td>
+                <td style="text-align:center;font-weight:700;padding:5px 4px;font-size:12px">${globalRowNum++}</td>
+                <td style="background:#E8EDFA;padding:5px 7px"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
+                <td style="background:#DCF0CC;padding:5px 7px;color:${noMat?'#9CA3AF':'#1A1A1A'};font-style:${noMat?'italic':'normal'}"><span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(matDesc||'položka neobsahuje materiál')}</span></td>
+                <td style="text-align:center;padding:5px 5px;white-space:nowrap;font-size:11px">${esc(unitQty)}</td>
+                <td class="num" style="background:#BBCFE8;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
+                <td class="num" style="background:#BBCFE8;padding:5px 6px;font-weight:700">${fmtMoney(lLab)}</td>
+                <td class="num" style="background:#F5C4A5;padding:5px 6px;color:${lMat>0?'#1A1A1A':'#9CA3AF'}">${lMat>0?fmtMoney(line.materialUnitPrice||0):'0 Kč'}</td>
+                <td class="num" style="background:#F5C4A5;padding:5px 6px;font-weight:700;color:${lMat>0?'#1A1A1A':'#9CA3AF'}">${fmtMoney(lMat)}</td>
+                <td class="num" style="background:#D5D5D5;padding:5px 6px">${fmtMoney((line.laborUnitPrice||0)+(line.materialUnitPrice||0))}</td>
+                <td class="num" style="background:#D5D5D5;padding:5px 6px;font-weight:800">${fmtMoney(lT)}</td>
+              </tr>`
+            }
+            // Subtotal row
+            rowsHtml += `<tr style="background:#E8ECF6">
+              <td colspan="6" style="text-align:right;padding:7px 10px;font-weight:700;font-style:italic;color:#1E3060;font-size:11.5px;border-top:2px solid ${cBg}">${catCelkem}</td>
+              <td class="num" style="background:#BBCFE8;padding:7px 8px;font-weight:800;border-top:2px solid ${cBg}">${fmtMoney(catLaborTotal)}</td>
+              <td style="background:#F5C4A5;border-top:2px solid ${cBg}"></td>
+              <td class="num" style="background:#F5C4A5;padding:7px 8px;font-weight:800;border-top:2px solid ${cBg}">${fmtMoney(catMatTotal)}</td>
+              <td style="background:#D5D5D5;border-top:2px solid ${cBg}"></td>
+              <td class="num" style="background:#D5D5D5;padding:7px 8px;font-weight:800;border-top:2px solid ${cBg}">${fmtMoney(catLineTotal)}</td>
+            </tr>`
+            sectionsHtml += `
+              <div class="pdf-section" style="margin-top:22px">
+                <div class="pdf-section-head" style="background:${cBg};color:${cFg};padding:8px 14px;font-size:13px;font-weight:800;border-radius:3px 3px 0 0;letter-spacing:.1px">${catLabel}</div>
+                <div class="pdf-table-wrap" style="margin-top:0;border-radius:0 0 3px 3px;border-top:none">
+                  <table class="pdf-table">${tableHead}<tbody>${rowsHtml}</tbody></table>
+                </div>
+              </div>`
+          }
+
+          // Ostatní náklady block (last frame)
+          let ostatniHtml = ''
+          if (showOstatniBlock) {
+            let ostatniTotal = 0
+            const ostatniRows = ostatniLines.map(l => {
+              const lineT = l.lineTotal || l.laborTotal || (Number(l.laborUnitPrice||0)*Number(l.quantity||1))
+              ostatniTotal += lineT
+              return `<tr>
+                <td style="border:1px solid #C8D2E2;padding:6px 10px;font-size:12px">${esc(l.workDescription||l.itemName||'')}</td>
+                <td style="border:1px solid #C8D2E2;padding:6px 8px;text-align:center;font-size:12px;white-space:nowrap">${esc(l.unit||'ks')}</td>
+                <td style="border:1px solid #C8D2E2;padding:6px 10px;text-align:right;font-weight:700;font-size:12px">${fmtMoney(lineT)}</td>
+              </tr>`
+            }).join('')
+            ostatniHtml = `
+              <div class="pdf-ostatni-box" style="margin-top:24px">
+                <div class="pdf-ostatni-head">Ostatní rozpočtové náklady</div>
+                <table style="width:100%;border-collapse:collapse">
+                  <thead><tr>
+                    <th style="background:#EEF2FA;border:1px solid #C8D2E2;padding:6px 10px;text-align:left;font-size:11px">Popis</th>
+                    <th style="background:#EEF2FA;border:1px solid #C8D2E2;padding:6px 8px;text-align:center;width:80px;font-size:11px">MJ</th>
+                    <th style="background:#EEF2FA;border:1px solid #C8D2E2;padding:6px 10px;text-align:right;width:130px;font-size:11px">Celkem Kč</th>
+                  </tr></thead>
+                  <tbody>${ostatniRows}
+                    <tr style="background:#E8EEF8;font-weight:800">
+                      <td colspan="2" style="border:1px solid #B0BAC8;padding:7px 10px;text-align:right;font-size:12px">Ostatní náklady celkem</td>
+                      <td style="border:1px solid #B0BAC8;padding:7px 10px;text-align:right;font-size:13px">${fmtMoney(ostatniTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>`
+          }
+
           body.innerHTML = `
             <div class="preview-wrap">
               <div class="preview-actions">
@@ -562,74 +607,43 @@
                 <button id="previewSaveEdits" class="btn" style="background:#D97706;color:#fff;border:none">💾 Uložit úpravy</button>
                 <button id="previewBuildBtn" class="btn" style="background:#1D4ED8;color:#fff;border:none">⚡ Excel / PDF</button>
                 <button id="previewSendBtn" class="btn" style="background:#059669;color:#fff;border:none">✉ Odeslat klientovi</button>
-                <span style="font-size:12px;color:var(--ink3);padding:8px 4px;margin-left:4px">Поля позначені пунктиром — натисни щоб редагувати</span>
+                <span style="font-size:12px;color:var(--ink3);padding:8px 4px;margin-left:4px">Поля з пунктиром — натисни щоб редагувати</span>
               </div>
               <div class="pdf-paper">
-                <!-- HEADER -->
-                <div class="pdf-header">
-                  <div class="pdf-header-top">
-                    <div>
-                      <img src="./logo.jpg" class="pdf-logo" alt="O&L Master Dom" />
-                      <div class="pdf-company-name">O&amp;L Master Dom</div>
-                      <div class="pdf-company-sub">Elektromontážní a stavební práce</div>
-                    </div>
-                    <div style="text-align:right">
-                      <div class="pdf-right-title">ROZPOČET</div>
-                      <div style="font-size:12.5px;color:#4B5563">
-                        <div class="pdf-meta-row">Název: <strong contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</strong></div>
-                        <div class="pdf-meta-row">Číslo: <strong>${esc(estimate?.estimateNo||'—')}</strong></div>
-                        <div class="pdf-meta-row">Datum: <strong contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</strong></div>
-                        <div class="pdf-meta-row">Zakázka: <strong>${esc(pvJobNum)}</strong></div>
-                        <div class="pdf-meta-row">Verze: <strong contenteditable="true" class="pdf-editable" id="pvVersionEdit">${esc(String(estimate?.versionNo||1))}</strong></div>
-                      </div>
-                    </div>
+                <!-- DOCUMENT TITLE — matches template -->
+                <div style="margin-bottom:18px;border-bottom:2px solid #111827;padding-bottom:14px">
+                  <div style="font-size:13px;color:#6B7280;margin-bottom:4px">Název rozpočtu:</div>
+                  <div style="font-size:19px;font-weight:800;color:#111827;line-height:1.2">
+                    <span contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</span>
                   </div>
-                  <div class="pdf-info-grid" style="margin-top:12px">
-                    <div class="pdf-info-box"><div class="lbl">Klient</div><div class="val" contenteditable="true" id="pvClientEdit">${esc(pvClientName)}</div></div>
-                    <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="val" contenteditable="true" id="pvAddrEdit">${esc(pvAddr)}</div></div>
-                    <div class="pdf-info-box"><div class="lbl">Projektový manažer</div><div class="val" contenteditable="true" id="pvPmEdit">${esc(pvPm)}</div></div>
+                  <div style="display:flex;gap:24px;margin-top:10px;font-size:12px;color:#555;flex-wrap:wrap">
+                    <span>Datum: <strong contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</strong></span>
+                    <span>Číslo: <strong>${esc(estimate?.estimateNo||'—')}</strong></span>
+                    <span>Zakázka: <strong>${esc(pvJobNum)}</strong></span>
+                    <span>Verze: <strong contenteditable="true" class="pdf-editable" id="pvVersionEdit">${esc(String(estimate?.versionNo||1))}</strong></span>
                   </div>
                 </div>
-                <!-- MAIN TABLE with 2-row header -->
-                <div class="pdf-table-wrap">
-                  <table class="pdf-table">
-                    <thead>
-                      <tr class="th1">
-                        <th rowspan="2" style="width:70px">Kategorie</th>
-                        <th rowspan="2" style="width:80px">Kód položky</th>
-                        <th rowspan="2" style="width:40px">č.</th>
-                        <th rowspan="2" style="background:#D9E1F2;min-width:160px;text-align:left">Popis práce</th>
-                        <th rowspan="2" style="background:#C6E0B4;min-width:130px;text-align:left">Popis materiálu</th>
-                        <th rowspan="2" style="width:80px">Množství / MJ</th>
-                        <th colspan="2" style="background:#BDD7EE">Cena práce</th>
-                        <th colspan="2" style="background:#F8CBAD">Cena materiálu</th>
-                        <th colspan="2" style="background:#D9D9D9">Cena práce + materiálu</th>
-                      </tr>
-                      <tr class="th2">
-                        <th style="background:#BDD7EE;width:90px">(mj)</th>
-                        <th style="background:#BDD7EE;width:100px">(celkem)</th>
-                        <th style="background:#F8CBAD;width:90px">(mj)</th>
-                        <th style="background:#F8CBAD;width:100px">(celkem)</th>
-                        <th style="background:#D9D9D9;width:90px">(mj)</th>
-                        <th style="background:#D9D9D9;width:100px">(celkem)</th>
-                      </tr>
-                    </thead>
-                    <tbody>${tableBodyHtml}</tbody>
-                  </table>
+                <!-- CLIENT INFO ROW -->
+                <div class="pdf-info-grid">
+                  <div class="pdf-info-box"><div class="lbl">Klient</div><div class="val" contenteditable="true" id="pvClientEdit">${esc(pvClientName)}</div></div>
+                  <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="val" contenteditable="true" id="pvAddrEdit">${esc(pvAddr)}</div></div>
+                  <div class="pdf-info-box"><div class="lbl">Projektový manažer</div><div class="val" contenteditable="true" id="pvPmEdit">${esc(pvPm)}</div></div>
                 </div>
-                <!-- OSTATNÍ block -->
+                <!-- SECTIONS (one per category, like in PDF template) -->
+                ${sectionsHtml}
+                <!-- OSTATNÍ BLOCK -->
                 ${ostatniHtml}
-                <!-- TOTALS -->
-                <div class="pdf-totals">
+                <!-- GLOBAL TOTALS -->
+                <div class="pdf-totals" style="margin-top:28px">
                   <div class="pdf-totals-box">
                     <div class="pdf-tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div>
                     <div class="pdf-tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div>
-                    <div class="pdf-tot-row" style="background:#F9FAFB;font-weight:700"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div>
+                    <div class="pdf-tot-row subtotal-section"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div>
                     <div class="pdf-tot-row"><span>DPH <span contenteditable="true" class="pdf-editable" id="pvVatEdit">${vr}</span> %</span><strong id="pvDphVal">${fmtMoney(t.dph)}</strong></div>
                     <div class="pdf-tot-row final"><span>Celkem s DPH</span><strong id="pvTotalVal">${fmtMoney(t.total)}</strong></div>
                   </div>
                 </div>
-                ${pvNote ? `<div style="margin-top:16px;font-size:12px;color:#374151;padding:10px 14px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 4px 4px 0"><b>Poznámka:</b> <span contenteditable="true" class="pdf-editable" id="pvNoteEdit">${esc(pvNote)}</span></div>` : ''}
+                ${pvNote ? `<div style="margin-top:18px;font-size:12.5px;color:#374151;padding:12px 16px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 5px 5px 0"><b>Poznámka:</b> <span contenteditable="true" class="pdf-editable" id="pvNoteEdit">${esc(pvNote)}</span></div>` : ''}
                 <!-- FOOTER -->
                 <div class="pdf-footer">
                   <span>${esc(pvDate)}</span>
@@ -639,8 +653,7 @@
               </div>
             </div>
           `
-          // Wire up preview editable save
-          document.getElementById('previewOpenCart')?.addEventListener('click', () => { document.getElementById('editorSheet').classList.add('show') })
+          document.getElementById('previewOpenCart')?.addEventListener('click', () => { document.querySelector('[data-mode="work"]')?.click() })
           document.getElementById('previewBuildBtn')?.addEventListener('click', buildEstimateDocs)
           document.getElementById('previewSendBtn')?.addEventListener('click', () => {
             document.getElementById('sendPopover').classList.add('show')
@@ -657,7 +670,6 @@
             estimate.projectManagerSnapshot = g('pvPmEdit') || estimate.projectManagerSnapshot
             estimate.note = g('pvNoteEdit') || estimate.note
             estimate.vatRate = Number(g('pvVatEdit') || estimate.vatRate || 21)
-            // Save edits to line descriptions
             body.querySelectorAll('[data-field][data-lid]').forEach(el => {
               const lid = el.getAttribute('data-lid')
               const field = el.getAttribute('data-field')
