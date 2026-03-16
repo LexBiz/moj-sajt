@@ -1,1151 +1,942 @@
 <!doctype html>
 <html lang="cs">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>O&L Master Dom · Кошторис</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <style>
-      :root{--bg:#020C18;--s:#071626;--s2:#091B30;--c:#0C1E38;--c2:#0F2442;--b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;--blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;--green:#14C98A;--red:#E83A3A;--r:10px;--r-md:14px;--r-lg:18px;--sh:0 8px 32px rgba(0,0,0,.45);--paper:#ffffff;--paper-ink:#1A1A1A;--paper-muted:#6E7682;--paper-line:#D9DEE7;--paper-head:#EFF3F8}
-      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;background-image:radial-gradient(ellipse 160% 40% at 50% -4%,rgba(26,106,232,.12) 0%,transparent 55%)}
-      .header{position:sticky;top:0;z-index:40;background:rgba(2,12,24,.94);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px)}
-      .header-inner{max-width:1900px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-      .logo{display:flex;align-items:center;gap:10px}.logo-mark{height:44px;min-width:44px;border-radius:10px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,106,232,.3);background:#0B1730}.logo-mark img{height:44px;width:auto;max-width:160px;object-fit:contain;display:block}.logo-name{font-size:15px;font-weight:800;letter-spacing:-.3px}.logo-sub{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
-      .hdr-info{font-size:12px;color:var(--ink2);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .btn{border:1px solid var(--b2);border-radius:var(--r);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;padding:9px 16px;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:var(--c);color:var(--ink);text-decoration:none}
-      .btn:hover{background:var(--c2)} .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none}
-      .page{max-width:1900px;margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:calc(100vh - 56px)}
-      .sidebar{background:var(--s);border-right:1px solid var(--b2);padding:18px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
-      .main{min-width:0;border-right:none}
-      .editor{position:fixed;top:56px;right:0;bottom:0;width:min(1100px,100%);background:rgba(2,12,24,.98);padding:18px 20px 120px;overflow:auto;z-index:55;display:none;border-left:1px solid var(--b2)}
-      .editor.show{display:block}
-      .sidebar-sec{padding:0 16px 14px}.sidebar-head{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
-      .input,.select,textarea{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:10px 12px;font:inherit;outline:none}
-      .input::placeholder,textarea::placeholder{color:var(--ink3)}
-      .nav-item{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:10px;color:var(--ink2);background:transparent;border:none;font:inherit;cursor:pointer;text-align:left;width:100%}
-      .nav-item.active{background:rgba(26,106,232,.12);color:var(--blue3);font-weight:700}.nav-item:hover{background:rgba(26,106,232,.08);color:var(--ink)}
-      .nav-count{font-size:11px;color:var(--ink3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:999px}
-      .mode-tabs{display:flex;gap:8px;padding:12px 16px 0;flex-wrap:wrap}
-      .mode-tab{border:1px solid var(--b2);background:var(--c);color:var(--ink2);padding:8px 12px;border-radius:10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-      .mode-tab.active{background:rgba(26,106,232,.16);color:var(--blue3);border-color:rgba(61,135,248,.35)}
-      .context-banner{padding:12px 16px 10px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.03)}
-      .context-banner-title{font-size:15px;font-weight:800}
-      .context-banner-sub{font-size:12px;color:var(--ink2);margin-top:4px}
-      .catalog-admin{margin:14px 16px 0;padding:14px;border:1px solid var(--b2);border-radius:14px;background:rgba(255,255,255,.03)}
-      .catalog-admin-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink2);margin-bottom:10px}
-      .catalog-admin-grid{display:grid;grid-template-columns:120px 1fr 80px 120px auto;gap:8px}
-      .main-top{position:sticky;top:56px;z-index:10;padding:16px 22px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95)}
-      .main-title{font-size:19px;font-weight:800}.main-sub{font-size:12px;color:var(--ink2);margin-top:3px}
-      .group-head{padding:16px 22px 12px;border-bottom:1px solid var(--b2);background:rgba(255,255,255,.015)}.group-title{font-size:16px;font-weight:800}.group-sub{font-size:12px;color:var(--ink3);margin-top:3px}
-      .item{display:grid;grid-template-columns:50px minmax(0,1fr) 100px 88px 140px 120px 100px;align-items:center;border-bottom:1px solid var(--b2)}
-      .item:hover{background:rgba(26,106,232,.04)} .item.incart{background:rgba(26,106,232,.06)}
-      .item-icon{width:50px;height:56px;display:flex;align-items:center;justify-content:center;color:var(--ink3)}
-      .item-body{padding:12px 14px 12px 0}.item-name{font-size:14px;font-weight:500;line-height:1.38}.item-code{font-size:11px;color:var(--ink3);margin-top:2px;font-family:monospace}
-      .item-price,.item-total{padding:0 12px;text-align:right}.item-price-main,.item-total-main{font-size:14px;font-weight:700}.item-price-sub,.item-total-sub{font-size:11px;color:var(--ink3);margin-top:2px}
-      .item-total-main.active{color:var(--green)}
-      .item-custom{padding:0 10px}
-      .item-custom input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:10px;color:var(--ink);padding:8px 10px;font:inherit;text-align:right}
-      .item-custom label{display:block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
-      .item-qty{padding:0 10px;display:flex;justify-content:center;align-items:center;gap:10px}.qty-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;border:none;cursor:pointer}.qty-minus{background:rgba(232,58,58,.16);color:var(--red)}.qty-plus{background:rgba(26,106,232,.16);color:var(--blue3)}.qty-val{min-width:30px;text-align:center;font-size:15px;font-weight:700}.qty-val.active{color:var(--blue3)}
-      .cart-bar{position:fixed;left:18px;right:18px;bottom:18px;z-index:70;background:rgba(7,22,38,.96);border:1px solid var(--b2);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:14px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;backdrop-filter:blur(14px)}
-      .cart-bar-main{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-      .cart-pill{display:flex;flex-direction:column;gap:2px}
-      .cart-pill b{font-size:10px;color:var(--ink3);letter-spacing:.45px;text-transform:uppercase}
-      .cart-pill span{font-size:15px;font-weight:800;color:var(--ink)}
-      .cart-bar-actions{display:flex;gap:8px;flex-wrap:wrap}
-      .sheet{background:var(--s);border:1px solid var(--b2);border-radius:18px;box-shadow:var(--sh);overflow:hidden;color:var(--ink)}
-      .sheet-head{padding:20px 22px 12px;border-bottom:1px solid var(--b2);background:linear-gradient(180deg,rgba(26,106,232,.08),rgba(7,22,38,.35))}.sheet-title{font-size:22px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}.sheet-sub{font-size:12px;color:var(--ink2);margin-top:6px}
-      .sheet-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.meta-card{background:var(--c);border:1px solid var(--b);padding:12px 14px}.meta-card:nth-child(2n){border-right:1px solid var(--b)}.meta-card b{display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.55px;margin-bottom:4px}.meta-card .v{font-size:14px;line-height:1.45;color:var(--ink)}
-      .sheet-body{padding:18px 28px 28px}
-      .sheet-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap}
-      .sheet-toolbar-left{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-      .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #D7DEE8;background:#F5F8FC;color:#415066}
-      .paper-note{font-size:12px;color:var(--paper-muted);line-height:1.5}
-      .table-wrap{overflow:auto;border:1px solid var(--b2);border-radius:12px}
-      .sheet-table{width:100%;border-collapse:collapse;min-width:1480px;background:transparent}
-      .sheet-table th{padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.35px;background:var(--s2);border:1px solid var(--b2);white-space:nowrap}
-      .sheet-table td{padding:8px;border:1px solid var(--b2);vertical-align:top;color:var(--ink)}
-      .sheet-table tr:hover td{background:rgba(26,106,232,.04)}
-      .sheet-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;color:var(--ink);padding:6px 7px;font:inherit;outline:none}.sheet-input:focus{background:var(--c2);border-color:#AFC8F7}.sheet-input.num{text-align:right}.small-code{font-size:11px;color:var(--ink3);font-family:monospace}.section-row td{font-weight:700;color:#163A6A}.cat-elektro td{background:#A9D08E;color:#1E3A16}.cat-stavba td{background:#F4B084;color:#5A210C}.cat-ostatni td{background:#D9E2F3;color:#21324B}
-      .totals{display:grid;gap:0;margin-top:18px;border:1px solid var(--b2);border-radius:12px;overflow:hidden}.tot-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:10px 12px;border-top:1px solid var(--b2);background:var(--c)}.tot-row:first-child{border-top:none}.tot-row strong{font-size:15px}.tot-row.final{font-size:17px;font-weight:800;background:rgba(20,201,138,.12)}
-      .manual-sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--b2)}.manual-grid{display:grid;grid-template-columns:120px 1.2fr 1fr 80px 90px 120px 120px auto;gap:8px;align-items:end}
-      .sheet-input-block{display:flex;flex-direction:column;gap:6px}
-      .sheet-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#6B7280}
-      .paper-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
-      .paper-title-meta{font-size:12px;color:var(--ink2);text-align:right}
-      .paper-subhead{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:14px}
-      .paper-caption{font-size:12px;color:var(--ink3)}
-      .preview-card{padding:18px;border:1px solid var(--b2);border-radius:16px;background:rgba(255,255,255,.03)}
-      .preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-      .sheet .input,.sheet textarea,.sheet select{background:var(--c);border:1px solid var(--b2);color:var(--ink)}
-      .sheet .btn{background:var(--c);color:var(--ink);border:1px solid var(--b2)}
-      .sheet .btn:hover{background:var(--c2)}
-      .empty{padding:28px 18px;text-align:center;color:var(--ink2);font-size:14px}
-      .item-markup{padding:0 6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
-      .mup{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.2px}
-      .mup.pos{background:rgba(20,201,138,.15);color:var(--green)}.mup.neg{background:rgba(232,58,58,.15);color:var(--red)}.mup.zero{background:rgba(255,255,255,.07);color:var(--ink3)}
-      .status-wrap{display:flex;align-items:center;gap:8px}
-      .status-badge{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;font-family:inherit}
-      .status-draft{background:rgba(255,255,255,.05);color:var(--ink2);border-color:var(--b2)}
-      .status-ready{background:rgba(20,201,138,.12);color:var(--green);border-color:rgba(20,201,138,.3)}
-      .status-sent{background:rgba(26,106,232,.12);color:var(--blue3);border-color:rgba(61,135,248,.3)}
-      .send-popover{position:absolute;bottom:calc(100% + 10px);right:0;width:380px;background:rgba(7,22,42,.98);border:1px solid var(--b2);border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.6);display:none;z-index:80}
-      .send-popover.show{display:block}
-      .markup-global{padding:12px 16px;border-bottom:1px solid var(--b2);background:rgba(20,201,138,.04)}
-      .markup-global-inner{display:flex;align-items:center;gap:10px}
-      .markup-value{font-size:22px;font-weight:800;color:var(--green);min-width:52px;text-align:center}
-      .user-chip{display:flex;align-items:center;gap:8px;background:var(--c);border:1px solid var(--b2);border-radius:999px;padding:5px 12px 5px 8px;font-size:12px;font-weight:600}
-      .user-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
-      .user-role-txt{font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
-      .btn-logout{border:1px solid rgba(232,58,58,.25);background:rgba(232,58,58,.06);color:#F07070;border-radius:999px;padding:5px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
-      /* Preview PDF-like table with sub-columns */
-      /* Full-screen preview mode */
-      .page.preview-mode .sidebar{display:none}
-      .page.preview-mode{grid-template-columns:1fr}
-      .preview-wrap{background:#D6DBE3;padding:32px 24px 60px;min-height:calc(100vh - 56px)}
-      .pdf-paper{background:#fff;max-width:1280px;margin:0 auto;padding:36px 44px 44px;box-shadow:0 8px 40px rgba(0,0,0,.18);border-radius:3px;color:#1A1A1A;font-family:'Inter',sans-serif}
-      .pdf-header{margin-bottom:24px;border-bottom:2.5px solid #111827;padding-bottom:18px}
-      .pdf-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
-      .pdf-logo{height:48px;width:auto;object-fit:contain}
-      .pdf-company-name{font-size:17px;font-weight:800;margin-top:8px;color:#111827}
-      .pdf-company-sub{font-size:11px;color:#6B7280;margin-top:2px}
-      .pdf-right-title{font-size:28px;font-weight:900;color:#111827;letter-spacing:-.8px;margin-bottom:8px}
-      .pdf-meta-row{font-size:12px;color:#555;margin-bottom:3px;line-height:1.5}
-      .pdf-meta-row strong{color:#111827}
-      .pdf-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
-      .pdf-info-box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:5px;padding:10px 14px}
-      .pdf-info-box .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:4px}
-      .pdf-info-box .val{font-size:14px;font-weight:600;color:#111827;line-height:1.4}
-      /* editable fields in preview */
-      .pdf-editable{border:1px dashed #BFD3F0;border-radius:3px;padding:2px 6px;min-width:40px;outline:none;background:transparent;cursor:text;font:inherit;color:inherit;transition:all .15s}
-      .pdf-editable:focus{border-color:#1A6AE8;background:#EEF4FF;border-style:solid}
-      /* PDF table */
-      .pdf-table-wrap{overflow-x:auto;margin-top:6px;border:1.5px solid #666}
-      .pdf-table{width:100%;border-collapse:collapse;font-size:11px;font-family:'Inter',Calibri,sans-serif}
-      .pdf-table th,.pdf-table td{border:1px solid #999;padding:5px 7px;vertical-align:middle}
-      .pdf-table thead tr.th1 th{background:#E5E7EB;font-weight:800;font-size:10px;text-align:center;color:#1A1A1A;border-bottom:2px solid #888}
-      .pdf-table thead tr.th2 th{font-weight:700;font-size:10px;text-align:center;font-style:italic;color:#555;border-bottom:2px solid #888}
-      .pdf-totals{margin-top:22px;display:flex;justify-content:flex-end}
-      .pdf-totals-box{border:1.5px solid #B0BAC8;border-radius:6px;overflow:hidden;min-width:340px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
-      .pdf-tot-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-top:1px solid #E0E6F0;font-size:13px}
-      .pdf-tot-row:first-child{border-top:none}
-      .pdf-tot-row strong{font-size:14px}
-      .pdf-tot-row.subtotal-section{background:#F5F7FB;font-weight:600}
-      .pdf-tot-row.final{background:linear-gradient(135deg,#1845B8,#1A6AE8);color:#fff;font-weight:800;font-size:16px;padding:12px 16px}
-      .pdf-tot-row.final strong{font-size:18px}
-      .pdf-ostatni-box{margin-top:20px;border:1.5px solid #B0BAC8;border-radius:6px;overflow:hidden}
-      .pdf-ostatni-head{background:#CFD8E8;padding:10px 16px;font-weight:800;font-size:12px;color:#1E2E4A;letter-spacing:.2px}
-      .pdf-footer{margin-top:28px;padding-top:14px;border-top:1.5px solid #E0E6F0;display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF}
-      .preview-actions{max-width:1280px;margin:0 auto 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-      .preview-actions .btn{font-size:13px;font-weight:700;padding:10px 20px}
-      .ostatni-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(217,226,243,.1);border:1px solid var(--b2);border-radius:10px;margin:10px 16px 4px;cursor:pointer}
-      .ostatni-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
-      .ostatni-toggle label{font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
-      @media(max-width:1500px){.page{grid-template-columns:250px minmax(0,1fr)}}
-      @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{display:none}.item{grid-template-columns:0 minmax(0,1fr) 90px 80px 130px 110px 90px}.item-icon{display:none}.editor{width:100%}.cart-bar{left:10px;right:10px;bottom:10px}}
-      @media(max-width:700px){.item{grid-template-columns:1fr}.item-price,.item-qty,.item-total,.item-custom,.item-markup{padding:8px 12px}.sheet-meta{grid-template-columns:1fr}.manual-grid{grid-template-columns:1fr 1fr}.paper-subhead{grid-template-columns:1fr}.cart-bar{flex-direction:column;align-items:stretch}}
-    </style>
-    <script>
-      ;(function(){
-        const tok = localStorage.getItem('crmToken')
-        if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
-        try {
-          const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
-          if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
-        } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
-      })()
-    </script>
-  </head>
-  <body>
-    <header class="header"><div class="header-inner">
-      <div class="logo"><div class="logo-mark"><img src="./logo.jpg" alt="O&L Master Dom logo" /></div><div><div class="logo-name">O&amp;L Master Dom</div><div class="logo-sub">Кошторис</div></div></div>
-      <div class="hdr-info" id="leadSub">Kalkulační list zakázky</div>
-      <div class="status-wrap">
-        <span class="status-badge status-draft" id="estimateStatusBadge" title="Кликніть для зміни статусу">● Draft</span>
-        <a class="btn" id="backLink" href="./index.html">← До картки</a>
-        <button class="btn" id="toggleSheet">📋 Кошик</button>
-        <button class="btn" id="buildDocs">⚡ Excel / PDF</button>
-        <button class="btn primary" id="saveEstimate">💾 Зберегти</button>
-        <div class="user-chip">
-          <div class="user-avatar" id="userAvatar">?</div>
-          <div><div id="userName" style="line-height:1.2;font-size:12px">—</div><div class="user-role-txt" id="userRole">—</div></div>
-        </div>
-        <button class="btn-logout" id="logoutBtn">↩</button>
-      </div>
-    </div></header>
-    <div class="page">
-      <aside class="sidebar">
-        <div class="context-banner">
-          <div class="context-banner-title" id="contextTitle">Кошторис клієнта</div>
-          <div class="context-banner-sub" id="contextSub">Завантаження...</div>
-        </div>
-        <div class="mode-tabs">
-          <button class="mode-tab active" data-mode="work">Праця</button>
-          <button class="mode-tab" data-mode="material">Матеріал</button>
-          <button class="mode-tab" data-mode="other">Інші витрати</button>
-          <button class="mode-tab" data-mode="preview">Попередній перегляд</button>
-        </div>
-        <div class="sidebar-sec"><select class="select" id="tradeType"><option value="electro">Електрика</option><option value="construction">Будівництво</option></select></div>
-        <div class="markup-global">
-          <div class="sidebar-head" style="margin-bottom:8px">Přirážka práce % — глобально</div>
-          <div class="markup-global-inner">
-            <input class="input" id="globalMarkup" type="number" step="1" value="0" min="-100" max="500" style="width:72px;text-align:center;font-size:18px;font-weight:800;padding:8px" />
-            <div class="markup-value" id="globalMarkupDisplay">+0%</div>
-            <div style="font-size:11px;color:var(--ink3);line-height:1.5">Застос.<br>до нових</div>
-          </div>
-        </div>
-        <div class="ostatni-toggle">
-          <input type="checkbox" id="toggleOstatni" />
-          <label for="toggleOstatni">+ Ostatní práce (остання рамка)</label>
-        </div>
-        <div class="sidebar-sec" style="padding-top:12px"><input class="input" id="catalogSearch" placeholder="🔍 Шукати позицію..." /></div>
-        <div class="sidebar-sec"><div class="sidebar-head">Категорії робіт</div><div id="navItems"></div></div>
-        <div class="catalog-admin">
-          <div class="catalog-admin-title">Додати позицію в базу</div>
-          <div class="catalog-admin-grid">
-            <input class="input" id="newItemCode" placeholder="Код" />
-            <input class="input" id="newItemName" placeholder="Назва позиції" />
-            <input class="input" id="newItemUnit" placeholder="MJ" value="ks" />
-            <input class="input" id="newItemPrice" type="number" step="0.01" placeholder="Базова ціна" />
-            <button class="btn" id="addCatalogItemBtn">Додати</button>
-          </div>
-        </div>
-      </aside>
-      <main class="main">
-        <div class="main-top"><div><div class="main-title" id="mainTitle">Оберіть категорію зліва</div><div class="main-sub" id="mainCount"></div></div></div>
-        <div id="catalogBody"><div class="empty">Načítání katalogu...</div></div>
-      </main>
-      <section class="editor" id="editorSheet">
-        <div class="sheet">
-          <div class="sheet-head">
-            <div class="paper-title-row">
-              <div>
-                <div class="sheet-title" id="sheetTitle">Rozpočet</div>
-                <div class="sheet-sub" id="sheetSub">Načítání…</div>
-              </div>
-              <div class="paper-title-meta" id="paperTopMeta">—</div>
-            </div>
-            <div class="sheet-meta" id="sheetMeta"></div>
-          </div>
-          <div class="sheet-body">
-            <div class="sheet-toolbar">
-              <div class="sheet-toolbar-left">
-                <button class="btn primary" id="buildDocsSheet" style="font-size:12px;padding:8px 14px">⚡ Генерувати Excel / PDF</button>
-                <button class="btn" id="saveEstimateSheet" style="font-size:12px;padding:8px 14px">💾 Зберегти</button>
-              </div>
-              <div class="sheet-input-block" style="width:min(420px,100%)">
-                <label class="sheet-label" for="estimateNote">Примітка</label>
-                <textarea class="sheet-input" id="estimateNote" placeholder="Примітка до кошторису / інструкції" style="min-height:96px;resize:vertical;border:1px solid var(--paper-line)"></textarea>
-              </div>
-            </div>
-            <div class="paper-subhead">
-              <div class="paper-caption">Електромонтажні роботи</div>
-              <div class="paper-caption" id="paperSectionInfo">Ceny práce a materiálu upravujete přímo zde.</div>
-            </div>
-            <div class="table-wrap">
-              <table class="sheet-table">
-                <thead>
-                  <tr>
-                    <th style="width:110px">Kategorie</th>
-                    <th style="width:108px">Kód položky</th>
-                    <th style="width:72px">Číslo položky</th>
-                    <th>Popis práce</th>
-                    <th>Popis materiálu</th>
-                    <th style="width:72px">MJ</th>
-                    <th style="width:95px">Množství</th>
-                    <th style="width:120px">Cena práce (MJ)</th>
-                    <th style="width:130px">Cena práce (celkem)</th>
-                    <th style="width:120px">Cena materiálu (MJ)</th>
-                    <th style="width:130px">Cena materiálu (celkem)</th>
-                    <th style="width:140px">Cena celkem</th>
-                    <th style="width:54px"></th>
-                  </tr>
-                  <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="estimateRows"></tbody>
-              </table>
-            </div>
-            <div class="manual-sec">
-              <div class="manual-grid">
-                <select class="select" id="manualCategory"><option value="elektro">ELEKTRO</option><option value="stavba">STAVBA</option><option value="ostatni">ІНШІ ВИТРАТИ</option></select>
-                <input class="input" id="manualWork" placeholder="Опис роботи" />
-                <input class="input" id="manualMaterial" placeholder="Опис матеріалу" />
-                <input class="input" id="manualUnit" value="ks" placeholder="MJ" />
-                <input class="input" id="manualQty" type="number" step="0.01" value="1" placeholder="Кількість" />
-                <input class="input" id="manualLabor" type="number" step="0.01" value="0" placeholder="Ціна роботи" />
-                <input class="input" id="manualMaterialPrice" type="number" step="0.01" value="0" placeholder="Ціна матеріалу" />
-                <button class="btn" id="addManualLine">Додати ручний рядок</button>
-              </div>
-            </div>
-            <div class="totals" id="estimateTotals"></div>
-          </div>
-        </div>
-      </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O&L Master Dom · Кошторис</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    ;(function(){
+      const tok = localStorage.getItem('crmToken')
+      if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
+      try {
+        const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
+        if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
+      } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
+    })()
+  </script>
+  <style>
+    :root{
+      --bg:#020C18;--s:#071626;--s2:#091B30;--c:#0C1E38;--c2:#0F2442;
+      --b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);
+      --ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;
+      --blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;
+      --green:#14C98A;--red:#E83A3A;--r:10px;
+      --sh:0 8px 32px rgba(0,0,0,.45);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;font-size:14px}
+
+    /* HEADER */
+    .hdr{position:fixed;top:0;left:0;right:0;z-index:50;height:56px;background:rgba(2,12,24,.96);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px);display:flex;align-items:center;padding:0 20px;gap:12px}
+    .hdr-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .hdr-logo img{height:40px;width:auto;max-width:130px;object-fit:contain;border-radius:8px;border:1px solid rgba(61,135,248,.3)}
+    .hdr-logo-name{font-size:14px;font-weight:800;color:var(--ink)}
+    .hdr-ctx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+    .hdr-ctx-title{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hdr-ctx-sub{font-size:11px;color:var(--ink3)}
+    .hdr-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);font:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--b2);background:var(--c);color:var(--ink);text-decoration:none;white-space:nowrap;transition:all .15s}
+    .btn:hover{background:var(--c2)}
+    .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none}
+    .btn.green{background:linear-gradient(135deg,#0EA574,#14C98A);color:#fff;border:none}
+    .btn.orange{background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;border:none}
+    .btn.sm{padding:6px 10px;font-size:12px}
+    .user-chip{display:flex;align-items:center;gap:7px;background:var(--c);border:1px solid var(--b2);border-radius:999px;padding:4px 12px 4px 6px;font-size:12px;font-weight:600;flex-shrink:0}
+    .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+    .btn-logout{border:1px solid rgba(232,58,58,.25);background:rgba(232,58,58,.06);color:#F07070;border-radius:999px;padding:5px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+
+    /* LAYOUT */
+    .layout{position:fixed;top:56px;left:0;right:0;bottom:0;display:grid;grid-template-columns:1fr 380px}
+
+    /* LEFT: CATALOG */
+    .cat-panel{display:flex;flex-direction:column;border-right:1px solid var(--b2);overflow:hidden}
+    .cat-search{padding:12px 16px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95);flex-shrink:0;display:flex;gap:10px}
+    .cat-search input{flex:1;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:10px 14px;font:inherit;font-size:14px;outline:none}
+    .cat-search input:focus{border-color:var(--blue);background:var(--c2)}
+    .cat-search input::placeholder{color:var(--ink3)}
+    .cat-filters{padding:10px 16px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.9);flex-shrink:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .cat-chip{border:1px solid var(--b2);background:var(--c);color:var(--ink2);padding:6px 12px;border-radius:999px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+    .cat-chip.active{background:rgba(26,106,232,.18);color:var(--blue3);border-color:rgba(61,135,248,.4)}
+    .cat-list{flex:1;overflow-y:auto;padding-bottom:16px}
+    .cat-group-head{position:sticky;top:0;z-index:2;padding:10px 20px 8px;background:rgba(9,27,48,.97);border-bottom:1px solid var(--b2);display:flex;justify-content:space-between;align-items:center}
+    .cat-group-name{font-size:12px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px}
+    .cat-group-count{font-size:11px;color:var(--ink3)}
+    .cat-item{display:grid;grid-template-columns:minmax(0,1fr) 100px 130px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--b2);gap:12px;transition:background .12s}
+    .cat-item:hover{background:rgba(26,106,232,.05)}
+    .cat-item.in-cart{background:rgba(20,201,138,.05);border-left:3px solid var(--green)}
+    .cat-item-name{font-size:13px;font-weight:500;line-height:1.35;color:var(--ink)}
+    .cat-item-code{font-size:10px;color:var(--ink3);font-family:monospace;margin-top:2px}
+    .cat-item-price{text-align:right}
+    .cat-item-price-main{font-size:13px;font-weight:700;color:var(--ink)}
+    .cat-item-price-sub{font-size:10px;color:var(--ink3);margin-top:1px}
+    .cat-item-ctrl{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+    .q-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
+    .q-minus{background:rgba(232,58,58,.15);color:var(--red)}
+    .q-minus:hover{background:rgba(232,58,58,.28)}
+    .q-plus{background:rgba(26,106,232,.18);color:var(--blue3)}
+    .q-plus:hover{background:rgba(26,106,232,.32)}
+    .q-val{min-width:28px;text-align:center;font-size:15px;font-weight:800;color:var(--ink)}
+    .q-val.has{color:var(--green)}
+    .cat-empty{padding:48px 24px;text-align:center;color:var(--ink3);font-size:14px}
+
+    /* RIGHT: CART */
+    .cart-panel{display:flex;flex-direction:column;background:var(--s);overflow:hidden}
+    .cart-head{padding:14px 18px;border-bottom:1px solid var(--b2);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;background:rgba(7,22,38,.95)}
+    .cart-head-title{font-size:16px;font-weight:800}
+    .cart-head-count{font-size:12px;color:var(--ink2)}
+    .cart-body{flex:1;overflow-y:auto;padding:0}
+    .cart-empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:13px}
+    .cart-cat-head{padding:10px 16px 8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);background:rgba(255,255,255,.02);border-bottom:1px solid var(--b2)}
+    .cart-line{display:grid;grid-template-columns:minmax(0,1fr) 90px 32px;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--b2)}
+    .cart-line:hover{background:rgba(255,255,255,.02)}
+    .cart-line-name{font-size:12px;font-weight:500;line-height:1.3;color:var(--ink)}
+    .cart-line-price{text-align:right}
+    .cart-line-total{font-size:13px;font-weight:700;color:var(--green)}
+    .cart-line-unit{font-size:10px;color:var(--ink3);margin-top:1px}
+    .cart-line-qty{display:flex;align-items:center;gap:4px;justify-content:center}
+    .cq-btn{width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .cq-m{background:rgba(232,58,58,.12);color:var(--red)}
+    .cq-p{background:rgba(26,106,232,.14);color:var(--blue3)}
+    .cq-val{width:28px;text-align:center;background:transparent;border:none;color:var(--ink);font:inherit;font-size:12px;font-weight:700}
+    .cart-del{background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px}
+    .cart-del:hover{color:var(--red)}
+    .cart-subrow{padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink2);background:rgba(255,255,255,.025);border-bottom:2px solid var(--b2)}
+    .cart-footer{flex-shrink:0;border-top:2px solid var(--b2);background:var(--s)}
+    .cart-totals{padding:14px 16px 0;display:flex;flex-direction:column;gap:6px}
+    .tot-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+    .tot-row.sub{font-size:12px;color:var(--ink2)}
+    .tot-row.final-row{background:linear-gradient(135deg,#0E4A2B,#0D5C35);border-radius:10px;padding:12px 14px;margin-top:4px;font-size:16px;font-weight:800}
+    .tot-row.final-row strong{font-size:18px;color:var(--green)}
+    .dph-input{width:52px;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);padding:3px 6px;font:inherit;font-size:13px;text-align:center}
+    .cart-btns{padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px}
+
+    /* PREVIEW OVERLAY */
+    .preview-overlay{position:fixed;top:56px;left:0;right:0;bottom:0;background:#D6DBE3;overflow-y:auto;z-index:100;display:none}
+    .preview-overlay.show{display:block}
+    .preview-topbar{position:sticky;top:0;z-index:10;padding:12px 24px;background:rgba(2,12,24,.95);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;backdrop-filter:blur(12px)}
+    .preview-topbar-title{font-size:14px;font-weight:700;color:#E6F0FF;flex:1}
+
+    /* PDF PAPER */
+    .pdf-wrap{padding:32px 24px 60px}
+    .pdf-paper{background:#fff;max-width:1280px;margin:0 auto;padding:36px 44px 44px;box-shadow:0 8px 40px rgba(0,0,0,.18);border-radius:3px;color:#1A1A1A;font-family:'Inter',sans-serif}
+    .pdf-paper h1.doc-title{font-size:22px;font-weight:800;color:#111;margin-bottom:16px}
+    .pdf-title-label{font-size:13px;color:#6B7280;margin-bottom:4px}
+    .pdf-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px}
+    .pdf-info-box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:5px;padding:10px 14px}
+    .pdf-info-box .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:4px}
+    .pdf-info-box .val{font-size:14px;font-weight:600;color:#111}
+    .pdf-editable{border:1px dashed #BFD3F0;border-radius:3px;padding:2px 6px;min-width:40px;outline:none;background:transparent;cursor:text;font:inherit;color:inherit}
+    .pdf-editable:focus{border-color:#1A6AE8;background:#EEF4FF;border-style:solid}
+    .pdf-table-wrap{overflow-x:auto;margin-top:6px;border:1.5px solid #666}
+    .pdf-table{width:100%;border-collapse:collapse;font-size:11px}
+    .pdf-table th,.pdf-table td{border:1px solid #999;padding:5px 7px;vertical-align:middle}
+    .pdf-table thead tr.th1 th{background:#E5E7EB;font-weight:800;font-size:10px;text-align:center;color:#1A1A1A;border-bottom:2px solid #888}
+    .pdf-table thead tr.th2 th{font-weight:700;font-size:10px;text-align:center;font-style:italic;color:#555;border-bottom:2px solid #888}
+    .pdf-totals-box{border:1.5px solid #B0BAC8;border-radius:6px;overflow:hidden;min-width:340px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .pdf-tot-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-top:1px solid #E0E6F0;font-size:13px}
+    .pdf-tot-row:first-child{border-top:none}
+    .pdf-tot-row.final{background:linear-gradient(135deg,#1845B8,#1A6AE8);color:#fff;font-weight:800;font-size:16px;padding:12px 16px}
+    .pdf-footer{margin-top:28px;padding-top:14px;border-top:1.5px solid #E0E6F0;display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF}
+
+    /* Ostatní inline section in cart */
+    .ostatni-section{border-top:2px solid var(--b2);margin-top:0}
+    .ostatni-add{padding:10px 14px;display:flex;gap:8px}
+    .ostatni-add input{flex:1;background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:8px 10px;font:inherit;font-size:12px}
+    .ostatni-add input::placeholder{color:var(--ink3)}
+    .ostatni-add .amt{width:90px;text-align:right}
+
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.cart-panel{display:none}}
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo">
+      <img src="./logo.jpg" alt="O&L" />
+      <div class="hdr-logo-name">O&amp;L Master Dom</div>
     </div>
-    <div class="cart-bar" id="cartBar" style="position:relative">
-      <div class="cart-bar-main">
-        <div class="cart-pill"><b>Позицій</b><span id="cartCount">0</span></div>
-        <div class="cart-pill"><b>Робота</b><span id="cartLabor">0,00 Kč</span></div>
-        <div class="cart-pill"><b>Матеріал</b><span id="cartMaterial">0,00 Kč</span></div>
-        <div class="cart-pill" style="border-left:2px solid rgba(20,201,138,.4);padding-left:14px"><b>Разом с DPH</b><span id="cartTotal" style="color:var(--green)">0,00 Kč</span></div>
-      </div>
-      <div class="cart-bar-actions">
-        <button class="btn" id="openCartBar">📋 Кошик</button>
-        <button class="btn" id="buildDocsBar">⚡ Генерувати</button>
-        <button class="btn" id="sendToggleBtn">✉ Надіслати кл.</button>
-        <button class="btn primary" id="saveFromBar">💾 Зберегти</button>
-      </div>
-      <div class="send-popover" id="sendPopover">
-        <div style="font-size:14px;font-weight:800;margin-bottom:6px;color:var(--ink)">✉ Надіслати PDF клієнту</div>
-        <div style="font-size:12px;color:var(--ink2);margin-bottom:14px;line-height:1.5">Кошторис збережеться, згенерується PDF і відправиться на email клієнта</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <input id="sendEmailBuilder" type="email" class="input" placeholder="Email klienta..." style="flex:1;min-width:200px" />
-          <button class="btn primary" id="sendFromBuilderBtn" style="white-space:nowrap">Відправити PDF →</button>
+    <div class="hdr-ctx">
+      <div class="hdr-ctx-title" id="ctxTitle">Кошторис</div>
+      <div class="hdr-ctx-sub" id="ctxSub">Завантаження...</div>
+    </div>
+    <div class="hdr-actions">
+      <a href="./index.html" id="backLink" class="btn">← Pipeline</a>
+      <button id="btnSave" class="btn">💾 Зберегти</button>
+      <button id="btnGenerate" class="btn orange">⚡ Excel / PDF</button>
+      <button id="btnPreview" class="btn green">👁 Перегляд</button>
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div>
+          <div id="userName" style="font-size:12px;line-height:1.2">—</div>
+          <div id="userRole" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.3px">—</div>
         </div>
-        <div style="font-size:11px;color:var(--ink3)">або: <a id="xlsxLink" href="#" target="_blank" rel="noopener" style="display:none;color:var(--blue3)">Стягнути Excel</a> <a id="pdfLink" href="#" target="_blank" rel="noopener" style="display:none;color:var(--blue3)">Стягнути PDF</a></div>
+      </div>
+      <button class="btn-logout" id="logoutBtn">↩</button>
+    </div>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout">
+    <!-- LEFT: CATALOG -->
+    <div class="cat-panel">
+      <div class="cat-search">
+        <input id="searchInput" type="search" placeholder="🔍  Hledat pozici v katalogu..." autocomplete="off" />
+      </div>
+      <div class="cat-filters" id="catFilters">
+        <button class="cat-chip active" data-group="all">Vše</button>
+        <button class="cat-chip" data-group="grooves">Sekání šliců</button>
+        <button class="cat-chip" data-group="boxes">Krabice</button>
+        <button class="cat-chip" data-group="cables">Tahání kabelů</button>
+        <button class="cat-chip" data-group="switchboards">Rozvaděče</button>
+        <button class="cat-chip" data-group="outlets">Zásuvky</button>
+        <button class="cat-chip" data-group="completion">Kompletace</button>
+        <button class="cat-chip" data-group="revision">Revize</button>
+        <button class="cat-chip" data-group="other">Ostatní</button>
+      </div>
+      <div class="cat-list" id="catList">
+        <div class="cat-empty">Načítání katalogu...</div>
       </div>
     </div>
-    <script>
-      const params = new URLSearchParams(location.search)
-      const leadId = Number(params.get('leadId') || 0)
-      const jobId = Number(params.get('jobId') || 0)
-      const estimateIdFromUrl = Number(params.get('estimateId') || 0)
-      const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
-      const apiUrl = (p) => `${base}${p}`
-      const crmToken = () => localStorage.getItem('crmToken') || ''
-      const apiFetch = (url, opts = {}) => {
-        const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
-        return fetch(url, { ...opts, headers: h })
-      }
-      const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      const fmtMoney = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`
-      const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' }) } catch { return '—' } }
-      async function json(resp) { try { return await resp.json() } catch { return null } }
 
-      let lead = null, job = null, estimate = null, catalog = [], activeNavKey = null, activeMode = 'work'
-      let globalMarkup = 0
-      const customPriceOverrides = new Map()
-      const NAV_LABELS = { grooves:'Sekání šliců (drážek) a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zapojení zásuvek, vypínačů', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
-      const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','other','completion','revision','demolition','hourly','systems']
-      const CATEGORY_LABELS = { elektro: 'ELEKTRO', stavba: 'STAVBA', ostatni: 'OSTATNÍ' }
-      const CATEGORY_ROW_CLASS = { elektro: 'cat-elektro', stavba: 'cat-stavba', ostatni: 'cat-ostatni' }
+    <!-- RIGHT: CART / ESTIMATE -->
+    <div class="cart-panel">
+      <div class="cart-head">
+        <div>
+          <div class="cart-head-title">Kошторис</div>
+          <div class="cart-head-count" id="cartCount">0 položek</div>
+        </div>
+        <button class="btn sm" id="btnAddOstatni" title="Ostatní rozpočtové náklady">+ Ostatní</button>
+      </div>
+      <div class="cart-body" id="cartBody">
+        <div class="cart-empty">Vyberte položky z katalogu vlevo.</div>
+      </div>
+      <div class="cart-footer">
+        <div class="cart-totals" id="cartTotals"></div>
+        <div class="cart-btns">
+          <button class="btn green" id="cartPreviewBtn" style="justify-content:center;font-size:14px;padding:12px">👁 Попередній перегляд</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      function uiCategoryKey(item) {
-        const name = String(item?.itemName || item?.workDescription || '').toLowerCase()
-        const category = String(item?.categoryKey || item?.groupKey || '')
-        const phase = String(item?.phaseKey || '')
-        const unit = String(item?.unit || '').toLowerCase()
-        if (unit === 'hod' || name.includes('hodin')) return 'hourly'
-        if (phase === 'demolition' || category === 'cutting_and_grooves' || name.includes('sekání') || name.includes('dráž') || name.includes('kaps') || name.includes('výřez') || name.includes('vykrouž')) return 'grooves'
-        if (category === 'boxes_and_junctions' || name.includes('krabice') || name.includes('rozvodka')) return 'boxes'
-        if (category === 'cables_and_wires' || category === 'pipes_and_channels' || name.includes('kabel') || name.includes('vodič') || name.includes('trubka') || name.includes('lišta') || name.includes('kanál') || name.includes('hadice')) return 'cables'
-        if (category === 'switchboard' || name.includes('rozvaděč') || name.includes('jistič') || name.includes('chránič') || name.includes('svodič') || name.includes('relé')) return 'switchboards'
-        if (category === 'devices_and_outlets' || name.includes('zásuv') || name.includes('vypína') || name.includes('spínač') || name.includes('ovladač') || name.includes('stmíva')) return 'outlets'
-        if (category === 'finishing' || name.includes('rámeček') || name.includes('kryt') || name.includes('komplet')) return 'completion'
-        if (category === 'testing_and_revision' || name.includes('revize') || name.includes('měření') || name.includes('oživení')) return 'revision'
-        if (name.includes('demont')) return 'demolition'
-        if (name.includes('soubor') || name.includes('sestava') || name.includes('celek')) return 'systems'
-        return 'other'
-      }
-      function groupedCatalog(items) { const map = new Map(); for (const item of items) { const key = uiCategoryKey(item); if (!map.has(key)) map.set(key, []); map.get(key).push(item) } return map }
-      function catalogItemKind() {
-        if (activeMode === 'material') return 'material'
-        if (activeMode === 'other') return 'other_cost'
-        return 'work'
-      }
-      function estimateCategory(line) {
-        const raw = String(line?.category || line?.sectionType || '').trim().toLowerCase()
-        if (raw === 'stavba' || raw === 'construction') return 'stavba'
-        if (raw === 'ostatni' || raw === 'ostatni_naklady' || raw === 'other') return 'ostatni'
-        return 'elektro'
-      }
-      function lineItemCode(line, index) {
-        const explicit = String(line?.sourceCatalogCode || line?.lineCode || '').trim()
-        if (explicit) return explicit
-        const prefix = estimateCategory(line) === 'stavba' ? 'STV' : estimateCategory(line) === 'ostatni' ? 'OST' : 'ELE'
-        return `${prefix}-${String(index + 1).padStart(3, '0')}`
-      }
-      function normalizeEstimateLines(lines) {
-        return (lines || []).map((line, idx) => {
-          const category = estimateCategory(line)
-          const quantity = Number(line.quantity || 0)
-          const laborUnitPrice = Number(line.laborUnitPrice ?? line.clientPrice ?? 0)
-          const materialUnitPrice = Number(line.materialUnitPrice || 0)
-          const laborTotal = +(quantity * laborUnitPrice).toFixed(2)
-          const materialTotal = +(quantity * materialUnitPrice).toFixed(2)
-          const lineTotal = +(laborTotal + materialTotal).toFixed(2)
-          return { ...line, lineCode: lineItemCode(line, idx), sectionType: category, category, workDescription: line.workDescription || line.itemName || '', materialDescription: line.materialDescription || '', unit: line.unit || 'ks', quantity, laborUnitPrice, materialUnitPrice, laborTotal, materialTotal, lineTotal, totalClient: lineTotal, totalBase: laborTotal, groupKey: line.groupKey || uiCategoryKey(line), groupLabel: line.groupLabel || NAV_LABELS[uiCategoryKey(line)] || 'Ostatní', positionOrder: idx + 1 }
-        })
-      }
-      function groupedEstimate(lines) { const map = new Map(); for (const line of normalizeEstimateLines(lines)) { const key = estimateCategory(line); if (!map.has(key)) map.set(key, []); map.get(key).push(line) } return map }
-      function totals(lines) {
-        const normalized = normalizeEstimateLines(lines)
-        const labor = normalized.reduce((s, l) => s + Number(l.laborTotal || 0), 0)
-        const material = normalized.reduce((s, l) => s + Number(l.materialTotal || 0), 0)
-        const bezDph = labor + material
-        const dphRate = Number(estimate?.vatRate || 21)
-        const dph = +(bezDph * (dphRate / 100)).toFixed(2)
-        const total = +(bezDph + dph).toFixed(2)
-        return { labor, material, bezDph, dph, total }
-      }
-      function catalogLine(item) { return (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === Number(item.id)) || null }
-      function customLaborPrice(item) {
-        const raw = customPriceOverrides.get(Number(item.id))
-        return Number.isFinite(raw) ? raw : Number(item.basePrice || 0)
-      }
-      function addCatalogItem(item, delta) {
-        if (!estimate) return
-        const existing = catalogLine(item)
-        if (!existing && delta <= 0) return
-        if (!existing) {
-          const selectedTrade = document.getElementById('tradeType').value
-          const category = activeMode === 'other' ? 'ostatni' : selectedTrade === 'construction' ? 'stavba' : 'elektro'
-          const isMaterial = activeMode === 'material'
-          const isOther = activeMode === 'other'
-          estimate.lines.push({
-            catalogItemId: item.id,
-            sourceCatalogCode: item.sourceCode || null,
-            category,
-            sectionType: category,
-            groupKey: uiCategoryKey(item),
-            groupLabel: NAV_LABELS[uiCategoryKey(item)] || 'Ostatní',
-            phaseKey: item.phaseKey,
-            categoryKey: item.categoryKey,
-            itemName: item.itemName,
-            workDescription: isMaterial ? '' : item.itemName,
-            materialDescription: isMaterial ? item.itemName : (isOther ? '' : ''),
-            unit: item.unit || 'ks',
-            quantity: 1,
-            laborUnitPrice: isMaterial ? 0 : +(customLaborPrice(item) * (1 + globalMarkup / 100)).toFixed(2),
-            materialUnitPrice: isMaterial ? +(customLaborPrice(item) * (1 + globalMarkup / 100)).toFixed(2) : 0,
-          })
-        } else {
-          existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
-          if (activeMode === 'material') existing.materialUnitPrice = customLaborPrice(item)
-          else existing.laborUnitPrice = customLaborPrice(item)
-          if (existing.quantity <= 0) estimate.lines = estimate.lines.filter((x) => Number(x.catalogItemId || 0) !== Number(item.id))
-        }
-        estimate.lines = normalizeEstimateLines(estimate.lines)
-        renderAll()
-      }
-      function renderNav() {
-        const groups = groupedCatalog(catalog)
-        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
-        const nav = document.getElementById('navItems')
-        nav.innerHTML = ordered.map((key) => {
-          const count = (groups.get(key) || []).length
-          const inCount = (estimate?.lines || []).filter((l) => uiCategoryKey(l) === key).length
-          return `<button class="nav-item${key === activeNavKey ? ' active' : ''}" data-nav="${esc(key)}"><span>${esc(NAV_LABELS[key] || key)}</span><span class="nav-count">${inCount > 0 ? inCount + ' / ' : ''}${count}</span></button>`
-        }).join('')
-        nav.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', () => { activeNavKey = btn.getAttribute('data-nav'); renderNav(); renderCatalogRows() }))
-      }
-      function renderCatalogRows() {
-        const body = document.getElementById('catalogBody')
-        if (activeMode === 'preview') {
-          const pvLines = normalizeEstimateLines(estimate?.lines || [])
-          const mainLines = pvLines.filter(l => l.sectionType !== 'ostatni_naklady')
-          const ostatniLines = pvLines.filter(l => l.sectionType === 'ostatni_naklady')
-          const pvGroupsMain = groupedEstimate(mainLines)
-          const vr = Number(estimate?.vatRate || 21)
-          const showOstatni = document.getElementById('toggleOstatni')?.checked || ostatniLines.length > 0
+  <!-- PREVIEW OVERLAY -->
+  <div class="preview-overlay" id="previewOverlay">
+    <div class="preview-topbar">
+      <button class="btn" id="closePreview">← Назад до редактора</button>
+      <div class="preview-topbar-title" id="previewTopTitle">Попередній перегляд документу</div>
+      <button id="pvSaveEdits" class="btn orange">💾 Зберегти зміни</button>
+      <button id="pvGenerate" class="btn orange">⚡ Excel / PDF</button>
+      <button id="pvSend" class="btn green">✉ Надіслати клієнту</button>
+    </div>
+    <div class="pdf-wrap" id="previewContent"></div>
+  </div>
 
-          const catBg = { elektro:'#A9D08E', stavba:'#F4B183' }
-          const catFg = { elektro:'#1A3A12', stavba:'#5A210C' }
-          const catCode = { elektro:'ele', stavba:'stv' }
-          const catName = { elektro:'Elektrikářské práce', stavba:'Stavební práce' }
-          const catCelkem = { elektro:'Elektrikářské práce celkem', stavba:'Stavební práce celkem' }
-          const pvOrdered = ['elektro','stavba'].filter(k => pvGroupsMain.has(k))
-          const extraCats = [...pvGroupsMain.keys()].filter(k => !['elektro','stavba'].includes(k))
-          const orderedAll = [...pvOrdered, ...extraCats]
+  <!-- SEND POPOVER -->
+  <div id="sendPopover" style="display:none;position:fixed;bottom:80px;right:24px;width:360px;background:rgba(7,22,42,.98);border:1px solid var(--b2);border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.6);z-index:200">
+    <div style="font-size:14px;font-weight:800;margin-bottom:12px">Відправити кошторис PDF</div>
+    <div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Email клієнта</div><input id="sendEmail" class="btn" style="width:100%;background:var(--c)" placeholder="email@example.com" /></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="sendDoIt" class="btn primary" style="flex:1;justify-content:center">Відправити PDF →</button>
+      <button id="sendCancel" class="btn">✕</button>
+    </div>
+    <div id="sendLinks" style="margin-top:10px;display:flex;gap:8px">
+      <a id="xlsxLink" href="#" class="btn sm" style="display:none" download>⬇ Excel</a>
+      <a id="pdfLink" href="#" class="btn sm" style="display:none" download>⬇ PDF</a>
+    </div>
+  </div>
 
-          let tableRows = ''
-          let rowNum = 1
-          let globalLaborTotal = 0, globalMatTotal = 0
+  <script>
+    const params = new URLSearchParams(location.search)
+    const leadId = Number(params.get('leadId') || 0)
+    const jobId = Number(params.get('jobId') || 0)
+    const estimateIdFromUrl = Number(params.get('estimateId') || 0)
+    const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
+    const apiUrl = (p) => `${base}${p}`
+    const crmToken = () => localStorage.getItem('crmToken') || ''
+    const apiFetch = (url, opts = {}) => {
+      const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
+      return fetch(url, { ...opts, headers: h })
+    }
+    const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    const fmtMoney = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč`
+    const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' }) } catch { return '—' } }
+    async function jParse(resp) { try { return await resp.json() } catch { return null } }
 
-          for (const cat of orderedAll) {
-            const rows = pvGroupsMain.get(cat) || []
-            if (!rows.length) continue
-            const bg = catBg[cat] || '#D9E2F3'
-            const fg = catFg[cat] || '#21324B'
-            const code = catCode[cat] || cat.slice(0,3)
-            const name = catName[cat] || rows[0]?.groupLabel || cat
-            // Category header row — full width
-            tableRows += `<tr><td colspan="12" style="background:${bg};color:${fg};font-weight:800;padding:8px 10px;font-size:12px;letter-spacing:.3px">${esc(name)}</td></tr>`
-            let catLabor = 0, catMat = 0
-            for (const line of rows) {
-              const qty = Number(line.quantity || 0)
-              const lU = Number(line.laborUnitPrice || 0)
-              const mU = Number(line.materialUnitPrice || 0)
-              const lT = Number(line.laborTotal || 0)
-              const mT = Number(line.materialTotal || 0)
-              const lineT = Number(line.lineTotal || 0)
-              catLabor += lT; catMat += mT
-              const matDesc = line.materialDescription || ''
-              const noMat = !matDesc
-              tableRows += `<tr>
-                <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px">${esc(code)}</td>
-                <td style="text-align:center;font-weight:600;font-size:11px;width:40px">${rowNum++}</td>
-                <td style="background:#D9E1F2;padding:5px 7px;min-width:200px;font-size:11px"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
-                <td style="background:${noMat?'#FECACA':'#C6E0B4'};padding:5px 7px;min-width:160px;font-size:11px;${noMat?'color:#991B1B;font-style:italic':''}">${noMat ? '<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="'+esc(String(line.id||''))+'">(položka neobsahuje materiál)</span>' : '<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="'+esc(String(line.id||''))+'">'+esc(matDesc)+'</span>'}</td>
-                <td style="text-align:center;white-space:nowrap;font-size:11px">${esc(String(qty))} ${esc(line.unit||'ks')}</td>
-                <td style="text-align:right;background:#BDD7EE;font-size:11px">${fmtMoney(lU)}</td>
-                <td style="text-align:right;background:#BDD7EE;font-weight:600;font-size:11px">${fmtMoney(lT)}</td>
-                <td style="text-align:right;background:#F8CBAD;font-size:11px">${mU > 0 ? fmtMoney(mU) : ''}</td>
-                <td style="text-align:right;background:#F8CBAD;font-weight:600;font-size:11px">${mT > 0 ? fmtMoney(mT) : ''}</td>
-                <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(lU + mU)}</td>
-                <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(lineT)}</td>
-              </tr>`
-            }
-            globalLaborTotal += catLabor; globalMatTotal += catMat
-            // Category subtotal row
-            tableRows += `<tr style="background:#EDF0F5">
-              <td colspan="6" style="text-align:right;padding:7px 10px;font-weight:700;font-style:italic;font-size:11px;color:#1A1A1A">${esc(catCelkem[cat] || name + ' celkem')}</td>
-              <td style="text-align:right;background:#A8C8E8;font-weight:800;font-size:11px;color:#0C3B6E">${fmtMoney(catLabor)}</td>
-              <td style="background:#F8CBAD"></td>
-              <td style="text-align:right;background:#F5C0A0;font-weight:800;font-size:11px;color:#6B2200">${fmtMoney(catMat)}</td>
-              <td style="background:#D9D9D9"></td>
-              <td style="text-align:right;background:#C0C0C0;font-weight:800;font-size:12px;color:#111">${fmtMoney(catLabor + catMat)}</td>
-            </tr>`
-          }
+    let lead = null, job = null, estimate = null, catalog = [], customPriceOverrides = new Map()
+    let activeGroup = 'all', searchQ = ''
 
-          // Ostatní rozpočtové náklady (screenshot 4 style)
-          let ostatniTotal = 0
-          const showOstatniBlock = showOstatni && ostatniLines.length > 0
-          let ostatniHtml = ''
-          if (showOstatniBlock) {
-            ostatniLines.forEach(l => { ostatniTotal += Number(l.lineTotal || 0) })
-            ostatniHtml = `
-              <div style="margin-top:28px;page-break-before:auto">
-                <div style="font-size:16px;font-weight:800;color:#111;margin-bottom:10px">Ostatní rozpočtové náklady</div>
-                <table style="width:100%;max-width:700px;border-collapse:collapse;font-size:12px;border:1.5px solid #555">
-                  ${ostatniLines.map(l => `<tr style="border-bottom:1px solid #999"><td style="padding:8px 12px;border-right:1px solid #999;line-height:1.4">${esc(l.workDescription||l.itemName||'')}</td><td style="padding:8px 12px;text-align:right;white-space:nowrap;font-weight:600;width:120px">${fmtMoney(l.lineTotal||0)}</td></tr>`).join('')}
-                </table>
-              </div>`
-          }
+    // ── LABELS ──
+    const NAV_LABELS = { grooves:'Sekání šliců a kapes', boxes:'Krabice', cables:'Tahání kabelů', switchboards:'Rozvaděče', outlets:'Zásuvky a vypínače', other:'Ostatní', completion:'Kompletace', revision:'Revize', demolition:'Demontáže', hourly:'Hodinové sazby', systems:'Elektrikářské celky' }
+    const NAV_ORDER = ['grooves','boxes','cables','switchboards','outlets','completion','other','revision','demolition','hourly','systems']
 
-          const bezDph = globalLaborTotal + globalMatTotal + ostatniTotal
-          const dphVal = +(bezDph * vr / 100).toFixed(2)
-          const celkemSDph = +(bezDph + dphVal).toFixed(2)
-          const pvDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
-          const pvTitle = estimate?.title || `Rozpočet ze dne ${pvDate}`
-          const pvClientName = estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
-          const pvJobNum = job?.internalNumber || estimate?.jobNumberSnapshot || '—'
-          const pvPm = estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'
-          const pvAddr = estimate?.customerAddressSnapshot || lead?.brief?.realizationAddress || '—'
-          const pvNote = estimate?.note || ''
+    function uiGroupKey(item) {
+      const name = String(item?.itemName || item?.workDescription || '').toLowerCase()
+      if (item?.unit === 'hod' || name.includes('hodin')) return 'hourly'
+      if (name.includes('sekání') || name.includes('dráž') || name.includes('kaps') || name.includes('výřez') || name.includes('vykrouž')) return 'grooves'
+      if (name.includes('krabice') || name.includes('rozvodka')) return 'boxes'
+      if (name.includes('kabel') || name.includes('vodič') || name.includes('trubka') || name.includes('lišta') || name.includes('kanál')) return 'cables'
+      if (name.includes('rozvaděč') || name.includes('jistič') || name.includes('chránič') || name.includes('svodič')) return 'switchboards'
+      if (name.includes('zásuv') || name.includes('vypína') || name.includes('spínač') || name.includes('stmíva')) return 'outlets'
+      if (name.includes('rámeček') || name.includes('kryt') || name.includes('komplet')) return 'completion'
+      if (name.includes('revize') || name.includes('měření') || name.includes('oživení')) return 'revision'
+      if (name.includes('demont')) return 'demolition'
+      return 'other'
+    }
 
-          // Build final totals matching template screenshot 4
-          const finalTotalsHtml = `
-            <div style="margin-top:28px;display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;align-items:end">
-              ${showOstatniBlock ? `<div style="text-align:center"><div style="font-size:11px;color:#555">Ostatní</div><div style="font-size:11px;font-weight:700">Celkem</div><div style="font-size:15px;font-weight:800">${fmtMoney(ostatniTotal)}</div></div>` : ''}
-              <div style="text-align:center"><div style="font-size:11px;color:#059669;font-weight:700">Práce</div><div style="font-size:11px;font-weight:700;color:#059669">Celkem</div><div style="font-size:15px;font-weight:800;color:#059669">${fmtMoney(globalLaborTotal)}</div></div>
-              <div style="text-align:center"><div style="font-size:11px;color:#D97706;font-weight:700">Materiál</div><div style="font-size:11px;font-weight:700;color:#D97706">Celkem</div><div style="font-size:15px;font-weight:800;color:#D97706">${fmtMoney(globalMatTotal)}</div></div>
-              <div style="text-align:right"><div style="font-size:11px;color:#555">Ostatní + Práce</div><div style="font-size:11px;color:#555">+ Materiál</div><div style="font-size:11px;font-weight:700">Celkem bez DPH</div><div style="font-size:16px;font-weight:800">${fmtMoney(bezDph)}</div></div>
-            </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:0;flex-direction:column;align-items:flex-end">
-              <div style="border:2px solid #333;display:flex;justify-content:space-between;min-width:340px;padding:8px 14px;font-size:14px;font-weight:600"><span>DPH <span contenteditable="true" class="pdf-editable" id="pvVatEdit" style="color:#111">${vr}</span> %</span><strong id="pvDphVal">${fmtMoney(dphVal)}</strong></div>
-              <div style="border:2.5px solid #111;display:flex;justify-content:space-between;min-width:340px;padding:10px 14px;font-size:16px;font-weight:800;margin-top:-2px;background:#FAFAFA"><span>Celkem s DPH</span><strong id="pvTotalVal">${fmtMoney(celkemSDph)}</strong></div>
-            </div>`
+    function estimateCategory(line) {
+      const raw = String(line?.category || line?.sectionType || '').toLowerCase()
+      if (raw === 'stavba' || raw === 'construction') return 'stavba'
+      if (raw === 'ostatni' || raw === 'ostatni_naklady') return 'ostatni_naklady'
+      return 'elektro'
+    }
 
-          body.innerHTML = `
-            <div class="preview-wrap">
-              <div class="preview-actions">
-                <button id="previewOpenCart" class="btn" style="background:#F3F4F6;color:#374151;border-color:#D1D5DB">✏ Upravit pozice</button>
-                <button id="previewSaveEdits" class="btn" style="background:#D97706;color:#fff;border:none">💾 Uložit úpravy</button>
-                <button id="previewBuildBtn" class="btn" style="background:#1D4ED8;color:#fff;border:none">⚡ Excel / PDF</button>
-                <button id="previewSendBtn" class="btn" style="background:#059669;color:#fff;border:none">✉ Odeslat klientovi</button>
-              </div>
-              <div class="pdf-paper">
-                <!-- HEADER like template -->
-                <div style="margin-bottom:20px">
-                  <div style="font-size:13px;color:#555">Název rozpočtu:</div>
-                  <div style="font-size:22px;font-weight:800;color:#111;margin-top:2px" contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</div>
-                </div>
-                <div class="pdf-info-grid" style="margin-bottom:20px">
-                  <div class="pdf-info-box"><div class="lbl">Klient</div><div class="val" contenteditable="true" id="pvClientEdit">${esc(pvClientName)}</div></div>
-                  <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="val" contenteditable="true" id="pvAddrEdit">${esc(pvAddr)}</div></div>
-                  <div class="pdf-info-box"><div class="lbl">Projektový manažer</div><div class="val" contenteditable="true" id="pvPmEdit">${esc(pvPm)}</div></div>
-                </div>
-                <!-- MAIN TABLE -->
-                <div class="pdf-table-wrap">
-                  <table class="pdf-table">
-                    <thead>
-                      <tr class="th1">
-                        <th rowspan="2" style="width:36px"></th>
-                        <th rowspan="2" style="width:40px">Číslo<br>položky</th>
-                        <th rowspan="2" style="background:#D9E1F2;min-width:200px;text-align:left">Popis práce</th>
-                        <th rowspan="2" style="background:#C6E0B4;min-width:160px;text-align:left">Popis materiálu</th>
-                        <th rowspan="2" style="width:80px">Množství / mj</th>
-                        <th colspan="2" style="background:#BDD7EE;text-align:center">Cena práce</th>
-                        <th colspan="2" style="background:#F8CBAD;text-align:center">Cena materiálu</th>
-                        <th colspan="2" style="background:#D9D9D9;text-align:center">Cena práce + materiálu</th>
-                      </tr>
-                      <tr class="th2">
-                        <th style="background:#BDD7EE;width:80px">(mj)</th>
-                        <th style="background:#BDD7EE;width:90px">(celkem)</th>
-                        <th style="background:#F8CBAD;width:80px">(mj)</th>
-                        <th style="background:#F8CBAD;width:90px">(celkem)</th>
-                        <th style="background:#D9D9D9;width:80px">(mj)</th>
-                        <th style="background:#D9D9D9;width:90px">(celkem)</th>
-                      </tr>
-                    </thead>
-                    <tbody>${tableRows}</tbody>
-                  </table>
-                </div>
-                ${ostatniHtml}
-                ${finalTotalsHtml}
-                ${pvNote ? `<div style="margin-top:22px;font-size:13px;color:#374151;padding:12px 16px;border-left:3px solid #F59E0B;background:#FFFBEB"><b>Poznámka:</b><br><span contenteditable="true" class="pdf-editable" id="pvNoteEdit">${esc(pvNote)}</span></div>` : ''}
-                <div class="pdf-footer">
-                  <span contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</span>
-                  <span>${esc(pvTitle)}</span>
-                  <span>Strana 1 / 1</span>
-                </div>
-              </div>
-            </div>
-          `
-          document.getElementById('previewOpenCart')?.addEventListener('click', () => { document.getElementById('editorSheet').classList.add('show') })
-          document.getElementById('previewBuildBtn')?.addEventListener('click', buildEstimateDocs)
-          document.getElementById('previewSendBtn')?.addEventListener('click', () => {
-            document.getElementById('sendPopover').classList.add('show')
-            const em = document.getElementById('sendEmailBuilder'); if (em && !em.value) em.value = lead?.email || ''
-          })
-          document.getElementById('previewSaveEdits')?.addEventListener('click', () => {
-            if (!estimate) return
-            const g = (id) => (document.getElementById(id)?.textContent || '').trim()
-            estimate.title = g('pvTitleEdit') || estimate.title
-            estimate.estimateDate = g('pvDateEdit') || estimate.estimateDate
-            estimate.clientNameSnapshot = g('pvClientEdit') || estimate.clientNameSnapshot
-            estimate.customerAddressSnapshot = g('pvAddrEdit') || estimate.customerAddressSnapshot
-            estimate.projectManagerSnapshot = g('pvPmEdit') || estimate.projectManagerSnapshot
-            estimate.note = g('pvNoteEdit') || estimate.note
-            estimate.vatRate = Number(g('pvVatEdit') || estimate.vatRate || 21)
-            body.querySelectorAll('[data-field][data-lid]').forEach(el => {
-              const lid = el.getAttribute('data-lid')
-              const field = el.getAttribute('data-field')
-              const line = (estimate.lines||[]).find(l => String(l.id||'') === lid)
-              if (line && field) line[field] = (el.textContent||'').trim()
-            })
-            saveEstimate().then(() => alert('Úpravy uloženy')).catch(e => alert('Chyba: '+e))
-          })
-          document.getElementById('mainTitle').textContent = 'Попередній перегляд документу'
-          document.getElementById('mainCount').textContent = `${pvLines.length} позицій · ${fmtMoney(celkemSDph)} · Розмір як в PDF`
-          return
-        }
+    function lineCode(line, idx) {
+      if (line?.sourceCatalogCode) return line.sourceCatalogCode
+      const cat = estimateCategory(line)
+      const prefix = cat === 'stavba' ? 'STV' : cat === 'ostatni_naklady' ? 'OST' : 'ELE'
+      return `${prefix}-${String(idx + 1).padStart(3, '0')}`
+    }
 
-        // ── ІНШІ ВИТРАТИ — dedicated UI (Ostatní rozpočtové náklady) ──
-        if (activeMode === 'other') {
-          const ostatniLines = (estimate?.lines || []).filter(l => l.sectionType === 'ostatni_naklady')
-          const t = totals(estimate?.lines || [])
-          // Quick-add presets from template
-          const PRESETS = [
-            { desc: 'Přesun materiálů do přízemí / bez výtahu', unit: 'pau', amount: 0 },
-            { desc: 'Nákup a závoz pomocného a stavebního materiálu vlastním autem 2× na profesi', unit: 'pau', amount: 0 },
-            { desc: 'Odnos a likvidace suti z demontáží a z prořezu materiálu z přízemí / bez výtahu', unit: 'pau', amount: 0 },
-            { desc: 'Odnos a likvidace směsného odpadu z demontáží a prořezu materiálu', unit: 'pau', amount: 0 },
-            { desc: 'Mimostaveništní doprava osob', unit: 'pau', amount: 2000 },
-            { desc: 'Parkování', unit: 'pau', amount: 1500 },
-            { desc: 'Činnost koordinátora stavby (3 % z ceny práce a materiálu celkem)', unit: 'pau', amount: +(t.bezDph * 0.03).toFixed(0) },
-            { desc: 'Činnost technického dozoru (odborný dozor s autorizací)', unit: 'pau', amount: 0 },
-            { desc: 'Zařízení staveniště — pomocné lešení, nářadí, ochranné prostředky (2 % z ceny práce celkem)', unit: 'pau', amount: +(t.labor * 0.02).toFixed(0) },
-          ]
-          const presetsNotAdded = PRESETS.filter(p => !ostatniLines.some(l => l.workDescription?.startsWith(p.desc.slice(0,30))))
-          body.innerHTML = `
-            <div style="padding:20px 22px">
-              <div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:4px">Ostatní rozpočtové náklady</div>
-              <div style="font-size:12px;color:var(--ink2);margin-bottom:20px">Ця секція з'явиться на останній сторінці розпочету (Strana 3 шаблону)</div>
-
-              <!-- Existing ostatni lines -->
-              ${ostatniLines.length ? `
-              <div style="border:1px solid var(--b2);border-radius:12px;overflow:hidden;margin-bottom:20px">
-                <div style="padding:12px 16px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.03)">Přidané položky (${ostatniLines.length})</div>
-                ${ostatniLines.map((l,i) => `<div style="display:grid;grid-template-columns:1fr 130px 44px;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--b2)">
-                  <div style="font-size:13px;font-weight:500;color:var(--ink)">${esc(l.workDescription||'')}</div>
-                  <div style="text-align:right;font-size:14px;font-weight:700;color:var(--green)">${fmtMoney(l.lineTotal||0)}</div>
-                  <button data-remove-ostatni="${l.positionOrder}" style="background:rgba(232,58,58,.1);border:1px solid rgba(232,58,58,.3);color:#F07070;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px">✕</button>
-                </div>`).join('')}
-                <div style="padding:12px 16px;border-top:2px solid var(--b2);background:rgba(255,255,255,.04);display:flex;justify-content:space-between;font-weight:800;font-size:14px">
-                  <span>Celkem ostatní náklady</span>
-                  <span style="color:var(--green)">${fmtMoney(ostatniLines.reduce((s,l)=>s+(l.lineTotal||0),0))}</span>
-                </div>
-              </div>` : `<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px;border:1px dashed var(--b2);border-radius:12px;margin-bottom:20px">Žádné položky. Přidejte ze šablony níže nebo zadejte ručně.</div>`}
-
-              <!-- Quick add from template -->
-              ${presetsNotAdded.length ? `
-              <div style="margin-bottom:24px">
-                <div style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Rychlé přidání z šablony</div>
-                <div style="display:flex;flex-direction:column;gap:8px">
-                  ${presetsNotAdded.map(p => `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.03);border:1px solid var(--b2);border-radius:10px">
-                    <div style="flex:1;font-size:13px;color:var(--ink2)">${esc(p.desc)}</div>
-                    <input type="number" data-preset-amount placeholder="0 Kč" value="${p.amount > 0 ? p.amount : ''}" style="width:110px;background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;text-align:right" />
-                    <button data-add-preset="${esc(p.desc)}" style="background:rgba(26,106,232,.12);border:1px solid rgba(61,135,248,.3);color:var(--blue3);border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:700;font-size:12px;white-space:nowrap">+ Přidat</button>
-                  </div>`).join('')}
-                </div>
-              </div>` : ''}
-
-              <!-- Manual add -->
-              <div style="border:1px solid var(--b2);border-radius:12px;padding:16px;background:rgba(255,255,255,.02)">
-                <div style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Přidat vlastní položku</div>
-                <div style="display:grid;grid-template-columns:1fr 130px auto;gap:10px;align-items:end">
-                  <div>
-                    <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Popis</div>
-                    <input id="ostatniDesc" class="input" placeholder="Popis nákladu..." style="font-size:13px" />
-                  </div>
-                  <div>
-                    <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Částka (Kč)</div>
-                    <input id="ostatniAmount" class="input" type="number" placeholder="0" style="font-size:13px;text-align:right" />
-                  </div>
-                  <button id="addOstatniBtn" class="btn primary" style="white-space:nowrap;height:42px">+ Přidat</button>
-                </div>
-              </div>
-            </div>`
-
-          // Remove ostatni line
-          body.querySelectorAll('[data-remove-ostatni]').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const pos = Number(btn.getAttribute('data-remove-ostatni'))
-              estimate.lines = estimate.lines.filter(x => Number(x.positionOrder) !== pos)
-              estimate.lines = normalizeEstimateLines(estimate.lines)
-              renderAll()
-            })
-          })
-          // Add preset
-          body.querySelectorAll('[data-add-preset]').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const desc = btn.getAttribute('data-add-preset')
-              const amountInput = btn.previousElementSibling
-              const amount = Number(amountInput?.value || 0)
-              estimate.lines.push({
-                sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
-                groupKey: 'ostatni_naklady', groupLabel: 'Ostatní náklady',
-                workDescription: desc, materialDescription: '', unit: 'pau',
-                quantity: 1, laborUnitPrice: amount, materialUnitPrice: 0,
-              })
-              estimate.lines = normalizeEstimateLines(estimate.lines)
-              renderAll()
-            })
-          })
-          // Add manual
-          document.getElementById('addOstatniBtn')?.addEventListener('click', () => {
-            const desc = document.getElementById('ostatniDesc')?.value.trim()
-            const amount = Number(document.getElementById('ostatniAmount')?.value || 0)
-            if (!desc) return
-            estimate.lines.push({
-              sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
-              groupKey: 'ostatni_naklady', groupLabel: 'Ostatní náklady',
-              workDescription: desc, materialDescription: '', unit: 'pau',
-              quantity: 1, laborUnitPrice: amount, materialUnitPrice: 0,
-            })
-            estimate.lines = normalizeEstimateLines(estimate.lines)
-            renderAll()
-          })
-          document.getElementById('mainTitle').textContent = 'Ostatní rozpočtové náklady'
-          document.getElementById('mainCount').textContent = `${ostatniLines.length} položek · celkem ${fmtMoney(ostatniLines.reduce((s,l)=>s+(l.lineTotal||0),0))}`
-          return
-        }
-
-        if (!catalog.length) { body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'; return }
-        const groups = groupedCatalog(catalog)
-        const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
-        const visibleKeys = activeNavKey && groups.has(activeNavKey) ? [activeNavKey] : ordered
-        body.innerHTML = visibleKeys.map((key) => {
-          const items = groups.get(key) || []
-          return `<div class="group-head"><div class="group-title">${esc(NAV_LABELS[key] || key)}</div><div class="group-sub">${items.length} položek</div></div>${items.map((item) => { const line = catalogLine(item); const qty = Number(line?.quantity || 0); const effectivePrice = line ? Number(line.laborUnitPrice || 0) : customLaborPrice(item); const total = qty * effectivePrice; const _bP = Number(item.basePrice || 0); const _mk = _bP > 0 ? Math.round(((effectivePrice - _bP) / _bP) * 100) : 0; const _mc = _mk > 0 ? 'pos' : _mk < 0 ? 'neg' : 'zero'; return `<div class="item${qty > 0 ? ' incart' : ''}"><div class="item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 3"></path></svg></div><div class="item-body"><div class="item-name">${esc(item.itemName)}</div>${item.sourceCode ? `<div class="item-code">${esc(item.sourceCode)}</div>` : ''}</div><div class="item-price"><div class="item-price-main">${esc(String(item.basePrice || 0))} Kč</div><div class="item-price-sub">základ / ${esc(item.unit || 'ks')}</div></div><div class="item-markup"><span class="mup ${_mc}" title="Přirážka oproti základní ceně">${_mk >= 0 ? '+' : ''}${_mk}%</span><div class="item-price-sub">přirážka</div></div><div class="item-custom"><label>Moje cena</label><input type="number" step="0.01" data-price-input="${item.id}" data-base="${_bP}" value="${esc(String(effectivePrice || 0))}" /></div><div class="item-qty"><button class="qty-btn qty-minus" data-minus="${item.id}">−</button><div class="qty-val${qty > 0 ? ' active' : ''}">${qty}</div><button class="qty-btn qty-plus" data-plus="${item.id}">+</button></div><div class="item-total"><div class="item-total-main${qty > 0 ? ' active' : ''}">${qty > 0 ? total.toFixed(0) + ' Kč' : '0 Kč'}</div><div class="item-total-sub">${qty > 0 ? qty + ' ' + esc(item.unit || 'ks') : '—'}</div></div></div>` }).join('')}`
-        }).join('')
-        body.querySelectorAll('[data-plus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-plus'))); if (item) addCatalogItem(item, 1) }))
-        body.querySelectorAll('[data-minus]').forEach((btn) => btn.addEventListener('click', () => { const item = catalog.find((x) => Number(x.id) === Number(btn.getAttribute('data-minus'))); if (item) addCatalogItem(item, -1) }))
-        body.querySelectorAll('[data-price-input]').forEach((input) => input.addEventListener('input', () => {
-          const itemId = Number(input.getAttribute('data-price-input'))
-          const next = Number(input.value || 0)
-          customPriceOverrides.set(itemId, next)
-          const line = (estimate?.lines || []).find((x) => Number(x.catalogItemId || 0) === itemId)
-          if (line) {
-            line.laborUnitPrice = next
-            estimate.lines = normalizeEstimateLines(estimate.lines)
-            renderAll()
-          }
-        }))
-        const titleMap = { work: 'Праця', material: 'Матеріал', other: 'Інші витрати' }
-        document.getElementById('mainTitle').textContent = activeNavKey ? `${titleMap[activeMode] || 'Каталог'} · ${NAV_LABELS[activeNavKey] || activeNavKey}` : (titleMap[activeMode] || 'Каталог')
-        document.getElementById('mainCount').textContent = activeNavKey && groups.has(activeNavKey) ? `${(groups.get(activeNavKey) || []).length} позицій` : `${catalog.length} позицій у базі`
-      }
-      function renderEstimateTable() {
-        const tbody = document.getElementById('estimateRows')
-        const lines = normalizeEstimateLines(estimate?.lines || [])
-        estimate.lines = lines
-        if (!lines.length) { tbody.innerHTML = `<tr><td colspan="13"><div class="empty">Rozpočet zatím neobsahuje žádné řádky. Přidávejte položky z katalogu vlevo a upravujte je přímo v tabulce.</div></td></tr>`; return }
-        const groups = groupedEstimate(lines)
-        const ordered = ['elektro', 'stavba', 'ostatni'].filter((k) => groups.has(k))
-        tbody.innerHTML = ordered.map((key) => {
-          const rows = groups.get(key) || []
-          const subtotal = rows.reduce((sum, line) => sum + Number(line.lineTotal || 0), 0)
-          return `<tr class="section-row ${CATEGORY_ROW_CLASS[key] || ''}"><td colspan="13">${esc(CATEGORY_LABELS[key] || key)}</td></tr>${rows.map((line, idx) => `<tr data-pos="${line.positionOrder}"><td><select class="sheet-input" data-field="category" data-pos="${line.positionOrder}"><option value="elektro" ${estimateCategory(line)==='elektro'?'selected':''}>ELEKTRO</option><option value="stavba" ${estimateCategory(line)==='stavba'?'selected':''}>STAVBA</option><option value="ostatni" ${estimateCategory(line)==='ostatni'?'selected':''}>OSTATNÍ</option></select></td><td><input class="sheet-input small-code" data-field="lineCode" data-pos="${line.positionOrder}" value="${esc(line.lineCode || lineItemCode(line, idx))}" /></td><td><div style="padding:6px 4px;text-align:center;font-weight:700">${line.positionOrder}</div></td><td><textarea class="sheet-input" data-field="workDescription" data-pos="${line.positionOrder}" style="min-height:48px;resize:vertical">${esc(line.workDescription || '')}</textarea></td><td><textarea class="sheet-input" data-field="materialDescription" data-pos="${line.positionOrder}" placeholder="bez materiálu" style="min-height:48px;resize:vertical">${esc(line.materialDescription || '')}</textarea></td><td><input class="sheet-input" data-field="unit" data-pos="${line.positionOrder}" value="${esc(line.unit || 'ks')}" /></td><td><input class="sheet-input num" data-field="quantity" data-pos="${line.positionOrder}" value="${esc(String(line.quantity || 0))}" /></td><td><input class="sheet-input num" data-field="laborUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.laborUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.laborTotal || 0)}</div></td><td><input class="sheet-input num" data-field="materialUnitPrice" data-pos="${line.positionOrder}" value="${esc(String(line.materialUnitPrice || 0))}" /></td><td><div class="small-code" style="padding:6px 4px;text-align:right">${fmtMoney(line.materialTotal || 0)}</div></td><td><div class="small-code" style="padding:6px 4px;text-align:right;font-weight:700;color:var(--ink)">${fmtMoney(line.lineTotal || 0)}</div></td><td><button class="btn" data-remove="${line.positionOrder}" style="padding:7px 9px;color:#F7B0B0;border:1px solid rgba(232,58,58,.3);background:rgba(232,58,58,.08)">✕</button></td></tr>`).join('')}<tr><td colspan="11" style="text-align:right;font-weight:700;background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.18)">${esc(CATEGORY_LABELS[key] || key)} CELKEM</td><td style="font-weight:800;text-align:right;background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.18)">${fmtMoney(subtotal)}</td><td style="background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.18)"></td></tr>`
-        }).join('')
-        tbody.querySelectorAll('[data-field]').forEach((el) => el.addEventListener('input', () => { const pos = Number(el.getAttribute('data-pos')); const line = estimate.lines.find((x) => Number(x.positionOrder) === pos); if (!line) return; const field = el.getAttribute('data-field'); line[field] = ['quantity','laborUnitPrice','materialUnitPrice'].includes(field) ? Number(el.value || 0) : el.value; if (field === 'category') line.sectionType = el.value; estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
-        tbody.querySelectorAll('[data-remove]').forEach((btn) => btn.addEventListener('click', () => { const pos = Number(btn.getAttribute('data-remove')); estimate.lines = estimate.lines.filter((x) => Number(x.positionOrder) !== pos); estimate.lines = normalizeEstimateLines(estimate.lines); renderAll() }))
-      }
-      function renderTotals() {
-        const t = totals(estimate?.lines || [])
-        const vr = Number(estimate?.vatRate || 21)
-        document.getElementById('estimateTotals').innerHTML = `
-          <div class="tot-row"><span>Práce celkem</span><strong>${fmtMoney(t.labor)}</strong></div>
-          <div class="tot-row"><span>Materiál celkem</span><strong>${fmtMoney(t.material)}</strong></div>
-          <div class="tot-row"><span>Mezisoučet</span><strong>${fmtMoney(t.bezDph)}</strong></div>
-          <div class="tot-row" style="align-items:center">
-            <span style="display:flex;align-items:center;gap:6px">
-              DPH&nbsp;
-              <input id="dphRateInput" type="number" min="0" max="99" step="1" value="${vr}" title="Sazba DPH (%)" style="width:52px;background:rgba(255,255,255,.08);border:1px solid var(--b2);border-radius:6px;color:var(--ink);padding:3px 6px;font:inherit;font-size:13px;text-align:center" />
-              &nbsp;%
-            </span>
-            <strong>${fmtMoney(t.dph)}</strong>
-          </div>
-          <div class="tot-row final"><span>Celkem s DPH</span><strong style="color:#106B44">${fmtMoney(t.total)}</strong></div>
-        `
-        document.getElementById('dphRateInput')?.addEventListener('input', (e) => {
-          if (!estimate) return
-          estimate.vatRate = Number(e.target.value || 21)
-          const t2 = totals(estimate.lines || [])
-          document.querySelector('#estimateTotals .tot-row:nth-child(4) strong').textContent = fmtMoney(t2.dph)
-          document.querySelector('#estimateTotals .tot-row.final strong').textContent = fmtMoney(t2.total)
-          document.getElementById('cartTotal').textContent = fmtMoney(t2.total)
-        })
-      }
-      function renderCartBar() {
-        const t = totals(estimate?.lines || [])
-        document.getElementById('cartCount').textContent = String((estimate?.lines || []).length)
-        document.getElementById('cartLabor').textContent = fmtMoney(t.labor)
-        document.getElementById('cartMaterial').textContent = fmtMoney(t.material)
-        document.getElementById('cartTotal').textContent = fmtMoney(t.total)
-      }
-      function updateHeaderInfo() {
-        const estimateDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
-        const objectName = estimate?.companyNameSnapshot || lead?.brief?.objectType || job?.title || 'Zakázka'
-        document.getElementById('sheetTitle').textContent = estimate?.title || `Rozpočet ze dne ${estimateDate}`
-        document.getElementById('sheetSub').textContent = `Název rozpočtu: ${estimate?.title || `Rozpočet ze dne ${estimateDate} ${objectName}`}`
-        const meta = [
-          ['Datum rozpočtu', estimateDate],
-          ['Číslo rozpočtu', estimate?.estimateNo || '—'],
-          ['Číslo zakázky', estimate?.jobNumberSnapshot || job?.internalNumber || '—'],
-          ['Číslo klienta', estimate?.clientNumberSnapshot || lead?.clientNumber || job?.clientNumberSnapshot || '—'],
-          ['Klient', estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'],
-          ['Firma', estimate?.companyNameSnapshot || '—'],
-          ['Adresa', estimate?.customerAddressSnapshot || '—'],
-          ['Projektový manažer', estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'],
-          ['Verze', String(estimate?.versionNo || 1)],
-          ['IČO', estimate?.customerIcoSnapshot || '—'],
-        ]
-        document.getElementById('sheetMeta').innerHTML = meta.map(([k, v]) => `<div class="meta-card"><b>${esc(k)}</b><div class="v">${esc(v)}</div></div>`).join('')
-        document.getElementById('paperTopMeta').innerHTML = `${esc(estimateDate)}<br>${esc(estimate?.estimateNo || '')}`
-        const modeMap = { work: 'Праця', material: 'Матеріал', other: 'Інші витрати', preview: 'Попередній перегляд' }
-        document.getElementById('paperSectionInfo').textContent = 'Універсальний шаблон кошторису: категорії, позиції та автоматичні підсумки.'
-        document.getElementById('leadSub').textContent = `${estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'} · ${job?.internalNumber || estimate?.jobNumberSnapshot || '—'} · ${modeMap[activeMode]}`
-        document.getElementById('contextTitle').textContent = `Клієнт: ${estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'}`
-        document.getElementById('contextSub').textContent = `Редагуєте кошторис ${estimate?.estimateNo || '—'} · zakázka ${job?.internalNumber || estimate?.jobNumberSnapshot || '—'} · версія ${estimate?.versionNo || 1}`
-      }
-      async function loadContext() {
-        if (Number.isFinite(jobId) && jobId > 0) {
-          const jr = await apiFetch(apiUrl(`/api/crm/jobs/${jobId}`))
-          const jd = await json(jr)
-          if (!jr.ok || !jd?.ok) throw new Error('job_failed')
-          job = jd.job
-          if (job?.leadId) {
-            const lr = await apiFetch(apiUrl(`/api/leads/${job.leadId}`))
-            const ld = await json(lr)
-            if (lr.ok && ld?.ok) lead = ld.lead
-          }
-          document.getElementById('backLink').href = `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}`
-          return
-        }
-        if (Number.isFinite(leadId) && leadId > 0) {
-          const lr = await apiFetch(apiUrl(`/api/leads/${leadId}`))
-          const ld = await json(lr)
-          if (!lr.ok || !ld?.ok) throw new Error('lead_failed')
-          lead = ld.lead
-          const jr = await apiFetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
-          const jd = await json(jr)
-          if (jr.ok && jd?.ok && jd.jobs?.length) job = jd.jobs[0]
-          document.getElementById('backLink').href = job ? `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}` : './index.html'
-          return
-        }
-        throw new Error('missing_job_or_lead_id')
-      }
-      async function ensureEstimate() {
-        if (estimateIdFromUrl) {
-          const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
-          const d = await json(r)
-          if (r.ok && d?.ok) { estimate = d.estimate; return }
-        }
-        if (job?.id) {
-          const ex = await apiFetch(apiUrl(`/api/crm/estimates?jobId=${encodeURIComponent(String(job.id))}`))
-          const dx = await json(ex)
-          if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
-          const cr = await apiFetch(apiUrl('/api/crm/estimates/from-job'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: job.id }) })
-          const cd = await json(cr)
-          if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'estimate_create_failed')
-          estimate = cd.estimate
-          return
-        }
-        if (lead?.id) {
-          const ex = await apiFetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(lead.id))}`))
-          const dx = await json(ex)
-          if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
-          const cr = await apiFetch(apiUrl('/api/crm/estimates/from-lead'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
-          const cd = await json(cr)
-          if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'estimate_create_failed')
-          estimate = cd.estimate
-          return
-        }
-        throw new Error('estimate_context_missing')
-      }
-      async function loadCatalog() {
-        const p = new URLSearchParams()
-        const trade = document.getElementById('tradeType').value
-        const search = document.getElementById('catalogSearch').value.trim()
-        if (trade) p.set('tradeType', trade)
-        if (search) p.set('search', search)
-        p.set('itemKind', catalogItemKind())
-        const r = await apiFetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
-        const d = await json(r)
-        catalog = (r.ok && d?.ok) ? (d.items || []) : []
-        const groups = groupedCatalog(catalog)
-        if ((!activeNavKey || !groups.has(activeNavKey)) && catalog.length) activeNavKey = NAV_ORDER.find((k) => groups.has(k)) || [...groups.keys()][0] || null
-        renderNav(); renderCatalogRows()
-      }
-      async function saveEstimate() {
-        if (!estimate) return
-        estimate.title = document.getElementById('sheetTitle').textContent || estimate.title
-        estimate.note = document.getElementById('estimateNote').value || ''
-        estimate.lines = normalizeEstimateLines(estimate.lines || [])
-        const payload = {
-          title: estimate.title,
-          tradeType: document.getElementById('tradeType').value,
-          note: estimate.note,
-          estimateDate: estimate.estimateDate || new Date().toISOString().slice(0, 10),
-          jobNumberSnapshot: estimate.jobNumberSnapshot || job?.internalNumber || null,
-          clientNumberSnapshot: estimate.clientNumberSnapshot || lead?.clientNumber || job?.clientNumberSnapshot || null,
-          clientNameSnapshot: estimate.clientNameSnapshot || lead?.fullName || lead?.name || null,
-          companyNameSnapshot: estimate.companyNameSnapshot || null,
-          customerAddressSnapshot: estimate.customerAddressSnapshot || null,
-          customerIcoSnapshot: estimate.customerIcoSnapshot || null,
-          versionNo: estimate.versionNo || 1,
-          projectManagerSnapshot: estimate.projectManagerSnapshot || job?.responsiblePerson || null,
-          vatRate: estimate.vatRate || 21,
-          lines: estimate.lines,
-        }
-        const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        const d = await json(r)
-        if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze uložit rozpočet'); return }
-        estimate = d.estimate
-        estimate.lines = normalizeEstimateLines(estimate.lines || [])
-        renderAll()
-        alert('Rozpočet byl uložen')
-      }
-      async function buildEstimateDocs() {
-        if (!estimate?.id) return
-        const btn = document.getElementById('buildDocs')
-        const barBtn = document.getElementById('buildDocsBar')
-        if (btn) { btn.disabled = true; btn.textContent = '...' }
-        if (barBtn) { barBtn.disabled = true; barBtn.textContent = '...' }
-        try {
-          await saveEstimate()
-          const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-          const d = await json(r)
-          if (!r.ok || !d?.ok) { alert(d?.error || 'Nelze vygenerovat dokumenty'); return }
-          const xlsxUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)
-          const pdfUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`)
-          const x = document.getElementById('xlsxLink')
-          const p = document.getElementById('pdfLink')
-          if (x) { x.href = xlsxUrl; x.style.display = 'inline' }
-          if (p) { p.href = pdfUrl; p.style.display = 'inline' }
-          document.getElementById('sendPopover').classList.add('show')
-          const emailEl = document.getElementById('sendEmailBuilder')
-          if (emailEl && !emailEl.value) emailEl.value = lead?.email || ''
-          alert(d?.pdf?.ok ? '✓ Excel i PDF vygenerovány. Můžete odeslat klientovi.' : 'Excel vygenerován, PDF se nepodařilo vytvořit')
-        } finally {
-          if (btn) { btn.disabled = false; btn.textContent = '⚡ Excel / PDF' }
-          if (barBtn) { barBtn.disabled = false; barBtn.textContent = '⚡ Генерувати' }
-        }
-      }
-      function updateStatusBadge() {
-        const el = document.getElementById('estimateStatusBadge')
-        if (!el || !estimate) return
-        const s = estimate.status || 'draft'
-        const labels = { draft: '● Draft', ready: '✓ Připraveno', sent: '✉ Odesláno' }
-        const cls = { draft: 'status-draft', ready: 'status-ready', sent: 'status-sent' }
-        el.textContent = labels[s] || ('● ' + s)
-        el.className = `status-badge ${cls[s] || 'status-draft'}`
-      }
-      async function sendFromBuilder() {
-        const email = (document.getElementById('sendEmailBuilder').value || '').trim()
-          || lead?.email || job?.customerEmail || ''
-        if (!email) { alert('Задайте email клієнта'); return }
-        const btn = document.getElementById('sendFromBuilderBtn')
-        btn.disabled = true; btn.textContent = '...'
-        try {
-          await saveEstimate()
-          const r1 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-          const d1 = await json(r1)
-          if (!r1.ok || !d1?.ok) throw new Error(d1?.error || 'Nelze vygenerovat PDF')
-          const xlsxEl = document.getElementById('xlsxLink'), pdfEl = document.getElementById('pdfLink')
-          if (xlsxEl) { xlsxEl.href = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`); xlsxEl.style.display = 'inline' }
-          if (pdfEl) { pdfEl.href = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`); pdfEl.style.display = 'inline' }
-          const r2 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/send-to-client`), {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, subject: `Rozpočet ${estimate.estimateNo || ''}`, text: `Dobrý den,\nv příloze zasíláme rozpočet k zakázce ${job?.internalNumber || '—'}.\n\nS pozdravem,\nO&L Master Dom` })
-          })
-          const d2 = await json(r2)
-          if (r2.ok && d2?.ok) {
-            if (estimate) { estimate.status = 'sent'; updateStatusBadge() }
-            alert(`✓ PDF odesláno na ${email}`)
-            document.getElementById('sendPopover').classList.remove('show')
-          } else throw new Error(d2?.error || 'Nelze odeslat')
-        } catch (e) { alert(String(e?.message || e)) }
-        finally { btn.disabled = false; btn.textContent = 'Відправити PDF →' }
-      }
-      function renderAll() { updateHeaderInfo(); renderNav(); renderCatalogRows(); renderEstimateTable(); renderTotals(); renderCartBar(); updateStatusBadge() }
-      document.getElementById('saveEstimate').addEventListener('click', saveEstimate)
-      document.getElementById('buildDocs').addEventListener('click', buildEstimateDocs)
-      document.getElementById('toggleSheet').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
-      document.getElementById('openCartBar').addEventListener('click', () => document.getElementById('editorSheet').classList.toggle('show'))
-      document.getElementById('saveFromBar').addEventListener('click', saveEstimate)
-      document.getElementById('buildDocsBar').addEventListener('click', buildEstimateDocs)
-      document.getElementById('sendToggleBtn').addEventListener('click', (e) => {
-        e.stopPropagation()
-        const pop = document.getElementById('sendPopover')
-        pop.classList.toggle('show')
-        if (pop.classList.contains('show')) {
-          const emailEl = document.getElementById('sendEmailBuilder')
-          if (!emailEl.value) emailEl.value = lead?.email || ''
-        }
+    function normalizeLines(lines) {
+      return (lines || []).map((line, idx) => {
+        const cat = estimateCategory(line)
+        const qty = Number(line.quantity || 0)
+        const lU = Number(line.laborUnitPrice ?? line.clientPrice ?? 0)
+        const mU = Number(line.materialUnitPrice || 0)
+        const lT = +(qty * lU).toFixed(2)
+        const mT = +(qty * mU).toFixed(2)
+        const tot = +(lT + mT).toFixed(2)
+        return { ...line, lineCode: lineCode(line, idx), sectionType: cat, category: cat,
+          workDescription: line.workDescription || line.itemName || '',
+          materialDescription: line.materialDescription || '', unit: line.unit || 'ks',
+          quantity: qty, laborUnitPrice: lU, materialUnitPrice: mU,
+          laborTotal: lT, materialTotal: mT, lineTotal: tot, positionOrder: idx + 1 }
       })
-      document.getElementById('sendFromBuilderBtn').addEventListener('click', sendFromBuilder)
-      document.getElementById('buildDocsSheet')?.addEventListener('click', buildEstimateDocs)
-      document.getElementById('saveEstimateSheet')?.addEventListener('click', saveEstimate)
-      document.getElementById('globalMarkup').addEventListener('input', (e) => {
-        globalMarkup = Number(e.target.value || 0)
-        const disp = document.getElementById('globalMarkupDisplay')
-        if (disp) disp.textContent = (globalMarkup >= 0 ? '+' : '') + globalMarkup + '%'
-        disp.style.color = globalMarkup > 0 ? 'var(--green)' : globalMarkup < 0 ? 'var(--red)' : 'var(--ink3)'
-      })
-      document.getElementById('estimateStatusBadge')?.addEventListener('click', async () => {
-        const statuses = ['draft', 'ready', 'sent']
-        const labels = { draft: 'Draft (чернетка)', ready: 'Připraveno (готово)', sent: 'Odesláno (відправлено)' }
-        const cur = estimate?.status || 'draft'
-        const idx = statuses.indexOf(cur)
-        const next = statuses[(idx + 1) % statuses.length]
-        if (!estimate) return
-        estimate.status = next
-        updateStatusBadge()
-        await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: next }) }).catch(() => {})
-      })
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('#sendPopover') && !e.target.closest('#sendToggleBtn')) {
-          document.getElementById('sendPopover')?.classList.remove('show')
-        }
-      })
-      document.getElementById('tradeType').addEventListener('change', () => { activeNavKey = null; loadCatalog() })
-      document.querySelectorAll('[data-mode]').forEach((btn) => btn.addEventListener('click', () => {
-        activeMode = btn.getAttribute('data-mode')
-        document.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('active', x === btn))
-        activeNavKey = null
-        // Full-screen when preview
-        const page = document.querySelector('.page')
-        if (page) page.classList.toggle('preview-mode', activeMode === 'preview')
-        loadCatalog()
-      }))
-      let timer
-      document.getElementById('catalogSearch').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { activeNavKey = null; loadCatalog() }, 250) })
-      document.getElementById('addCatalogItemBtn').addEventListener('click', async () => {
-        const payload = {
-          sourceCode: document.getElementById('newItemCode').value.trim() || null,
-          itemName: document.getElementById('newItemName').value.trim(),
-          unit: document.getElementById('newItemUnit').value.trim() || 'ks',
-          basePrice: Number(document.getElementById('newItemPrice').value || 0),
-          tradeType: document.getElementById('tradeType').value,
-          metadata: { itemKind: catalogItemKind() },
-        }
-        if (!payload.itemName) return
-        const r = await apiFetch(apiUrl('/api/crm/catalog/items'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        const d = await json(r)
-        if (!r.ok || !d?.ok) { alert(d?.error || 'Не вдалося додати позицію'); return }
-        document.getElementById('newItemCode').value = ''
-        document.getElementById('newItemName').value = ''
-        document.getElementById('newItemUnit').value = 'ks'
-        document.getElementById('newItemPrice').value = ''
-        loadCatalog()
-      })
-      document.getElementById('estimateNote').addEventListener('input', (e) => { if (estimate) estimate.note = e.target.value })
-      document.getElementById('addManualLine').addEventListener('click', () => {
-        if (!estimate) return
-        const category = document.getElementById('manualCategory').value || 'elektro'
+    }
+
+    function groupedEstimate(lines) {
+      const map = new Map()
+      for (const l of normalizeLines(lines)) {
+        const key = estimateCategory(l)
+        if (!map.has(key)) map.set(key, [])
+        map.get(key).push(l)
+      }
+      return map
+    }
+
+    function totals(lines) {
+      const norm = normalizeLines(lines || [])
+      const mainLines = norm.filter(l => l.sectionType !== 'ostatni_naklady')
+      const labor = mainLines.reduce((s, l) => s + l.laborTotal, 0)
+      const material = mainLines.reduce((s, l) => s + l.materialTotal, 0)
+      const ostatni = norm.filter(l => l.sectionType === 'ostatni_naklady').reduce((s,l)=>s+l.lineTotal,0)
+      const bezDph = labor + material + ostatni
+      const vr = Number(estimate?.vatRate || 21)
+      const dph = +(bezDph * vr / 100).toFixed(2)
+      const total = +(bezDph + dph).toFixed(2)
+      return { labor, material, ostatni, bezDph, dph, total, vr }
+    }
+
+    function catalogLine(item) {
+      return (estimate?.lines || []).find(x => Number(x.catalogItemId || 0) === Number(item.id)) || null
+    }
+
+    function effectivePrice(item) {
+      const override = customPriceOverrides.get(Number(item.id))
+      return Number.isFinite(override) ? override : Number(item.basePrice || 0)
+    }
+
+    function addItem(item, delta) {
+      if (!estimate) return
+      const existing = catalogLine(item)
+      if (!existing && delta <= 0) return
+      if (!existing) {
         estimate.lines.push({
-          lineCode: null,
-          category,
-          sectionType: category,
-          groupKey: category === 'stavba' ? 'other' : 'systems',
-          groupLabel: CATEGORY_LABELS[category] || 'ELEKTRO',
-          workDescription: document.getElementById('manualWork').value.trim() || 'Nová položka',
-          materialDescription: document.getElementById('manualMaterial').value.trim(),
-          quantity: Number(document.getElementById('manualQty').value || 0),
-          unit: document.getElementById('manualUnit').value.trim() || 'ks',
-          laborUnitPrice: Number(document.getElementById('manualLabor').value || 0),
-          materialUnitPrice: Number(document.getElementById('manualMaterialPrice').value || 0),
+          catalogItemId: item.id,
+          sourceCatalogCode: item.sourceCode || null,
+          category: 'elektro', sectionType: 'elektro',
+          itemName: item.itemName,
+          workDescription: item.itemName,
+          materialDescription: '',
+          unit: item.unit || 'ks',
+          quantity: 1,
+          laborUnitPrice: effectivePrice(item),
+          materialUnitPrice: 0,
         })
-        estimate.lines = normalizeEstimateLines(estimate.lines)
-        document.getElementById('manualWork').value = ''
-        document.getElementById('manualMaterial').value = ''
-        document.getElementById('manualUnit').value = 'ks'
-        renderAll()
-      })
-      // User display + logout
-      ;(function(){
-        try {
-          const u = JSON.parse(localStorage.getItem('crmUser') || '{}')
-          const roleMap = { owner: 'Vlastník', manager: 'Manažer', pm: 'Proj. manažer', viewer: 'Zobrazení' }
-          document.getElementById('userName').textContent = u.name || u.email || '—'
-          document.getElementById('userRole').textContent = roleMap[u.role] || u.role || '—'
-          const initials = (u.name || u.email || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
-          document.getElementById('userAvatar').textContent = initials
-        } catch {}
-      })()
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser')
-        location.replace('./login.html')
-      })
-      // Ostatní toggle rerenders preview
-      document.getElementById('toggleOstatni')?.addEventListener('change', () => { if (activeMode === 'preview') renderAll() })
-
-      ;(async () => {
-        try {
-          await loadContext()
-          await ensureEstimate()
-          estimate.lines = normalizeEstimateLines(estimate.lines || [])
-          document.getElementById('tradeType').value = estimate.tradeType === 'construction' ? 'construction' : 'electro'
-          document.getElementById('estimateNote').value = estimate.note || ''
-          renderAll()
-          await loadCatalog()
-        } catch (e) {
-          document.getElementById('leadSub').textContent = 'Tuto stránku otevřete ze zakázky nebo z pipeline.'
-          document.querySelector('.main').innerHTML = `<div class="empty">Chyba: ${esc(String(e?.message || e))}<br><br><a class="btn primary" href="./index.html">Otevřít CRM pipeline</a></div>`
-          document.getElementById('editorSheet').innerHTML = ''
+      } else {
+        existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
+        existing.laborUnitPrice = effectivePrice(item)
+        if (existing.quantity <= 0) {
+          estimate.lines = estimate.lines.filter(x => Number(x.catalogItemId || 0) !== Number(item.id))
         }
-      })()
-    </script>
-  </body>
+      }
+      estimate.lines = normalizeLines(estimate.lines)
+      renderAll()
+    }
+
+    // ── RENDER CATALOG ──
+    function renderCatalog() {
+      const list = document.getElementById('catList')
+      let items = catalog
+      if (searchQ) {
+        const q = searchQ.toLowerCase()
+        items = items.filter(i => (i.itemName || '').toLowerCase().includes(q) || (i.sourceCode || '').toLowerCase().includes(q))
+      }
+      if (activeGroup !== 'all') {
+        items = items.filter(i => uiGroupKey(i) === activeGroup)
+      }
+      if (!items.length) {
+        list.innerHTML = `<div class="cat-empty">${searchQ ? 'Nic nebylo nalezeno pro „' + esc(searchQ) + '"' : 'Katalog je prázdný.'}</div>`
+        return
+      }
+      // Group items
+      const groups = new Map()
+      for (const item of items) {
+        const key = uiGroupKey(item)
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key).push(item)
+      }
+      const orderedKeys = NAV_ORDER.filter(k => groups.has(k)).concat([...groups.keys()].filter(k => !NAV_ORDER.includes(k)))
+      const showGroupHead = activeGroup === 'all' && !searchQ
+
+      list.innerHTML = orderedKeys.map(key => {
+        const grpItems = groups.get(key) || []
+        return (showGroupHead ? `<div class="cat-group-head"><span class="cat-group-name">${esc(NAV_LABELS[key] || key)}</span><span class="cat-group-count">${grpItems.length} položek</span></div>` : '') +
+          grpItems.map(item => {
+            const line = catalogLine(item)
+            const qty = Number(line?.quantity || 0)
+            const price = effectivePrice(item)
+            return `<div class="cat-item${qty > 0 ? ' in-cart' : ''}" data-id="${item.id}">
+              <div>
+                <div class="cat-item-name">${esc(item.itemName)}</div>
+                ${item.sourceCode ? `<div class="cat-item-code">${esc(item.sourceCode)}</div>` : ''}
+              </div>
+              <div class="cat-item-price">
+                <div class="cat-item-price-main">${price} Kč</div>
+                <div class="cat-item-price-sub">/ ${esc(item.unit || 'ks')}</div>
+              </div>
+              <div class="cat-item-ctrl">
+                <button class="q-btn q-minus" data-minus="${item.id}">−</button>
+                <span class="q-val${qty > 0 ? ' has' : ''}">${qty || ''}</span>
+                <button class="q-btn q-plus" data-plus="${item.id}">+</button>
+              </div>
+            </div>`
+          }).join('')
+      }).join('')
+
+      list.querySelectorAll('[data-plus]').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); const item = catalog.find(x => Number(x.id) === Number(btn.getAttribute('data-plus'))); if (item) addItem(item, 1) })
+      })
+      list.querySelectorAll('[data-minus]').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); const item = catalog.find(x => Number(x.id) === Number(btn.getAttribute('data-minus'))); if (item) addItem(item, -1) })
+      })
+    }
+
+    // ── RENDER CART ──
+    function renderCart() {
+      const body = document.getElementById('cartBody')
+      const lines = normalizeLines(estimate?.lines || [])
+      estimate.lines = lines
+      const mainLines = lines.filter(l => l.sectionType !== 'ostatni_naklady')
+      const ostatniLines = lines.filter(l => l.sectionType === 'ostatni_naklady')
+
+      document.getElementById('cartCount').textContent = `${lines.length} položek`
+
+      if (!mainLines.length && !ostatniLines.length) {
+        body.innerHTML = '<div class="cart-empty">Vyberte položky z katalogu vlevo.</div>'
+      } else {
+        const groups = groupedEstimate(mainLines)
+        const ORDER = ['elektro', 'stavba']
+        const allCats = [...ORDER.filter(k => groups.has(k)), ...[...groups.keys()].filter(k => !ORDER.includes(k))]
+        const CAT_LABELS = { elektro:'⚡ Elektro', stavba:'🧱 Stavba' }
+
+        let html = allCats.map(cat => {
+          const rows = groups.get(cat) || []
+          const subTotal = rows.reduce((s, l) => s + l.lineTotal, 0)
+          return `<div class="cart-cat-head">${esc(CAT_LABELS[cat] || cat)}</div>` +
+            rows.map(line => `
+              <div class="cart-line">
+                <div class="cart-line-name">${esc(line.workDescription || line.itemName || '—')}</div>
+                <div class="cart-line-price">
+                  <div class="cart-line-total">${fmtMoney(line.lineTotal)}</div>
+                  <div class="cart-line-unit">${line.quantity} × ${line.laborUnitPrice} Kč</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+                  <div class="cart-line-qty">
+                    <button class="cq-btn cq-m" data-cart-minus="${line.positionOrder}">−</button>
+                    <input class="cq-val" type="number" min="0" step="1" value="${line.quantity}" data-qty-pos="${line.positionOrder}" />
+                    <button class="cq-btn cq-p" data-cart-plus="${line.positionOrder}">+</button>
+                  </div>
+                  <select data-cat-pos="${line.positionOrder}" style="background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink2);font:inherit;font-size:10px;padding:2px 4px;cursor:pointer">
+                    <option value="elektro" ${cat==='elektro'?'selected':''}>⚡ Elektro</option>
+                    <option value="stavba" ${cat==='stavba'?'selected':''}>🧱 Stavba</option>
+                  </select>
+                </div>
+              </div>`).join('') +
+            `<div class="cart-subrow"><span>Celkem ${CAT_LABELS[cat] || cat}</span><strong>${fmtMoney(subTotal)}</strong></div>`
+        }).join('')
+
+        // Ostatní section
+        if (ostatniLines.length) {
+          const ostTotal = ostatniLines.reduce((s,l)=>s+l.lineTotal,0)
+          html += `<div class="ostatni-section">
+            <div class="cart-cat-head">📋 Ostatní náklady</div>
+            ${ostatniLines.map(line => `<div class="cart-line">
+              <div class="cart-line-name">${esc(line.workDescription||'')}</div>
+              <div class="cart-line-price"><div class="cart-line-total">${fmtMoney(line.lineTotal)}</div></div>
+              <button class="cart-del" data-del-pos="${line.positionOrder}">✕</button>
+            </div>`).join('')}
+            <div class="cart-subrow"><span>Celkem ostatní</span><strong>${fmtMoney(ostTotal)}</strong></div>
+          </div>`
+        }
+        body.innerHTML = html
+
+        // Wire events
+        body.querySelectorAll('[data-cart-minus]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pos = Number(btn.getAttribute('data-cart-minus'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (line) { line.quantity = Math.max(0, line.quantity - 1); if (line.quantity <= 0) estimate.lines = estimate.lines.filter(x => x.positionOrder !== pos) }
+            estimate.lines = normalizeLines(estimate.lines); renderAll()
+          })
+        })
+        body.querySelectorAll('[data-cart-plus]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pos = Number(btn.getAttribute('data-cart-plus'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (line) line.quantity = Number(line.quantity || 0) + 1
+            estimate.lines = normalizeLines(estimate.lines); renderAll()
+          })
+        })
+        body.querySelectorAll('[data-qty-pos]').forEach(input => {
+          input.addEventListener('change', () => {
+            const pos = Number(input.getAttribute('data-qty-pos'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (line) { line.quantity = Math.max(0, Number(input.value || 0)); if (line.quantity <= 0) estimate.lines = estimate.lines.filter(x => x.positionOrder !== pos) }
+            estimate.lines = normalizeLines(estimate.lines); renderAll()
+          })
+        })
+        body.querySelectorAll('[data-cat-pos]').forEach(sel => {
+          sel.addEventListener('change', () => {
+            const pos = Number(sel.getAttribute('data-cat-pos'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (line) { line.category = sel.value; line.sectionType = sel.value }
+            estimate.lines = normalizeLines(estimate.lines); renderAll()
+          })
+        })
+        body.querySelectorAll('[data-del-pos]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pos = Number(btn.getAttribute('data-del-pos'))
+            estimate.lines = estimate.lines.filter(x => x.positionOrder !== pos)
+            estimate.lines = normalizeLines(estimate.lines); renderAll()
+          })
+        })
+      }
+
+      // Totals
+      const t = totals(estimate?.lines || [])
+      document.getElementById('cartTotals').innerHTML = `
+        <div class="tot-row sub"><span>⚡ Práce</span><strong>${fmtMoney(t.labor)}</strong></div>
+        <div class="tot-row sub"><span>📦 Materiál</span><strong>${fmtMoney(t.material)}</strong></div>
+        ${t.ostatni > 0 ? `<div class="tot-row sub"><span>📋 Ostatní</span><strong>${fmtMoney(t.ostatni)}</strong></div>` : ''}
+        <div class="tot-row sub"><span style="display:flex;align-items:center;gap:5px">DPH <input id="dphInput" type="number" class="dph-input" min="0" max="99" value="${t.vr}" /> %</span><strong>${fmtMoney(t.dph)}</strong></div>
+        <div class="tot-row final-row"><span>Celkem s DPH</span><strong>${fmtMoney(t.total)}</strong></div>`
+
+      document.getElementById('dphInput')?.addEventListener('input', e => {
+        if (estimate) { estimate.vatRate = Number(e.target.value || 21); renderCart() }
+      })
+    }
+
+    // ── RENDER ALL ──
+    function renderAll() { renderCatalog(); renderCart(); updateCtxHeader() }
+
+    function updateCtxHeader() {
+      const name = estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
+      const jobNum = job?.internalNumber || estimate?.jobNumberSnapshot || '—'
+      document.getElementById('ctxTitle').textContent = `Клієнт: ${name}`
+      document.getElementById('ctxSub').textContent = `Кошторис · заказка ${jobNum} · ${(estimate?.lines||[]).length} позицій`
+    }
+
+    // ── PREVIEW ──
+    function renderPreview() {
+      const overlay = document.getElementById('previewOverlay')
+      overlay.classList.add('show')
+      const pvLines = normalizeLines(estimate?.lines || [])
+      const mainLines = pvLines.filter(l => l.sectionType !== 'ostatni_naklady')
+      const ostatniLines = pvLines.filter(l => l.sectionType === 'ostatni_naklady')
+      const pvGroups = groupedEstimate(mainLines)
+      const vr = Number(estimate?.vatRate || 21)
+
+      const catBg = { elektro:'#A9D08E', stavba:'#F4B183' }
+      const catFg = { elektro:'#1A3A12', stavba:'#5A210C' }
+      const catCode = { elektro:'ele', stavba:'stv' }
+      const catName = { elektro:'Elektrikářské práce', stavba:'Stavební práce' }
+      const catCelkem = { elektro:'Elektrikářské práce celkem', stavba:'Stavební práce celkem' }
+      const ordered = ['elektro','stavba'].filter(k => pvGroups.has(k)).concat([...pvGroups.keys()].filter(k => !['elektro','stavba'].includes(k)))
+
+      let tableRows = ''
+      let rowNum = 1, globalLabor = 0, globalMat = 0
+
+      for (const cat of ordered) {
+        const rows = pvGroups.get(cat) || []
+        if (!rows.length) continue
+        const bg = catBg[cat] || '#D9E2F3', fg = catFg[cat] || '#21324B'
+        const code = catCode[cat] || cat.slice(0,3)
+        tableRows += `<tr><td colspan="11" style="background:${bg};color:${fg};font-weight:800;padding:8px 10px;font-size:12px;letter-spacing:.3px">${esc(catName[cat] || rows[0]?.groupLabel || cat)}</td></tr>`
+        let catL = 0, catM = 0
+        for (const line of rows) {
+          const lU = Number(line.laborUnitPrice || 0), mU = Number(line.materialUnitPrice || 0)
+          const lT = Number(line.laborTotal || 0), mT = Number(line.materialTotal || 0)
+          const lineT = Number(line.lineTotal || 0)
+          catL += lT; catM += mT
+          const noMat = !line.materialDescription
+          tableRows += `<tr>
+            <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px">${esc(code)}</td>
+            <td style="text-align:center;font-weight:600;font-size:11px;width:40px">${rowNum++}</td>
+            <td style="background:#D9E1F2;padding:5px 7px;min-width:200px;font-size:11px"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
+            <td style="background:${noMat?'#FECACA':'#C6E0B4'};padding:5px 7px;min-width:140px;font-size:11px;${noMat?'color:#991B1B;font-style:italic':''}">${noMat?`<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">(položka neobsahuje materiál)</span>`:`<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(line.materialDescription)}</span>`}</td>
+            <td style="text-align:center;white-space:nowrap;font-size:11px">${line.quantity} ${esc(line.unit||'ks')}</td>
+            <td style="text-align:right;background:#BDD7EE;font-size:11px">${fmtMoney(lU)}</td>
+            <td style="text-align:right;background:#BDD7EE;font-weight:600;font-size:11px">${fmtMoney(lT)}</td>
+            <td style="text-align:right;background:#F8CBAD;font-size:11px">${mU>0?fmtMoney(mU):''}</td>
+            <td style="text-align:right;background:#F8CBAD;font-weight:600;font-size:11px">${mT>0?fmtMoney(mT):''}</td>
+            <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(lU+mU)}</td>
+            <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(lineT)}</td>
+          </tr>`
+        }
+        globalLabor += catL; globalMat += catM
+        tableRows += `<tr style="background:#EDF0F5">
+          <td colspan="6" style="text-align:right;padding:7px 10px;font-weight:700;font-style:italic;font-size:11px;color:#1A1A1A">${esc(catCelkem[cat] || catName[cat] + ' celkem')}</td>
+          <td style="text-align:right;background:#A8C8E8;font-weight:800;font-size:11px;color:#0C3B6E">${fmtMoney(catL)}</td>
+          <td style="background:#F8CBAD"></td>
+          <td style="text-align:right;background:#F5C0A0;font-weight:800;font-size:11px;color:#6B2200">${fmtMoney(catM)}</td>
+          <td style="background:#D9D9D9"></td>
+          <td style="text-align:right;background:#C0C0C0;font-weight:800;font-size:12px;color:#111">${fmtMoney(catL+catM)}</td>
+        </tr>`
+      }
+
+      let ostatniTotal = 0
+      let ostatniHtml = ''
+      if (ostatniLines.length) {
+        ostatniLines.forEach(l => { ostatniTotal += Number(l.lineTotal || 0) })
+        ostatniHtml = `<div style="margin-top:28px">
+          <div style="font-size:16px;font-weight:800;color:#111;margin-bottom:10px">Ostatní rozpočtové náklady</div>
+          <table style="width:100%;max-width:700px;border-collapse:collapse;font-size:12px;border:1.5px solid #555">
+            ${ostatniLines.map(l => `<tr style="border-bottom:1px solid #999"><td style="padding:8px 12px;border-right:1px solid #999;line-height:1.4">${esc(l.workDescription||'')}</td><td style="padding:8px 12px;text-align:right;white-space:nowrap;font-weight:600;width:120px">${fmtMoney(l.lineTotal||0)}</td></tr>`).join('')}
+          </table>
+        </div>`
+      }
+
+      const bezDph = globalLabor + globalMat + ostatniTotal
+      const dphVal = +(bezDph * vr / 100).toFixed(2)
+      const celkemSDph = +(bezDph + dphVal).toFixed(2)
+      const pvDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
+      const pvTitle = estimate?.title || `Rozpočet ze dne ${pvDate}`
+      const pvClient = estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—'
+      const pvAddr = estimate?.customerAddressSnapshot || lead?.brief?.realizationAddress || '—'
+      const pvPm = estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'
+      const pvJobNum = job?.internalNumber || estimate?.jobNumberSnapshot || '—'
+      const pvNote = estimate?.note || ''
+
+      document.getElementById('previewTopTitle').textContent = `${pvTitle} · ${fmtMoney(celkemSDph)}`
+      document.getElementById('previewContent').innerHTML = `
+        <div class="pdf-paper">
+          <div class="pdf-title-label">Název rozpočtu:</div>
+          <h1 class="doc-title" contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</h1>
+          <div class="pdf-info-grid">
+            <div class="pdf-info-box"><div class="lbl">Klient</div><div class="val" contenteditable="true" id="pvClientEdit">${esc(pvClient)}</div></div>
+            <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="val" contenteditable="true" id="pvAddrEdit">${esc(pvAddr)}</div></div>
+            <div class="pdf-info-box"><div class="lbl">Projektový manažer</div><div class="val" contenteditable="true" id="pvPmEdit">${esc(pvPm)}</div></div>
+          </div>
+          <div class="pdf-table-wrap">
+            <table class="pdf-table">
+              <thead>
+                <tr class="th1">
+                  <th rowspan="2" style="width:36px"></th>
+                  <th rowspan="2" style="width:40px">č.</th>
+                  <th rowspan="2" style="background:#D9E1F2;min-width:200px;text-align:left">Popis práce</th>
+                  <th rowspan="2" style="background:#C6E0B4;min-width:150px;text-align:left">Popis materiálu</th>
+                  <th rowspan="2" style="width:75px">Množství / mj</th>
+                  <th colspan="2" style="background:#BDD7EE;text-align:center">Cena práce</th>
+                  <th colspan="2" style="background:#F8CBAD;text-align:center">Cena materiálu</th>
+                  <th colspan="2" style="background:#D9D9D9;text-align:center">Cena práce + materiálu</th>
+                </tr>
+                <tr class="th2">
+                  <th style="background:#BDD7EE;width:80px">(mj)</th>
+                  <th style="background:#BDD7EE;width:85px">(celkem)</th>
+                  <th style="background:#F8CBAD;width:80px">(mj)</th>
+                  <th style="background:#F8CBAD;width:85px">(celkem)</th>
+                  <th style="background:#D9D9D9;width:80px">(mj)</th>
+                  <th style="background:#D9D9D9;width:85px">(celkem)</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+          ${ostatniHtml}
+          <div style="margin-top:28px;display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;align-items:end">
+            ${ostatniTotal > 0 ? `<div style="text-align:center"><div style="font-size:11px;color:#555">Ostatní Celkem</div><div style="font-size:15px;font-weight:800">${fmtMoney(ostatniTotal)}</div></div>` : ''}
+            <div style="text-align:center"><div style="font-size:11px;color:#059669;font-weight:700">Práce Celkem</div><div style="font-size:15px;font-weight:800;color:#059669">${fmtMoney(globalLabor)}</div></div>
+            <div style="text-align:center"><div style="font-size:11px;color:#D97706;font-weight:700">Materiál Celkem</div><div style="font-size:15px;font-weight:800;color:#D97706">${fmtMoney(globalMat)}</div></div>
+            <div style="text-align:right"><div style="font-size:11px;color:#555">Ostatní + Práce + Materiál</div><div style="font-size:11px;font-weight:700;color:#111">Celkem bez DPH</div><div style="font-size:16px;font-weight:800">${fmtMoney(bezDph)}</div></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;flex-direction:column;align-items:flex-end">
+            <div style="border:2px solid #333;display:flex;justify-content:space-between;min-width:340px;padding:8px 14px;font-size:14px;font-weight:600"><span>DPH <span contenteditable="true" class="pdf-editable" id="pvVatEdit">${vr}</span> %</span><strong>${fmtMoney(dphVal)}</strong></div>
+            <div style="border:2.5px solid #111;display:flex;justify-content:space-between;min-width:340px;padding:10px 14px;font-size:16px;font-weight:800;margin-top:-2px;background:#FAFAFA"><span>Celkem s DPH</span><strong>${fmtMoney(celkemSDph)}</strong></div>
+          </div>
+          ${pvNote ? `<div style="margin-top:22px;font-size:13px;padding:12px 16px;border-left:3px solid #F59E0B;background:#FFFBEB"><b>Poznámka:</b><br><span contenteditable="true" class="pdf-editable" id="pvNoteEdit">${esc(pvNote)}</span></div>` : ''}
+          <div class="pdf-footer">
+            <span contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</span>
+            <span>${esc(pvTitle)}</span>
+            <span>Strana 1 / 1</span>
+          </div>
+        </div>`
+
+      // Save edits
+      document.getElementById('pvSaveEdits')?.addEventListener('click', () => {
+        if (!estimate) return
+        const g = id => (document.getElementById(id)?.textContent || '').trim()
+        estimate.title = g('pvTitleEdit') || estimate.title
+        estimate.estimateDate = g('pvDateEdit') || estimate.estimateDate
+        estimate.clientNameSnapshot = g('pvClientEdit') || estimate.clientNameSnapshot
+        estimate.customerAddressSnapshot = g('pvAddrEdit') || estimate.customerAddressSnapshot
+        estimate.projectManagerSnapshot = g('pvPmEdit') || estimate.projectManagerSnapshot
+        estimate.vatRate = Number(g('pvVatEdit') || estimate.vatRate || 21)
+        estimate.note = document.getElementById('pvNoteEdit')?.textContent?.trim() || estimate.note
+        document.getElementById('previewContent').querySelectorAll('[data-field][data-lid]').forEach(el => {
+          const lid = el.getAttribute('data-lid')
+          const field = el.getAttribute('data-field')
+          const line = (estimate.lines||[]).find(l => String(l.id||'') === lid)
+          if (line && field) line[field] = (el.textContent||'').trim()
+        })
+        saveEstimate()
+      })
+    }
+
+    // ── API: loadContext, ensureEstimate, loadCatalog, saveEstimate, buildDocs ──
+    async function loadContext() {
+      if (jobId > 0) {
+        const jr = await apiFetch(apiUrl(`/api/crm/jobs/${jobId}`))
+        const jd = await jParse(jr)
+        if (!jr.ok || !jd?.ok) throw new Error('Не вдалося завантажити закаску')
+        job = jd.job
+        if (job?.leadId) {
+          const lr = await apiFetch(apiUrl(`/api/leads/${job.leadId}`))
+          const ld = await jParse(lr)
+          if (lr.ok && ld?.ok) lead = ld.lead
+        }
+        document.getElementById('backLink').href = `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}`
+        return
+      }
+      if (leadId > 0) {
+        const lr = await apiFetch(apiUrl(`/api/leads/${leadId}`))
+        const ld = await jParse(lr)
+        if (!lr.ok || !ld?.ok) throw new Error('Не вдалося завантажити клієнта')
+        lead = ld.lead
+        const jr = await apiFetch(apiUrl(`/api/crm/jobs?leadId=${encodeURIComponent(String(lead.id))}`))
+        const jd = await jParse(jr)
+        if (jr.ok && jd?.ok && jd.jobs?.length) job = jd.jobs[0]
+        document.getElementById('backLink').href = job ? `./job-detail.html?jobId=${encodeURIComponent(String(job.id))}` : './index.html'
+        return
+      }
+      throw new Error('Відкрийте редактор з картки закаски')
+    }
+
+    async function ensureEstimate() {
+      if (estimateIdFromUrl) {
+        const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimateIdFromUrl}`))
+        const d = await jParse(r)
+        if (r.ok && d?.ok) { estimate = d.estimate; return }
+      }
+      if (job?.id) {
+        const ex = await apiFetch(apiUrl(`/api/crm/estimates?jobId=${encodeURIComponent(String(job.id))}`))
+        const dx = await jParse(ex)
+        if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
+        const cr = await apiFetch(apiUrl('/api/crm/estimates/from-job'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ jobId: job.id }) })
+        const cd = await jParse(cr)
+        if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'Не вдалося створити кошторис')
+        estimate = cd.estimate; return
+      }
+      if (lead?.id) {
+        const ex = await apiFetch(apiUrl(`/api/crm/estimates?leadId=${encodeURIComponent(String(lead.id))}`))
+        const dx = await jParse(ex)
+        if (ex.ok && dx?.ok && dx.estimates?.length) { estimate = dx.estimates[0]; return }
+        const cr = await apiFetch(apiUrl('/api/crm/estimates/from-lead'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ leadId: lead.id }) })
+        const cd = await jParse(cr)
+        if (!cr.ok || !cd?.ok) throw new Error(cd?.error || 'Не вдалося створити кошторис')
+        estimate = cd.estimate; return
+      }
+      throw new Error('Немає контексту для кошторису')
+    }
+
+    async function loadCatalog() {
+      const p = new URLSearchParams({ tradeType: 'electro', itemKind: 'work' })
+      if (searchQ) p.set('search', searchQ)
+      const r = await apiFetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
+      const d = await jParse(r)
+      catalog = (r.ok && d?.ok) ? (d.items || []) : []
+      renderCatalog()
+    }
+
+    async function saveEstimate() {
+      if (!estimate) return
+      estimate.lines = normalizeLines(estimate.lines || [])
+      const payload = {
+        title: estimate.title || `Rozpočet ze dne ${new Date().toLocaleDateString('cs-CZ')}`,
+        tradeType: 'electro',
+        note: estimate.note || '',
+        estimateDate: estimate.estimateDate || new Date().toISOString().slice(0,10),
+        jobNumberSnapshot: estimate.jobNumberSnapshot || job?.internalNumber || null,
+        clientNumberSnapshot: estimate.clientNumberSnapshot || lead?.clientNumber || null,
+        clientNameSnapshot: estimate.clientNameSnapshot || lead?.fullName || lead?.name || null,
+        companyNameSnapshot: estimate.companyNameSnapshot || null,
+        customerAddressSnapshot: estimate.customerAddressSnapshot || null,
+        customerIcoSnapshot: estimate.customerIcoSnapshot || null,
+        versionNo: estimate.versionNo || 1,
+        projectManagerSnapshot: estimate.projectManagerSnapshot || job?.responsiblePerson || null,
+        vatRate: estimate.vatRate || 21,
+        lines: estimate.lines,
+      }
+      const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      const d = await jParse(r)
+      if (!r.ok || !d?.ok) { alert(d?.error || 'Помилка збереження'); return }
+      estimate = d.estimate
+      estimate.lines = normalizeLines(estimate.lines || [])
+      renderAll()
+      alert('✓ Кошторис збережено')
+    }
+
+    async function buildEstimateDocs() {
+      if (!estimate?.id) return
+      document.getElementById('btnGenerate').disabled = true
+      document.getElementById('btnGenerate').textContent = '...'
+      try {
+        await saveEstimate()
+        const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) })
+        const d = await jParse(r)
+        if (!r.ok || !d?.ok) { alert(d?.error || 'Помилка генерації'); return }
+        const xlsxUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)
+        const pdfUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`)
+        document.getElementById('xlsxLink').href = xlsxUrl; document.getElementById('xlsxLink').style.display = 'inline'
+        document.getElementById('pdfLink').href = pdfUrl; document.getElementById('pdfLink').style.display = 'inline'
+        document.getElementById('sendPopover').style.display = 'block'
+        const emailEl = document.getElementById('sendEmail'); if (emailEl && !emailEl.value) emailEl.value = lead?.email || ''
+        alert(d?.pdf?.ok ? '✓ Excel і PDF згенеровано' : '✓ Excel згенеровано (PDF не вдалось)')
+      } finally {
+        document.getElementById('btnGenerate').disabled = false
+        document.getElementById('btnGenerate').textContent = '⚡ Excel / PDF'
+      }
+    }
+
+    async function sendEstimate() {
+      const email = (document.getElementById('sendEmail').value || '').trim() || lead?.email || ''
+      if (!email) { alert('Вкажіть email клієнта'); return }
+      document.getElementById('sendDoIt').disabled = true; document.getElementById('sendDoIt').textContent = '...'
+      try {
+        await saveEstimate()
+        const r1 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) })
+        const d1 = await jParse(r1)
+        if (!r1.ok || !d1?.ok) throw new Error(d1?.error || 'Помилка PDF')
+        const r2 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/send-to-client`), {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email, subject:`Rozpočet ${estimate.estimateNo||''}`, text:`Dobrý den,\nv příloze zasíláme rozpočet k zakázce ${job?.internalNumber||'—'}.\n\nS pozdravem,\nO&L Master Dom` })
+        })
+        const d2 = await jParse(r2)
+        if (r2.ok && d2?.ok) { alert(`✓ PDF відправлено на ${email}`); document.getElementById('sendPopover').style.display='none' }
+        else throw new Error(d2?.error || 'Помилка відправки')
+      } catch(e) { alert(String(e?.message||e)) }
+      finally { document.getElementById('sendDoIt').disabled=false; document.getElementById('sendDoIt').textContent='Відправити PDF →' }
+    }
+
+    // ── EVENTS ──
+    document.getElementById('btnSave').addEventListener('click', saveEstimate)
+    document.getElementById('btnGenerate').addEventListener('click', buildEstimateDocs)
+    document.getElementById('btnPreview').addEventListener('click', renderPreview)
+    document.getElementById('cartPreviewBtn').addEventListener('click', renderPreview)
+    document.getElementById('pvGenerate').addEventListener('click', buildEstimateDocs)
+    document.getElementById('pvSend').addEventListener('click', () => { document.getElementById('sendPopover').style.display='block'; const e=document.getElementById('sendEmail'); if(e&&!e.value) e.value=lead?.email||'' })
+    document.getElementById('closePreview').addEventListener('click', () => {
+      document.getElementById('previewOverlay').classList.remove('show')
+      renderAll()
+    })
+    document.getElementById('sendDoIt').addEventListener('click', sendEstimate)
+    document.getElementById('sendCancel').addEventListener('click', () => { document.getElementById('sendPopover').style.display='none' })
+    document.addEventListener('click', e => { if (!e.target.closest('#sendPopover') && !e.target.closest('#pvSend') && !e.target.closest('#btnGenerate')) document.getElementById('sendPopover').style.display='none' })
+
+    // Search
+    let searchTimer
+    document.getElementById('searchInput').addEventListener('input', e => {
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(() => {
+        searchQ = e.target.value.trim()
+        if (searchQ) {
+          // If searching, show all groups
+          document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'))
+          document.querySelector('[data-group="all"]').classList.add('active')
+          activeGroup = 'all'
+        }
+        renderCatalog()
+      }, 200)
+    })
+
+    // Category filter chips
+    document.getElementById('catFilters').addEventListener('click', e => {
+      const chip = e.target.closest('[data-group]')
+      if (!chip) return
+      activeGroup = chip.getAttribute('data-group')
+      document.querySelectorAll('.cat-chip').forEach(c => c.classList.toggle('active', c === chip))
+      // Clear search when changing group
+      document.getElementById('searchInput').value = ''
+      searchQ = ''
+      renderCatalog()
+    })
+
+    // Ostatní quick-add
+    document.getElementById('btnAddOstatni').addEventListener('click', () => {
+      const desc = prompt('Пізіція (опис витрати):')
+      if (!desc) return
+      const amtStr = prompt('Сума (Kč):', '0')
+      const amt = Number(amtStr || 0)
+      estimate.lines.push({
+        sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
+        workDescription: desc, materialDescription: '',
+        unit: 'pau', quantity: 1, laborUnitPrice: amt, materialUnitPrice: 0,
+      })
+      estimate.lines = normalizeLines(estimate.lines)
+      renderAll()
+    })
+
+    // User display
+    ;(function(){
+      try {
+        const u = JSON.parse(localStorage.getItem('crmUser') || '{}')
+        const roleMap = { owner:'Vlastník', manager:'Manažer', pm:'Proj.manažer', viewer:'Zobrazení' }
+        document.getElementById('userName').textContent = u.name || u.email || '—'
+        document.getElementById('userRole').textContent = roleMap[u.role] || u.role || '—'
+        const initials = (u.name||u.email||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+        document.getElementById('userAvatar').textContent = initials
+      } catch {}
+    })()
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser')
+      location.replace('./login.html')
+    })
+
+    // ── INIT ──
+    ;(async () => {
+      try {
+        await loadContext()
+        await ensureEstimate()
+        estimate.lines = normalizeLines(estimate.lines || [])
+        renderAll()
+        await loadCatalog()
+      } catch (e) {
+        document.getElementById('ctxSub').textContent = 'Помилка: ' + String(e?.message || e)
+        document.getElementById('catList').innerHTML = `<div class="cat-empty">Помилка завантаження.<br>${esc(String(e?.message||e))}<br><br><a class="btn primary" href="./index.html" style="margin:0 auto">← Повернутись</a></div>`
+      }
+    })()
+  </script>
+</body>
 </html>
