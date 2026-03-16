@@ -389,10 +389,119 @@
         const body = document.getElementById('catalogBody')
         if (activeMode === 'preview') {
           const t = totals(estimate?.lines || [])
-          body.innerHTML = `<div class="preview-card"><div class="context-banner-title">Попередній перегляд кошторису</div><div class="context-banner-sub">Клієнт: ${esc(estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—')} · Zakázka: ${esc(job?.internalNumber || estimate?.jobNumberSnapshot || '—')} · Версія ${esc(String(estimate?.versionNo || 1))}</div><div class="preview-grid"><div class="meta-card"><b>Позиції</b><div class="v">${esc(String((estimate?.lines || []).length))}</div></div><div class="meta-card"><b>Робота</b><div class="v">${esc(fmtMoney(t.labor))}</div></div><div class="meta-card"><b>Матеріал</b><div class="v">${esc(fmtMoney(t.material))}</div></div><div class="meta-card"><b>Разом з DPH</b><div class="v">${esc(fmtMoney(t.total))}</div></div></div><div style="margin-top:14px"><button class="btn primary" id="previewOpenCart">Відкрити кошик кошторису</button></div></div>`
-          document.getElementById('previewOpenCart')?.addEventListener('click', () => document.getElementById('editorSheet').classList.add('show'))
-          document.getElementById('mainTitle').textContent = 'Попередній перегляд'
-          document.getElementById('mainCount').textContent = 'Перед генерацією Excel/PDF перевірте підсумки.'
+          const pvLines = normalizeEstimateLines(estimate?.lines || [])
+          const pvGroups = groupedEstimate(pvLines)
+          const vr = Number(estimate?.vatRate || 21)
+          const pvClientName = esc(estimate?.clientNameSnapshot || lead?.fullName || lead?.name || '—')
+          const pvJobNum = esc(job?.internalNumber || estimate?.jobNumberSnapshot || '—')
+          const pvDate = estimate?.estimateDate ? fmtDate(estimate.estimateDate) : fmtDate(new Date().toISOString())
+          const pvTitle = esc(estimate?.title || `Rozpočet ze dne ${pvDate}`)
+          const pvNo = esc(estimate?.estimateNo || '—')
+          const pvPm = esc(estimate?.projectManagerSnapshot || job?.responsiblePerson || '—')
+          const pvAddr = esc(estimate?.customerAddressSnapshot || lead?.brief?.realizationAddress || '—')
+          const pvNote = esc(estimate?.note || '')
+          const catColors = { elektro:'#A9D08E', stavba:'#F4B084', ostatni:'#D9E2F3' }
+          const catTextColors = { elektro:'#1E3A16', stavba:'#5A210C', ostatni:'#21324B' }
+          const catLabels = { elektro:'ELEKTRO', stavba:'STAVBA', ostatni:'OSTATNÍ' }
+          const pvOrdered = ['elektro','stavba','ostatni'].filter(k => pvGroups.has(k))
+          let tableBodyHtml = ''
+          for (const cat of pvOrdered) {
+            const pvRows = pvGroups.get(cat) || []
+            const cLabel = catLabels[cat]; const cBg = catColors[cat]; const cFg = catTextColors[cat]
+            tableBodyHtml += `<tr><td colspan="10" style="background:${cBg};color:${cFg};font-weight:700;padding:7px 8px">${cLabel}</td></tr>`
+            let catTotal = 0
+            for (const line of pvRows) {
+              const lT = line.lineTotal || 0; catTotal += lT
+              const matDesc = line.materialDescription || ''
+              tableBodyHtml += `<tr style="border-bottom:1px solid #E5E7EB">
+                <td style="font-size:9px;color:#6B7280;font-family:monospace;padding:5px 6px">${esc(line.lineCode||'')}</td>
+                <td style="text-align:center;font-weight:700;padding:5px 6px">${esc(String(line.positionOrder||''))}</td>
+                <td style="background:#EFF3FA;padding:5px 6px">${esc(line.workDescription||'')}</td>
+                <td style="background:#EDF5E8;padding:5px 6px;color:${matDesc?'#1A1A1A':'#9CA3AF'}">${esc(matDesc||'bez materiálu')}</td>
+                <td style="text-align:center;padding:5px 6px">${esc(String(line.quantity||0))} ${esc(line.unit||'ks')}</td>
+                <td style="text-align:right;background:#E8F1F9;padding:5px 6px">${fmtMoney(line.laborUnitPrice||0)}</td>
+                <td style="text-align:right;background:#E8F1F9;padding:5px 6px">${fmtMoney(line.laborTotal||0)}</td>
+                <td style="text-align:right;background:#FEF1E8;padding:5px 6px">${fmtMoney(line.materialUnitPrice||0)}</td>
+                <td style="text-align:right;background:#FEF1E8;padding:5px 6px">${fmtMoney(line.materialTotal||0)}</td>
+                <td style="text-align:right;background:#EDEDED;font-weight:700;padding:5px 6px">${fmtMoney(lT)}</td>
+              </tr>`
+            }
+            tableBodyHtml += `<tr style="font-weight:800;background:#F3F4F6">
+              <td colspan="9" style="text-align:right;padding:6px 8px">${cLabel} CELKEM</td>
+              <td style="text-align:right;background:#EDEDED;padding:6px 8px">${fmtMoney(catTotal)}</td>
+            </tr>`
+          }
+          body.innerHTML = `
+            <div style="background:#fff;color:#1A1A1A;border-radius:16px;padding:28px 32px;margin:16px;box-shadow:0 8px 48px rgba(0,0,0,.45);font-family:'Calibri',Inter,sans-serif;font-size:11px;line-height:1.4">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #374151">
+                <div>
+                  <img src="./logo.jpg" style="height:44px;object-fit:contain;border-radius:8px;display:block;margin-bottom:6px" alt="O&L" />
+                  <div style="font-size:17px;font-weight:800;color:#111827">O&amp;L Master Dom</div>
+                  <div style="font-size:10px;color:#6B7280;margin-top:2px">Elektromontážní a stavební práce</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:22px;font-weight:900;color:#111827;letter-spacing:-.5px">ROZPOČET</div>
+                  <table style="margin-left:auto;margin-top:8px;border-collapse:collapse;font-size:10px">
+                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Název:</td><td style="font-weight:700">${pvTitle}</td></tr>
+                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Číslo:</td><td>${pvNo}</td></tr>
+                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Datum:</td><td>${pvDate}</td></tr>
+                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Zakázka:</td><td>${pvJobNum}</td></tr>
+                    <tr><td style="color:#6B7280;font-weight:600;padding:2px 10px 2px 0">Verze:</td><td>${esc(String(estimate?.versionNo||1))}</td></tr>
+                  </table>
+                </div>
+              </div>
+              <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:11px;color:#374151;margin-bottom:18px;padding:10px 14px;background:#F9FAFB;border-radius:8px;border:1px solid #E5E7EB">
+                <div><span style="color:#6B7280;font-weight:600">Klient:</span> ${pvClientName}</div>
+                <div><span style="color:#6B7280;font-weight:600">Adresa:</span> ${pvAddr}</div>
+                <div><span style="color:#6B7280;font-weight:600">Projektový manažer:</span> ${pvPm}</div>
+              </div>
+              <div style="overflow-x:auto;margin-bottom:20px">
+                <table style="width:100%;border-collapse:collapse;min-width:800px;font-size:10px">
+                  <thead>
+                    <tr>
+                      <th style="width:80px;background:#E5E7EB;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Kód pol.</th>
+                      <th style="width:40px;background:#E5E7EB;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">č.</th>
+                      <th style="background:#D9E1F2;border:1px solid #9CA3AF;padding:7px 6px;font-weight:700;font-size:9px;text-align:left;min-width:160px">Popis práce</th>
+                      <th style="background:#C6E0B4;border:1px solid #9CA3AF;padding:7px 6px;font-weight:700;font-size:9px;text-align:left;min-width:130px">Popis materiálu</th>
+                      <th style="width:78px;background:#E5E7EB;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">MJ/ks</th>
+                      <th style="width:85px;background:#BDD7EE;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Práce MJ</th>
+                      <th style="width:95px;background:#BDD7EE;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Práce celk.</th>
+                      <th style="width:85px;background:#F8CBAD;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Mat. MJ</th>
+                      <th style="width:95px;background:#F8CBAD;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Mat. celk.</th>
+                      <th style="width:100px;background:#D9D9D9;border:1px solid #9CA3AF;padding:7px 5px;font-weight:700;font-size:9px">Celkem</th>
+                    </tr>
+                  </thead>
+                  <tbody>${tableBodyHtml}</tbody>
+                </table>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+                <div style="border:1px solid #D1D5DB;border-radius:12px;overflow:hidden;min-width:300px">
+                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB"><span>Práce celkem</span><span style="font-weight:700">${fmtMoney(t.labor)}</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB"><span>Materiál celkem</span><span style="font-weight:700">${fmtMoney(t.material)}</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB;background:#F9FAFB"><span style="font-weight:600">Mezisoučet</span><span style="font-weight:700">${fmtMoney(t.bezDph)}</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:11px;border-bottom:1px solid #E5E7EB"><span>DPH ${vr} %</span><span style="font-weight:700">${fmtMoney(t.dph)}</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:13px 16px;font-size:15px;font-weight:800;background:#1F2937;color:#fff"><span>Celkem s DPH</span><span>${fmtMoney(t.total)}</span></div>
+                </div>
+              </div>
+              ${pvNote ? `<div style="font-size:11px;color:#374151;padding:10px 14px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;margin-bottom:16px"><b>Poznámka:</b> ${pvNote}</div>` : ''}
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:10px;margin-bottom:18px">
+                <span>${pvDate}</span><span>${pvTitle}</span><span>Strana 1 / 1</span>
+              </div>
+              <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid #E5E7EB;padding-top:14px">
+                <button id="previewOpenCart" style="border:1px solid #D1D5DB;border-radius:10px;padding:10px 18px;font:600 13px Inter,sans-serif;cursor:pointer;background:#fff;color:#374151">✏ Upravit pozice</button>
+                <button id="previewBuildBtn" style="border:none;border-radius:10px;padding:10px 18px;font:700 13px Inter,sans-serif;cursor:pointer;background:#1D4ED8;color:#fff">⚡ Generovat Excel / PDF</button>
+                <button id="previewSendBtn" style="border:none;border-radius:10px;padding:10px 18px;font:700 13px Inter,sans-serif;cursor:pointer;background:#059669;color:#fff">✉ Odeslat klientovi</button>
+              </div>
+            </div>
+          `
+          document.getElementById('previewOpenCart')?.addEventListener('click', () => { document.getElementById('editorSheet').classList.add('show') })
+          document.getElementById('previewBuildBtn')?.addEventListener('click', buildEstimateDocs)
+          document.getElementById('previewSendBtn')?.addEventListener('click', () => {
+            document.getElementById('sendPopover').classList.add('show')
+            const em = document.getElementById('sendEmailBuilder'); if (em && !em.value) em.value = lead?.email || ''
+          })
+          document.getElementById('mainTitle').textContent = 'Попередній перегляд документу'
+          document.getElementById('mainCount').textContent = `${pvLines.length} позицій · ${fmtMoney(t.total)} · Розмір як в PDF`
           return
         }
         if (!catalog.length) { body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'; return }

@@ -152,20 +152,49 @@
           </div>
           <button class="btn" id="refreshRegistry">↻ Obnovit</button>
         </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:12px 16px;background:var(--c);border:1px solid var(--b2);border-radius:14px">
+          <span style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px">Filtr:</span>
+          <select id="regStageFilter" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px">
+            <option value="">Všechny etapy</option>
+            <option value="nova_poptavka">Nová poptávka</option>
+            <option value="formular_odeslan">Formulář odeslán</option>
+            <option value="formular_prijat">Formulář přijat</option>
+            <option value="nabidka_pripravena">Nabídka připravena</option>
+            <option value="nabidka_odeslana">Nabídka odeslána</option>
+            <option value="objednavka_podepsana">Objednávka podepsána</option>
+            <option value="realizace">Realizace</option>
+            <option value="dokonceno">Dokončeno</option>
+            <option value="zastaveno">Zastaveno</option>
+          </select>
+          <select id="regRiskFilter" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px">
+            <option value="">Všechna rizika</option>
+            <option value="low">Nízké</option>
+            <option value="medium">Střední</option>
+            <option value="high">Vysoké</option>
+            <option value="critical">Kritické</option>
+          </select>
+          <span style="font-size:12px;color:var(--ink3)">Od:</span>
+          <input type="date" id="regDateFrom" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px" />
+          <span style="font-size:12px;color:var(--ink3)">Do:</span>
+          <input type="date" id="regDateTo" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px" />
+          <button class="btn" id="regClearFilter" style="font-size:11px;padding:7px 12px">✕ Vymazat filtry</button>
+          <span id="regCount" style="margin-left:auto;font-size:12px;color:var(--ink2);font-weight:600"></span>
+        </div>
         <div class="registry-wrap">
           <table class="registry-table">
             <thead>
               <tr>
-                <th>Zakázka</th>
+                <th>Zakázka / Datum</th>
                 <th>Klient</th>
                 <th>Etapa</th>
                 <th>Typ</th>
+                <th>Riziko</th>
                 <th>Čekáme na</th>
                 <th>Další krok</th>
                 <th>Akce</th>
               </tr>
             </thead>
-            <tbody id="registryBody"><tr><td colspan="7" class="loading">Načítání...</td></tr></tbody>
+            <tbody id="registryBody"><tr><td colspan="8" class="loading">Načítání...</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -321,6 +350,10 @@
       }
       function renderRegistry(d) {
         const q = document.getElementById('pipeSearch').value.trim().toLowerCase()
+        const stageF = (document.getElementById('regStageFilter')?.value || '').trim()
+        const riskF = (document.getElementById('regRiskFilter')?.value || '').trim()
+        const dateFrom = document.getElementById('regDateFrom')?.value ? new Date(document.getElementById('regDateFrom').value) : null
+        const dateTo = document.getElementById('regDateTo')?.value ? new Date(document.getElementById('regDateTo').value + 'T23:59:59') : null
         const { byStage, customers } = d
         const jobsAll = STAGES.flatMap((stage) => byStage[stage] || [])
         const rows = jobsAll.filter((job) => {
@@ -329,21 +362,33 @@
             const hay = [job.internalNumber, job.title, job.jobType, job.waitingFor, c.name, c.companyName].map((x) => String(x || '').toLowerCase()).join(' ')
             if (!hay.includes(q)) return false
           }
+          if (stageF && (job.pipelineStage || job.stage) !== stageF) return false
+          if (riskF && (job.computedRisk || '') !== riskF) return false
+          const jd = job.receivedAt || job.createdAt
+          if (dateFrom && jd && new Date(jd) < dateFrom) return false
+          if (dateTo && jd && new Date(jd) > dateTo) return false
           return jobMatchesDateFilter(job)
         })
+        const riskLabels = { low:'Nízké', medium:'Střední', high:'Vysoké', critical:'Kritické' }
+        const riskColors = { low:'b-green', medium:'b-orange', high:'b-red', critical:'b-red' }
+        const countEl = document.getElementById('regCount')
+        if (countEl) countEl.textContent = `${rows.length} zakázek`
         document.getElementById('registryBody').innerHTML = rows.length ? rows.map((job) => {
           const c = customers[job.customerId] || {}
           const type = job.jobType === 'elektro' ? 'Elektro' : job.jobType === 'stavebni' ? 'Stavební' : 'Kombinovaná'
+          const dateStr = job.receivedAt ? fmt(job.receivedAt) : '—'
+          const risk = job.computedRisk || ''
           return `<tr>
-            <td><strong>${esc(job.internalNumber || '')}</strong><br><span style="color:var(--ink2)">${esc(job.title || '')}</span></td>
+            <td><strong>${esc(job.internalNumber || '—')}</strong><br><span style="font-size:11px;color:var(--ink2)">${esc(job.title || '')}</span><br><span style="font-size:10px;color:var(--ink3)">${dateStr}</span></td>
             <td>${esc(c.name || c.companyName || '—')}</td>
-            <td><span class="badge ${STAGE_COLORS[job.pipelineStage || job.stage] || 'b-grey'}">${esc(STAGE_LABELS[job.pipelineStage || job.stage] || job.pipelineStage || job.stage)}</span></td>
+            <td><span class="badge ${STAGE_COLORS[job.pipelineStage || job.stage] || 'b-grey'}">${esc(STAGE_LABELS[job.pipelineStage || job.stage] || job.stage)}</span></td>
             <td>${esc(type)}</td>
-            <td>${esc(job.waitingFor || '—')}</td>
-            <td>${esc(job.nextAction || '—')}</td>
+            <td>${risk ? `<span class="badge ${riskColors[risk] || 'b-grey'}">${esc(riskLabels[risk] || risk)}</span>` : '—'}</td>
+            <td style="font-size:12px;color:var(--ink2)">${esc(job.waitingFor || '—')}</td>
+            <td style="font-size:12px;max-width:180px">${esc(job.nextAction || '—')}</td>
             <td><div class="registry-actions"><a class="btn" href="./job-detail.html?jobId=${job.id}">Otevřít</a><a class="btn" href="./estimate-builder.html?jobId=${job.id}">Kalkulace</a></div></td>
           </tr>`
-        }).join('') : '<tr><td colspan="7" class="empty">Žádné zakázky</td></tr>'
+        }).join('') : '<tr><td colspan="8" class="empty">Žádné zakázky odpovídají filtrům</td></tr>'
       }
       function renderPipeline(d) {
         const q = document.getElementById('pipeSearch').value.trim().toLowerCase()
@@ -454,6 +499,16 @@
 
       document.getElementById('refreshPipe').addEventListener('click', loadPipeline)
       document.getElementById('refreshRegistry').addEventListener('click', loadPipeline)
+      ;['regStageFilter','regRiskFilter','regDateFrom','regDateTo'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', () => { if (lastPipelineData) renderRegistry(lastPipelineData) })
+      })
+      document.getElementById('regClearFilter')?.addEventListener('click', () => {
+        document.getElementById('regStageFilter').value = ''
+        document.getElementById('regRiskFilter').value = ''
+        document.getElementById('regDateFrom').value = ''
+        document.getElementById('regDateTo').value = ''
+        if (lastPipelineData) renderRegistry(lastPipelineData)
+      })
       document.querySelectorAll('.df-btn').forEach((btn) => btn.addEventListener('click', () => {
         activeDateFilter = btn.getAttribute('data-df') || 'all'
         document.querySelectorAll('.df-btn').forEach((b) => b.classList.toggle('active', b === btn))
