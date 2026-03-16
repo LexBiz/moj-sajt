@@ -648,6 +648,118 @@
           document.getElementById('mainCount').textContent = `${pvLines.length} позицій · ${fmtMoney(celkemSDph)} · Розмір як в PDF`
           return
         }
+
+        // ── ІНШІ ВИТРАТИ — dedicated UI (Ostatní rozpočtové náklady) ──
+        if (activeMode === 'other') {
+          const ostatniLines = (estimate?.lines || []).filter(l => l.sectionType === 'ostatni_naklady')
+          const t = totals(estimate?.lines || [])
+          // Quick-add presets from template
+          const PRESETS = [
+            { desc: 'Přesun materiálů do přízemí / bez výtahu', unit: 'pau', amount: 0 },
+            { desc: 'Nákup a závoz pomocného a stavebního materiálu vlastním autem 2× na profesi', unit: 'pau', amount: 0 },
+            { desc: 'Odnos a likvidace suti z demontáží a z prořezu materiálu z přízemí / bez výtahu', unit: 'pau', amount: 0 },
+            { desc: 'Odnos a likvidace směsného odpadu z demontáží a prořezu materiálu', unit: 'pau', amount: 0 },
+            { desc: 'Mimostaveništní doprava osob', unit: 'pau', amount: 2000 },
+            { desc: 'Parkování', unit: 'pau', amount: 1500 },
+            { desc: 'Činnost koordinátora stavby (3 % z ceny práce a materiálu celkem)', unit: 'pau', amount: +(t.bezDph * 0.03).toFixed(0) },
+            { desc: 'Činnost technického dozoru (odborný dozor s autorizací)', unit: 'pau', amount: 0 },
+            { desc: 'Zařízení staveniště — pomocné lešení, nářadí, ochranné prostředky (2 % z ceny práce celkem)', unit: 'pau', amount: +(t.labor * 0.02).toFixed(0) },
+          ]
+          const presetsNotAdded = PRESETS.filter(p => !ostatniLines.some(l => l.workDescription?.startsWith(p.desc.slice(0,30))))
+          body.innerHTML = `
+            <div style="padding:20px 22px">
+              <div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:4px">Ostatní rozpočtové náklady</div>
+              <div style="font-size:12px;color:var(--ink2);margin-bottom:20px">Ця секція з'явиться на останній сторінці розпочету (Strana 3 шаблону)</div>
+
+              <!-- Existing ostatni lines -->
+              ${ostatniLines.length ? `
+              <div style="border:1px solid var(--b2);border-radius:12px;overflow:hidden;margin-bottom:20px">
+                <div style="padding:12px 16px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.03)">Přidané položky (${ostatniLines.length})</div>
+                ${ostatniLines.map((l,i) => `<div style="display:grid;grid-template-columns:1fr 130px 44px;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--b2)">
+                  <div style="font-size:13px;font-weight:500;color:var(--ink)">${esc(l.workDescription||'')}</div>
+                  <div style="text-align:right;font-size:14px;font-weight:700;color:var(--green)">${fmtMoney(l.lineTotal||0)}</div>
+                  <button data-remove-ostatni="${l.positionOrder}" style="background:rgba(232,58,58,.1);border:1px solid rgba(232,58,58,.3);color:#F07070;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px">✕</button>
+                </div>`).join('')}
+                <div style="padding:12px 16px;border-top:2px solid var(--b2);background:rgba(255,255,255,.04);display:flex;justify-content:space-between;font-weight:800;font-size:14px">
+                  <span>Celkem ostatní náklady</span>
+                  <span style="color:var(--green)">${fmtMoney(ostatniLines.reduce((s,l)=>s+(l.lineTotal||0),0))}</span>
+                </div>
+              </div>` : `<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px;border:1px dashed var(--b2);border-radius:12px;margin-bottom:20px">Žádné položky. Přidejte ze šablony níže nebo zadejte ručně.</div>`}
+
+              <!-- Quick add from template -->
+              ${presetsNotAdded.length ? `
+              <div style="margin-bottom:24px">
+                <div style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Rychlé přidání z šablony</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  ${presetsNotAdded.map(p => `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.03);border:1px solid var(--b2);border-radius:10px">
+                    <div style="flex:1;font-size:13px;color:var(--ink2)">${esc(p.desc)}</div>
+                    <input type="number" data-preset-amount placeholder="0 Kč" value="${p.amount > 0 ? p.amount : ''}" style="width:110px;background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;text-align:right" />
+                    <button data-add-preset="${esc(p.desc)}" style="background:rgba(26,106,232,.12);border:1px solid rgba(61,135,248,.3);color:var(--blue3);border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:700;font-size:12px;white-space:nowrap">+ Přidat</button>
+                  </div>`).join('')}
+                </div>
+              </div>` : ''}
+
+              <!-- Manual add -->
+              <div style="border:1px solid var(--b2);border-radius:12px;padding:16px;background:rgba(255,255,255,.02)">
+                <div style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Přidat vlastní položku</div>
+                <div style="display:grid;grid-template-columns:1fr 130px auto;gap:10px;align-items:end">
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Popis</div>
+                    <input id="ostatniDesc" class="input" placeholder="Popis nákladu..." style="font-size:13px" />
+                  </div>
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Částka (Kč)</div>
+                    <input id="ostatniAmount" class="input" type="number" placeholder="0" style="font-size:13px;text-align:right" />
+                  </div>
+                  <button id="addOstatniBtn" class="btn primary" style="white-space:nowrap;height:42px">+ Přidat</button>
+                </div>
+              </div>
+            </div>`
+
+          // Remove ostatni line
+          body.querySelectorAll('[data-remove-ostatni]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const pos = Number(btn.getAttribute('data-remove-ostatni'))
+              estimate.lines = estimate.lines.filter(x => Number(x.positionOrder) !== pos)
+              estimate.lines = normalizeEstimateLines(estimate.lines)
+              renderAll()
+            })
+          })
+          // Add preset
+          body.querySelectorAll('[data-add-preset]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const desc = btn.getAttribute('data-add-preset')
+              const amountInput = btn.previousElementSibling
+              const amount = Number(amountInput?.value || 0)
+              estimate.lines.push({
+                sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
+                groupKey: 'ostatni_naklady', groupLabel: 'Ostatní náklady',
+                workDescription: desc, materialDescription: '', unit: 'pau',
+                quantity: 1, laborUnitPrice: amount, materialUnitPrice: 0,
+              })
+              estimate.lines = normalizeEstimateLines(estimate.lines)
+              renderAll()
+            })
+          })
+          // Add manual
+          document.getElementById('addOstatniBtn')?.addEventListener('click', () => {
+            const desc = document.getElementById('ostatniDesc')?.value.trim()
+            const amount = Number(document.getElementById('ostatniAmount')?.value || 0)
+            if (!desc) return
+            estimate.lines.push({
+              sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
+              groupKey: 'ostatni_naklady', groupLabel: 'Ostatní náklady',
+              workDescription: desc, materialDescription: '', unit: 'pau',
+              quantity: 1, laborUnitPrice: amount, materialUnitPrice: 0,
+            })
+            estimate.lines = normalizeEstimateLines(estimate.lines)
+            renderAll()
+          })
+          document.getElementById('mainTitle').textContent = 'Ostatní rozpočtové náklady'
+          document.getElementById('mainCount').textContent = `${ostatniLines.length} položek · celkem ${fmtMoney(ostatniLines.reduce((s,l)=>s+(l.lineTotal||0),0))}`
+          return
+        }
+
         if (!catalog.length) { body.innerHTML = '<div class="empty">Katalog je prázdný nebo nebyla nalezena žádná položka.</div>'; return }
         const groups = groupedCatalog(catalog)
         const ordered = NAV_ORDER.filter((k) => groups.has(k)).concat([...groups.keys()].filter((k) => !NAV_ORDER.includes(k)))
