@@ -189,8 +189,7 @@
           sendClient: 'Odeslat klientovi',
           tabs: ['Přehled','Komunikace','Dokumenty','Finance','Realizace'],
           moved: 'Etapa byla změněna',
-          moveError: 'Etapu se nepodařilo změnit',
-        },
+          moveError: 'Etapu se nepodařilo změnit' },
         uk: {
           backPipeline: '← До pipeline',
           moveBtn: 'Змінити етап',
@@ -199,9 +198,7 @@
           sendClient: 'Надіслати клієнту',
           tabs: ['Огляд','Комунікація','Документи','Фінанси','Реалізація'],
           moved: 'Етап змінено',
-          moveError: 'Не вдалося змінити етап',
-        },
-      }
+          moveError: 'Не вдалося змінити етап' } }
 
       let data = null
       let activeEstimate = null
@@ -329,7 +326,7 @@
         document.getElementById('saveJobNum')?.addEventListener('click', async () => {
           const newNum = document.getElementById('editJobNum').value.trim()
           if (!newNum) return
-          const r = await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', , body: JSON.stringify({ internalNumber: newNum }) })
+          const r = await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ internalNumber: newNum }) })
           if (r.ok) { document.getElementById('jobNum').textContent = newNum; alert('Číslo zakázky uloženo: ' + newNum) }
           else alert('Nepodařilo se uložit číslo zakázky')
         })
@@ -370,7 +367,7 @@
         document.getElementById('addNote')?.addEventListener('click', async () => {
           const title = document.getElementById('noteTitle').value.trim()
           if (!title) return
-          await apiFetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', , body: JSON.stringify({ eventType: 'note', title, description: document.getElementById('noteDesc').value.trim() }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', body: JSON.stringify({ eventType: 'note', title, description: document.getElementById('noteDesc').value.trim() }) })
           document.getElementById('noteTitle').value = ''; document.getElementById('noteDesc').value = ''
           loadJob()
         })
@@ -382,7 +379,7 @@
 
       async function ensureEstimateForJob() {
         if (activeEstimate?.id) return activeEstimate
-        const r = await apiFetch(api(`/api/crm/estimates/from-job`), { method: 'POST', , body: JSON.stringify({ jobId }) })
+        const r = await apiFetch(api(`/api/crm/estimates/from-job`), { method: 'POST', body: JSON.stringify({ jobId }) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze vytvořit rozpočet')
         activeEstimate = d.estimate
@@ -391,7 +388,7 @@
 
       async function buildEstimateDocs() {
         const estimate = await ensureEstimateForJob()
-        const r = await apiFetch(api(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', , body: JSON.stringify({}) })
+        const r = await apiFetch(api(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', body: JSON.stringify({}) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze vygenerovat dokumenty')
         alert(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel byl vygenerován, ale PDF se nepodařilo vytvořit')
@@ -405,9 +402,7 @@
         const text = (document.getElementById('estimateText')?.value || '').trim()
         const r = await apiFetch(api(`/api/crm/estimates/${estimate.id}/send-to-client`), {
           method: 'POST',
-          ,
-          body: JSON.stringify({ email, subject, text }),
-        })
+          body: JSON.stringify({ email, subject, text }) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze odeslat email')
         alert(`Rozpočet byl odeslán na ${email}`)
@@ -494,7 +489,7 @@
         document.getElementById('addDoc')?.addEventListener('click', async () => {
           const fn = document.getElementById('docName').value.trim()
           if (!fn) return
-          await apiFetch(api(`/api/crm/jobs/${jobId}/documents`), { method: 'POST', , body: JSON.stringify({ fileName: fn, documentType: document.getElementById('docType').value, status: document.getElementById('docStatus').value, signatureMode: document.getElementById('docSignatureMode').value, uploadedBy: 'internal_sales', source: 'manual', isFinal: document.getElementById('docStatus').value === 'signed_both', sentAt: document.getElementById('docStatus').value === 'sent' ? new Date().toISOString() : null, signedAt: ['signed_client','signed_both'].includes(document.getElementById('docStatus').value) ? new Date().toISOString() : null }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/documents`), { method: 'POST', body: JSON.stringify({ fileName: fn, documentType: document.getElementById('docType').value, status: document.getElementById('docStatus').value, signatureMode: document.getElementById('docSignatureMode').value, uploadedBy: 'internal_sales', source: 'manual', isFinal: document.getElementById('docStatus').value === 'signed_both', sentAt: document.getElementById('docStatus').value === 'sent' ? new Date().toISOString() : null, signedAt: ['signed_client','signed_both'].includes(document.getElementById('docStatus').value) ? new Date().toISOString() : null }) })
           document.getElementById('docName').value = ''; loadJob()
         })
         document.getElementById('buildEstimateDocs')?.addEventListener('click', async () => {
@@ -540,11 +535,11 @@
           const depositAmount = Number(document.getElementById('finDeposit').value || 0)
           const costs = Number(document.getElementById('finCosts').value || 0)
           const profit = totalPrice - costs
-          await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', , body: JSON.stringify({ totalPrice, depositAmount, costs, profit }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ totalPrice, depositAmount, costs, profit }) })
           loadJob()
         })
         document.getElementById('addInv')?.addEventListener('click', async () => {
-          await apiFetch(api(`/api/crm/jobs/${jobId}/invoices`), { method: 'POST', , body: JSON.stringify({ invoiceType: document.getElementById('invType').value, amount: Number(document.getElementById('invAmount').value || 0), invoiceNumber: document.getElementById('invNumber').value.trim(), status: 'issued', issuedAt: new Date().toISOString() }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/invoices`), { method: 'POST', body: JSON.stringify({ invoiceType: document.getElementById('invType').value, amount: Number(document.getElementById('invAmount').value || 0), invoiceNumber: document.getElementById('invNumber').value.trim(), status: 'issued', issuedAt: new Date().toISOString() }) })
           loadJob()
         })
       }
@@ -583,7 +578,7 @@
         `
         el.querySelectorAll('[data-rstatus]').forEach(btn => {
           btn.addEventListener('click', async () => {
-            await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', , body: JSON.stringify({ realizationStatus: btn.getAttribute('data-rstatus') }) })
+            await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ realizationStatus: btn.getAttribute('data-rstatus') }) })
             loadJob()
           })
         })
@@ -591,14 +586,14 @@
           btn.addEventListener('click', async () => {
             const tid = Number(btn.getAttribute('data-task'))
             const isDone = btn.classList.contains('done')
-            await apiFetch(api(`/api/crm/jobs/${jobId}/tasks/${tid}`), { method: 'PATCH', , body: JSON.stringify({ status: isDone ? 'pending' : 'done', completedAt: isDone ? null : new Date().toISOString() }) })
+            await apiFetch(api(`/api/crm/jobs/${jobId}/tasks/${tid}`), { method: 'PATCH', body: JSON.stringify({ status: isDone ? 'pending' : 'done', completedAt: isDone ? null : new Date().toISOString() }) })
             loadJob()
           })
         })
         document.getElementById('addTask')?.addEventListener('click', async () => {
           const title = document.getElementById('taskTitle').value.trim()
           if (!title) return
-          await apiFetch(api(`/api/crm/jobs/${jobId}/tasks`), { method: 'POST', , body: JSON.stringify({ title, taskType: document.getElementById('taskType').value, priority: document.getElementById('taskPriority').value }) })
+          await apiFetch(api(`/api/crm/jobs/${jobId}/tasks`), { method: 'POST', body: JSON.stringify({ title, taskType: document.getElementById('taskType').value, priority: document.getElementById('taskPriority').value }) })
           document.getElementById('taskTitle').value = ''; loadJob()
         })
       }
@@ -632,7 +627,7 @@
 
       document.getElementById('moveBtn').addEventListener('click', async () => {
         const stage = document.getElementById('moveStage').value
-        const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), { method: 'POST', , body: JSON.stringify({ stage }) })
+        const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), { method: 'POST', body: JSON.stringify({ stage }) })
         const d = await j(r)
         if (r.ok && d?.ok) { alert((UI_TEXT[uiLang] || UI_TEXT.cs).moved); loadJob() }
         else alert(d?.error || (UI_TEXT[uiLang] || UI_TEXT.cs).moveError)
