@@ -2000,19 +2000,28 @@ async function listServiceCatalogItems(filters = {}) {
     if (filters.phaseKey) add('phase_key = ?', String(filters.phaseKey))
     if (filters.categoryKey) add('category_key = ?', String(filters.categoryKey))
     if (filters.search) {
-      params.push(`%${String(filters.search)}%`)
-      const idx1 = params.length
-      params.push(`%${String(filters.search)}%`)
-      const idx2 = params.length
-      where.push(`(item_name ILIKE $${idx1} OR coalesce(item_description, '') ILIKE $${idx2})`)
+      const srch = String(filters.search).trim()
+      if (filters.nameOnly) {
+        // Fast: search only in item_name (for material picker with 500k+ rows)
+        params.push(`%${srch}%`)
+        where.push(`item_name ILIKE $${params.length}`)
+      } else {
+        params.push(`%${srch}%`)
+        const idx1 = params.length
+        params.push(`%${srch}%`)
+        const idx2 = params.length
+        where.push(`(item_name ILIKE $${idx1} OR coalesce(item_description, '') ILIKE $${idx2})`)
+      }
     }
     if (filters.itemKind) {
       params.push(String(filters.itemKind))
       where.push(`coalesce(metadata->>'itemKind', 'work') = $${params.length}`)
     }
+    const limit = Number.isFinite(Number(filters.limit)) && Number(filters.limit) > 0
+      ? Math.min(Number(filters.limit), 5000) : 5000
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
     const q = await dbQuery(
-      `SELECT * FROM crm_service_catalog_items ${whereSql} ORDER BY sort_order ASC, item_name ASC LIMIT 5000`,
+      `SELECT * FROM crm_service_catalog_items ${whereSql} ORDER BY sort_order ASC, item_name ASC LIMIT ${limit}`,
       params
     )
     return q.rows.map(normalizeServiceCatalogItem)
@@ -3773,6 +3782,8 @@ app.get('/api/crm/offers/:id/file/:kind', authMiddleware, roleGuard(['admin', 'm
 })
 
 app.get('/api/crm/catalog/items', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  const rawLimit = Number(req.query?.limit)
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 5000) : 5000
   const items = await listServiceCatalogItems({
     tradeType: req.query?.tradeType ? String(req.query.tradeType) : '',
     buildingType: req.query?.buildingType ? String(req.query.buildingType) : '',
@@ -3780,6 +3791,8 @@ app.get('/api/crm/catalog/items', authMiddleware, roleGuard(['admin', 'manager',
     categoryKey: req.query?.categoryKey ? String(req.query.categoryKey) : '',
     search: req.query?.search ? String(req.query.search) : '',
     itemKind: req.query?.itemKind ? String(req.query.itemKind) : '',
+    limit,
+    nameOnly: req.query?.nameOnly === '1',  // search only in item_name, not description
   })
   return res.json({ ok: true, items })
 })

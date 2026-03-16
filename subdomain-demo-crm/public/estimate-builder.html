@@ -1031,7 +1031,7 @@
         el.innerHTML = `<div class="mat-modal-empty">Nic nenalezeno pro „<b>${esc(q)}</b>".<br><a href="./catalog-import.html" target="_blank" style="color:var(--blue3)">Přidat materiál do katalogu →</a></div>`
         return
       }
-      el.innerHTML = items.map(it => `
+      el.innerHTML = items.slice(0, 40).map(it => `
         <div class="mat-item${matSelected?.id === it.id ? ' selected':''}" data-mat-pick="${it.id}">
           <div>
             <div class="mat-item-name">${esc(it.itemName)}</div>
@@ -1041,7 +1041,8 @@
             <div class="mat-item-price">${fmtMoney(Number(it.basePrice||0))}</div>
             <div class="mat-item-unit">/ ${esc(it.unit||'ks')}</div>
           </div>
-        </div>`).join('')
+        </div>`).join('') +
+        (items.length >= 40 ? `<div style="padding:10px 14px;font-size:11px;color:var(--ink3);text-align:center">Zobrazeno prvních 40 z ${items.length}+ výsledků. Zpřesněte hledání.</div>` : '')
       el.querySelectorAll('[data-mat-pick]').forEach(el2 => {
         el2.addEventListener('click', () => {
           const id = Number(el2.getAttribute('data-mat-pick'))
@@ -1056,7 +1057,7 @@
       if (!q || q.length < 2) { renderMatResults([], q, false); return }
       renderMatResults([], q, true)
       try {
-        const r = await apiFetch(apiUrl(`/api/crm/catalog/items?itemKind=material&search=${encodeURIComponent(q)}&limit=40`))
+        const r = await apiFetch(apiUrl(`/api/crm/catalog/items?itemKind=material&search=${encodeURIComponent(q)}&limit=40&nameOnly=1`))
         const d = await jParse(r)
         matResultsCache = (r.ok && d?.ok) ? (d.items || []) : []
       } catch { matResultsCache = [] }
