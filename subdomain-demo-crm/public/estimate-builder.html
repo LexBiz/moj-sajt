@@ -102,46 +102,56 @@
       .user-role-txt{font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
       .btn-logout{border:1px solid rgba(232,58,58,.25);background:rgba(232,58,58,.06);color:#F07070;border-radius:999px;padding:5px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
       /* Preview PDF-like table with sub-columns */
-      .preview-wrap{background:#f0f2f5;padding:20px;min-height:calc(100vh - 56px)}
-      .pdf-paper{background:#fff;max-width:1200px;margin:0 auto;padding:28px 32px;box-shadow:0 4px 24px rgba(0,0,0,.12);border-radius:4px;color:#1A1A1A;font-family:'Inter',sans-serif}
-      .pdf-header{margin-bottom:22px;border-bottom:2px solid #1A1A1A;padding-bottom:14px}
-      .pdf-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
-      .pdf-logo{height:40px;width:auto;object-fit:contain}
-      .pdf-title{font-size:20px;font-weight:800;color:#1A1A1A;margin-bottom:4px}
-      .pdf-meta-row{font-size:12px;color:#555;margin-bottom:2px}
-      .pdf-meta-row strong{color:#1A1A1A}
-      .pdf-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
-      .pdf-info-box{background:#f5f7fa;border:1px solid #D9DEE7;border-radius:4px;padding:8px 10px}
-      .pdf-info-box .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888;margin-bottom:2px}
-      .pdf-info-box .val{font-size:13px;font-weight:600;color:#1A1A1A}
+      /* Full-screen preview mode */
+      .page.preview-mode .sidebar{display:none}
+      .page.preview-mode{grid-template-columns:1fr}
+      .preview-wrap{background:#D6DBE3;padding:32px 24px 60px;min-height:calc(100vh - 56px)}
+      .pdf-paper{background:#fff;max-width:1280px;margin:0 auto;padding:36px 44px 44px;box-shadow:0 8px 40px rgba(0,0,0,.18);border-radius:3px;color:#1A1A1A;font-family:'Inter',sans-serif}
+      .pdf-header{margin-bottom:24px;border-bottom:2.5px solid #111827;padding-bottom:18px}
+      .pdf-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+      .pdf-logo{height:48px;width:auto;object-fit:contain}
+      .pdf-company-name{font-size:17px;font-weight:800;margin-top:8px;color:#111827}
+      .pdf-company-sub{font-size:11px;color:#6B7280;margin-top:2px}
+      .pdf-right-title{font-size:28px;font-weight:900;color:#111827;letter-spacing:-.8px;margin-bottom:8px}
+      .pdf-meta-row{font-size:12px;color:#555;margin-bottom:3px;line-height:1.5}
+      .pdf-meta-row strong{color:#111827}
+      .pdf-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
+      .pdf-info-box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:5px;padding:10px 14px}
+      .pdf-info-box .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9CA3AF;margin-bottom:4px}
+      .pdf-info-box .val{font-size:14px;font-weight:600;color:#111827;line-height:1.4}
       /* editable fields in preview */
-      .pdf-editable{border:1px dashed #c0c8d4;border-radius:3px;padding:2px 5px;min-width:40px;outline:none;background:transparent;cursor:text;font:inherit;color:inherit}
-      .pdf-editable:focus{border-color:#1A6AE8;background:rgba(26,106,232,.05)}
+      .pdf-editable{border:1px dashed #BFD3F0;border-radius:3px;padding:2px 6px;min-width:40px;outline:none;background:transparent;cursor:text;font:inherit;color:inherit;transition:all .15s}
+      .pdf-editable:focus{border-color:#1A6AE8;background:#EEF4FF;border-style:solid}
       /* PDF table */
-      .pdf-table-wrap{overflow-x:auto;margin-top:18px}
-      .pdf-table{width:100%;border-collapse:collapse;font-size:11px}
-      .pdf-table th,.pdf-table td{border:1px solid #9CA3AF;padding:5px 6px;vertical-align:middle}
-      .pdf-table thead tr.th1 th{background:#E5E7EB;font-weight:700;font-size:10px;text-align:center}
-      .pdf-table thead tr.th2 th{background:#EFF2F7;font-weight:700;font-size:10px;text-align:center;font-style:italic;color:#555}
-      .pdf-table tbody tr.cat-elektro-row td{background:#B7D7A8;font-weight:700;color:#1E3A16;font-size:11px}
-      .pdf-table tbody tr.cat-stavba-row td{background:#F4B183;font-weight:700;color:#5A210C;font-size:11px}
-      .pdf-table tbody tr.cat-ostatni-row td{background:#D9E2F3;font-weight:700;color:#21324B;font-size:11px}
-      .pdf-table tbody tr.subtotal-row td{background:#F0F4FF;font-weight:700;font-style:italic}
-      .pdf-table td.num{text-align:right;font-family:monospace;font-size:11px}
-      .pdf-table td.prace-bg{background:#D9E1F2}
-      .pdf-table td.mat-bg{background:#C6E0B4}
-      .pdf-table td.total-bg{background:#D9D9D9;font-weight:700}
-      .pdf-table td.cena-prace-bg{background:#BDD7EE}
-      .pdf-table td.cena-mat-bg{background:#F8CBAD}
-      .pdf-totals{margin-top:18px;display:flex;justify-content:flex-end}
-      .pdf-totals-box{border:1px solid #9CA3AF;border-radius:4px;overflow:hidden;min-width:320px}
-      .pdf-tot-row{display:flex;justify-content:space-between;padding:7px 14px;border-top:1px solid #D9DEE7;font-size:13px}
+      .pdf-table-wrap{overflow-x:auto;margin-top:20px;border-radius:4px;border:1px solid #C5CDD8}
+      .pdf-table{width:100%;border-collapse:collapse;font-size:11.5px}
+      .pdf-table th,.pdf-table td{border:1px solid #B0BAC8;padding:6px 8px;vertical-align:middle}
+      .pdf-table thead tr.th1 th{background:#DDE2EA;font-weight:800;font-size:10.5px;text-align:center;color:#374151;letter-spacing:.2px}
+      .pdf-table thead tr.th2 th{background:#EDF0F5;font-weight:700;font-size:10px;text-align:center;font-style:italic;color:#6B7280}
+      .pdf-table tbody tr:nth-child(even) td{background:rgba(0,0,0,.015)}
+      .pdf-table tbody tr.cat-elektro-row td{background:#A9D08E;font-weight:800;color:#1A3A12;font-size:11.5px;letter-spacing:.2px}
+      .pdf-table tbody tr.cat-stavba-row td{background:#F4B183;font-weight:800;color:#5A210C;font-size:11.5px;letter-spacing:.2px}
+      .pdf-table tbody tr.cat-ostatni-row td{background:#CFD8E8;font-weight:800;color:#21324B;font-size:11.5px;letter-spacing:.2px}
+      .pdf-table tbody tr.subtotal-row td{background:#E8EEF8;font-weight:700;font-style:italic;color:#1E3A6E}
+      .pdf-table td.num{text-align:right;font-variant-numeric:tabular-nums;font-size:11px;white-space:nowrap}
+      .pdf-table td.prace-bg{background:#D4DDEF}
+      .pdf-table td.mat-bg{background:#C2DAAC}
+      .pdf-table td.total-bg{background:#D5D5D5;font-weight:700}
+      .pdf-table td.cena-prace-bg{background:#BBCFE8}
+      .pdf-table td.cena-mat-bg{background:#F5C4A5}
+      .pdf-totals{margin-top:22px;display:flex;justify-content:flex-end}
+      .pdf-totals-box{border:1.5px solid #B0BAC8;border-radius:6px;overflow:hidden;min-width:340px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+      .pdf-tot-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-top:1px solid #E0E6F0;font-size:13px}
       .pdf-tot-row:first-child{border-top:none}
-      .pdf-tot-row.final{background:#1A6AE8;color:#fff;font-weight:800;font-size:15px}
-      .pdf-ostatni-box{margin-top:16px;border:1.5px solid #9CA3AF;border-radius:4px;overflow:hidden}
-      .pdf-ostatni-head{background:#D9E2F3;padding:8px 14px;font-weight:700;font-size:12px;color:#21324B}
-      .pdf-footer{margin-top:22px;padding-top:12px;border-top:1px solid #D9DEE7;display:flex;justify-content:space-between;font-size:11px;color:#888}
-      .preview-actions{max-width:1200px;margin:0 auto 14px;display:flex;gap:8px;flex-wrap:wrap}
+      .pdf-tot-row strong{font-size:14px}
+      .pdf-tot-row.subtotal-section{background:#F5F7FB;font-weight:600}
+      .pdf-tot-row.final{background:linear-gradient(135deg,#1845B8,#1A6AE8);color:#fff;font-weight:800;font-size:16px;padding:12px 16px}
+      .pdf-tot-row.final strong{font-size:18px}
+      .pdf-ostatni-box{margin-top:20px;border:1.5px solid #B0BAC8;border-radius:6px;overflow:hidden}
+      .pdf-ostatni-head{background:#CFD8E8;padding:10px 16px;font-weight:800;font-size:12px;color:#1E2E4A;letter-spacing:.2px}
+      .pdf-footer{margin-top:28px;padding-top:14px;border-top:1.5px solid #E0E6F0;display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF}
+      .preview-actions{max-width:1280px;margin:0 auto 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+      .preview-actions .btn{font-size:13px;font-weight:700;padding:10px 20px}
       .ostatni-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(217,226,243,.1);border:1px solid var(--b2);border-radius:10px;margin:10px 16px 4px;cursor:pointer}
       .ostatni-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
       .ostatni-toggle label{font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
@@ -548,11 +558,11 @@
           body.innerHTML = `
             <div class="preview-wrap">
               <div class="preview-actions">
-                <button id="previewOpenCart" class="btn" style="background:#fff;color:#374151;border-color:#D1D5DB">✏ Upravit pozice</button>
+                <button id="previewOpenCart" class="btn" style="background:#F3F4F6;color:#374151;border-color:#D1D5DB">✏ Upravit pozice</button>
+                <button id="previewSaveEdits" class="btn" style="background:#D97706;color:#fff;border:none">💾 Uložit úpravy</button>
                 <button id="previewBuildBtn" class="btn" style="background:#1D4ED8;color:#fff;border:none">⚡ Excel / PDF</button>
                 <button id="previewSendBtn" class="btn" style="background:#059669;color:#fff;border:none">✉ Odeslat klientovi</button>
-                <button id="previewSaveEdits" class="btn" style="background:#D97706;color:#fff;border:none">💾 Uložit úpravy</button>
-                <span style="font-size:12px;color:#555;padding:8px 4px">← Pole lze kliknout a editovat přímo v náhledu</span>
+                <span style="font-size:12px;color:var(--ink3);padding:8px 4px;margin-left:4px">Поля позначені пунктиром — натисни щоб редагувати</span>
               </div>
               <div class="pdf-paper">
                 <!-- HEADER -->
@@ -560,17 +570,17 @@
                   <div class="pdf-header-top">
                     <div>
                       <img src="./logo.jpg" class="pdf-logo" alt="O&L Master Dom" />
-                      <div style="font-size:16px;font-weight:800;margin-top:6px">O&amp;L Master Dom</div>
-                      <div style="font-size:11px;color:#6B7280;margin-top:2px">Elektromontážní a stavební práce</div>
+                      <div class="pdf-company-name">O&amp;L Master Dom</div>
+                      <div class="pdf-company-sub">Elektromontážní a stavební práce</div>
                     </div>
                     <div style="text-align:right">
-                      <div style="font-size:24px;font-weight:900;color:#111827;letter-spacing:-.5px">ROZPOČET</div>
-                      <div style="margin-top:6px;font-size:12px;color:#555">
-                        <div>Název: <strong contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</strong></div>
-                        <div>Číslo: <strong>${esc(estimate?.estimateNo||'—')}</strong></div>
-                        <div>Datum: <strong contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</strong></div>
-                        <div>Zakázka: <strong>${esc(pvJobNum)}</strong></div>
-                        <div>Verze: <strong contenteditable="true" class="pdf-editable" id="pvVersionEdit">${esc(String(estimate?.versionNo||1))}</strong></div>
+                      <div class="pdf-right-title">ROZPOČET</div>
+                      <div style="font-size:12.5px;color:#4B5563">
+                        <div class="pdf-meta-row">Název: <strong contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</strong></div>
+                        <div class="pdf-meta-row">Číslo: <strong>${esc(estimate?.estimateNo||'—')}</strong></div>
+                        <div class="pdf-meta-row">Datum: <strong contenteditable="true" class="pdf-editable" id="pvDateEdit">${esc(pvDate)}</strong></div>
+                        <div class="pdf-meta-row">Zakázka: <strong>${esc(pvJobNum)}</strong></div>
+                        <div class="pdf-meta-row">Verze: <strong contenteditable="true" class="pdf-editable" id="pvVersionEdit">${esc(String(estimate?.versionNo||1))}</strong></div>
                       </div>
                     </div>
                   </div>
@@ -964,6 +974,9 @@
         activeMode = btn.getAttribute('data-mode')
         document.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('active', x === btn))
         activeNavKey = null
+        // Full-screen when preview
+        const page = document.querySelector('.page')
+        if (page) page.classList.toggle('preview-mode', activeMode === 'preview')
         loadCatalog()
       }))
       let timer
