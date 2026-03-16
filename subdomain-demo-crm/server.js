@@ -3810,6 +3810,127 @@ app.post('/api/crm/catalog/import', authMiddleware, roleGuard(['admin', 'manager
   }
 })
 
+// ── CATALOG MATERIAL FILE IMPORT (XLSX / CSV) ──
+const catalogUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = /\.(xlsx|csv)$/i.test(file.originalname)
+    cb(ok ? null : new Error('Csak .xlsx és .csv fájlok engedélyezettek'), ok)
+  },
+})
+
+function parseCsvBuffer(buf) {
+  const text = buf.toString('utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const lines = text.split('\n')
+  const sep = lines[0]?.includes(';') ? ';' : ','
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, '').toLowerCase())
+  const rows = []
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue
+    const parts = lines[i].split(sep).map(p => p.trim().replace(/^"|"$/g, ''))
+    const obj = {}
+    headers.forEach((h, idx) => { obj[h] = parts[idx] || '' })
+    rows.push(obj)
+  }
+  return rows
+}
+
+function detectColumns(headers) {
+  const lc = h => (h || '').toLowerCase()
+  const find = (keys) => headers.find(h => keys.some(k => lc(h).includes(k)))
+  return {
+    code:  find(['code','kod','kód','article','artno','art.','item_no','bestell']),
+    name:  find(['name','name','popis','bezeichnung','article_name','item_name','nazev','název','description']),
+    price: find(['price','preis','cena','cena_bez','netto','price_net','nettopreis','vk_netto','kund']),
+    unit:  find(['unit','einh','mj','mj.','množ','jednotka','unit_of_measure']),
+  }
+}
+
+async function parseXlsxBuffer(buf) {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buf)
+  const ws = wb.worksheets[0]
+  if (!ws) return []
+  const rows = []
+  ws.eachRow((row, rowNum) => {
+    const cells = []
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      cells.push(cell.value === null || cell.value === undefined ? '' : String(cell.value))
+    })
+    rows.push(cells)
+  })
+  return rows
+}
+
+function xlsxRowsToObjects(rows) {
+  if (!rows.length) return []
+  const headers = rows[0].map(h => String(h || '').trim().toLowerCase())
+  return rows.slice(1).map(r => {
+    const obj = {}
+    headers.forEach((h, i) => { obj[h] = String(r[i] || '').trim() })
+    return obj
+  })
+}
+
+function rowsToCatalogItems(objRows, category = 'elektro') {
+  const headers = Object.keys(objRows[0] || {})
+  const { code, name, price, unit } = detectColumns(headers)
+  const items = []
+  for (const row of objRows) {
+    const itemName = (code ? row[code] : '') || (name ? row[name] : '')
+    if (!itemName || itemName.trim() === '') continue
+    const itemDescription = (name && code) ? row[name] : null
+    const rawPrice = price ? row[price] : '0'
+    const basePrice = Number(String(rawPrice || '0').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0
+    const unitVal = unit ? row[unit] : 'ks'
+    const sourceCode = code ? row[code] : null
+    items.push({
+      itemName: String(itemName).trim(),
+      itemDescription: itemDescription ? String(itemDescription).trim() : null,
+      sourceCode: sourceCode ? String(sourceCode).trim() : null,
+      basePrice,
+      unit: (unitVal || 'ks').trim() || 'ks',
+      tradeType: 'electro',
+      categoryKey: category,
+      phaseKey: 'material',
+      metadata: { itemKind: 'material', category },
+    })
+  }
+  return items
+}
+
+app.post('/api/crm/catalog/import-file', authMiddleware, roleGuard(['admin', 'manager']),
+  catalogUpload.single('file'),
+  async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ ok: false, error: 'Soubor nebyl nahrán' })
+      const category = String(req.body?.category || 'elektro').toLowerCase()
+      let objRows
+      if (/\.csv$/i.test(req.file.originalname)) {
+        objRows = parseCsvBuffer(req.file.buffer)
+      } else {
+        const rawRows = await parseXlsxBuffer(req.file.buffer)
+        objRows = xlsxRowsToObjects(rawRows)
+      }
+      if (!objRows.length) return res.status(400).json({ ok: false, error: 'Soubor neobsahuje žádná data' })
+      const catalogItems = rowsToCatalogItems(objRows, category)
+      if (!catalogItems.length) return res.status(400).json({ ok: false, error: 'Nepodařilo se detekovat sloupce. Zkontrolujte formát souboru.' })
+      // Return preview if ?preview=1
+      if (req.query.preview === '1') {
+        return res.json({ ok: true, preview: catalogItems.slice(0, 20), total: catalogItems.length })
+      }
+      const imported = await bulkImportServiceCatalogItems(catalogItems)
+      await insertAudit(req.auth?.email || null, 'catalog_material_imported', 'catalog_item', imported.length, {
+        file: req.file.originalname, count: imported.length, category,
+      })
+      return res.json({ ok: true, count: imported.length })
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: String(e?.message || e) })
+    }
+  }
+)
+
 app.get('/api/crm/estimates', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
   const estimates = await listEstimates({
     leadId: req.query?.leadId ? Number(req.query.leadId) : null,

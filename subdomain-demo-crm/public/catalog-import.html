@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O&L Master Dom · Import materiálů</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    ;(function(){
+      const tok = localStorage.getItem('crmToken')
+      if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
+      try {
+        const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
+        if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html') }
+      } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
+    })()
+  </script>
+  <style>
+    :root{
+      --bg:#020C18;--s:#071626;--s2:#091B30;--c:#0C1E38;--c2:#0F2442;
+      --b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);
+      --ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;
+      --blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;
+      --green:#14C98A;--red:#E83A3A;--r:10px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px}
+    .hdr{position:sticky;top:0;z-index:50;height:56px;background:rgba(2,12,24,.96);border-bottom:1px solid var(--b2);backdrop-filter:blur(16px);display:flex;align-items:center;padding:0 20px;gap:12px}
+    .hdr-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .hdr-logo img{height:40px;width:auto;max-width:130px;object-fit:contain;border-radius:8px;border:1px solid rgba(61,135,248,.3)}
+    .hdr-logo-name{font-size:14px;font-weight:800;color:var(--ink)}
+    .hdr-actions{margin-left:auto;display:flex;gap:8px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);font:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--b2);background:var(--c);color:var(--ink);text-decoration:none;white-space:nowrap;transition:all .15s}
+    .btn:hover{background:var(--c2)}
+    .btn.primary{background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none}
+    .btn.green{background:linear-gradient(135deg,#0EA574,#14C98A);color:#fff;border:none}
+    .btn.sm{padding:6px 10px;font-size:12px}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .main{max-width:900px;margin:32px auto;padding:0 20px 60px}
+    .page-title{font-size:24px;font-weight:800;margin-bottom:6px}
+    .page-sub{font-size:14px;color:var(--ink2);margin-bottom:32px}
+    .card{background:var(--s);border:1px solid var(--b2);border-radius:14px;padding:28px;margin-bottom:24px}
+    .card h2{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .field-row{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+    .field-label{font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px}
+    select,input[type=text]{background:var(--c);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:9px 12px;font:inherit;font-size:13px;outline:none;width:100%;transition:border-color .15s}
+    select:focus,input[type=text]:focus{border-color:var(--blue)}
+    .upload-zone{border:2px dashed var(--b2);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.01)}
+    .upload-zone.dragover{border-color:var(--blue);background:rgba(26,106,232,.06)}
+    .upload-zone.has-file{border-color:var(--green);background:rgba(20,201,138,.05)}
+    .upload-zone input{display:none}
+    .upload-zone-icon{font-size:36px;margin-bottom:12px}
+    .upload-zone-text{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+    .upload-zone-sub{font-size:12px;color:var(--ink3)}
+    .upload-zone-file{font-size:14px;font-weight:700;color:var(--green)}
+    .step-row{display:flex;gap:12px;margin-top:20px}
+    .step-row .btn{flex:1;justify-content:center}
+    .alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
+    .alert.show{display:block}
+    .alert.success{background:rgba(20,201,138,.1);border:1px solid rgba(20,201,138,.3);color:#14C98A}
+    .alert.error{background:rgba(232,58,58,.1);border:1px solid rgba(232,58,58,.3);color:#F07070}
+    .alert.info{background:rgba(26,106,232,.1);border:1px solid rgba(26,106,232,.3);color:var(--blue3)}
+    .preview-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+    .preview-table th{background:var(--c2);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.3px}
+    .preview-table td{padding:6px 10px;border-bottom:1px solid var(--b);color:var(--ink);vertical-align:middle}
+    .preview-table tr:last-child td{border-bottom:none}
+    .preview-table tr:hover td{background:rgba(255,255,255,.02)}
+    .preview-wrap{max-height:360px;overflow-y:auto;border:1px solid var(--b2);border-radius:8px;margin-top:12px}
+    .stat-row{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+    .stat{background:var(--c);border:1px solid var(--b2);border-radius:10px;padding:14px 18px;flex:1;min-width:140px}
+    .stat-num{font-size:28px;font-weight:800;color:var(--ink)}
+    .stat-lbl{font-size:11px;color:var(--ink3);margin-top:2px}
+    .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+    .badge.elektro{background:rgba(20,201,138,.12);color:#14C98A;border:1px solid rgba(20,201,138,.25)}
+    .badge.stavba{background:rgba(249,115,22,.12);color:#FB923C;border:1px solid rgba(249,115,22,.25)}
+    .existing-table-wrap{max-height:300px;overflow-y:auto;border:1px solid var(--b2);border-radius:8px}
+    .hint-box{background:rgba(26,106,232,.06);border:1px solid rgba(61,135,248,.2);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--ink2);line-height:1.7}
+    .hint-box b{color:var(--ink)}
+    table.preview-table .price-col{text-align:right;font-weight:600;color:var(--green)}
+    table.preview-table .code-col{font-family:monospace;color:var(--ink3);font-size:10px}
+    .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--b2)}
+    .tab{padding:10px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--ink2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+    .tab.active{color:var(--blue3);border-bottom-color:var(--blue3)}
+    .tab-content{display:none}.tab-content.active{display:block}
+  </style>
+</head>
+<body>
+  <header class="hdr">
+    <div class="hdr-logo">
+      <img src="./logo.jpg" alt="O&L" />
+      <div class="hdr-logo-name">O&amp;L Master Dom</div>
+    </div>
+    <div class="hdr-actions">
+      <a href="./estimate-builder.html" class="btn">← Кошторис</a>
+      <a href="./index.html" class="btn">⬡ Pipeline</a>
+      <button class="btn-logout btn sm" id="logoutBtn">↩</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="page-title">📦 Správa katalogu materiálů</div>
+    <div class="page-sub">Nahrajte ceník materiálů (XLSX nebo CSV). Systém automaticky rozpozná sloupce a importuje položky.</div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="import">⬆ Import ceníku</button>
+      <button class="tab" data-tab="browse">🔍 Procházet materiály</button>
+      <button class="tab" data-tab="info">ℹ Formáty souborů</button>
+    </div>
+
+    <!-- TAB: IMPORT -->
+    <div class="tab-content active" id="tab-import">
+      <div class="card">
+        <h2>⬆ Nahrát ceník materiálů</h2>
+
+        <div id="alertBox" class="alert"></div>
+
+        <div class="field-row">
+          <label class="field-label">Kategorie materiálů</label>
+          <select id="catSelect">
+            <option value="elektro">⚡ Elektro — elektro materiál</option>
+            <option value="stavba">🧱 Stavba — stavební materiál</option>
+          </select>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept=".xlsx,.csv" />
+          <div class="upload-zone-icon" id="zoneIcon">📄</div>
+          <div class="upload-zone-text" id="zoneText">Přetáhněte soubor sem nebo klikněte pro výběr</div>
+          <div class="upload-zone-sub" id="zoneSub">Podporované formáty: .xlsx, .csv — max 20 MB</div>
+        </div>
+
+        <div class="step-row">
+          <button class="btn primary" id="btnPreview" disabled>🔍 Náhled dat (bez importu)</button>
+          <button class="btn green" id="btnImport" disabled>⬆ Importovat do katalogu</button>
+        </div>
+      </div>
+
+      <div class="card" id="previewCard" style="display:none">
+        <h2>🔍 Náhled importu</h2>
+        <div class="stat-row" id="previewStats"></div>
+        <p style="font-size:13px;color:var(--ink2);margin-bottom:8px">Zobrazeno prvních 20 položek z celkového počtu:</p>
+        <div class="preview-wrap">
+          <table class="preview-table">
+            <thead><tr>
+              <th>Název položky</th>
+              <th>Kód</th>
+              <th class="price-col">Cena (Kč)</th>
+              <th>MJ</th>
+              <th>Kategorie</th>
+            </tr></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px">
+          <button class="btn green" id="btnImportConfirm">✓ Potvrdit import</button>
+          <button class="btn" id="btnPreviewCancel">✕ Zrušit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: BROWSE -->
+    <div class="tab-content" id="tab-browse">
+      <div class="card">
+        <h2>🔍 Materiály v katalogu</h2>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" id="browseSearch" placeholder="Hledat materiál..." style="flex:1;min-width:200px" />
+          <select id="browseCat" style="width:200px">
+            <option value="">Všechny kategorie</option>
+            <option value="elektro">⚡ Elektro</option>
+            <option value="stavba">🧱 Stavba</option>
+          </select>
+          <button class="btn primary" id="btnBrowse">Hledat</button>
+        </div>
+        <div id="browseAlert" class="alert"></div>
+        <div class="stat-row" id="browseStats" style="display:none"></div>
+        <div class="existing-table-wrap" id="browseTableWrap" style="display:none">
+          <table class="preview-table">
+            <thead><tr>
+              <th>Název</th>
+              <th>Kód</th>
+              <th class="price-col">Cena (Kč)</th>
+              <th>MJ</th>
+              <th>Kat.</th>
+            </tr></thead>
+            <tbody id="browseBody"></tbody>
+          </table>
+        </div>
+        <div id="browseEmpty" style="padding:32px 0;text-align:center;color:var(--ink3);font-size:13px;display:none">
+          Žádné materiály nenalezeny. Nahrajte ceník v záložce „Import ceníku".
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: INFO -->
+    <div class="tab-content" id="tab-info">
+      <div class="card">
+        <h2>ℹ Podporované formáty souborů</h2>
+        <div class="hint-box">
+          <b>Systém automaticky rozpozná sloupce</b> s cenami, kódy a názvy.<br><br>
+          Typické názvy sloupců, které systém detekuje:<br>
+          • <b>Kód/Code/Artikel</b> → číslo položky<br>
+          • <b>Name/Popis/Bezeichnung/Article_name</b> → název materiálu<br>
+          • <b>Price/Preis/Cena/Nettopreis/VK_netto</b> → cena bez DPH<br>
+          • <b>Unit/MJ/Einheit</b> → měrná jednotka (ks, m, kg…)<br><br>
+          <b>Formáty:</b><br>
+          • <b>.xlsx</b> — Excel (první list, první řádek = záhlaví)<br>
+          • <b>.csv</b> — oddělovač čárka nebo středník, první řádek = záhlaví<br><br>
+          <b>Příklad CSV:</b><br>
+          <code style="background:var(--c);padding:4px 8px;border-radius:4px;font-size:12px;display:inline-block;margin-top:4px">
+            Code;Name;Price;Unit<br>
+            741001;Kabel CYKY 3x2.5;26.5;m<br>
+            741002;Krabice pod omítku;18;ks
+          </code>
+        </div>
+        <div class="hint-box" style="margin-top:16px">
+          <b>💡 Tip pro soubory s německými záhlavími (Kundenpreise):</b><br>
+          Sloupce jako <b>Bestell-Nr.</b>, <b>Artikelbezeichnung</b>, <b>Netto-VK</b> nebo <b>Nettopreis</b> jsou také rozpoznány automaticky.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = location.origin
+    const tok = () => localStorage.getItem('crmToken')
+
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+    function fmtMoney(n) { return Number(n||0).toLocaleString('cs-CZ',{style:'currency',currency:'CZK',maximumFractionDigits:2}) }
+
+    function showAlert(type, msg) {
+      const a = document.getElementById('alertBox')
+      a.className = `alert ${type} show`
+      a.innerHTML = msg
+    }
+    function hideAlert() {
+      const a = document.getElementById('alertBox')
+      a.className = 'alert'
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab))
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.toggle('active', tc.id === 'tab-' + tab.dataset.tab))
+      })
+    })
+
+    // ── FILE SELECTION ──
+    let selectedFile = null
+
+    const uploadZone = document.getElementById('uploadZone')
+    const fileInput = document.getElementById('fileInput')
+
+    uploadZone.addEventListener('click', () => fileInput.click())
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) selectFile(fileInput.files[0])
+    })
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover') })
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'))
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault()
+      uploadZone.classList.remove('dragover')
+      const f = e.dataTransfer.files[0]
+      if (f) selectFile(f)
+    })
+
+    function selectFile(f) {
+      selectedFile = f
+      document.getElementById('zoneIcon').textContent = /\.csv$/i.test(f.name) ? '📊' : '📗'
+      document.getElementById('zoneText').innerHTML = `<span class="upload-zone-file">✓ ${esc(f.name)}</span>`
+      document.getElementById('zoneSub').textContent = `${(f.size / 1024).toFixed(1)} KB`
+      uploadZone.classList.add('has-file')
+      document.getElementById('btnPreview').disabled = false
+      document.getElementById('btnImport').disabled = false
+      hideAlert()
+      document.getElementById('previewCard').style.display = 'none'
+    }
+
+    // ── PREVIEW ──
+    let lastPreviewData = null
+
+    document.getElementById('btnPreview').addEventListener('click', async () => {
+      if (!selectedFile) return
+      const btn = document.getElementById('btnPreview')
+      btn.disabled = true
+      btn.innerHTML = '<span class="spin"></span>Analyzuji...'
+      hideAlert()
+      try {
+        const fd = new FormData()
+        fd.append('file', selectedFile)
+        fd.append('category', document.getElementById('catSelect').value)
+        const r = await fetch(`${API}/api/crm/catalog/import-file?preview=1`, {
+          method: 'POST', headers: { Authorization: 'Bearer ' + tok() }, body: fd
+        })
+        const d = await r.json()
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Chyba náhledu')
+        lastPreviewData = d
+        renderPreview(d)
+      } catch (e) {
+        showAlert('error', '❌ ' + esc(e.message))
+      } finally {
+        btn.disabled = false
+        btn.innerHTML = '🔍 Náhled dat (bez importu)'
+      }
+    })
+
+    function renderPreview(d) {
+      const card = document.getElementById('previewCard')
+      card.style.display = ''
+      document.getElementById('previewStats').innerHTML = `
+        <div class="stat"><div class="stat-num">${d.total}</div><div class="stat-lbl">položek celkem</div></div>
+        <div class="stat"><div class="stat-num">${d.preview.length}</div><div class="stat-lbl">zobrazeno v náhledu</div></div>
+        <div class="stat"><div class="stat-num">${fmtMoney(d.preview.reduce((s,i)=>s+Number(i.basePrice||0),0)/Math.max(1,d.preview.length))}</div><div class="stat-lbl">průměrná cena (náhled)</div></div>`
+      const tbody = document.getElementById('previewBody')
+      tbody.innerHTML = d.preview.map(it => `<tr>
+        <td>${esc(it.itemName)}</td>
+        <td class="code-col">${esc(it.sourceCode||'—')}</td>
+        <td class="price-col">${fmtMoney(it.basePrice)}</td>
+        <td>${esc(it.unit||'ks')}</td>
+        <td><span class="badge ${it.metadata?.category||'elektro'}">${esc(it.metadata?.category||'elektro')}</span></td>
+      </tr>`).join('')
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+
+    document.getElementById('btnPreviewCancel').addEventListener('click', () => {
+      document.getElementById('previewCard').style.display = 'none'
+      lastPreviewData = null
+    })
+
+    // ── IMPORT ──
+    async function doImport() {
+      if (!selectedFile) return
+      const btn = document.getElementById('btnImportConfirm')
+      btn.disabled = true
+      btn.innerHTML = '<span class="spin"></span>Importuji...'
+      hideAlert()
+      try {
+        const fd = new FormData()
+        fd.append('file', selectedFile)
+        fd.append('category', document.getElementById('catSelect').value)
+        const r = await fetch(`${API}/api/crm/catalog/import-file`, {
+          method: 'POST', headers: { Authorization: 'Bearer ' + tok() }, body: fd
+        })
+        const d = await r.json()
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Chyba importu')
+        showAlert('success', `✅ Importováno <b>${d.count}</b> položek. Materiály jsou nyní dostupné v koštorisovém editoru.`)
+        document.getElementById('previewCard').style.display = 'none'
+        selectedFile = null
+        document.getElementById('btnPreview').disabled = true
+        document.getElementById('btnImport').disabled = true
+        document.getElementById('zoneText').textContent = 'Přetáhněte soubor sem nebo klikněte pro výběr'
+        document.getElementById('zoneSub').textContent = 'Podporované formáty: .xlsx, .csv — max 20 MB'
+        document.getElementById('zoneIcon').textContent = '📄'
+        uploadZone.classList.remove('has-file')
+      } catch (e) {
+        showAlert('error', '❌ ' + esc(e.message))
+      } finally {
+        btn.disabled = false
+        btn.innerHTML = '✓ Potvrdit import'
+      }
+    }
+
+    document.getElementById('btnImport').addEventListener('click', () => {
+      if (!selectedFile) return
+      // Show preview first if not shown
+      if (!lastPreviewData) {
+        document.getElementById('btnPreview').click()
+      } else {
+        doImport()
+      }
+    })
+    document.getElementById('btnImportConfirm').addEventListener('click', doImport)
+
+    // ── BROWSE ──
+    async function browseMaterials() {
+      const q = document.getElementById('browseSearch').value.trim()
+      const cat = document.getElementById('browseCat').value
+      const btn = document.getElementById('btnBrowse')
+      btn.disabled = true
+      btn.innerHTML = '<span class="spin"></span>'
+      const browseAlert = document.getElementById('browseAlert')
+      browseAlert.className = 'alert'
+      try {
+        const params = new URLSearchParams({ itemKind: 'material', limit: 200 })
+        if (q) params.set('search', q)
+        if (cat) params.set('categoryKey', cat)
+        const r = await fetch(`${API}/api/crm/catalog/items?${params}`, {
+          headers: { Authorization: 'Bearer ' + tok() }
+        })
+        const d = await r.json()
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Chyba načítání')
+        const items = d.items || []
+        const wrap = document.getElementById('browseTableWrap')
+        const empty = document.getElementById('browseEmpty')
+        const stats = document.getElementById('browseStats')
+        if (!items.length) {
+          wrap.style.display = 'none'; stats.style.display = 'none'; empty.style.display = 'block'
+        } else {
+          empty.style.display = 'none'
+          stats.style.display = 'flex'
+          stats.innerHTML = `<div class="stat"><div class="stat-num">${items.length}</div><div class="stat-lbl">materiálů nalezeno</div></div>`
+          document.getElementById('browseBody').innerHTML = items.map(it => `<tr>
+            <td>${esc(it.itemName)}</td>
+            <td class="code-col">${esc(it.sourceCode||'—')}</td>
+            <td class="price-col">${fmtMoney(it.basePrice)}</td>
+            <td>${esc(it.unit||'ks')}</td>
+            <td><span class="badge ${it.metadata?.category||'elektro'}">${esc(it.metadata?.category||'elektro')}</span></td>
+          </tr>`).join('')
+          wrap.style.display = 'block'
+        }
+      } catch (e) {
+        browseAlert.className = 'alert error show'
+        browseAlert.textContent = '❌ ' + e.message
+      } finally {
+        btn.disabled = false
+        btn.textContent = 'Hledat'
+      }
+    }
+
+    document.getElementById('btnBrowse').addEventListener('click', browseMaterials)
+    document.getElementById('browseSearch').addEventListener('keydown', e => { if (e.key === 'Enter') browseMaterials() })
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser')
+      location.replace('./login.html')
+    })
+
+    browseMaterials()
+  </script>
+</body>
+</html>
