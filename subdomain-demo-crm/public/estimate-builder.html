@@ -54,7 +54,7 @@
     /* CART DRAWER */
     .drawer-backdrop{position:fixed;inset:0;top:56px;background:rgba(0,0,0,.45);z-index:79;display:none;cursor:pointer}
     .drawer-backdrop.show{display:block}
-    .cart-drawer{position:fixed;top:56px;bottom:0;right:0;width:500px;max-width:calc(100vw - 40px);background:var(--s);border-left:2px solid var(--b2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:80;box-shadow:-12px 0 60px rgba(0,0,0,.55)}
+    .cart-drawer{position:fixed;top:56px;bottom:0;right:0;width:680px;max-width:calc(100vw - 20px);background:var(--s);border-left:2px solid var(--b2);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:80;box-shadow:-12px 0 60px rgba(0,0,0,.55)}
     .cart-drawer.open{transform:translateX(0)}
     .cart-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;background:var(--green);color:#fff;font-size:11px;font-weight:800;padding:0 5px;margin-left:4px}
     .cat-search{padding:12px 16px;border-bottom:1px solid var(--b2);background:rgba(7,22,38,.95);flex-shrink:0;display:flex;gap:10px}
@@ -68,7 +68,7 @@
     .cat-group-head{position:sticky;top:0;z-index:2;padding:10px 20px 8px;background:rgba(9,27,48,.97);border-bottom:1px solid var(--b2);display:flex;justify-content:space-between;align-items:center}
     .cat-group-name{font-size:12px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px}
     .cat-group-count{font-size:11px;color:var(--ink3)}
-    .cat-item{display:grid;grid-template-columns:minmax(0,1fr) 100px 130px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--b2);gap:12px;transition:background .12s}
+    .cat-item{display:grid;grid-template-columns:minmax(0,1fr) 130px 160px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--b2);gap:12px;transition:background .12s}
     .cat-item:hover{background:rgba(26,106,232,.05)}
     .cat-item.in-cart{background:rgba(20,201,138,.05);border-left:3px solid var(--green)}
     .cat-item-name{font-size:13px;font-weight:500;line-height:1.35;color:var(--ink)}
@@ -82,8 +82,14 @@
     .q-minus:hover{background:rgba(232,58,58,.28)}
     .q-plus{background:rgba(26,106,232,.18);color:var(--blue3)}
     .q-plus:hover{background:rgba(26,106,232,.32)}
-    .q-val{min-width:28px;text-align:center;font-size:15px;font-weight:800;color:var(--ink)}
+    .q-val{width:44px;text-align:center;font-size:14px;font-weight:800;color:var(--ink);background:var(--c);border:1px solid transparent;border-radius:6px;padding:3px 4px;outline:none;font:inherit}
+    .q-val:focus{border-color:var(--blue);background:var(--c2)}
     .q-val.has{color:var(--green)}
+    /* inline price input in catalog */
+    .cat-price-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+    .cat-price-inp{width:80px;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);padding:4px 7px;font:inherit;font-size:13px;font-weight:700;text-align:right;outline:none;transition:border-color .15s}
+    .cat-price-inp:focus{border-color:var(--blue)}
+    .cat-price-inp.overridden{border-color:rgba(251,191,36,.5);color:#FBBF24}
     .cat-empty{padding:48px 24px;text-align:center;color:var(--ink3);font-size:14px}
 
     /* (cart is now in a drawer) */
@@ -93,17 +99,54 @@
     .cart-body{flex:1;overflow-y:auto;padding:0}
     .cart-empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:13px}
     .cart-cat-head{padding:10px 16px 8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);background:rgba(255,255,255,.02);border-bottom:1px solid var(--b2)}
-    .cart-line{display:grid;grid-template-columns:minmax(0,1fr) 90px 32px;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--b2)}
-    .cart-line:hover{background:rgba(255,255,255,.02)}
-    .cart-line-name{font-size:12px;font-weight:500;line-height:1.3;color:var(--ink)}
-    .cart-line-price{text-align:right}
+    /* ── CART CARD ── */
+    .cart-card{border-bottom:1px solid var(--b2);padding:10px 16px 8px;transition:background .12s}
+    .cart-card:hover{background:rgba(255,255,255,.015)}
+    .cc-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+    .cc-name{flex:1;font-size:13px;font-weight:600;line-height:1.35;color:var(--ink)}
+    .cc-qty{display:flex;align-items:center;gap:4px;flex-shrink:0}
+    .cq-btn{width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .cq-m{background:rgba(232,58,58,.12);color:var(--red)}.cq-m:hover{background:rgba(232,58,58,.25)}
+    .cq-p{background:rgba(26,106,232,.14);color:var(--blue3)}.cq-p:hover{background:rgba(26,106,232,.28)}
+    .cq-val{width:42px;text-align:center;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);font:inherit;font-size:13px;font-weight:700;padding:3px 4px;outline:none}
+    .cq-val:focus{border-color:var(--blue)}
+    .cart-del{background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;flex-shrink:0}
+    .cart-del:hover{color:var(--red);background:rgba(232,58,58,.1)}
+    /* price row */
+    .cc-price-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;margin-bottom:4px;background:rgba(255,255,255,.025);border:1px solid transparent;transition:border-color .2s,background .2s}
+    .cc-price-row.raised{background:rgba(251,191,36,.07);border-color:rgba(251,191,36,.25)}
+    .cc-price-row.mat-raised{background:rgba(20,201,138,.06);border-color:rgba(20,201,138,.2)}
+    .cc-pr-icon{font-size:13px;flex-shrink:0}
+    .cc-pr-label{font-size:11px;color:var(--ink3);font-weight:600;flex-shrink:0;min-width:28px}
+    .cc-mat-name{flex:1;font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .cc-mat-coef{display:flex;align-items:center;gap:2px;flex-shrink:0;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:6px;padding:1px 3px}
+    .cc-coef-lbl{font-size:11px;color:#FBBF24;font-weight:700}
+    .cc-coef-inp{width:44px;background:transparent;border:none;color:#FBBF24;font:inherit;font-size:11px;font-weight:700;padding:2px 2px;text-align:center;outline:none}
+    .cc-pr-inp{width:62px;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);font:inherit;font-size:12px;font-weight:700;padding:3px 5px;text-align:right;outline:none;transition:all .15s;flex-shrink:0}
+    .cc-pr-inp:focus{border-color:var(--blue)}
+    .cc-pr-inp.raised{border-color:rgba(251,191,36,.5);color:#FBBF24}
+    .cc-pr-inp.mat-raised{border-color:rgba(20,201,138,.4);color:var(--green)}
+    .cc-pr-unit{font-size:10px;color:var(--ink3);white-space:nowrap;flex-shrink:0}
+    .cc-markup{display:flex;gap:2px;flex-shrink:0}
+    .cmp-btn{padding:2px 5px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.18);border-radius:4px;color:var(--blue3);font:inherit;font-size:10px;font-weight:700;cursor:pointer;transition:all .12s;white-space:nowrap;flex-shrink:0}
+    .cmp-btn:hover{background:rgba(59,130,246,.2);border-color:var(--blue3)}
+    .cmp-btn.active{background:rgba(251,191,36,.2);border-color:rgba(251,191,36,.6);color:#FBBF24}
+    .cc-pr-total{font-size:12px;font-weight:700;color:var(--green);margin-left:auto;white-space:nowrap;flex-shrink:0}
+    .cc-add-mat{margin-top:2px}
+    /* keep old classes for ostatni lines */
+    .cart-line{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid var(--b2)}
+    .cart-line-name{font-size:13px;font-weight:500;color:var(--ink)}
     .cart-line-total{font-size:13px;font-weight:700;color:var(--green)}
-    .cart-line-unit{font-size:10px;color:var(--ink3);margin-top:1px}
-    .cart-line-qty{display:flex;align-items:center;gap:4px;justify-content:center}
-    .cq-btn{width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .cart-line-unit{font-size:10px;color:var(--ink3)}
+    .cart-subrow{padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink2);background:rgba(255,255,255,.025);border-bottom:2px solid var(--b2)}
+    .cart-line-qty{display:flex;align-items:center;gap:5px;justify-content:center}
+    .cq-btn{width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .cq-m{background:rgba(232,58,58,.12);color:var(--red)}
+    .cq-m:hover{background:rgba(232,58,58,.25)}
     .cq-p{background:rgba(26,106,232,.14);color:var(--blue3)}
-    .cq-val{width:28px;text-align:center;background:transparent;border:none;color:var(--ink);font:inherit;font-size:12px;font-weight:700}
+    .cq-p:hover{background:rgba(26,106,232,.28)}
+    .cq-val{width:42px;text-align:center;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);font:inherit;font-size:13px;font-weight:700;padding:3px 4px;outline:none}
+    .cq-val:focus{border-color:var(--blue)}
     .cart-del{background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px}
     .cart-del:hover{color:var(--red)}
     .cart-subrow{padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink2);background:rgba(255,255,255,.025);border-bottom:2px solid var(--b2)}
@@ -186,7 +229,61 @@
     .mat-modal-empty{padding:36px 20px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.6}
     .mat-modal-empty a{color:var(--blue3)}
 
-    @media(max-width:600px){.cart-drawer{width:100%;max-width:100%}.mat-modal{width:100%;max-width:100%;border-radius:16px 16px 0 0;max-height:90vh}.mat-modal-bg{align-items:flex-end;padding:0}}
+    /* ── PRICE EDITOR POPUP ── */
+    .price-popup{position:fixed;z-index:500;background:var(--s);border:1.5px solid var(--b2);border-radius:12px;padding:14px 16px;box-shadow:0 16px 48px rgba(0,0,0,.7);width:240px;display:none}
+    .price-popup.show{display:block}
+    .price-popup-title{font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+    .price-popup-base{font-size:11px;color:var(--ink3);margin-bottom:10px}
+    .price-popup-input{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+    .price-popup-input input{flex:1;background:var(--c);border:1px solid var(--b2);border-radius:7px;color:var(--ink);padding:7px 10px;font:inherit;font-size:14px;font-weight:700;outline:none;min-width:0;transition:border-color .15s}
+    .price-popup-input input:focus{border-color:var(--blue)}
+    .price-popup-input span{color:var(--ink3);font-size:13px}
+    .markup-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+    .markup-btn{flex:1;min-width:38px;padding:5px 2px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:6px;color:var(--blue3);font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center}
+    .markup-btn:hover{background:rgba(59,130,246,.2);border-color:var(--blue3)}
+    .markup-btn.active{background:rgba(59,130,246,.28);border-color:var(--blue3);color:#fff}
+    .price-popup-reset{width:100%;background:transparent;border:1px solid var(--b2);border-radius:6px;color:var(--ink3);font:inherit;font-size:11px;padding:5px;cursor:pointer;transition:all .15s}
+    .price-popup-reset:hover{border-color:var(--ink3);color:var(--ink)}
+    .cat-item-price-main{cursor:pointer;border-radius:4px;padding:1px 3px;margin:-1px -3px;transition:background .15s}
+    .cat-item-price-main:hover{background:rgba(59,130,246,.12);color:var(--blue3)}
+    .cat-item-price-main.overridden{color:#FBBF24}
+
+    /* address autocomplete in preview */
+    .addr-ac-wrap{position:relative}
+    .addr-ac-input{width:100%;background:transparent;border:none;border-bottom:1px dashed #ccc;color:inherit;font:inherit;font-size:inherit;padding:2px 0;outline:none}
+    .addr-ac-input:focus{border-bottom-color:#1A6AE8}
+    .addr-ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:999;max-height:200px;overflow-y:auto;display:none}
+    .addr-ac-list.show{display:block}
+    .addr-ac-item{padding:9px 12px;cursor:pointer;font-size:13px;color:#1a1a2e;line-height:1.35;border-bottom:1px solid #f0f0f0}
+    .addr-ac-item:last-child{border-bottom:none}
+    .addr-ac-item:hover{background:#EEF4FF}
+    .addr-ac-loading{padding:10px 12px;font-size:12px;color:#888;text-align:center}
+
+    @media(max-width:768px){
+      .cat-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+      .cart-drawer{width:100%;max-width:100%}
+      .cc-price-row{flex-wrap:wrap;gap:4px}
+      .cc-markup{flex-wrap:wrap;gap:2px}
+      .cmp-btn{font-size:9px;padding:2px 4px}
+      .mat-modal{width:100%;max-width:100%;border-radius:16px 16px 0 0;max-height:90vh}
+      .mat-modal-bg{align-items:flex-end;padding:0}
+      .top-nav{padding:0 8px;gap:4px}
+      .ctx-info{gap:6px}
+      .ctx-num{font-size:10px}
+      .editor-layout{height:calc(100vh - 56px)}
+      .preview-overlay{padding:0}
+      .pdf-paper{padding:16px 10px;min-width:unset}
+      .preview-inner{padding:0}
+      #previewContent table{font-size:9px}
+    }
+    @media(max-width:480px){
+      .cat-grid{grid-template-columns:1fr 1fr}
+      .cat-item{padding:10px}
+      .cat-item-name{font-size:11px}
+      .top-nav .btn{font-size:11px;padding:4px 8px}
+      .cc-head{flex-wrap:wrap;gap:4px}
+      .cc-qty{margin-left:0}
+    }
   </style>
 </head>
 <body>
@@ -203,6 +300,8 @@
     <div class="hdr-actions">
       <a href="./index.html" id="backLink" class="btn">← Pipeline</a>
       <button id="btnSave" class="btn">💾 Зберегти</button>
+      <button id="btnSnapshot" class="btn" title="Uložit zálohu verze koshtorusu">📸 Záloha</button>
+      <button id="btnSnapshots" class="btn" title="Historie verzí">🕐</button>
       <button id="btnGenerate" class="btn orange">⚡ Excel / PDF</button>
       <button id="btnPreview" class="btn">👁 Перегляд</button>
       <button id="cartToggle" class="btn green" style="font-weight:800">🧾 Кошик<span class="cart-badge" id="cartCountBadge">0</span></button>
@@ -293,6 +392,47 @@
     </div>
   </div>
 
+  <!-- PRICE EDITOR POPUP — must be in DOM before script runs -->
+  <div id="pricePopup" class="price-popup">
+    <div class="price-popup-title">✏ Má cena</div>
+    <div class="price-popup-base" id="ppBase"></div>
+    <div class="price-popup-input">
+      <input type="number" id="ppInput" min="0" step="0.5" />
+      <span>Kč</span>
+    </div>
+    <div class="markup-row" id="ppMarkupRow">
+      <button class="markup-btn" data-pct="10">+10%</button>
+      <button class="markup-btn" data-pct="15">+15%</button>
+      <button class="markup-btn" data-pct="20">+20%</button>
+      <button class="markup-btn" data-pct="25">+25%</button>
+      <button class="markup-btn" data-pct="30">+30%</button>
+    </div>
+    <button class="price-popup-reset" id="ppReset">↺ Základní cena</button>
+  </div>
+
+  <!-- MATERIAL PICKER MODAL — must be in DOM before script runs -->
+  <div id="matModal" style="display:none;position:fixed;inset:0;z-index:1000">
+    <div class="mat-modal-bg" id="matModalBg">
+      <div class="mat-modal">
+        <div class="mat-modal-head">
+          <div>
+            <h3>📦 Vybrat materiál</h3>
+            <div class="mat-modal-for" id="matModalForLine"></div>
+          </div>
+          <button class="btn sm" id="matModalClose">✕ Zavřít</button>
+        </div>
+        <div class="mat-modal-search">
+          <input id="matSearchInput" type="search" placeholder="🔍  Hledat materiál v katalogu..." autocomplete="off" />
+        </div>
+        <div id="matResults" class="mat-modal-results"></div>
+        <div class="mat-modal-footer">
+          <button class="btn" id="matSkipBtn" style="flex:1">— Bez materiálu</button>
+          <button class="btn green" id="matConfirmBtn" style="flex:1" disabled>✓ Přiřadit materiál</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const params = new URLSearchParams(location.search)
     const leadId = Number(params.get('leadId') || 0)
@@ -301,9 +441,16 @@
     const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
     const apiUrl = (p) => `${base}${p}`
     const crmToken = () => localStorage.getItem('crmToken') || ''
-    const apiFetch = (url, opts = {}) => {
+    const apiFetch = async (url, opts = {}) => {
       const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
-      return fetch(url, { ...opts, headers: h })
+      const resp = await fetch(url, { ...opts, headers: h })
+      if (resp.status === 401) {
+        localStorage.removeItem('crmToken')
+        localStorage.removeItem('crmUser')
+        location.href = `${base}/login.html?next=${encodeURIComponent(location.href)}`
+        return resp
+      }
+      return resp
     }
     const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
     const fmtMoney = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč`
@@ -312,6 +459,19 @@
 
     let lead = null, job = null, estimate = null, catalog = [], customPriceOverrides = new Map()
     let activeGroup = 'all', searchQ = '', cartOpen = false
+    let _searchDebounce = null
+
+    // Persist custom price overrides in localStorage
+    function saveOverridesToStorage() {
+      try { localStorage.setItem('crmPriceOverrides', JSON.stringify([...customPriceOverrides])) } catch {}
+    }
+    function loadOverridesFromStorage() {
+      try {
+        const raw = localStorage.getItem('crmPriceOverrides')
+        if (raw) customPriceOverrides = new Map(JSON.parse(raw))
+      } catch {}
+    }
+    loadOverridesFromStorage()
 
     function openCart() {
       cartOpen = true
@@ -361,15 +521,16 @@
       return (lines || []).map((line, idx) => {
         const cat = estimateCategory(line)
         const qty = Number(line.quantity || 0)
+        const coef = Number(line.matCoefficient || 1)
         const lU = Number(line.laborUnitPrice ?? line.clientPrice ?? 0)
         const mU = Number(line.materialUnitPrice || 0)
         const lT = +(qty * lU).toFixed(2)
-        const mT = +(qty * mU).toFixed(2)
+        const mT = +(qty * coef * mU).toFixed(2)
         const tot = +(lT + mT).toFixed(2)
         return { ...line, lineCode: lineCode(line, idx), sectionType: cat, category: cat,
           workDescription: line.workDescription || line.itemName || '',
           materialDescription: line.materialDescription || '', unit: line.unit || 'ks',
-          quantity: qty, laborUnitPrice: lU, materialUnitPrice: mU,
+          quantity: qty, matCoefficient: coef, laborUnitPrice: lU, materialUnitPrice: mU,
           laborTotal: lT, materialTotal: mT, lineTotal: tot, positionOrder: idx + 1 }
       })
     }
@@ -408,9 +569,11 @@
 
     function addItem(item, delta) {
       if (!estimate) return
+      const isNewItem = !catalogLine(item) && delta > 0
       const existing = catalogLine(item)
       if (!existing && delta <= 0) return
       if (!existing) {
+        const ep = effectivePrice(item)
         estimate.lines.push({
           catalogItemId: item.id,
           sourceCatalogCode: item.sourceCode || null,
@@ -420,7 +583,8 @@
           materialDescription: '',
           unit: item.unit || 'ks',
           quantity: 1,
-          laborUnitPrice: effectivePrice(item),
+          laborUnitPrice: ep,
+          _basePrice: Number(item.basePrice || ep),
           materialUnitPrice: 0,
         })
       } else {
@@ -432,9 +596,13 @@
       }
       estimate.lines = normalizeLines(estimate.lines)
       renderAll()
-      // Flash the cart badge to signal item was added
       const badge = document.getElementById('cartCountBadge')
       if (badge) { badge.style.transform = 'scale(1.4)'; setTimeout(() => badge.style.transform = '', 200) }
+      // Auto-open material picker for newly added items
+      if (isNewItem) {
+        const newLine = estimate.lines.find(x => Number(x.catalogItemId || 0) === Number(item.id))
+        if (newLine) setTimeout(() => openMatModal(newLine.positionOrder), 120)
+      }
     }
 
     // ── RENDER CATALOG ──
@@ -474,13 +642,13 @@
                 <div class="cat-item-name">${esc(item.itemName)}</div>
                 ${item.sourceCode ? `<div class="cat-item-code">${esc(item.sourceCode)}</div>` : ''}
               </div>
-              <div class="cat-item-price">
-                <div class="cat-item-price-main">${price} Kč</div>
-                <div class="cat-item-price-sub">/ ${esc(item.unit || 'ks')}</div>
+              <div class="cat-price-wrap">
+                <input class="cat-price-inp${customPriceOverrides.has(Number(item.id)) ? ' overridden' : ''}" type="number" min="0" step="0.5" value="${price}" data-price-id="${item.id}" title="Má cena (Enter pro uložení)" />
+                <div class="cat-item-price-sub">Kč / ${esc(item.unit || 'ks')}</div>
               </div>
               <div class="cat-item-ctrl">
                 <button class="q-btn q-minus" data-minus="${item.id}">−</button>
-                <span class="q-val${qty > 0 ? ' has' : ''}">${qty || ''}</span>
+                <input class="q-val${qty > 0 ? ' has' : ''}" type="number" min="0" step="1" value="${qty || ''}" placeholder="0" data-qty-cat="${item.id}" />
                 <button class="q-btn q-plus" data-plus="${item.id}">+</button>
               </div>
             </div>`
@@ -492,6 +660,57 @@
       })
       list.querySelectorAll('[data-minus]').forEach(btn => {
         btn.addEventListener('click', e => { e.stopPropagation(); const item = catalog.find(x => Number(x.id) === Number(btn.getAttribute('data-minus'))); if (item) addItem(item, -1) })
+      })
+      // Direct quantity input in catalog
+      list.querySelectorAll('[data-qty-cat]').forEach(inp => {
+        inp.addEventListener('change', e => {
+          e.stopPropagation()
+          const item = catalog.find(x => Number(x.id) === Number(inp.getAttribute('data-qty-cat')))
+          if (!item || !estimate) return
+          const newQty = Math.max(0, Number(inp.value || 0))
+          const existing = catalogLine(item)
+          if (newQty === 0) {
+            if (existing) estimate.lines = estimate.lines.filter(x => Number(x.catalogItemId || 0) !== Number(item.id))
+          } else if (!existing) {
+            const isNew = true
+            estimate.lines.push({ catalogItemId: item.id, sourceCatalogCode: item.sourceCode || null, category: 'elektro', sectionType: 'elektro', itemName: item.itemName, workDescription: item.itemName, materialDescription: '', unit: item.unit || 'ks', quantity: newQty, laborUnitPrice: effectivePrice(item), materialUnitPrice: 0 })
+            estimate.lines = normalizeLines(estimate.lines)
+            renderAll()
+            const newLine = estimate.lines.find(x => Number(x.catalogItemId || 0) === Number(item.id))
+            if (newLine) setTimeout(() => openMatModal(newLine.positionOrder), 120)
+            return
+          } else {
+            existing.quantity = newQty
+          }
+          estimate.lines = normalizeLines(estimate.lines); renderAll()
+        })
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur() })
+        inp.addEventListener('click', e => e.stopPropagation())
+        inp.addEventListener('focus', e => e.stopPropagation())
+      })
+      // Inline price input in catalog
+      list.querySelectorAll('[data-price-id]').forEach(inp => {
+        inp.addEventListener('change', e => {
+          e.stopPropagation()
+          const itemId = Number(inp.getAttribute('data-price-id'))
+          const item = catalog.find(x => Number(x.id) === itemId)
+          if (!item) return
+          const val = parseFloat(inp.value)
+          if (!Number.isFinite(val) || val <= 0) { inp.value = effectivePrice(item); return }
+          const base = Number(item.basePrice || 0)
+          if (Math.abs(val - base) < 0.01) customPriceOverrides.delete(itemId)
+          else customPriceOverrides.set(itemId, Math.round(val * 100) / 100)
+          saveOverridesToStorage()
+          inp.classList.toggle('overridden', customPriceOverrides.has(itemId))
+          if (estimate?.lines) {
+            estimate.lines.forEach(l => { if (Number(l.catalogItemId || 0) === itemId) l.laborUnitPrice = effectivePrice(item) })
+            saveEstimate(true)
+          }
+          renderCart()
+        })
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); e.stopPropagation() })
+        inp.addEventListener('click', e => e.stopPropagation())
+        inp.addEventListener('focus', e => e.stopPropagation())
       })
     }
 
@@ -521,31 +740,57 @@
           return `<div class="cart-cat-head">${esc(CAT_LABELS[cat] || cat)}</div>` +
             rows.map(line => {
               const hasMat = !!(line.materialDescription && line.materialDescription.trim())
-              const matRow = hasMat
-                ? `<div class="cart-mat-row">
-                    <span class="mat-badge">
-                      <span class="mat-badge-icon">📦</span>
-                      <span class="mat-badge-text">${esc(line.materialDescription)}</span>
-                      <span class="mat-badge-price">&nbsp;·&nbsp;${line.materialUnitPrice} Kč/${esc(line.unit||'ks')}</span>
-                    </span>
-                    <button class="mat-change-btn" title="Změnit materiál" data-mat-open="${line.positionOrder}">✏️</button>
-                    <button class="mat-clear-btn" title="Odstranit materiál" data-mat-clear="${line.positionOrder}">✕</button>
+              const baseLabor = Number(line._basePrice || line.laborUnitPrice || 0)
+              const baseMat   = Number(line._baseMatPrice || line.materialUnitPrice || 0)
+              const laborRaised = line.laborUnitPrice > baseLabor + 0.01
+              const matRaised   = hasMat && line.materialUnitPrice > baseMat + 0.01
+              const laborTotal  = line.quantity * line.laborUnitPrice
+              const pcts = [10,15,20,25,30]
+              const mkup = (pos, base, cur, type) => pcts.map(p => {
+                const exp = Math.round(base * (1 + p/100) * 10)/10
+                const act = Math.abs(cur - exp) < 0.05
+                return `<button class="cmp-btn${act?' active':''}" data-mp="${p}" data-mppos="${pos}" data-mpbase="${base}" data-mptype="${type}">+${p}%</button>`
+              }).join('')
+
+              const coef = Number(line.matCoefficient || 1)
+              const matTotal = line.quantity * coef * line.materialUnitPrice
+              const matSection = hasMat
+                ? `<div class="cc-price-row${matRaised?' mat-raised':''}">
+                    <span class="cc-pr-icon">📦</span>
+                    <span class="cc-mat-name" title="${esc(line.materialDescription)}">${esc(line.materialDescription)}</span>
+                    <div class="cc-mat-coef" title="Koeficient množství materiálu (×kolik jednotek materiálu na 1 práci)">
+                      <span class="cc-coef-lbl">×</span>
+                      <input class="cc-coef-inp" type="number" min="0.01" step="0.1" value="${coef}" data-coef-pos="${line.positionOrder}" title="Koeficient materiálu" />
+                    </div>
+                    <input class="cc-pr-inp${matRaised?' mat-raised':''}" type="number" min="0" step="0.5" value="${line.materialUnitPrice}" data-mat-price-pos="${line.positionOrder}" data-mat-base="${baseMat}" />
+                    <span class="cc-pr-unit">Kč/ks</span>
+                    <div class="cc-markup">${mkup(line.positionOrder, baseMat, line.materialUnitPrice, 'mat')}</div>
+                    <span class="cc-pr-total">${fmtMoney(matTotal)}</span>
+                    <button class="mat-change-btn" style="background:transparent;border:none;cursor:pointer;font-size:12px;color:var(--ink3);padding:0 3px" title="Změnit materiál" data-mat-open="${line.positionOrder}">✏</button>
+                    <button class="mat-clear-btn" style="background:transparent;border:none;cursor:pointer;font-size:12px;color:var(--ink3);padding:0 3px" title="Odstranit materiál" data-mat-clear="${line.positionOrder}">✕</button>
                   </div>`
-                : `<div class="cart-mat-row">
-                    <button class="mat-add-btn" data-mat-open="${line.positionOrder}">+ Přidat materiál k položce</button>
-                  </div>`
-              return `<div class="cart-line">
-                <div class="cart-line-name">${esc(line.workDescription || line.itemName || '—')}</div>
-                <div class="cart-line-price">
-                  <div class="cart-line-total">${fmtMoney(line.lineTotal)}</div>
-                  <div class="cart-line-unit">${line.quantity} × ${line.laborUnitPrice} Kč</div>
+                : `<div class="cc-add-mat"><button class="mat-add-btn" data-mat-open="${line.positionOrder}">＋ Přidat materiál</button></div>`
+
+              return `<div class="cart-card">
+                <div class="cc-head">
+                  <div class="cc-name">${esc(line.workDescription || line.itemName || '—')}</div>
+                  <div class="cc-qty">
+                    <button class="cq-btn cq-m" data-cart-minus="${line.positionOrder}">−</button>
+                    <input class="cq-val" type="number" min="0" step="1" value="${line.quantity}" data-qty-pos="${line.positionOrder}" />
+                    <button class="cq-btn cq-p" data-cart-plus="${line.positionOrder}">+</button>
+                  </div>
+                  <button class="cart-del" data-del-pos="${line.positionOrder}" title="Odstranit">✕</button>
                 </div>
-                <div class="cart-line-qty">
-                  <button class="cq-btn cq-m" data-cart-minus="${line.positionOrder}">−</button>
-                  <input class="cq-val" type="number" min="0" step="1" value="${line.quantity}" data-qty-pos="${line.positionOrder}" />
-                  <button class="cq-btn cq-p" data-cart-plus="${line.positionOrder}">+</button>
+                <div class="cc-price-row${laborRaised?' raised':''}">
+                  <span class="cc-pr-icon">⚡</span>
+                  <span class="cc-pr-label">Práce</span>
+                  <input class="cc-pr-inp${laborRaised?' raised':''}" type="number" min="0" step="0.5" value="${line.laborUnitPrice}" data-price-pos="${line.positionOrder}" data-base-price="${baseLabor}" />
+                  <span class="cc-pr-unit">Kč/${esc(line.unit||'ks')}</span>
+                  <div class="cc-markup">${mkup(line.positionOrder, baseLabor, line.laborUnitPrice, 'labor')}</div>
+                  <span class="cc-pr-total">${fmtMoney(laborTotal)}</span>
                 </div>
-              </div>${matRow}`
+                ${matSection}
+              </div>`
             }).join('') +
             `<div class="cart-subrow"><span>Celkem ${CAT_LABELS[cat] || cat}</span><strong>${fmtMoney(subTotal)}</strong></div>`
         }).join('')
@@ -598,7 +843,7 @@
             const pos = Number(btn.getAttribute('data-mat-clear'))
             const line = estimate.lines.find(x => x.positionOrder === pos)
             if (line) { line.materialDescription = ''; line.materialUnitPrice = 0 }
-            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate()
+            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
           })
         })
         body.querySelectorAll('[data-del-pos]').forEach(btn => {
@@ -606,6 +851,73 @@
             const pos = Number(btn.getAttribute('data-del-pos'))
             estimate.lines = estimate.lines.filter(x => x.positionOrder !== pos)
             estimate.lines = normalizeLines(estimate.lines); renderAll()
+          })
+        })
+
+        // Cart work price input
+        body.querySelectorAll('[data-price-pos]').forEach(inp => {
+          inp.addEventListener('change', () => {
+            const pos = Number(inp.getAttribute('data-price-pos'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (!line) return
+            const val = parseFloat(inp.value)
+            if (!Number.isFinite(val) || val < 0) { inp.value = line.laborUnitPrice; return }
+            if (!line._basePrice) line._basePrice = line.laborUnitPrice
+            line.laborUnitPrice = Math.round(val * 100) / 100
+            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
+          })
+          inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur() })
+        })
+
+        // Cart material coefficient input
+        body.querySelectorAll('[data-coef-pos]').forEach(inp => {
+          inp.addEventListener('change', () => {
+            const pos = Number(inp.getAttribute('data-coef-pos'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (!line) return
+            const val = parseFloat(inp.value)
+            if (!Number.isFinite(val) || val <= 0) { inp.value = line.matCoefficient || 1; return }
+            line.matCoefficient = Math.round(val * 100) / 100
+            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
+          })
+          inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur() })
+          inp.addEventListener('click', e => e.stopPropagation())
+          inp.addEventListener('focus', e => e.stopPropagation())
+        })
+
+        // Cart material price input
+        body.querySelectorAll('[data-mat-price-pos]').forEach(inp => {
+          inp.addEventListener('change', () => {
+            const pos = Number(inp.getAttribute('data-mat-price-pos'))
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (!line) return
+            const val = parseFloat(inp.value)
+            if (!Number.isFinite(val) || val < 0) { inp.value = line.materialUnitPrice; return }
+            if (!line._baseMatPrice) line._baseMatPrice = line.materialUnitPrice
+            line.materialUnitPrice = Math.round(val * 100) / 100
+            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
+          })
+          inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur() })
+        })
+
+        // Cart markup % buttons (work + material)
+        body.querySelectorAll('[data-mp]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pos = Number(btn.getAttribute('data-mppos'))
+            const base = parseFloat(btn.getAttribute('data-mpbase'))
+            const pct = Number(btn.getAttribute('data-mp'))
+            const type = btn.getAttribute('data-mptype') || 'labor'
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (!line || !Number.isFinite(base)) return
+            const newPrice = Math.round(base * (1 + pct / 100) * 10) / 10
+            if (type === 'mat') {
+              if (!line._baseMatPrice) line._baseMatPrice = base
+              line.materialUnitPrice = newPrice
+            } else {
+              if (!line._basePrice) line._basePrice = base
+              line.laborUnitPrice = newPrice
+            }
+            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
           })
         })
       }
@@ -718,11 +1030,27 @@
       document.getElementById('previewTopTitle').textContent = `${pvTitle} · ${fmtMoney(celkemSDph)}`
       document.getElementById('previewContent').innerHTML = `
         <div class="pdf-paper">
+          <!-- Company header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #1A2B4A">
+            <div style="display:flex;align-items:center;gap:14px">
+              <img src="./logo.jpg" alt="O&L" style="height:56px;width:56px;object-fit:contain;border-radius:8px" onerror="this.style.display='none'" />
+              <div>
+                <div style="font-size:22px;font-weight:900;color:#1A2B4A;letter-spacing:-0.5px;line-height:1.1">O&L Master Dom</div>
+                <div style="font-size:11px;color:#555;margin-top:2px;font-weight:500">Elektroinstalace · Rekonstrukce · Stavební práce</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Rozpočet č.</div>
+              <div style="font-size:18px;font-weight:800;color:#1A2B4A">${esc(pvJobNum)}</div>
+              <div style="font-size:11px;color:#888;margin-top:2px">${pvDate}</div>
+            </div>
+          </div>
+
           <div class="pdf-title-label">Název rozpočtu:</div>
           <h1 class="doc-title" contenteditable="true" class="pdf-editable" id="pvTitleEdit">${esc(pvTitle)}</h1>
           <div class="pdf-info-grid">
             <div class="pdf-info-box"><div class="lbl">Klient</div><div class="val" contenteditable="true" id="pvClientEdit">${esc(pvClient)}</div></div>
-            <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="val" contenteditable="true" id="pvAddrEdit">${esc(pvAddr)}</div></div>
+            <div class="pdf-info-box"><div class="lbl">Adresa objektu</div><div class="addr-ac-wrap"><input class="addr-ac-input val" id="pvAddrEdit" type="text" value="${esc(pvAddr)}" placeholder="Začněte psát adresu..." autocomplete="off" /><div class="addr-ac-list" id="pvAddrList"></div></div></div>
             <div class="pdf-info-box"><div class="lbl">Projektový manažer</div><div class="val" contenteditable="true" id="pvPmEdit">${esc(pvPm)}</div></div>
           </div>
           <div class="pdf-table-wrap">
@@ -757,9 +1085,15 @@
             <div style="text-align:center"><div style="font-size:11px;color:#D97706;font-weight:700">Materiál Celkem</div><div style="font-size:15px;font-weight:800;color:#D97706">${fmtMoney(globalMat)}</div></div>
             <div style="text-align:right"><div style="font-size:11px;color:#555">Ostatní + Práce + Materiál</div><div style="font-size:11px;font-weight:700;color:#111">Celkem bez DPH</div><div style="font-size:16px;font-weight:800">${fmtMoney(bezDph)}</div></div>
           </div>
-          <div style="display:flex;justify-content:flex-end;margin-top:12px;flex-direction:column;align-items:flex-end">
-            <div style="border:2px solid #333;display:flex;justify-content:space-between;min-width:340px;padding:8px 14px;font-size:14px;font-weight:600"><span>DPH <span contenteditable="true" class="pdf-editable" id="pvVatEdit">${vr}</span> %</span><strong>${fmtMoney(dphVal)}</strong></div>
-            <div style="border:2.5px solid #111;display:flex;justify-content:space-between;min-width:340px;padding:10px 14px;font-size:16px;font-weight:800;margin-top:-2px;background:#FAFAFA"><span>Celkem s DPH</span><strong>${fmtMoney(celkemSDph)}</strong></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;flex-direction:column;align-items:flex-end" id="pvTotalsBlock">
+            <div style="border:2px solid #333;display:flex;justify-content:space-between;align-items:center;min-width:340px;padding:8px 14px;font-size:14px;font-weight:600">
+              <span style="display:flex;align-items:center;gap:6px">DPH <input type="number" id="pvVatEdit" min="0" max="99" value="${vr}" style="width:46px;border:1px solid #ccc;border-radius:4px;padding:2px 5px;font-size:14px;font-weight:700;text-align:center;outline:none" /> %</span>
+              <strong id="pvDphVal">${fmtMoney(dphVal)}</strong>
+            </div>
+            <div style="border:2.5px solid #111;display:flex;justify-content:space-between;min-width:340px;padding:10px 14px;font-size:16px;font-weight:800;margin-top:-2px;background:#FAFAFA">
+              <span>Celkem s DPH</span>
+              <strong id="pvCelkemDph">${fmtMoney(celkemSDph)}</strong>
+            </div>
           </div>
           ${pvNote ? `<div style="margin-top:22px;font-size:13px;padding:12px 16px;border-left:3px solid #F59E0B;background:#FFFBEB"><b>Poznámka:</b><br><span contenteditable="true" class="pdf-editable" id="pvNoteEdit">${esc(pvNote)}</span></div>` : ''}
           <div class="pdf-footer">
@@ -776,7 +1110,7 @@
         estimate.title = g('pvTitleEdit') || estimate.title
         estimate.estimateDate = g('pvDateEdit') || estimate.estimateDate
         estimate.clientNameSnapshot = g('pvClientEdit') || estimate.clientNameSnapshot
-        estimate.customerAddressSnapshot = g('pvAddrEdit') || estimate.customerAddressSnapshot
+        estimate.customerAddressSnapshot = (document.getElementById('pvAddrEdit')?.value || g('pvAddrEdit') || estimate.customerAddressSnapshot)
         estimate.projectManagerSnapshot = g('pvPmEdit') || estimate.projectManagerSnapshot
         estimate.vatRate = Number(g('pvVatEdit') || estimate.vatRate || 21)
         estimate.note = document.getElementById('pvNoteEdit')?.textContent?.trim() || estimate.note
@@ -786,8 +1120,61 @@
           const line = (estimate.lines||[]).find(l => String(l.id||'') === lid)
           if (line && field) line[field] = (el.textContent||'').trim()
         })
-        saveEstimate()
+        saveEstimate(true)
       })
+
+      // Address autocomplete via Nominatim
+      const addrInput = document.getElementById('pvAddrEdit')
+      const addrList = document.getElementById('pvAddrList')
+      if (addrInput && addrList) {
+        let addrTimer = null
+        addrInput.addEventListener('input', () => {
+          clearTimeout(addrTimer)
+          const q = addrInput.value.trim()
+          if (q.length < 3) { addrList.classList.remove('show'); return }
+          addrList.innerHTML = '<div class="addr-ac-loading">🔍 Hledám...</div>'
+          addrList.classList.add('show')
+          addrTimer = setTimeout(async () => {
+            try {
+              const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&countrycodes=cz&limit=6&addressdetails=1`
+              const r = await fetch(url, { headers: { 'Accept-Language': 'cs', 'User-Agent': 'OL-MasterDom-CRM/1.0' } })
+              const items = await r.json()
+              if (!items.length) { addrList.innerHTML = '<div class="addr-ac-loading">Nenalezeno</div>'; return }
+              addrList.innerHTML = items.map((it, i) =>
+                `<div class="addr-ac-item" data-ac-idx="${i}" data-display="${esc(it.display_name)}">${esc(it.display_name)}</div>`
+              ).join('')
+              addrList.querySelectorAll('.addr-ac-item').forEach(el => {
+                el.addEventListener('click', () => {
+                  addrInput.value = el.getAttribute('data-display')
+                  addrList.classList.remove('show')
+                  if (estimate) estimate.customerAddressSnapshot = addrInput.value
+                })
+              })
+            } catch { addrList.innerHTML = '<div class="addr-ac-loading">Chyba připojení</div>' }
+          }, 350)
+        })
+        addrInput.addEventListener('blur', () => setTimeout(() => addrList.classList.remove('show'), 200))
+        addrInput.addEventListener('keydown', e => { if (e.key === 'Escape') addrList.classList.remove('show') })
+      }
+
+      // Live DPH recalculation in preview
+      const vatInp = document.getElementById('pvVatEdit')
+      if (vatInp) {
+        const updateDph = () => {
+          const newVr = Math.max(0, Math.min(99, Number(vatInp.value || 0)))
+          const newDph = +(bezDph * newVr / 100).toFixed(2)
+          const newTotal = +(bezDph + newDph).toFixed(2)
+          const dphEl = document.getElementById('pvDphVal')
+          const totEl = document.getElementById('pvCelkemDph')
+          const topEl = document.getElementById('previewTopTitle')
+          if (dphEl) dphEl.textContent = fmtMoney(newDph)
+          if (totEl) totEl.textContent = fmtMoney(newTotal)
+          if (topEl) topEl.textContent = `${pvTitle} · ${fmtMoney(newTotal)}`
+          if (estimate) estimate.vatRate = newVr
+        }
+        vatInp.addEventListener('input', updateDph)
+        vatInp.addEventListener('change', updateDph)
+      }
     }
 
     // ── API: loadContext, ensureEstimate, loadCatalog, saveEstimate, buildDocs ──
@@ -846,18 +1233,55 @@
       throw new Error('Немає контексту для кошторису')
     }
 
-    async function loadCatalog() {
-      const p = new URLSearchParams({ tradeType: 'electro', itemKind: 'work' })
-      if (searchQ) p.set('search', searchQ)
-      const r = await apiFetch(apiUrl(`/api/crm/catalog/items?${p.toString()}`))
-      const d = await jParse(r)
-      catalog = (r.ok && d?.ok) ? (d.items || []) : []
-      renderCatalog()
+    function dbgShow(msg) {
+      let el = document.getElementById('_dbg')
+      if (!el) { el = document.createElement('div'); el.id = '_dbg'; el.style = 'position:fixed;bottom:12px;right:12px;z-index:9999;background:#1a1a2e;border:2px solid #f59e0b;color:#f59e0b;padding:10px 14px;border-radius:8px;font-size:12px;max-width:340px;white-space:pre-wrap;font-family:monospace'; document.body.appendChild(el) }
+      el.textContent = msg
+      clearTimeout(el._t); el._t = setTimeout(() => el.remove(), 15000)
     }
 
-    async function saveEstimate() {
+    async function loadCatalog() {
+      document.getElementById('catList').innerHTML = '<div class="cat-empty" style="padding-top:60px">⏳ Načítám katalog...</div>'
+      const p = new URLSearchParams({ tradeType: 'electro', itemKind: 'work' })
+      if (searchQ) p.set('search', searchQ)
+      const url = apiUrl(`/api/crm/catalog/items?${p.toString()}`)
+      dbgShow(`📡 Завантаження каталогу...\n${url}`)
+      try {
+        const r = await apiFetch(url)
+        const d = await jParse(r)
+        if (!r.ok || !d?.ok) {
+          const errMsg = `❌ HTTP ${r.status}\n${d?.error || '(no error text)'}`
+          console.error('[loadCatalog] API error', r.status, d)
+          dbgShow(errMsg)
+          document.getElementById('catList').innerHTML = `<div class="cat-empty">❌ Chyba načtení katalogu (${r.status})<br><small>${esc(d?.error||'')}</small><br><br><button class="btn primary" onclick="loadCatalog()" style="margin:8px auto">🔄 Zkusit znovu</button></div>`
+          return
+        }
+        catalog = d.items || []
+        dbgShow(`✅ Каталог: ${catalog.length} позицій\ntoken: ${crmToken().slice(0,20)}...`)
+        console.log('[loadCatalog] loaded', catalog.length, 'items')
+        renderCatalog()
+      } catch (e) {
+        const errMsg = `❌ Exception:\n${String(e?.message||e)}`
+        console.error('[loadCatalog] exception', e)
+        dbgShow(errMsg)
+        document.getElementById('catList').innerHTML = `<div class="cat-empty">❌ Síťová chyba: ${esc(String(e?.message||e))}<br><br><button class="btn primary" onclick="loadCatalog()" style="margin:8px auto">🔄 Zkusit znovu</button></div>`
+      }
+    }
+
+    // silent=true → auto-save (no alert, no estimate replace from server)
+    // silent=false → manual save button (shows success)
+    async function saveEstimate(silent = false) {
       if (!estimate) return
       estimate.lines = normalizeLines(estimate.lines || [])
+
+      // Preserve _basePrice / _baseMatPrice across server round-trip
+      const basePriceMap = new Map()
+      for (const l of estimate.lines) {
+        if (l._basePrice != null || l._baseMatPrice != null) {
+          basePriceMap.set(l.positionOrder, { _basePrice: l._basePrice, _baseMatPrice: l._baseMatPrice })
+        }
+      }
+
       const payload = {
         title: estimate.title || `Rozpočet ze dne ${new Date().toLocaleDateString('cs-CZ')}`,
         tradeType: 'electro',
@@ -876,11 +1300,27 @@
       }
       const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       const d = await jParse(r)
-      if (!r.ok || !d?.ok) { alert(d?.error || 'Помилка збереження'); return }
-      estimate = d.estimate
-      estimate.lines = normalizeLines(estimate.lines || [])
-      renderAll()
-      alert('✓ Кошторис збережено')
+      if (!r.ok || !d?.ok) { if (!silent) alert(d?.error || 'Помилка збереження'); return }
+
+      if (!silent) {
+        // Full sync from server on explicit save
+        estimate = d.estimate
+        estimate.lines = normalizeLines(estimate.lines || [])
+        // Restore base prices after server round-trip
+        for (const l of estimate.lines) {
+          const bp = basePriceMap.get(l.positionOrder)
+          if (bp) { if (bp._basePrice != null) l._basePrice = bp._basePrice; if (bp._baseMatPrice != null) l._baseMatPrice = bp._baseMatPrice }
+          // Fallback: derive labor base from catalog if still missing
+          if (l._basePrice == null && l.catalogItemId) {
+            const ci = catalog.find(x => Number(x.id) === Number(l.catalogItemId))
+            if (ci) l._basePrice = Number(ci.basePrice || 0)
+          }
+        }
+        renderAll()
+        // Show brief success toast instead of blocking alert
+        dbgShow('✅ Кошторис збережено')
+      }
+      // silent: keep current in-memory state (already up to date), just persist to server
     }
 
     async function buildEstimateDocs() {
@@ -916,7 +1356,7 @@
         if (!r1.ok || !d1?.ok) throw new Error(d1?.error || 'Помилка PDF')
         const r2 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/send-to-client`), {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email, subject:`Rozpočet ${estimate.estimateNo||''}`, text:`Dobrý den,\nv příloze zasíláme rozpočet k zakázce ${job?.internalNumber||'—'}.\n\nS pozdravem,\nO&L Master Dom` })
+          body: JSON.stringify({ email, subject:`Rozpočet ${estimate.estimateNo||''} — O&L Master Dom` })
         })
         const d2 = await jParse(r2)
         if (r2.ok && d2?.ok) { alert(`✓ PDF відправлено на ${email}`); document.getElementById('sendPopover').style.display='none' }
@@ -932,6 +1372,39 @@
     document.getElementById('cartSaveBtn').addEventListener('click', saveEstimate)
     document.getElementById('btnSave').addEventListener('click', saveEstimate)
     document.getElementById('btnGenerate').addEventListener('click', buildEstimateDocs)
+
+    // Snapshot buttons
+    document.getElementById('btnSnapshot').addEventListener('click', async () => {
+      if (!estimate?.id) return
+      const note = prompt('Poznámka k záloze (nepovinné):') ?? ''
+      const btn = document.getElementById('btnSnapshot')
+      btn.disabled = true; btn.textContent = '...'
+      try {
+        await saveEstimate(true)
+        const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/snapshots`), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ note }) })
+        const d = await jParse(r)
+        if (r.ok && d?.ok) dbgShow(`✅ Záloha uložena (ID: ${d.snapshotId})`)
+        else dbgShow(`❌ ${d?.error || 'Chyba zálohy'}`)
+      } finally { btn.disabled = false; btn.textContent = '📸 Záloha' }
+    })
+
+    document.getElementById('btnSnapshots').addEventListener('click', async () => {
+      if (!estimate?.id) return
+      const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/snapshots`))
+      const d = await jParse(r)
+      if (!r.ok || !d?.ok || !d.snapshots?.length) { dbgShow('Žádné zálohy k dispozici'); return }
+      const list = d.snapshots.map((s, i) => `${i + 1}. [${new Date(s.createdAt).toLocaleString('cs-CZ')}] v${s.versionNo} — ${s.note || 'bez poznámky'} (${s.createdBy || 'auto'})`).join('\n')
+      const choice = prompt(`Historie zálon:\n\n${list}\n\nZadejte číslo zálohy pro obnovení (nebo zrušte):`)
+      if (!choice) return
+      const idx = parseInt(choice) - 1
+      if (!Number.isFinite(idx) || idx < 0 || idx >= d.snapshots.length) { alert('Neplatné číslo'); return }
+      const snap = d.snapshots[idx]
+      if (!confirm(`Obnovit zálohu z ${new Date(snap.createdAt).toLocaleString('cs-CZ')}?\n⚠ Aktuální stav bude zálohovon automaticky.`)) return
+      const r2 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/snapshots/${snap.id}/restore`), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) })
+      const d2 = await jParse(r2)
+      if (r2.ok && d2?.ok) { estimate = d2.estimate; estimate.lines = normalizeLines(estimate.lines || []); renderAll(); dbgShow('✅ Záloha obnovena') }
+      else dbgShow(`❌ ${d2?.error || 'Chyba obnovení'}`)
+    })
     document.getElementById('btnPreview').addEventListener('click', renderPreview)
     document.getElementById('cartPreviewBtn').addEventListener('click', () => { closeCart(); renderPreview() })
     document.getElementById('pvGenerate').addEventListener('click', buildEstimateDocs)
@@ -944,20 +1417,19 @@
     document.getElementById('sendCancel').addEventListener('click', () => { document.getElementById('sendPopover').style.display='none' })
     document.addEventListener('click', e => { if (!e.target.closest('#sendPopover') && !e.target.closest('#pvSend') && !e.target.closest('#btnGenerate')) document.getElementById('sendPopover').style.display='none' })
 
-    // Search
-    let searchTimer
+    // Search — server-side for full 500k+ catalog
     document.getElementById('searchInput').addEventListener('input', e => {
-      clearTimeout(searchTimer)
-      searchTimer = setTimeout(() => {
+      clearTimeout(_searchDebounce)
+      _searchDebounce = setTimeout(() => {
         searchQ = e.target.value.trim()
         if (searchQ) {
-          // If searching, show all groups
           document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'))
-          document.querySelector('[data-group="all"]').classList.add('active')
+          document.querySelector('[data-group="all"]')?.classList.add('active')
           activeGroup = 'all'
         }
-        renderCatalog()
-      }, 200)
+        // Server-side search: always reload catalog when query changes
+        loadCatalog()
+      }, 320)
     })
 
     // Category filter chips
@@ -966,10 +1438,9 @@
       if (!chip) return
       activeGroup = chip.getAttribute('data-group')
       document.querySelectorAll('.cat-chip').forEach(c => c.classList.toggle('active', c === chip))
-      // Clear search when changing group
       document.getElementById('searchInput').value = ''
       searchQ = ''
-      renderCatalog()
+      loadCatalog()
     })
 
     // Ostatní quick-add
@@ -1085,7 +1556,7 @@
       if (matModalPos != null) {
         const line = estimate?.lines?.find(x => x.positionOrder === matModalPos)
         if (line) { line.materialDescription = ''; line.materialUnitPrice = 0 }
-        renderAll(); saveEstimate()
+        renderAll(); saveEstimate(true)
       }
       closeMatModal()
     })
@@ -1094,9 +1565,11 @@
         const line = estimate?.lines?.find(x => x.positionOrder === matModalPos)
         if (line) {
           line.materialDescription = matSelected.itemName
-          line.materialUnitPrice = Number(matSelected.basePrice || 0)
+          const matBase = Number(matSelected.basePrice || 0)
+          line.materialUnitPrice = matBase
+          line._baseMatPrice = matBase
         }
-        renderAll(); saveEstimate()
+        renderAll(); saveEstimate(true)
       }
       closeMatModal()
     })
@@ -1109,53 +1582,127 @@
       if (e.key === 'Escape') closeMatModal()
     })
 
+    // ── PRICE POPUP ──
+    let ppItemId = null
+    const ppEl = document.getElementById('pricePopup')
+    const ppInput = document.getElementById('ppInput')
+
+    function openPricePopup(itemId, anchorEl) {
+      const item = catalog.find(x => Number(x.id) === Number(itemId))
+      if (!item) return
+      ppItemId = Number(itemId)
+      const base = Number(item.basePrice || 0)
+      const cur = customPriceOverrides.has(ppItemId) ? customPriceOverrides.get(ppItemId) : base
+      document.getElementById('ppBase').textContent = `Základní: ${base} Kč / ${item.unit || 'ks'}`
+      ppInput.value = cur
+      // highlight active markup button
+      document.querySelectorAll('.markup-btn').forEach(b => {
+        const pct = Number(b.getAttribute('data-pct'))
+        const expected = Math.round(base * (1 + pct / 100) * 10) / 10
+        b.classList.toggle('active', Math.abs(cur - expected) < 0.05)
+      })
+      // Position near anchor
+      const rect = anchorEl.getBoundingClientRect()
+      const pw = 240, ph = 180
+      let left = rect.left, top = rect.bottom + 6
+      if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8
+      if (top + ph > window.innerHeight - 8) top = rect.top - ph - 6
+      ppEl.style.left = left + 'px'
+      ppEl.style.top = top + 'px'
+      ppEl.classList.add('show')
+      ppInput.focus(); ppInput.select()
+    }
+
+    function closePricePopup() { ppEl.classList.remove('show'); ppItemId = null }
+
+    function applyPriceOverride(price) {
+      if (ppItemId == null) return
+      const item = catalog.find(x => Number(x.id) === ppItemId)
+      if (!item) return
+      const base = Number(item.basePrice || 0)
+      const val = Number(price)
+      if (!Number.isFinite(val) || val <= 0) return
+      if (Math.abs(val - base) < 0.01) {
+        customPriceOverrides.delete(ppItemId)
+      } else {
+        customPriceOverrides.set(ppItemId, Math.round(val * 100) / 100)
+      }
+      // Update any existing cart lines for this item
+      if (estimate?.lines) {
+        estimate.lines.forEach(l => {
+          if (Number(l.catalogItemId || 0) === ppItemId) l.laborUnitPrice = effectivePrice(item)
+        })
+        saveEstimate(true)
+      }
+      renderCatalog()
+      renderCart()
+    }
+
+    ppInput.addEventListener('change', () => applyPriceOverride(ppInput.value))
+    ppInput.addEventListener('keydown', e => { if (e.key === 'Enter') { applyPriceOverride(ppInput.value); closePricePopup() } if (e.key === 'Escape') closePricePopup() })
+
+    document.getElementById('ppMarkupRow').addEventListener('click', e => {
+      const btn = e.target.closest('[data-pct]')
+      if (!btn || ppItemId == null) return
+      const item = catalog.find(x => Number(x.id) === ppItemId)
+      if (!item) return
+      const base = Number(item.basePrice || 0)
+      const pct = Number(btn.getAttribute('data-pct'))
+      const newPrice = Math.round(base * (1 + pct / 100) * 10) / 10
+      ppInput.value = newPrice
+      document.querySelectorAll('.markup-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      applyPriceOverride(newPrice)
+    })
+
+    document.getElementById('ppReset').addEventListener('click', () => {
+      if (ppItemId == null) return
+      const item = catalog.find(x => Number(x.id) === ppItemId)
+      if (!item) return
+      customPriceOverrides.delete(ppItemId)
+      ppInput.value = Number(item.basePrice || 0)
+      document.querySelectorAll('.markup-btn').forEach(b => b.classList.remove('active'))
+      applyPriceOverride(Number(item.basePrice || 0))
+    })
+
+    // Close price popup on outside click
+    document.addEventListener('click', e => {
+      if (ppEl.classList.contains('show') && !ppEl.contains(e.target) && !e.target.closest('[data-price-id]')) {
+        closePricePopup()
+      }
+    })
+
+    // Open price popup on price click (delegated from catList)
+    document.getElementById('catList').addEventListener('click', e => {
+      const priceEl = e.target.closest('[data-price-id]')
+      if (!priceEl) return
+      e.stopPropagation()
+      openPricePopup(priceEl.getAttribute('data-price-id'), priceEl)
+    })
+
     // ── INIT ──
     ;(async () => {
-      // Catalog always loads — regardless of job/lead context
-      loadCatalog().catch(e => {
-        document.getElementById('catList').innerHTML = `<div class="cat-empty">Помилка завантаження каталогу.<br>${esc(String(e?.message||e))}</div>`
-      })
+      // Run context load and catalog load IN PARALLEL — catalog never waits for context
+      const catalogPromise = loadCatalog()
 
-      // Context + estimate loading (requires jobId or leadId)
+      // Load context (job/lead/estimate) — independent from catalog
       try {
         await loadContext()
         await ensureEstimate()
         estimate.lines = normalizeLines(estimate.lines || [])
-        renderAll()
+        renderCart()
       } catch (e) {
         const msg = String(e?.message || e)
         document.getElementById('ctxSub').textContent = '⚠ ' + msg
-        document.getElementById('ctxTitle').textContent = 'Перегляд каталогу'
-        // Don't block catalog — just disable save/preview/generate buttons
+        document.getElementById('ctxTitle').textContent = 'Перегляд katalogu'
         document.getElementById('btnSave').disabled = true
-        document.getElementById('btnSave').title = 'Відкрийте з картки замовлення'
+        document.getElementById('btnSave').title = 'Відкрийте з картки zamovlennya'
         document.getElementById('btnGenerate').disabled = true
         document.getElementById('btnPreview').disabled = true
       }
+
+      await catalogPromise
     })()
   </script>
-
-  <!-- MATERIAL PICKER MODAL -->
-  <div id="matModal" style="display:none">
-    <div class="mat-modal-bg" id="matModalBg">
-      <div class="mat-modal">
-        <div class="mat-modal-head">
-          <div>
-            <h3>📦 Vybrat materiál</h3>
-            <div class="mat-modal-for" id="matModalForLine"></div>
-          </div>
-          <button class="btn sm" id="matModalClose">✕ Zavřít</button>
-        </div>
-        <div class="mat-modal-search">
-          <input id="matSearchInput" type="search" placeholder="🔍  Hledat materiál v katalogu..." autocomplete="off" />
-        </div>
-        <div id="matResults" class="mat-modal-results"></div>
-        <div class="mat-modal-footer">
-          <button class="btn" id="matSkipBtn" style="flex:1">— Bez materiálu</button>
-          <button class="btn green" id="matConfirmBtn" style="flex:1" disabled>✓ Přiřadit materiál</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </body>
 </html>

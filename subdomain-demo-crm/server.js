@@ -302,7 +302,142 @@ function buildClientMail(lead) {
   }
 }
 
-async function sendResendEmail({ to, subject, text, attachments }) {
+function buildEstimateEmailHtml({ estimate, job, clientName, greeting, bodyText, senderName }) {
+  const fmtM = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč`
+  const estimateNo = estimate?.estimateNo || estimate?.jobNumberSnapshot || ''
+  const jobNo = job?.internalNumber || estimate?.jobNumberSnapshot || ''
+  const totalWithVat = estimate?.totalWithVat || 0
+  const totalNoVat = estimate?.totalNoVat || 0
+  const vatRate = estimate?.vatRate ?? 21
+  const client = clientName || estimate?.clientNameSnapshot || ''
+  const addr = estimate?.customerAddressSnapshot || ''
+  const date = estimate?.estimateDate ? new Date(estimate.estimateDate).toLocaleDateString('cs-CZ') : new Date().toLocaleDateString('cs-CZ')
+  const sender = senderName || 'Tým O&L Master Dom'
+
+  return `<!DOCTYPE html>
+<html lang="cs">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rozpočet ${estimateNo}</title></head>
+<body style="margin:0;padding:0;background:#F0F4F8;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4F8;padding:32px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10)">
+
+        <!-- HEADER -->
+        <tr><td style="background:linear-gradient(135deg,#0B1E3D 0%,#1A3A6B 100%);padding:32px 40px">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:middle">
+                <div style="font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;line-height:1.1">O&amp;L Master Dom</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:4px;font-weight:500">Elektroinstalace · Rekonstrukce · Stavební práce</div>
+              </td>
+              <td align="right" style="vertical-align:middle">
+                <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;display:inline-block">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Rozpočet č.</div>
+                  <div style="font-size:20px;font-weight:900;color:#FBBF24;margin-top:2px">${estimateNo}</div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- YELLOW ACCENT BAR -->
+        <tr><td style="height:4px;background:linear-gradient(90deg,#F59E0B,#FCD34D)"></td></tr>
+
+        <!-- GREETING -->
+        <tr><td style="padding:36px 40px 0">
+          <p style="margin:0;font-size:16px;color:#1A2B4A;font-weight:500;line-height:1.6">${greeting || `Dobrý den, ${client ? `<strong>${client}</strong>,` : ''}`}</p>
+          <p style="margin:16px 0 0;font-size:14px;color:#444;line-height:1.7">${bodyText || `připravili jsme pro Vás cenový rozpočet ke Vaší zakázce. V příloze naleznete <strong>PDF pro přehledné zobrazení</strong> a <strong>Excel pro detailní rozpis</strong> všech prací a materiálů.`}</p>
+        </td></tr>
+
+        <!-- ESTIMATE SUMMARY BOX -->
+        <tr><td style="padding:24px 40px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border:2px solid #E2E8F0;border-radius:12px;overflow:hidden">
+            <tr><td style="padding:16px 20px;background:#1A3A6B">
+              <div style="font-size:13px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.06em">Shrnutí rozpočtu</div>
+            </td></tr>
+            <tr><td style="padding:20px">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${client ? `<tr><td style="padding:6px 0;font-size:13px;color:#666;width:160px">Klient:</td><td style="padding:6px 0;font-size:13px;font-weight:700;color:#1A2B4A">${client}</td></tr>` : ''}
+                ${addr ? `<tr><td style="padding:6px 0;font-size:13px;color:#666">Adresa objektu:</td><td style="padding:6px 0;font-size:13px;color:#444">${addr}</td></tr>` : ''}
+                ${jobNo ? `<tr><td style="padding:6px 0;font-size:13px;color:#666">Číslo zakázky:</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1A2B4A">${jobNo}</td></tr>` : ''}
+                <tr><td style="padding:6px 0;font-size:13px;color:#666">Datum:</td><td style="padding:6px 0;font-size:13px;color:#444">${date}</td></tr>
+                <tr><td colspan="2"><hr style="border:none;border-top:1px solid #E2E8F0;margin:10px 0"></td></tr>
+                <tr>
+                  <td style="padding:6px 0;font-size:13px;color:#666">Celkem bez DPH:</td>
+                  <td style="padding:6px 0;font-size:15px;font-weight:700;color:#1A2B4A">${fmtM(totalNoVat)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;font-size:12px;color:#888">DPH ${vatRate}%:</td>
+                  <td style="padding:4px 0;font-size:12px;color:#888">${fmtM((totalNoVat * vatRate / 100))}</td>
+                </tr>
+                <tr><td colspan="2" style="padding-top:8px">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#0B4A2B,#0D6B35);border-radius:8px">
+                    <tr><td style="padding:14px 18px">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="font-size:14px;font-weight:700;color:#ffffff">Celkem s DPH</td>
+                          <td align="right" style="font-size:22px;font-weight:900;color:#4ADE80">${fmtM(totalWithVat)}</td>
+                        </tr>
+                      </table>
+                    </td></tr>
+                  </table>
+                </td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- ATTACHMENTS NOTE -->
+        <tr><td style="padding:0 40px 24px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:14px 18px">
+            <tr>
+              <td style="font-size:13px;color:#92400E;line-height:1.6">
+                <strong>📎 Přílohy tohoto e-mailu:</strong><br>
+                • <strong>PDF</strong> — přehledný tisk pro klienta<br>
+                • <strong>Excel</strong> — podrobný rozpis prací a materiálů
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td style="padding:0 40px 32px;text-align:center">
+          <p style="margin:0 0 16px;font-size:14px;color:#444;line-height:1.6">Máte dotazy nebo připomínky k rozpočtu? Neváhejte nás kontaktovat.</p>
+          <a href="mailto:info@temoweb.eu" style="display:inline-block;background:linear-gradient(135deg,#F59E0B,#D97706);color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:0.02em">✉ Odpovědět na e-mail</a>
+        </td></tr>
+
+        <!-- DIVIDER -->
+        <tr><td style="height:1px;background:#E2E8F0;margin:0 40px"></td></tr>
+
+        <!-- FOOTER -->
+        <tr><td style="padding:24px 40px;background:#F8FAFC">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <div style="font-size:14px;font-weight:800;color:#1A2B4A">O&amp;L Master Dom</div>
+                <div style="font-size:11px;color:#888;margin-top:4px">Elektroinstalace · Rekonstrukce · Stavební práce</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">info@temoweb.eu</div>
+              </td>
+              <td align="right" style="vertical-align:top">
+                <div style="font-size:11px;color:#aaa;line-height:1.8">
+                  Odesláno: ${sender}<br>
+                  ${new Date().toLocaleDateString('cs-CZ', { day:'2-digit', month:'long', year:'numeric' })}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+      </table>
+      <!-- sub-footer -->
+      <p style="text-align:center;font-size:11px;color:#aaa;margin:16px 0 0">Tento e-mail byl automaticky odeslán systémem O&amp;L CRM. Prosím, neodpovídejte na tuto zprávu.</p>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+async function sendResendEmail({ to, subject, text, html, attachments }) {
   const key = String(process.env.RESEND_API_KEY || '').trim()
   const from = String(process.env.RESEND_FROM || '').trim()
   if (!key || !from || !to) return { attempted: false, ok: false, reason: 'missing_resend_env' }
@@ -321,6 +456,7 @@ async function sendResendEmail({ to, subject, text, attachments }) {
         to: [to],
         subject,
         text,
+        html: html || undefined,
         attachments: cleanAttachments.length ? cleanAttachments : undefined,
       }),
     })
@@ -328,7 +464,8 @@ async function sendResendEmail({ to, subject, text, attachments }) {
       const body = await resp.text().catch(() => '')
       return { attempted: true, ok: false, reason: `email_http_${resp.status}`, details: body.slice(0, 500) }
     }
-    return { attempted: true, ok: true }
+    const data = await resp.json().catch(() => ({}))
+    return { attempted: true, ok: true, id: data?.id }
   } catch (e) {
     return { attempted: true, ok: false, reason: 'email_exception', details: String(e?.message || e) }
   }
@@ -1644,27 +1781,40 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
       ws.getCell(`A${rowNo}`).value = ''
       ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `${categoryKey === 'stavba' ? 'STV' : 'ELE'}-${String(itemNo).padStart(3, '0')}`
       ws.getCell(`C${rowNo}`).value = itemNo
+      const matCoef = toNum(line.matCoefficient, 1)
+      const lU = toNum(line.laborUnitPrice, 0)
+      const mU = toNum(line.materialUnitPrice, 0)
+      const qty = toNum(line.quantity, 0)
+      const laborTot = roundMoney(qty * lU)
+      const matTot = roundMoney(qty * matCoef * mU)
+      const hasMat = mU > 0 && line.materialDescription
       ws.getCell(`D${rowNo}`).value = line.workDescription || ''
-      ws.getCell(`E${rowNo}`).value = line.materialDescription || 'bez materiálu'
+      if (!hasMat) {
+        ws.getCell(`E${rowNo}`).value = 'bez materiálu'
+        ws.getCell(`E${rowNo}`).font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF991B1B' } }
+      } else {
+        const matLabel = matCoef !== 1 ? `${line.materialDescription} (×${matCoef})` : line.materialDescription
+        ws.getCell(`E${rowNo}`).value = matLabel
+      }
       ws.getCell(`F${rowNo}`).value = line.unit || 'ks'
-      ws.getCell(`G${rowNo}`).value = toNum(line.quantity, 0)
+      ws.getCell(`G${rowNo}`).value = qty
       ws.getCell(`G${rowNo}`).numFmt = '#,##0.##'
-      ws.getCell(`H${rowNo}`).value = toNum(line.laborUnitPrice, 0)
+      ws.getCell(`H${rowNo}`).value = lU
       ws.getCell(`H${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`I${rowNo}`).value = { formula: `G${rowNo}*H${rowNo}` }
+      ws.getCell(`I${rowNo}`).value = laborTot
       ws.getCell(`I${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`J${rowNo}`).value = toNum(line.materialUnitPrice, 0)
+      ws.getCell(`J${rowNo}`).value = mU
       ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`K${rowNo}`).value = { formula: `G${rowNo}*J${rowNo}` }
+      ws.getCell(`K${rowNo}`).value = matTot
       ws.getCell(`K${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`L${rowNo}`).value = { formula: `I${rowNo}+K${rowNo}` }
+      ws.getCell(`L${rowNo}`).value = roundMoney(laborTot + matTot)
       ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
       for (let col = 1; col <= 12; col += 1) {
         const cell = ws.getCell(rowNo, col)
         cell.border = thinBorder()
         cell.alignment = { vertical: 'top', horizontal: col >= 7 ? 'right' : 'left', wrapText: true }
         if (col === 4) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }
-        if (col === 5) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6E0B4' } }
+        if (col === 5) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hasMat ? 'FFC6E0B4' : 'FFFECACA' } }
         if (col === 8 || col === 9) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }
         if (col === 10 || col === 11) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8CBAD' } }
         if (col === 12) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } }
@@ -1705,20 +1855,25 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
       ws.getCell(`A${rowNo}`).value = ''
       ws.getCell(`B${rowNo}`).value = line.sourceCatalogCode || line.lineCode || `OST-${String(ostItemNo).padStart(3, '0')}`
       ws.getCell(`C${rowNo}`).value = ostItemNo
+      const ostQty = toNum(line.quantity, 0)
+      const ostLU = toNum(line.laborUnitPrice, 0)
+      const ostMU = toNum(line.materialUnitPrice, 0)
+      const ostLT = roundMoney(ostQty * ostLU)
+      const ostMT = roundMoney(ostQty * toNum(line.matCoefficient, 1) * ostMU)
       ws.getCell(`D${rowNo}`).value = line.workDescription || ''
       ws.getCell(`E${rowNo}`).value = line.materialDescription || ''
       ws.getCell(`F${rowNo}`).value = line.unit || 'ks'
-      ws.getCell(`G${rowNo}`).value = toNum(line.quantity, 0)
+      ws.getCell(`G${rowNo}`).value = ostQty
       ws.getCell(`G${rowNo}`).numFmt = '#,##0.##'
-      ws.getCell(`H${rowNo}`).value = toNum(line.laborUnitPrice, 0)
+      ws.getCell(`H${rowNo}`).value = ostLU
       ws.getCell(`H${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`I${rowNo}`).value = { formula: `G${rowNo}*H${rowNo}` }
+      ws.getCell(`I${rowNo}`).value = ostLT
       ws.getCell(`I${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`J${rowNo}`).value = toNum(line.materialUnitPrice, 0)
+      ws.getCell(`J${rowNo}`).value = ostMU
       ws.getCell(`J${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`K${rowNo}`).value = { formula: `G${rowNo}*J${rowNo}` }
+      ws.getCell(`K${rowNo}`).value = ostMT
       ws.getCell(`K${rowNo}`).numFmt = MONEY_NUM_FMT
-      ws.getCell(`L${rowNo}`).value = { formula: `I${rowNo}+K${rowNo}` }
+      ws.getCell(`L${rowNo}`).value = roundMoney(ostLT + ostMT)
       ws.getCell(`L${rowNo}`).numFmt = MONEY_NUM_FMT
       for (let col = 1; col <= 12; col += 1) {
         const cell = ws.getCell(rowNo, col)
@@ -1907,6 +2062,7 @@ function estimateLineFromRow(row) {
     laborTotal: roundMoney(row.labor_total != null ? row.labor_total : row.total_client),
     materialUnitPrice: roundMoney(row.material_unit_price),
     materialTotal: roundMoney(row.material_total),
+    matCoefficient: row.mat_coefficient != null ? Number(row.mat_coefficient) : 1,
     lineTotal: roundMoney(row.line_total != null ? row.line_total : row.total_client),
     basePrice: roundMoney(row.base_price),
     clientPrice: roundMoney(row.client_price),
@@ -1918,10 +2074,11 @@ function estimateLineFromRow(row) {
 function normalizeEstimateLine(input = {}, idx = 0) {
   const category = String(input.category || input.sectionType || 'elektro').trim() || 'elektro'
   const quantity = roundMoney(toNum(input.quantity, 0))
+  const matCoefficient = Math.max(0.001, toNum(input.matCoefficient, 1))
   const laborUnitPrice = roundMoney(toNum(input.laborUnitPrice != null ? input.laborUnitPrice : input.clientPrice, 0))
   const materialUnitPrice = roundMoney(toNum(input.materialUnitPrice, 0))
   const laborTotal = roundMoney(quantity * laborUnitPrice)
-  const materialTotal = roundMoney(quantity * materialUnitPrice)
+  const materialTotal = roundMoney(quantity * matCoefficient * materialUnitPrice)
   const lineTotal = roundMoney(laborTotal + materialTotal)
   // Derive sensible groupKey/groupLabel from category when not explicitly provided
   const defaultGroupKey = category === 'stavba' ? 'stavba' : category === 'ostatni_naklady' ? 'ostatni_naklady' : 'elektro'
@@ -1942,6 +2099,7 @@ function normalizeEstimateLine(input = {}, idx = 0) {
     materialDescription: String(input.materialDescription || '').trim(),
     unit: String(input.unit || 'ks').trim() || 'ks',
     quantity,
+    matCoefficient,
     laborUnitPrice,
     laborTotal,
     materialUnitPrice,
@@ -2359,14 +2517,15 @@ async function saveEstimate(id, patch = {}) {
             line.phaseKey, line.categoryKey, line.itemName, line.workDescription, line.materialDescription, line.unit,
             line.quantity, line.laborUnitPrice, line.laborTotal, line.materialUnitPrice, line.materialTotal, line.lineTotal,
             line.basePrice, line.clientPrice, line.totalBase, line.totalClient, line.positionOrder,
+            line.matCoefficient != null ? line.matCoefficient : 1,
           ]
           const start = params.length + 1
           params.push(...row)
-          values.push(`($${start},$${start + 1},$${start + 2},$${start + 3},$${start + 4},$${start + 5},$${start + 6},$${start + 7},$${start + 8},$${start + 9},$${start + 10},$${start + 11},$${start + 12},$${start + 13},$${start + 14},$${start + 15},$${start + 16},$${start + 17},$${start + 18},$${start + 19},$${start + 20},$${start + 21},$${start + 22},$${start + 23},now(),now())`)
+          values.push(`($${start},$${start+1},$${start+2},$${start+3},$${start+4},$${start+5},$${start+6},$${start+7},$${start+8},$${start+9},$${start+10},$${start+11},$${start+12},$${start+13},$${start+14},$${start+15},$${start+16},$${start+17},$${start+18},$${start+19},$${start+20},$${start+21},$${start+22},$${start+23},$${start+24},now(),now())`)
         }
         await dbQuery(
           `INSERT INTO crm_estimate_lines
-          (estimate_id, catalog_item_id, source_catalog_code, line_code, section_type, group_key, group_label, phase_key, category_key, item_name, work_description, material_description, unit, quantity, labor_unit_price, labor_total, material_unit_price, material_total, line_total, base_price, client_price, total_base, total_client, position_order, created_at, updated_at)
+          (estimate_id, catalog_item_id, source_catalog_code, line_code, section_type, group_key, group_label, phase_key, category_key, item_name, work_description, material_description, unit, quantity, labor_unit_price, labor_total, material_unit_price, material_total, line_total, base_price, client_price, total_base, total_client, position_order, mat_coefficient, created_at, updated_at)
           VALUES ${values.join(',')}`,
           params
         )
@@ -3953,12 +4112,83 @@ app.get('/api/crm/estimates', authMiddleware, roleGuard(['admin', 'manager', 'vi
   return res.json({ ok: true, estimates })
 })
 
+// ── ESTIMATE SNAPSHOTS ──────────────────────────────────────────────────────
+async function saveEstimateSnapshot(estimateId, estimate, { note = null, createdBy = null } = {}) {
+  if (!pool) return null
+  try {
+    const q = await dbQuery(
+      `INSERT INTO crm_estimate_snapshots (estimate_id, version_no, snapshot, note, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, now()) RETURNING id`,
+      [estimateId, estimate?.versionNo || 1, JSON.stringify(estimate), note, createdBy]
+    )
+    return q.rows[0]?.id || null
+  } catch { return null }
+}
+
+async function listEstimateSnapshots(estimateId) {
+  if (!pool) return []
+  const q = await dbQuery(
+    `SELECT id, estimate_id, version_no, note, created_by, created_at FROM crm_estimate_snapshots
+     WHERE estimate_id = $1 ORDER BY created_at DESC LIMIT 50`,
+    [estimateId]
+  )
+  return q.rows.map(r => ({
+    id: r.id, estimateId: r.estimate_id, versionNo: r.version_no,
+    note: r.note, createdBy: r.created_by, createdAt: r.created_at,
+  }))
+}
+
+async function getEstimateSnapshot(snapshotId) {
+  if (!pool) return null
+  const q = await dbQuery('SELECT * FROM crm_estimate_snapshots WHERE id = $1 LIMIT 1', [snapshotId])
+  if (!q.rowCount) return null
+  const r = q.rows[0]
+  return { id: r.id, estimateId: r.estimate_id, versionNo: r.version_no, snapshot: r.snapshot, note: r.note, createdBy: r.created_by, createdAt: r.created_at }
+}
+
 app.get('/api/crm/estimates/:id', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
   const id = Number(req.params.id)
   if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
   const estimate = await getEstimateById(id)
   if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
   return res.json({ ok: true, estimate })
+})
+
+// List snapshots for an estimate
+app.get('/api/crm/estimates/:id/snapshots', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+  const snapshots = await listEstimateSnapshots(id)
+  return res.json({ ok: true, snapshots })
+})
+
+// Create manual snapshot
+app.post('/api/crm/estimates/:id/snapshots', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
+  const estimate = await getEstimateById(id)
+  if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
+  const note = String(req.body?.note || '').trim() || null
+  const snapshotId = await saveEstimateSnapshot(id, estimate, { note, createdBy: req.auth?.email || null })
+  await insertAudit(req.auth?.email || null, 'estimate_snapshot_created', 'estimate', id, { snapshotId, note, versionNo: estimate.versionNo })
+  return res.json({ ok: true, snapshotId })
+})
+
+// Restore from snapshot
+app.post('/api/crm/estimates/:id/snapshots/:snapshotId/restore', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const id = Number(req.params.id)
+  const snapshotId = Number(req.params.snapshotId)
+  if (!Number.isFinite(id) || !Number.isFinite(snapshotId)) return res.status(400).json({ ok: false, error: 'Invalid params' })
+  const snap = await getEstimateSnapshot(snapshotId)
+  if (!snap || snap.estimateId !== id) return res.status(404).json({ ok: false, error: 'Snapshot not found' })
+  const data = typeof snap.snapshot === 'string' ? JSON.parse(snap.snapshot) : snap.snapshot
+  if (!data) return res.status(400).json({ ok: false, error: 'Invalid snapshot data' })
+  // Save current state as snapshot before restoring
+  const current = await getEstimateById(id)
+  if (current) await saveEstimateSnapshot(id, current, { note: `Auto-backup před obnovením z verze ${snap.versionNo}`, createdBy: req.auth?.email || null })
+  const restored = await saveEstimate(id, { ...data, lines: data.lines || [] })
+  await insertAudit(req.auth?.email || null, 'estimate_snapshot_restored', 'estimate', id, { snapshotId, versionNo: snap.versionNo })
+  return res.json({ ok: true, estimate: restored })
 })
 
 app.post('/api/crm/estimates/from-lead', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
@@ -3986,12 +4216,23 @@ app.post('/api/crm/estimates/from-job', authMiddleware, roleGuard(['admin', 'man
   return res.json({ ok: true, estimate, reused: false })
 })
 
+// Throttle auto-snapshots: max 1 per 5 minutes per estimate
+const _lastSnapshotTime = new Map()
 app.patch('/api/crm/estimates/:id', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
   const id = Number(req.params.id)
   if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid id' })
   const estimate = await saveEstimate(id, req.body || {})
   if (!estimate) return res.status(404).json({ ok: false, error: 'Estimate not found' })
   await insertAudit(req.auth?.email || null, 'estimate_updated', 'estimate', id, req.body || {})
+  // Auto-snapshot: once per 5 minutes, only when lines are being updated
+  if (Array.isArray(req.body?.lines) && req.body.lines.length > 0) {
+    const now = Date.now()
+    const last = _lastSnapshotTime.get(id) || 0
+    if (now - last > 5 * 60 * 1000) {
+      _lastSnapshotTime.set(id, now)
+      setImmediate(() => saveEstimateSnapshot(id, estimate, { note: 'Automatický záloha', createdBy: req.auth?.email || 'auto' }))
+    }
+  }
   return res.json({ ok: true, estimate })
 })
 
@@ -4035,15 +4276,26 @@ app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['ad
   }
   const to = String(req.body?.email || customer?.email || lead?.email || '').trim().toLowerCase()
   if (!to || !validEmail(to)) return res.status(400).json({ ok: false, error: 'Valid email is required' })
-  const subject = String(req.body?.subject || `Rozpočet ${estimate.estimateNo || ''}`).trim()
-  const text = String(
-    req.body?.text ||
-      `Dobrý den,\n\nv příloze zasíláme rozpočet ${estimate.estimateNo || ''} k zakázce ${job?.internalNumber || ''}.\nSoučástí je PDF pro klienta a Excel pro detailní rozpis.\n\nS pozdravem,\nO&L Master Dom`
-  ).trim()
+  const clientName = customer?.fullName || lead?.clientName || estimate?.clientNameSnapshot || ''
+  const subject = String(req.body?.subject || `Rozpočet ${estimate.estimateNo || ''} — O&L Master Dom`).trim()
+  const senderName = req.auth?.full_name || req.auth?.email || 'Tým O&L Master Dom'
+  const customText = req.body?.text || null
+  const customGreeting = req.body?.greeting || null
+  const customBody = req.body?.bodyText || null
+  const textPlain = customText || `Dobrý den${clientName ? `, ${clientName}` : ''},\n\nv příloze zasíláme rozpočet ${estimate.estimateNo || ''} k zakázce ${job?.internalNumber || ''}.\nSoučástí je PDF pro klienta a Excel pro detailní rozpis.\n\nS pozdravem,\n${senderName}\nO&L Master Dom`
+  const htmlBody = buildEstimateEmailHtml({
+    estimate,
+    job,
+    clientName,
+    greeting: customGreeting,
+    bodyText: customBody,
+    senderName,
+  })
   const mail = await sendResendEmail({
     to,
     subject,
-    text,
+    text: textPlain,
+    html: htmlBody,
     attachments: [
       { filename: pdf.fileName, content: fileToBase64(pdf.filePath) },
       { filename: xlsx.fileName, content: fileToBase64(xlsx.filePath) },
@@ -4494,15 +4746,92 @@ app.post('/api/crm/completion-act/sign', async (req, res) => {
     )
   }
   const jobId = Number(act.job_id)
+  // Generate HTML act PDF with embedded signature
+  const job = await getJobById(jobId)
+  const signedAt = new Date().toLocaleString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const actHtml = `<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8">
+<style>
+  body{font-family:Arial,sans-serif;font-size:11pt;margin:40px;color:#111}
+  h1{font-size:16pt;color:#0B1E3D;margin-bottom:8px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0B1E3D;padding-bottom:16px;margin-bottom:24px}
+  .company{font-size:18pt;font-weight:900;color:#0B1E3D}
+  .subtitle{font-size:9pt;color:#555}
+  .info-table{width:100%;border-collapse:collapse;margin:16px 0}
+  .info-table td{padding:6px 10px;border:1px solid #ddd;font-size:10pt}
+  .info-table td:first-child{font-weight:700;background:#F3F4F6;width:200px}
+  .sig-section{margin-top:32px;border-top:2px solid #E5E7EB;padding-top:24px}
+  .sig-box{display:inline-block;border:2px solid #1A3A6B;border-radius:8px;padding:12px;background:#FAFAF8;margin-top:12px}
+  .sig-img{max-height:100px;max-width:400px}
+  .footer{margin-top:40px;font-size:9pt;color:#888;border-top:1px solid #E5E7EB;padding-top:12px;text-align:center}
+  .seal{display:inline-block;border:2px solid #0B1E3D;border-radius:50%;width:80px;height:80px;line-height:80px;text-align:center;font-size:9pt;font-weight:700;color:#0B1E3D;margin:0 auto}
+  .green-badge{background:#DCFCE7;color:#166534;padding:4px 12px;border-radius:20px;font-size:10pt;font-weight:700;display:inline-block}
+</style></head><body>
+<div class="header">
+  <div>
+    <div class="company">O&amp;L Master Dom</div>
+    <div class="subtitle">Elektroinstalace · Rekonstrukce · Stavební práce</div>
+    <div class="subtitle">info@temoweb.eu</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:9pt;color:#888">Akt č.</div>
+    <div style="font-size:14pt;font-weight:900;color:#0B1E3D">${job?.internalNumber || jobId}</div>
+    <div class="green-badge">✅ PODEPSÁNO</div>
+  </div>
+</div>
+<h1>Akt o provedení prací</h1>
+<p style="color:#555;font-size:10pt">Potvrzení o dokončení a převzetí prací zákazníkem</p>
+<table class="info-table">
+  <tr><td>Číslo zakázky:</td><td>${job?.internalNumber || '—'}</td></tr>
+  <tr><td>Adresa realizace:</td><td>${job?.address || '—'}</td></tr>
+  <tr><td>Zákazník:</td><td>${act.client_email || '—'}</td></tr>
+  <tr><td>Podepsal(a):</td><td><strong>${signerName}</strong></td></tr>
+  <tr><td>Datum podpisu:</td><td>${signedAt}</td></tr>
+  <tr><td>Stav:</td><td><strong style="color:#166534">Podepsáno zákazníkem</strong></td></tr>
+</table>
+<div class="sig-section">
+  <strong>Elektronický podpis zákazníka:</strong><br>
+  <div class="sig-box">
+    <img class="sig-img" src="${signatureImage}" alt="Podpis zákazníka" />
+  </div>
+  <p style="font-size:9pt;color:#555;margin-top:8px">Svým podpisem zákazník potvrzuje, že práce byly provedeny v souladu se zakázkou a bez výhrad je přijímá.</p>
+</div>
+<div style="display:flex;justify-content:space-between;margin-top:40px">
+  <div style="text-align:center;width:45%">
+    <div style="border-top:1px solid #111;padding-top:8px;font-size:9pt">Zákazník: ${signerName}</div>
+  </div>
+  <div style="text-align:center;width:45%">
+    <div style="border-top:1px solid #111;padding-top:8px;font-size:9pt">Za zhotovitele: O&amp;L Master Dom</div>
+  </div>
+</div>
+<div class="footer">Akt byl vygenerován automaticky systémem O&amp;L CRM · ${new Date().toLocaleString('cs-CZ')} · Digitálně podepsáno</div>
+</body></html>`
+
+  // Save HTML as file and try to convert to PDF
+  const actDir = path.join(UPLOADS_DIR, 'acts')
+  fs.mkdirSync(actDir, { recursive: true })
+  const actHtmlName = `act_${jobId}_${Date.now()}.html`
+  const actHtmlPath = path.join(actDir, actHtmlName)
+  fs.writeFileSync(actHtmlPath, actHtml, 'utf-8')
+  let actPdfPath = null
+  try {
+    const pdfRes = await convertXlsxToPdfIfPossible(actHtmlPath)
+    if (pdfRes.ok) actPdfPath = pdfRes.pdfPath
+  } catch {}
+
   await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'completion_act_signed', actorType: 'customer', title: 'Akt o provedení prací podepsán', message: `Podepsáno: ${signerName}`, metadata: { signerName, signedAt: new Date().toISOString() } })
   await addJobDocument(jobId, { documentType: 'akt', fileName: `Akt_${signerName.replace(/\s/g,'_')}_podpis.png`, filePath: sigPath, fileUrl: `/uploads/signatures/${sigFileName}`, storageKey: `uploads/signatures/${sigFileName}`, status: 'signed_client', signatureMode: 'online', isFinal: true, signedAt: new Date().toISOString() })
+  if (actPdfPath) {
+    const actPdfName = path.basename(actPdfPath)
+    await addJobDocument(jobId, { documentType: 'akt', fileName: actPdfName, filePath: actPdfPath, fileUrl: `/uploads/acts/${actPdfName}`, storageKey: `uploads/acts/${actPdfName}`, status: 'signed_client', signatureMode: 'online', isFinal: true, signedAt: new Date().toISOString() })
+  }
   // Notify company by email
-  const job = await getJobById(jobId)
   const ownerEmail = process.env.COMPANY_EMAIL || process.env.RESEND_FROM || ''
   if (ownerEmail) {
-    await sendResendEmail({ to: ownerEmail, subject: `✅ Akt podepsán — ${job?.internalNumber || jobId}`, text: `Zákazník ${signerName} podepsal akt o provedení prací pro zakázku ${job?.internalNumber || jobId}.` }).catch(() => {})
+    const attachments = actPdfPath ? [{ filename: path.basename(actPdfPath), content: fileToBase64(actPdfPath) }] : []
+    const notifHtml = buildEstimateEmailHtml({ estimate: null, job, clientName: signerName, greeting: `Dobrý den,`, bodyText: `zákazník <strong>${signerName}</strong> podepsal akt o provedení prací pro zakázku <strong>${job?.internalNumber || jobId}</strong> dne ${signedAt}.`, senderName: 'O&L CRM systém' })
+    await sendResendEmail({ to: ownerEmail, subject: `✅ Akt podepsán — ${job?.internalNumber || jobId}`, text: `Zákazník ${signerName} podepsal akt o provedení prací pro zakázku ${job?.internalNumber || jobId}.`, html: notifHtml, attachments }).catch(() => {})
   }
-  return res.json({ ok: true, message: 'Akt byl úspěšně podepsán' })
+  return res.json({ ok: true, message: 'Akt byl úspěšně podepsán', pdfGenerated: !!actPdfPath })
 })
 
 async function bootstrap() {

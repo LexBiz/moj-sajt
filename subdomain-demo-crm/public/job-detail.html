@@ -166,9 +166,11 @@
       const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
       const api = (p) => `${base}${p}`
       const crmToken = () => localStorage.getItem('crmToken') || ''
-      const apiFetch = (url, opts = {}) => {
+      const apiFetch = async (url, opts = {}) => {
         const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
-        return fetch(url, { ...opts, headers: h })
+        const resp = await fetch(url, { ...opts, headers: h })
+        if (resp.status === 401) { localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser'); location.href = `${base}/login.html`; }
+        return resp
       }
       const esc = (s) => String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
       async function j(r) { try { return await r.json() } catch { return null } }
