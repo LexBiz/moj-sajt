@@ -84,6 +84,35 @@
       .task-title{font-size:13px;flex:1}.task-title.done{text-decoration:line-through;color:var(--ink3)}
       .task-due{font-size:11px;color:var(--ink3)}
       .empty{padding:24px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:13px}
+      /* ── Communication timeline ── */
+      .komm-wrap{display:flex;flex-direction:column;gap:0;max-height:calc(100vh - 320px);min-height:320px;overflow-y:auto;padding:16px 8px;scroll-behavior:smooth}
+      .komm-wrap::-webkit-scrollbar{width:5px}.komm-wrap::-webkit-scrollbar-track{background:transparent}.komm-wrap::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+      .komm-day{text-align:center;margin:18px 0 10px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;position:relative}
+      .komm-day::before,.komm-day::after{content:'';position:absolute;top:50%;height:1px;width:calc(50% - 60px);background:var(--b)}
+      .komm-day::before{left:0}.komm-day::after{right:0}
+      .komm-msg{display:flex;gap:10px;margin-bottom:12px;align-items:flex-end;max-width:85%}
+      .komm-msg.out{flex-direction:row-reverse;align-self:flex-end;margin-left:auto}
+      .komm-msg.sys{align-self:center;max-width:100%;flex-direction:column;align-items:center;text-align:center;margin:4px 0 12px}
+      .komm-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-bottom:2px}
+      .komm-bubble{max-width:100%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;position:relative}
+      .komm-bubble.in{background:rgba(20,201,138,.12);border:1px solid rgba(20,201,138,.22);border-bottom-left-radius:4px;color:var(--ink)}
+      .komm-bubble.out{background:rgba(26,106,232,.2);border:1px solid rgba(61,135,248,.3);border-bottom-right-radius:4px;color:var(--ink)}
+      .komm-bubble.wa{background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25);color:var(--ink)}
+      .komm-bubble.sys-bubble{background:rgba(255,255,255,.04);border:1px solid var(--b);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--ink2)}
+      .komm-bubble.note{background:rgba(232,146,26,.1);border:1px solid rgba(232,146,26,.22);color:var(--ink)}
+      .komm-bubble.doc{background:rgba(96,165,255,.1);border:1px solid rgba(96,165,255,.22);color:var(--ink)}
+      .komm-meta{font-size:10px;color:var(--ink3);margin-top:4px;display:flex;align-items:center;gap:5px}
+      .komm-msg.out .komm-meta{justify-content:flex-end}
+      .komm-subj{font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+      .komm-body{font-size:13px;color:var(--ink);white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
+      .komm-expand{font-size:11px;color:var(--blue3);cursor:pointer;margin-top:4px;display:inline-block}
+      .komm-attach{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+      .komm-attach-item{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid var(--b2);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--blue3);text-decoration:none;cursor:pointer}
+      .komm-attach-item:hover{background:rgba(26,106,232,.14)}
+      .komm-input-area{background:var(--s);border:1px solid var(--b2);border-radius:var(--r-lg);padding:16px;margin-top:12px}
+      .komm-type-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+      .komm-type-btn{border:1px solid var(--b2);background:var(--c);color:var(--ink2);padding:6px 12px;border-radius:999px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+      .komm-type-btn.active{background:rgba(26,106,232,.18);color:var(--blue3);border-color:rgba(61,135,248,.35)}
       .loading{padding:32px;text-align:center;color:var(--ink2)}
       .add-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
       .add-row input,.add-row textarea{background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);font-family:inherit;padding:8px 12px;font-size:13px;outline:none;flex:1;min-width:200px}
@@ -116,9 +145,10 @@
           <button class="lang-btn" data-lang="cs">CZ</button>
           <button class="lang-btn" data-lang="uk">UA</button>
         </div>
-        <a class="btn" id="backPipeline" href="./index.html">← Pipeline</a>
+        <a class="btn" id="backPipeline" href="./index.html">← Do pipeline</a>
         <select id="moveStage" style="min-width:180px;padding:8px 10px"></select>
         <button class="btn btn-p" id="moveBtn">Změnit etapu</button>
+        <button id="archiveHdrBtn" class="btn" style="display:none;background:rgba(20,201,138,.1);border-color:rgba(20,201,138,.35);color:var(--green);font-weight:800">📦 Archivovat</button>
         <div class="user-chip">
           <div class="user-avatar" id="userAvatar">?</div>
           <div><div id="userName" style="line-height:1.2">—</div><div class="user-role" id="userRole">—</div></div>
@@ -297,7 +327,19 @@
           ['Poslední kontakt', job.lastClientContactAt ? fmtFull(job.lastClientContactAt) : '—'],
         ].filter(([,v]) => v && v !== '—')
 
+        const stageLabel = SL[job.pipelineStage || job.stage] || (job.pipelineStage || job.stage)
         document.getElementById('m-prehled').innerHTML = `
+          <!-- MANAGER QUICK NOTE -->
+          <div class="card-s" style="border-color:rgba(26,106,232,.25);background:rgba(26,106,232,.04)">
+            <div class="card-s-t" style="color:var(--blue3)">✏️ Poznámka manažera — ${esc(stageLabel)}</div>
+            <div style="font-size:13px;color:var(--ink2);margin-bottom:10px">Doplňte informace získané telefonicky, osobně nebo jinak. Uloží se do historie zakázky.</div>
+            <textarea id="managerNoteInput" placeholder="Např.: klient upřesnil rozsah prací — přidáme 3 další zásuvky v kuchyni. Termín potvrzeno na 1. dubna..." style="width:100%;min-height:90px;background:var(--c);border:1px solid var(--b2);border-radius:10px;color:var(--ink);font:inherit;font-size:14px;padding:12px 14px;resize:vertical;outline:none;line-height:1.55">${esc(job.notes || '')}</textarea>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
+              <button class="btn btn-p" id="saveManagerNote" style="padding:9px 18px;font-size:13px">💾 Uložit poznámku</button>
+              <button class="btn" id="addManagerEvent" style="padding:9px 18px;font-size:13px">📝 Přidat jako událost</button>
+              <span id="managerNoteSaved" style="font-size:12px;color:var(--green);display:none">✓ Uloženo</span>
+            </div>
+          </div>
           <div class="card-s">
             <div class="card-s-t">Klient ${typeBadge}</div>
             <div class="meta-g">${contactFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
@@ -325,6 +367,37 @@
           </div>` : ''}
         `
 
+        // ── Manager quick note ──────────────────────────────────────
+        document.getElementById('saveManagerNote')?.addEventListener('click', async () => {
+          const text = document.getElementById('managerNoteInput').value.trim()
+          const btn = document.getElementById('saveManagerNote')
+          const saved = document.getElementById('managerNoteSaved')
+          btn.disabled = true; btn.textContent = '⏳...'
+          const r = await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ notes: text }) })
+          if (r.ok) {
+            saved.style.display = 'inline'; setTimeout(() => { saved.style.display = 'none' }, 2500)
+          }
+          btn.disabled = false; btn.textContent = '💾 Uložit poznámku'
+        })
+        document.getElementById('addManagerEvent')?.addEventListener('click', async () => {
+          const text = document.getElementById('managerNoteInput').value.trim()
+          if (!text) { alert('Zadejte text poznámky'); return }
+          const btn = document.getElementById('addManagerEvent')
+          btn.disabled = true; btn.textContent = '⏳...'
+          const r = await apiFetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', body: JSON.stringify({ eventType: 'note', title: 'Poznámka manažera', message: text }) })
+          const d = await j(r)
+          if (r.ok && d?.ok) {
+            document.getElementById('managerNoteInput').value = ''
+            await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ notes: text }) })
+            // Refresh komunikace tab
+            const evR = await apiFetch(api(`/api/crm/jobs/${jobId}/events`))
+            const evD = await j(evR)
+            if (evR.ok && evD?.ok) await renderKomunikace(evD.events || [])
+            alert('✓ Událost přidána do Komunikace')
+          } else alert('Chyba: ' + (d?.error || 'Nelze přidat'))
+          btn.disabled = false; btn.textContent = '📝 Přidat jako událost'
+        })
+        // ── Save job number ─────────────────────────────────────────
         document.getElementById('saveJobNum')?.addEventListener('click', async () => {
           const newNum = document.getElementById('editJobNum').value.trim()
           if (!newNum) return
@@ -344,7 +417,6 @@
 
       async function renderKomunikace(events) {
         const el = document.getElementById('m-komunikace')
-        // Load email correspondence
         let emails = []
         try {
           const er = await apiFetch(api(`/api/crm/jobs/${jobId}/emails`))
@@ -352,55 +424,143 @@
           if (er.ok && ed?.ok) emails = ed.emails || []
         } catch {}
 
-        const EV_ICONS = { note:'📝', stage_change:'🔄', email_sent:'✉️', document_added:'📄', brief_received:'📋', finance_update:'💰', inbound_email_linked:'📨' }
-        el.innerHTML = `
-          ${emails.length ? `<div class="card-s">
-            <div class="card-s-t">✉️ Emailová korespondence <span style="color:var(--ink2);font-weight:400;font-size:12px">(${emails.length})</span></div>
-            <div class="ev-list">${emails.map(em => `
-              <div class="ev-item" style="border-left:3px solid ${em.direction==='inbound'?'var(--green)':'var(--blue3)'}">
-                <div class="ev-dot" style="background:${em.direction==='inbound'?'var(--green)':'var(--blue3)'}"></div>
-                <div style="flex:1;min-width:0">
-                  <div class="ev-title" style="display:flex;align-items:center;gap:8px">
-                    <span>${em.direction==='inbound'?'📨 Příchozí':'📤 Odchozí'}</span>
-                    <span style="font-weight:600">${esc(em.subject||'(bez předmětu)')}</span>
-                    <span class="badge b-grey" style="font-size:10px;padding:2px 6px">${esc(em.status||'sent')}</span>
-                  </div>
-                  <div class="ev-meta" style="margin-top:4px">
-                    <span>${em.direction==='inbound'?'Od: ':'Komu: '} <strong>${esc(em.direction==='inbound'?em.fromAddr:em.toAddr)}</strong></span>
-                    <span style="margin-left:10px">${esc(fmtFull(em.sentAt))}</span>
-                  </div>
-                  ${em.body ? `<div style="margin-top:6px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:8px;font-size:12px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;max-height:100px;overflow:auto">${esc(em.body.slice(0,500))}${em.body.length>500?'…':''}</div>` : ''}
-                </div>
-              </div>
-            `).join('')}</div>
-          </div>` : '<div class="card-s"><div class="empty" style="padding:20px;text-align:center">Žádná emailová korespondence</div></div>'}
+        // Merge all messages into a single unified timeline
+        const EV_ICONS = { note:'📝', stage_change:'🔄', email_sent:'✉️', document_added:'📄', brief_received:'📋', finance_update:'💰', inbound_email_linked:'📨', whatsapp_sent:'📱' }
+        const timeline = []
+        for (const em of emails) {
+          timeline.push({ _type: 'email', at: em.sentAt || em.createdAt, direction: em.direction || 'outbound', subject: em.subject, from: em.fromAddr, to: em.toAddr, body: em.body, status: em.status })
+        }
+        for (const ev of events) {
+          timeline.push({ _type: 'event', at: ev.createdAt, eventType: ev.eventType, title: ev.title, message: ev.message, description: ev.description, actor: ev.actor, metadata: ev.metadata })
+        }
+        timeline.sort((a, b) => new Date(a.at) - new Date(b.at))
 
-          <div class="card-s">
-            <div class="card-s-t">📋 Historie událostí <span style="color:var(--ink2);font-weight:400;font-size:12px">(${events.length})</span></div>
-            ${events.length ? `<div class="ev-list">${events.map(e => `
-              <div class="ev-item">
-                <div class="ev-dot"></div>
-                <div>
-                  <div class="ev-title">${esc(EV_ICONS[e.eventType]||'•')} ${esc(e.title)}</div>
-                  <div class="ev-meta">${esc(fmtFull(e.createdAt))}${e.actor ? ' · ' + esc(e.actor) : ''}${e.message ? '<br>' + esc(e.message) : ''}${e.description && e.description !== e.message ? '<br>' + esc(e.description) : ''}</div>
+        function dayLabel(iso) {
+          if (!iso) return ''
+          const d = new Date(iso)
+          const today = new Date(); const yesterday = new Date(today - 86400000)
+          if (d.toDateString() === today.toDateString()) return 'Dnes'
+          if (d.toDateString() === yesterday.toDateString()) return 'Včera'
+          return d.toLocaleDateString('cs-CZ', { day:'numeric', month:'long', year:'numeric' })
+        }
+        function timeLabel(iso) {
+          if (!iso) return ''
+          return new Date(iso).toLocaleTimeString('cs-CZ', { hour:'2-digit', minute:'2-digit' })
+        }
+
+        let lastDay = ''
+        let html = `<div class="komm-wrap" id="kommScroll">`
+        for (const item of timeline) {
+          const day = dayLabel(item.at)
+          if (day !== lastDay) {
+            html += `<div class="komm-day">${esc(day)}</div>`
+            lastDay = day
+          }
+          const t = timeLabel(item.at)
+
+          if (item._type === 'email') {
+            const isIn = item.direction === 'inbound'
+            const side = isIn ? 'in' : 'out'
+            const icon = isIn ? '📨' : '📤'
+            const addrLabel = isIn ? `Od: ${esc(item.from||'?')}` : `Komu: ${esc(item.to||'?')}`
+            const bodyTrunc = item.body ? item.body.slice(0, 600) : ''
+            const hasMore = item.body && item.body.length > 600
+            html += `<div class="komm-msg ${side}">
+              <div class="komm-avatar" style="background:${isIn?'rgba(20,201,138,.18)':'rgba(26,106,232,.18)'}">${icon}</div>
+              <div>
+                <div class="komm-bubble ${side}">
+                  <div class="komm-subj">✉️ ${esc(item.subject||'(bez předmětu)')}</div>
+                  <div style="font-size:10px;color:var(--ink3);margin-bottom:6px">${addrLabel}</div>
+                  ${bodyTrunc ? `<div class="komm-body" id="kb-${timeline.indexOf(item)}">${esc(bodyTrunc)}</div>${hasMore ? `<span class="komm-expand" onclick="this.previousSibling.style.webkitLineClamp='none';this.style.display='none'">Zobrazit více ▾</span>` : ''}` : ''}
                 </div>
+                <div class="komm-meta">${esc(t)} · <span class="badge b-grey" style="padding:1px 5px;font-size:9px">${esc(item.status||'sent')}</span></div>
               </div>
-            `).join('')}</div>` : '<div class="empty">Žádné události</div>'}
+            </div>`
+          } else {
+            const evType = item.eventType || 'note'
+            const icon = EV_ICONS[evType] || '•'
+            const isNote = evType === 'note'
+            const isWa = evType === 'whatsapp_sent'
+            const isDoc = evType === 'document_added'
+            const isSys = ['stage_change','brief_received','finance_update'].includes(evType)
+
+            if (isSys) {
+              html += `<div class="komm-msg sys">
+                <div class="komm-bubble sys-bubble">${icon} ${esc(item.title)}${item.message && item.message !== item.title ? ' — ' + esc(item.message) : ''}</div>
+                <div class="komm-meta" style="justify-content:center">${esc(t)}${item.actor?' · '+esc(item.actor):''}</div>
+              </div>`
+            } else if (isWa) {
+              html += `<div class="komm-msg sys">
+                <div class="komm-bubble wa" style="max-width:420px">
+                  <div style="font-weight:700;margin-bottom:4px">📱 WhatsApp → команді</div>
+                  <div style="font-size:13px">${esc(item.message||item.title)}</div>
+                </div>
+                <div class="komm-meta" style="justify-content:center">${esc(t)}${item.actor?' · '+esc(item.actor):' · система'}</div>
+              </div>`
+            } else if (isNote) {
+              html += `<div class="komm-msg out">
+                <div class="komm-avatar" style="background:rgba(232,146,26,.15)">📝</div>
+                <div>
+                  <div class="komm-bubble note"><strong>${esc(item.title)}</strong>${item.message && item.message !== item.title ? '<br><span style="color:var(--ink2)">' + esc(item.message) + '</span>' : ''}</div>
+                  <div class="komm-meta">${esc(t)}${item.actor?' · '+esc(item.actor):''}</div>
+                </div>
+              </div>`
+            } else if (isDoc) {
+              html += `<div class="komm-msg sys">
+                <div class="komm-bubble doc" style="max-width:360px">📄 ${esc(item.title)}${item.message && item.message !== item.title ? '<br><span style="font-size:11px;color:var(--ink3)">'+esc(item.message)+'</span>' : ''}</div>
+                <div class="komm-meta" style="justify-content:center">${esc(t)}</div>
+              </div>`
+            } else {
+              html += `<div class="komm-msg sys">
+                <div class="komm-bubble sys-bubble">${icon} ${esc(item.title)}${item.message && item.message !== item.title ? ' — ' + esc(item.message) : ''}</div>
+                <div class="komm-meta" style="justify-content:center">${esc(t)}${item.actor?' · '+esc(item.actor):''}</div>
+              </div>`
+            }
+          }
+        }
+        if (!timeline.length) {
+          html += `<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:13px;padding:40px">Žádná komunikace zatím</div>`
+        }
+        html += `</div>`
+
+        // Input area
+        html += `<div class="komm-input-area">
+          <div class="komm-type-tabs">
+            <button class="komm-type-btn active" data-ktype="note">📝 Poznámka</button>
+            <button class="komm-type-btn" data-ktype="call">📞 Telefonát</button>
+            <button class="komm-type-btn" data-ktype="meeting">🤝 Schůzka</button>
           </div>
-          <div class="card-s">
-            <div class="card-s-t">➕ Přidat poznámku</div>
-            <div class="add-row">
-              <input id="noteTitle" placeholder="Název poznámky" style="flex:2" />
-              <input id="noteDesc" placeholder="Popis (volitelné)" style="flex:3" />
-              <button class="btn btn-p" id="addNote">Přidat</button>
-            </div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <textarea id="kommText" placeholder="Napište poznámku nebo záznam z hovoru…" style="flex:1;background:var(--c);border:1px solid var(--b2);border-radius:10px;color:var(--ink);font-family:inherit;padding:10px 12px;font-size:13px;outline:none;resize:vertical;min-height:64px;line-height:1.5" onkeydown="if(event.ctrlKey&&event.key==='Enter'){document.getElementById('kommSend').click()}"></textarea>
+            <button class="btn btn-p" id="kommSend" style="align-self:flex-end;padding:10px 18px">Přidat</button>
           </div>
-        `
-        document.getElementById('addNote')?.addEventListener('click', async () => {
-          const title = document.getElementById('noteTitle').value.trim()
-          if (!title) return
-          await apiFetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', body: JSON.stringify({ eventType: 'note', title, description: document.getElementById('noteDesc').value.trim() }) })
-          document.getElementById('noteTitle').value = ''; document.getElementById('noteDesc').value = ''
+          <div style="font-size:11px;color:var(--ink3);margin-top:6px">Ctrl+Enter для швидкого додавання</div>
+        </div>`
+
+        el.innerHTML = html
+
+        // Scroll to bottom
+        const scroll = document.getElementById('kommScroll')
+        if (scroll) scroll.scrollTop = scroll.scrollHeight
+
+        // Type tab switcher
+        let activeType = 'note'
+        el.querySelectorAll('[data-ktype]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            el.querySelectorAll('[data-ktype]').forEach(b => b.classList.remove('active'))
+            btn.classList.add('active')
+            activeType = btn.dataset.ktype
+            const ta = document.getElementById('kommText')
+            if (ta) ta.placeholder = activeType==='call' ? 'Záznam z telefonátu — kdo, co řekl, další kroky…' : activeType==='meeting' ? 'Záznam ze schůzky — témata, závěry, úkoly…' : 'Napište poznámku nebo záznam z hovoru…'
+          })
+        })
+
+        document.getElementById('kommSend')?.addEventListener('click', async () => {
+          const text = document.getElementById('kommText').value.trim()
+          if (!text) return
+          const typeLabels = { note: 'Poznámka', call: '📞 Telefonát', meeting: '🤝 Schůzka' }
+          await apiFetch(api(`/api/crm/jobs/${jobId}/events`), { method: 'POST', body: JSON.stringify({ eventType: 'note', title: typeLabels[activeType] || 'Poznámka', description: text, message: text }) })
+          document.getElementById('kommText').value = ''
           loadJob()
         })
       }
@@ -733,6 +893,17 @@
             <div style="display:flex;flex-direction:column;gap:10px">
               <button id="btnSendAct" class="btn btn-p" style="justify-content:center;padding:12px">✍️ Odeslat akt o dílo klientovi</button>
               <button id="btnSendReview" class="btn" style="justify-content:center;padding:12px;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#F59E0B">⭐ Odeslat žádost o recenzi (Google Maps)</button>
+              ${isDone
+                ? `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(20,201,138,.08);border:1.5px solid rgba(20,201,138,.3);border-radius:12px">
+                    <span style="font-size:22px">✅</span>
+                    <div style="flex:1">
+                      <div style="font-size:13px;font-weight:800;color:var(--green)">Zakázka je uzavřena a uložena v archivu</div>
+                      <div style="font-size:12px;color:var(--ink2);margin-top:2px">Zakázka "${esc(job.internalNumber||'')}" je viditelná v záložce Archiv.</div>
+                    </div>
+                    <a class="btn" href="./index.html#archive" onclick="localStorage.setItem('crmOpenTab','archive')" style="font-size:12px;padding:8px 14px;white-space:nowrap">🗂 Zobrazit archiv</a>
+                  </div>`
+                : `<button id="btnArchive" class="btn" style="justify-content:center;padding:14px;font-size:14px;font-weight:800;background:rgba(20,201,138,.08);border-color:rgba(20,201,138,.35);color:var(--green)">📦 Uzavřít a přesunout do archivu</button>`
+              }
             </div>
           </div>
         `
@@ -801,6 +972,26 @@
             finally { reviewBtn.disabled = false; reviewBtn.textContent = '⭐ Odeslat žádost o recenzi (Google Maps)' }
           })
         }
+        // ── Archive button ──────────────────────────────────────────
+        const archBtn = el.querySelector('#btnArchive')
+        if (archBtn) {
+          archBtn.addEventListener('click', async () => {
+            if (!confirm('Uzavřít zakázku a přesunout do archivu?\n\nZakázka bude označena jako dokončená a zobrazí se v záložce Archiv.')) return
+            archBtn.disabled = true; archBtn.textContent = '⏳ Přesouvám...'
+            try {
+              const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), {
+                method: 'POST',
+                body: JSON.stringify({ stage: 'dokonceno', note: 'Zakázka uzavřena a přesunuta do archivu.' })
+              })
+              const d = await r.json()
+              if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
+              loadJob()
+            } catch (e) {
+              alert('Chyba: ' + String(e?.message || e))
+              archBtn.disabled = false; archBtn.textContent = '📦 Uzavřít a přesunout do archivu'
+            }
+          })
+        }
       }
 
       async function loadJob() {
@@ -824,6 +1015,26 @@
         renderStageBar(job.stage)
         renderCtrl(job)
         renderPrehled(job, customer, lead)
+        // Archive header button: show only when NOT yet in dokonceno
+        const archHdrBtn = document.getElementById('archiveHdrBtn')
+        if (archHdrBtn) {
+          const isArchived = (job.pipelineStage || job.stage) === 'dokonceno'
+          archHdrBtn.style.display = isArchived ? 'none' : ''
+          archHdrBtn.textContent = isArchived ? '✅ V archivu' : '📦 Archivovat'
+          archHdrBtn.onclick = isArchived ? null : async () => {
+            if (!confirm('Uzavřít zakázku a přesunout do archivu?\n\nZakázka bude označena jako dokončená.')) return
+            archHdrBtn.disabled = true; archHdrBtn.textContent = '⏳...'
+            try {
+              const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), { method: 'POST', body: JSON.stringify({ stage: 'dokonceno', note: 'Zakázka uzavřena a přesunuta do archivu.' }) })
+              const d = await r.json()
+              if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
+              loadJob()
+            } catch (e) {
+              alert('Chyba: ' + String(e?.message || e))
+              archHdrBtn.disabled = false; archHdrBtn.textContent = '📦 Archivovat'
+            }
+          }
+        }
         await renderKomunikace(d.events || [])
         renderDokumenty(d.documents || [], d.estimates || [], customer, job)
         renderFinance(job, d.invoices || [])

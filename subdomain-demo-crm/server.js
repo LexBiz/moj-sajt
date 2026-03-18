@@ -285,20 +285,79 @@ function clientFormUrl() {
 function buildClientMail(lead) {
   const baseUrl = clientFormUrl()
   const formUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}leadId=${encodeURIComponent(String(lead.id))}&leadEmail=${encodeURIComponent(String(lead.email || ''))}`
+  const clientName = lead.name || 'Клієнт'
+  const textPlain = [
+    `Добрий день, ${clientName}!`,
+    '',
+    'Дякуємо за звернення до O&L Master Dom.',
+    'Будь ласка, заповніть коротку анкету, щоб ми могли підготувати точну пропозицію:',
+    formUrl,
+    '',
+    'Заповнення займе 2–3 хвилини.',
+    '',
+    'З повагою,',
+    'Команда O&L Master Dom',
+  ].join('\n')
+  const html = `<!DOCTYPE html>
+<html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Інформаційна анкета</title></head>
+<body style="margin:0;padding:0;background:#F4F6F9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;padding:32px 16px">
+  <tr><td align="center">
+    <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10)">
+      <!-- HEADER -->
+      <tr><td style="background:linear-gradient(135deg,#0A1628 0%,#132240 100%);padding:36px 40px;text-align:center">
+        <table width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td style="text-align:center">
+            <div style="display:inline-block;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 20px;margin-bottom:16px">
+              <span style="font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px">O&amp;L</span>
+              <span style="font-size:22px;font-weight:400;color:rgba(255,255,255,.7);letter-spacing:-0.5px"> Master Dom</span>
+            </div>
+            <div style="font-size:13px;color:rgba(255,255,255,.45);letter-spacing:1.2px;text-transform:uppercase">Електромонтажні роботи · Чехія</div>
+          </td>
+        </tr></table>
+      </td></tr>
+      <!-- BODY -->
+      <tr><td style="padding:40px 40px 32px">
+        <h2 style="font-size:24px;font-weight:800;color:#0D1F3C;margin:0 0 10px;line-height:1.3">Добрий день, ${clientName}!</h2>
+        <p style="font-size:15px;color:#4A5568;line-height:1.7;margin:0 0 28px">
+          Дякуємо за звернення до <strong>O&amp;L Master Dom</strong>.<br>
+          Щоб підготувати для вас точну та вигідну пропозицію, просимо заповнити коротку анкету — це займе <strong>2–3 хвилини</strong>.
+        </p>
+        <!-- CTA Button -->
+        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 32px">
+          <a href="${formUrl}" style="display:inline-block;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#FFFFFF;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:12px;box-shadow:0 6px 20px rgba(26,106,232,.38);letter-spacing:0.2px">
+            📋 Заповнити анкету →
+          </a>
+        </td></tr></table>
+        <!-- WHAT NEXT -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F9FC;border-radius:12px;border:1px solid #E2E8F0;margin-bottom:28px">
+          <tr><td style="padding:20px 24px">
+            <p style="font-size:13px;font-weight:700;color:#0D1F3C;margin:0 0 12px;text-transform:uppercase;letter-spacing:.6px">Як це працює:</p>
+            <table cellpadding="0" cellspacing="0">
+              <tr><td style="padding:5px 0;vertical-align:top"><span style="font-size:18px;margin-right:10px">📋</span></td><td style="font-size:13px;color:#4A5568;line-height:1.5;padding:4px 0">Ви заповнюєте анкету (2–3 хв)</td></tr>
+              <tr><td style="padding:5px 0;vertical-align:top"><span style="font-size:18px;margin-right:10px">📞</span></td><td style="font-size:13px;color:#4A5568;line-height:1.5;padding:4px 0">Наш менеджер зв'яжеться з вами протягом 1 робочого дня</td></tr>
+              <tr><td style="padding:5px 0;vertical-align:top"><span style="font-size:18px;margin-right:10px">💼</span></td><td style="font-size:13px;color:#4A5568;line-height:1.5;padding:4px 0">Ви отримуєте детальну пропозицію з кошторисом</td></tr>
+            </table>
+          </td></tr>
+        </table>
+        <p style="font-size:13px;color:#718096;line-height:1.6;margin:0">
+          Якщо посилання не відкривається, скопіюйте його у браузер:<br>
+          <a href="${formUrl}" style="color:#1A6AE8;word-break:break-all;font-size:12px">${formUrl}</a>
+        </p>
+      </td></tr>
+      <!-- FOOTER -->
+      <tr><td style="background:#F7F9FC;border-top:1px solid #E2E8F0;padding:24px 40px;text-align:center">
+        <p style="font-size:13px;font-weight:700;color:#0D1F3C;margin:0 0 4px">O&amp;L Master Dom</p>
+        <p style="font-size:12px;color:#A0AEC0;margin:0">Електромонтажні роботи · demo.temoweb.eu</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`
   return {
-    subject: 'Добрий день! Формуляр для уточнення заявки',
-    text: [
-      `Добрий день, ${lead.name || 'клієнт'}!`,
-      '',
-      'Вас вітає компанія TemoWeb.',
-      'Нижче надсилаємо формуляр для уточнення деталей:',
-      formUrl,
-      '',
-      'Після заповнення, будь ласка, відправте відповідь на цей же email.',
-      '',
-      'З повагою,',
-      'TemoWeb Team',
-    ].join('\n'),
+    subject: 'O&L Master Dom — анкета для підготовки пропозиції',
+    text: textPlain,
+    html,
   }
 }
 
@@ -491,6 +550,47 @@ async function listJobEmailsDb(jobId) {
   } catch { return [] }
 }
 
+async function sendWhatsAppTemplate({ templateName, templateLang, parameters, fallbackText }) {
+  const token = String(process.env.WHATSAPP_ACCESS_TOKEN || '').trim()
+  const phoneNumberId = String(process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim()
+  const apiVersion = String(process.env.WHATSAPP_API_VERSION || 'v22.0').trim()
+  const target = String(process.env.WHATSAPP_TARGET_NUMBER || '+380960494917').trim()
+  const extraTargetsRaw = String(process.env.WHATSAPP_EXTRA_TARGET_NUMBERS || '').trim()
+  if (!token || !phoneNumberId || !target) return { attempted: false, ok: false, reason: 'missing_whatsapp_env' }
+  const targetList = [target, ...extraTargetsRaw.split(',').map((x) => x.trim()).filter(Boolean)]
+  const uniqueTargets = [...new Set(targetList.map((x) => x.replace(/[^\d]/g, '')).filter(Boolean))]
+  async function sendMessage(payload) {
+    const url = `https://graph.facebook.com/${apiVersion}/${encodeURIComponent(phoneNumberId)}/messages`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    })
+    const bodyText = await resp.text().catch(() => '')
+    let parsed = null
+    try { parsed = bodyText ? JSON.parse(bodyText) : null } catch { parsed = null }
+    return { resp, bodyText, parsed }
+  }
+  try {
+    const recipients = []
+    for (const to of uniqueTargets) {
+      let usedMode = 'template'
+      let attempt = await sendMessage({
+        messaging_product: 'whatsapp', to, type: 'template',
+        template: { name: templateName, language: { code: templateLang }, components: [{ type: 'body', parameters: parameters.map((t) => ({ type: 'text', text: String(t) })) }] },
+      })
+      if (!attempt.resp.ok && fallbackText) {
+        usedMode = 'text_fallback'
+        attempt = await sendMessage({ messaging_product: 'whatsapp', to, type: 'text', text: { body: fallbackText.slice(0, 4000) } })
+      }
+      recipients.push({ to, ok: attempt.resp.ok, sendMode: usedMode, statusCode: attempt.resp.status, messageId: attempt.parsed?.messages?.[0]?.id || null })
+    }
+    return { attempted: true, ok: recipients.every((x) => x.ok), recipients }
+  } catch (e) {
+    return { attempted: true, ok: false, reason: 'wa_exception', details: String(e?.message || e) }
+  }
+}
+
 async function sendWhatsAppLead(lead) {
   const token = String(process.env.WHATSAPP_ACCESS_TOKEN || '').trim()
   const phoneNumberId = String(process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim()
@@ -572,6 +672,25 @@ async function sendWhatsAppLead(lead) {
   } catch (e) {
     return { attempted: true, ok: false, reason: 'wa_exception', details: String(e?.message || e) }
   }
+}
+
+async function sendWhatsAppBriefReceived(lead) {
+  const templateName = String(process.env.WHATSAPP_BRIEF_TEMPLATE_NAME || 'brief_received_ua').trim()
+  const templateLang = String(process.env.WHATSAPP_BRIEF_TEMPLATE_LANG || 'uk').trim()
+  const clientName = String(lead.name || '—')
+  const phone = String(lead.phone || '—')
+  const projectType = String(lead.brief?.objectType || lead.comment || '—')
+  const address = String(lead.brief?.realizationAddress || lead.brief?.objectAddress || '—')
+  const fallback = [
+    '📋 НОВА АНКЕТА ВІД КЛІЄНТА',
+    `Клієнт: ${clientName}`,
+    `Телефон: ${phone}`,
+    `Тип проекту: ${projectType}`,
+    `Адреса: ${address}`,
+    '',
+    'Відкрийте CRM для обробки → demo.temoweb.eu',
+  ].join('\n')
+  return sendWhatsAppTemplate({ templateName, templateLang, parameters: [clientName, phone, projectType, address], fallbackText: fallback })
 }
 
 function classifyClientEmailResult(result) {
@@ -2732,10 +2851,12 @@ async function openAiExtractCommercialCase({ lead, formText }) {
 async function queueLeadDelivery(lead) {
   // WhatsApp notification is intentionally NOT sent here —
   // it fires when the client RETURNS the form (in /api/client-brief handler)
+  const clientMail = buildClientMail(lead)
   const mail = await sendResendEmail({
     to: lead.email,
-    subject: buildClientMail(lead).subject,
-    text: buildClientMail(lead).text,
+    subject: clientMail.subject,
+    text: clientMail.text,
+    html: clientMail.html,
   })
   const emailState = classifyClientEmailResult(mail)
   const updated = await updateLead(lead.id, {
@@ -3505,10 +3626,23 @@ app.post('/api/client-brief', async (req, res) => {
       }
     }
     const dispatch = await sendBriefToOwner({ company, goal, details: summaryText })
-    // Send WhatsApp notification to internal team when client RETURNS the form
+    // Send WhatsApp notification to internal team when client RETURNS the brief form
     let waResult = { attempted: false }
     if (updatedLead) {
-      waResult = await sendWhatsAppLead(updatedLead).catch(() => ({ attempted: false, ok: false, reason: 'error' }))
+      waResult = await sendWhatsAppBriefReceived(updatedLead).catch(() => ({ attempted: false, ok: false, reason: 'error' }))
+      // Log WA message as a job event so it appears in Komunikace timeline
+      const linkedJobForWa = await findJobByLeadId(updatedLead.id)
+      if (linkedJobForWa) {
+        const waStatus = waResult.ok ? 'доставлено' : (waResult.attempted ? 'помилка' : 'не надіслано')
+        await addJobEvent(linkedJobForWa.id, {
+          eventType: 'whatsapp_sent',
+          eventCode: 'brief_received_wa',
+          actorType: 'system',
+          title: `WhatsApp сповіщення → менеджеру (${waStatus})`,
+          message: `Система надіслала WhatsApp-повідомлення команді про отримання анкети від ${updatedLead.name || 'клієнта'}`,
+          metadata: { waResult, leadId: updatedLead.id, templateName: 'brief_received_ua' },
+        })
+      }
     }
     if (!dispatch.ok) return res.status(502).json({ ok: false, error: 'Failed to send brief email.', dispatch })
     return res.json({ ok: true, dispatch, whatsapp: waResult, linkedLead: updatedLead, offerDraft })
@@ -4333,7 +4467,7 @@ app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['ad
   await insertAudit(req.auth?.email || null, 'estimate_sent_to_client', 'estimate', id, { to, estimateNo: estimate.estimateNo || null })
   // Log email to correspondence table
   if (job?.id) {
-    await logJobEmail({ jobId: job.id, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: text, status: 'sent' })
+    await logJobEmail({ jobId: job.id, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: textPlain, status: 'sent' })
   }
   return res.json({ ok: true, estimate: updatedEstimate, mail, files: { xlsx, pdf } })
 })
@@ -4423,6 +4557,76 @@ app.get('/api/crm/pipeline', authMiddleware, roleGuard(['admin', 'manager', 'vie
   const customers = {}
   for (const cid of customerIds) { const c = await getCustomerById(cid); if (c) customers[cid] = c }
   return res.json({ ok: true, stages: JOB_STAGES, stageLabels: JOB_STAGE_LABELS, byStage, customers })
+})
+
+/* ── ARCHIVE API ──────────────────────────────────────────────────────────── */
+app.get('/api/crm/archive', authMiddleware, roleGuard(['admin', 'manager', 'viewer', 'pm', 'owner']), async (req, res) => {
+  const limit  = Math.min(Number(req.query.limit  || 50), 200)
+  const offset = Math.max(Number(req.query.offset || 0),   0)
+  const q      = String(req.query.q || '').trim()
+  const from   = req.query.from ? new Date(req.query.from) : null
+  const to     = req.query.to   ? new Date(req.query.to + 'T23:59:59') : null
+  const sortBy = req.query.sort === 'amount' ? 'total_price' : req.query.sort === 'name' ? 'c.name' : 'j.closed_at'
+
+  if (!pool) return res.json({ ok: true, jobs: [], total: 0 })
+
+  const params = []
+  const conds  = ["j.pipeline_stage = 'dokonceno'"]
+  function add(sql, val) { params.push(val); conds.push(sql.replace('?', `$${params.length}`)) }
+
+  if (q) {
+    params.push(`%${q.toLowerCase()}%`)
+    conds.push(`(lower(unaccent(j.internal_number)) LIKE lower(unaccent($${params.length})) OR lower(unaccent(j.title)) LIKE lower(unaccent($${params.length})) OR lower(unaccent(COALESCE(c.name,''))) LIKE lower(unaccent($${params.length})) OR lower(unaccent(COALESCE(c.company_name,''))) LIKE lower(unaccent($${params.length})))`)
+  }
+  if (from) add('j.closed_at >= ?', from.toISOString())
+  if (to)   add('j.closed_at <= ?', to.toISOString())
+
+  const where = conds.join(' AND ')
+  const totalQ = await dbQuery(
+    `SELECT COUNT(*) AS cnt FROM crm_jobs j LEFT JOIN crm_customers c ON c.id = j.customer_id WHERE ${where}`,
+    params
+  )
+  const total = Number(totalQ.rows[0]?.cnt || 0)
+
+  params.push(limit); params.push(offset)
+  const rows = await dbQuery(
+    `SELECT j.*, c.name AS cust_name, c.company_name AS cust_company, c.phone AS cust_phone, c.email AS cust_email,
+            (SELECT COUNT(*) FROM crm_job_documents WHERE job_id = j.id) AS doc_count,
+            (SELECT SUM(amount) FROM crm_job_invoices WHERE job_id = j.id) AS inv_total,
+            (SELECT e.total_with_vat FROM crm_estimates e WHERE e.job_id = j.id ORDER BY e.id DESC LIMIT 1) AS est_total
+     FROM crm_jobs j
+     LEFT JOIN crm_customers c ON c.id = j.customer_id
+     WHERE ${where}
+     ORDER BY ${sortBy} DESC NULLS LAST
+     LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  )
+  const jobs = rows.rows.map(r => ({
+    ...normalizeJob(r),
+    custName:    r.cust_name    || r.cust_company || null,
+    custPhone:   r.cust_phone   || null,
+    custEmail:   r.cust_email   || null,
+    docCount:    Number(r.doc_count  || 0),
+    invTotal:    Number(r.inv_total  || 0),
+    estTotal:    Number(r.est_total  || 0),
+  }))
+  return res.json({ ok: true, jobs, total, limit, offset })
+})
+
+app.delete('/api/crm/archive/:id', authMiddleware, roleGuard(['admin', 'owner']), async (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'Invalid ID' })
+  if (!pool) return res.status(503).json({ ok: false, error: 'DB not available' })
+
+  const ex = await dbQuery("SELECT id, pipeline_stage FROM crm_jobs WHERE id=$1", [id])
+  if (!ex.rowCount) return res.status(404).json({ ok: false, error: 'Job not found' })
+  const job = ex.rows[0]
+  if (job.pipeline_stage !== 'dokonceno') {
+    return res.status(400).json({ ok: false, error: 'Only completed jobs (dokonceno) can be deleted from archive' })
+  }
+  await dbQuery('DELETE FROM crm_jobs WHERE id=$1', [id])
+  await insertAudit(req.auth?.email || null, 'job_deleted_from_archive', 'job', id, { internalNumber: job.internal_number })
+  return res.json({ ok: true })
 })
 
 app.post('/api/crm/customers', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
