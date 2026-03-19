@@ -10,6 +10,8 @@ const pdfParse = require('pdf-parse')
 const ExcelJS = require('exceljs')
 const { execFile } = require('child_process')
 const { promisify } = require('util')
+const { ImapFlow } = require('imapflow')
+const { simpleParser } = require('mailparser')
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return
@@ -47,7 +49,17 @@ const GENERATED_ESTIMATES_DIR = path.join(GENERATED_DIR, 'estimates')
 const UPLOADS_DIR = path.join(__dirname, 'uploads')
 const OFFER_TEMPLATES_DIR = String(process.env.CRM_OFFER_TEMPLATES_DIR || path.join(__dirname, 'templates', 'offers')).trim()
 const CRM_PUBLIC_BASE_URL = String(process.env.CRM_PUBLIC_BASE_URL || `http://localhost:${PORT}`).trim().replace(/\/+$/, '')
+const RESEND_INBOUND_DOMAIN = String(process.env.RESEND_INBOUND_DOMAIN || 'crm-reply.demo.temoweb.eu').trim()
+const RESEND_INBOUND_SECRET = String(process.env.RESEND_INBOUND_SECRET || '').trim()
 const DB_URL = String(process.env.CRM_DATABASE_URL || process.env.DATABASE_URL || '').trim()
+
+// IMAP polling config (Zoho Mail or any IMAP provider)
+const ZOHO_IMAP_HOST = String(process.env.ZOHO_IMAP_HOST || 'imap.zoho.eu').trim()
+const ZOHO_IMAP_PORT = Number(process.env.ZOHO_IMAP_PORT || 993)
+const ZOHO_IMAP_USER = String(process.env.ZOHO_IMAP_USER || '').trim()
+const ZOHO_IMAP_PASS = String(process.env.ZOHO_IMAP_PASS || '').trim()
+const ZOHO_IMAP_MAILBOX = String(process.env.ZOHO_IMAP_MAILBOX || 'INBOX').trim()
+const IMAP_POLL_INTERVAL_MS = Number(process.env.IMAP_POLL_INTERVAL_MS || 120000) // 2 minutes
 const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || '').trim()
 const OPENAI_MODEL = String(process.env.OPENAI_MODEL || 'gpt-4.1').trim()
 const LEAD_DELETE_PASSWORD = String(process.env.CRM_DELETE_PASSWORD || '12345').trim()
@@ -282,86 +294,215 @@ function roleGuard(roles) {
 function clientFormUrl() {
   return String(process.env.CLIENT_FORM_URL || 'https://demo.temoweb.eu/client-form.html').trim()
 }
-function buildClientMail(lead) {
+function buildClientMail(lead, jobId = null) {
   const baseUrl = clientFormUrl()
   const formUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}leadId=${encodeURIComponent(String(lead.id))}&leadEmail=${encodeURIComponent(String(lead.email || ''))}`
-  const clientName = lead.name || 'Клієнт'
+  const clientName = lead.name || 'Vážený zákazníku'
   const textPlain = [
-    `Добрий день, ${clientName}!`,
+    `Dobrý den, ${clientName}!`,
     '',
-    'Дякуємо за звернення до O&L Master Dom.',
-    'Будь ласка, заповніть коротку анкету, щоб ми могли підготувати точну пропозицію:',
+    'Děkujeme za Váš zájem o služby O&L Master Dom.',
+    'Prosíme, vyplňte krátký dotazník, abychom Vám mohli připravit přesnou nabídku:',
     formUrl,
     '',
-    'Заповнення займе 2–3 хвилини.',
+    'Vyplnění zabere 2–3 minuty.',
     '',
-    'З повагою,',
-    'Команда O&L Master Dom',
+    'S pozdravem,',
+    'Tým O&L Master Dom',
   ].join('\n')
+  // Gmail-safe HTML — no CSS gradients, no box-shadow, table-based button
   const html = `<!DOCTYPE html>
-<html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Інформаційна анкета</title></head>
-<body style="margin:0;padding:0;background:#F4F6F9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;padding:32px 16px">
-  <tr><td align="center">
-    <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10)">
+<html lang="cs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Informacni dotaznik</title></head>
+<body style="margin:0;padding:0;background-color:#F0F4F8;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F0F4F8;padding:32px 0">
+  <tr><td align="center" style="padding:0 16px">
+    <table width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background-color:#FFFFFF;border-radius:12px;overflow:hidden">
+
       <!-- HEADER -->
-      <tr><td style="background:linear-gradient(135deg,#0A1628 0%,#132240 100%);padding:36px 40px;text-align:center">
-        <table width="100%" cellpadding="0" cellspacing="0"><tr>
-          <td style="text-align:center">
-            <div style="display:inline-block;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 20px;margin-bottom:16px">
-              <span style="font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px">O&amp;L</span>
-              <span style="font-size:22px;font-weight:400;color:rgba(255,255,255,.7);letter-spacing:-0.5px"> Master Dom</span>
-            </div>
-            <div style="font-size:13px;color:rgba(255,255,255,.45);letter-spacing:1.2px;text-transform:uppercase">Електромонтажні роботи · Чехія</div>
-          </td>
-        </tr></table>
-      </td></tr>
-      <!-- BODY -->
-      <tr><td style="padding:40px 40px 32px">
-        <h2 style="font-size:24px;font-weight:800;color:#0D1F3C;margin:0 0 10px;line-height:1.3">Добрий день, ${clientName}!</h2>
-        <p style="font-size:15px;color:#4A5568;line-height:1.7;margin:0 0 28px">
-          Дякуємо за звернення до <strong>O&amp;L Master Dom</strong>.<br>
-          Щоб підготувати для вас точну та вигідну пропозицію, просимо заповнити коротку анкету — це займе <strong>2–3 хвилини</strong>.
+      <tr><td align="center" bgcolor="#0D1F3C" style="background-color:#0D1F3C;padding:32px 40px">
+        <img src="https://demo.temoweb.eu/logo1.jpg" alt="O&amp;L Master Dom" width="110" height="auto"
+          style="display:block;margin:0 auto 12px auto;border-radius:8px;border:0" />
+        <p style="margin:0;font-size:12px;color:#8899BB;letter-spacing:1px;text-transform:uppercase;font-family:Arial,sans-serif">
+          Elektromontazni prace &middot; Ceska republika
         </p>
-        <!-- CTA Button -->
-        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 32px">
-          <a href="${formUrl}" style="display:inline-block;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#FFFFFF;text-decoration:none;font-size:16px;font-weight:700;padding:16px 40px;border-radius:12px;box-shadow:0 6px 20px rgba(26,106,232,.38);letter-spacing:0.2px">
-            📋 Заповнити анкету →
-          </a>
-        </td></tr></table>
-        <!-- WHAT NEXT -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F9FC;border-radius:12px;border:1px solid #E2E8F0;margin-bottom:28px">
+      </td></tr>
+
+      <!-- BODY -->
+      <tr><td style="padding:36px 40px 28px">
+        <h2 style="margin:0 0 16px;font-size:22px;font-weight:bold;color:#0D1F3C;font-family:Arial,sans-serif">
+          Dobry den, ${clientName}!
+        </h2>
+        <p style="margin:0 0 24px;font-size:15px;color:#4A5568;line-height:1.7;font-family:Arial,sans-serif">
+          Dekujeme za Vas zajem o sluzby <strong style="color:#0D1F3C">O&amp;L Master Dom</strong>.<br>
+          Abychom Vam mohli pripravit presnou nabidku, prosime Vas o vyplneni kratkeho dotazniku &mdash; zabere to <strong>2&ndash;3 minuty</strong>.
+        </p>
+
+        <!-- CTA BUTTON — Gmail-safe table button -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 32px auto">
+          <tr>
+            <td align="center" bgcolor="#1A6AE8" style="background-color:#1A6AE8;border-radius:10px;padding:0">
+              <a href="${formUrl}"
+                 target="_blank"
+                 style="display:inline-block;padding:16px 40px;font-size:16px;font-weight:bold;color:#FFFFFF;text-decoration:none;font-family:Arial,sans-serif;border-radius:10px;background-color:#1A6AE8;mso-padding-alt:0">
+                Vyplnit dotaznik &rarr;
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- HOW IT WORKS -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="background-color:#F7F9FC;border-radius:10px;border:1px solid #DDE3ED;margin-bottom:28px">
           <tr><td style="padding:20px 24px">
-            <p style="font-size:13px;font-weight:700;color:#0D1F3C;margin:0 0 12px;text-transform:uppercase;letter-spacing:.6px">Як це працює:</p>
-            <table cellpadding="0" cellspacing="0">
-              <tr><td style="padding:5px 0;vertical-align:top"><span style="font-size:18px;margin-right:10px">📋</span></td><td style="font-size:13px;color:#4A5568;line-height:1.5;padding:4px 0">Ви заповнюєте анкету (2–3 хв)</td></tr>
-              <tr><td style="padding:5px 0;vertical-align:top"><span style="font-size:18px;margin-right:10px">📞</span></td><td style="font-size:13px;color:#4A5568;line-height:1.5;padding:4px 0">Наш менеджер зв'яжеться з вами протягом 1 робочого дня</td></tr>
-              <tr><td style="padding:5px 0;vertical-align:top"><span style="font-size:18px;margin-right:10px">💼</span></td><td style="font-size:13px;color:#4A5568;line-height:1.5;padding:4px 0">Ви отримуєте детальну пропозицію з кошторисом</td></tr>
+            <p style="margin:0 0 12px;font-size:12px;font-weight:bold;color:#0D1F3C;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif">Jak to funguje:</p>
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="30" valign="top" style="font-size:16px;padding:3px 0">&#128203;</td>
+                <td style="font-size:13px;color:#4A5568;line-height:1.6;padding:3px 0;font-family:Arial,sans-serif">Vyplnite dotaznik (2&ndash;3 min)</td>
+              </tr>
+              <tr>
+                <td width="30" valign="top" style="font-size:16px;padding:3px 0">&#128222;</td>
+                <td style="font-size:13px;color:#4A5568;line-height:1.6;padding:3px 0;font-family:Arial,sans-serif">Nas manazer Vas kontaktuje do 1 pracovniho dne</td>
+              </tr>
+              <tr>
+                <td width="30" valign="top" style="font-size:16px;padding:3px 0">&#128188;</td>
+                <td style="font-size:13px;color:#4A5568;line-height:1.6;padding:3px 0;font-family:Arial,sans-serif">Obdrzite podrobnou nabidku s rozpoctem</td>
+              </tr>
             </table>
           </td></tr>
         </table>
-        <p style="font-size:13px;color:#718096;line-height:1.6;margin:0">
-          Якщо посилання не відкривається, скопіюйте його у браузер:<br>
-          <a href="${formUrl}" style="color:#1A6AE8;word-break:break-all;font-size:12px">${formUrl}</a>
+
+        <p style="margin:0;font-size:12px;color:#8899BB;line-height:1.6;font-family:Arial,sans-serif">
+          Pokud se tlacitko neotevre, zkopirujte tento odkaz do prohlizece:<br>
+          <a href="${formUrl}" style="color:#1A6AE8;word-break:break-all">${formUrl}</a>
         </p>
       </td></tr>
-      <!-- FOOTER -->
-      <tr><td style="background:#F7F9FC;border-top:1px solid #E2E8F0;padding:24px 40px;text-align:center">
-        <p style="font-size:13px;font-weight:700;color:#0D1F3C;margin:0 0 4px">O&amp;L Master Dom</p>
-        <p style="font-size:12px;color:#A0AEC0;margin:0">Електромонтажні роботи · demo.temoweb.eu</p>
+
+      <!-- REPLY BUTTON -->
+      <tr><td align="center" style="padding:4px 40px 10px">
+        <p style="margin:0;font-size:13px;color:#718096;line-height:1.6;font-family:Arial,sans-serif">Mate dotazy? Napiste nam primo na tento e-mail.</p>
       </td></tr>
+      <tr><td align="center" style="padding:0 40px 28px">
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+          <tr>
+            <td align="center" bgcolor="#F59E0B" style="background-color:#F59E0B;border-radius:10px;padding:0">
+              <a href="mailto:${jobId ? `crm+j${jobId}@${RESEND_INBOUND_DOMAIN || 'crm-reply.demo.temoweb.eu'}` : (process.env.RESEND_FROM || 'info@ol-masterdom.cz')}"
+                 style="display:inline-block;padding:12px 28px;font-size:14px;font-weight:bold;color:#0D1F3C;text-decoration:none;font-family:Arial,sans-serif;border-radius:10px;background-color:#F59E0B;mso-padding-alt:0">
+                ✉ Napsat manažerovi
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+
+      <!-- FOOTER -->
+      <tr><td align="center" bgcolor="#F7F9FC" style="background-color:#F7F9FC;border-top:1px solid #DDE3ED;padding:20px 40px">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:bold;color:#0D1F3C;font-family:Arial,sans-serif">O&amp;L Master Dom</p>
+        <p style="margin:0;font-size:12px;color:#8899BB;font-family:Arial,sans-serif">Elektromontazni prace &middot; demo.temoweb.eu</p>
+      </td></tr>
+
     </table>
   </td></tr>
 </table>
 </body></html>`
   return {
-    subject: 'O&L Master Dom — анкета для підготовки пропозиції',
+    subject: 'O&L Master Dom — dotaznik pro pripravu nabidky',
     text: textPlain,
     html,
   }
 }
 
-function buildEstimateEmailHtml({ estimate, job, clientName, greeting, bodyText, senderName }) {
+function buildActEmailHtml({ job, clientName, actUrl, jobId }) {
+  const jobNo = job?.internalNumber || String(jobId || '')
+  const date = new Date().toLocaleDateString('cs-CZ', { day: '2-digit', month: 'long', year: 'numeric' })
+  const name = clientName || 'Vážený zákazníku'
+  return `<!DOCTYPE html>
+<html lang="cs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Akt o provedení prací</title></head>
+<body style="margin:0;padding:0;background-color:#F0F4F8;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F0F4F8;padding:32px 0">
+  <tr><td align="center" style="padding:0 16px">
+    <table width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background-color:#FFFFFF;border-radius:12px;overflow:hidden">
+
+      <!-- HEADER -->
+      <tr><td align="center" bgcolor="#0B4A2B" style="background-color:#0B4A2B;padding:32px 40px">
+        <img src="https://demo.temoweb.eu/logo1.jpg" alt="O&amp;L Master Dom" width="100" height="auto"
+          style="display:block;margin:0 auto 12px auto;border-radius:8px;border:0" />
+        <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">
+          Akt o provedení prací
+        </p>
+      </td></tr>
+
+      <!-- ACCENT BAR -->
+      <tr><td style="height:4px;background-color:#4ADE80;font-size:0;line-height:0">&nbsp;</td></tr>
+
+      <!-- BODY -->
+      <tr><td style="padding:36px 40px 24px">
+        <h2 style="margin:0 0 16px;font-size:22px;font-weight:bold;color:#0B4A2B;font-family:Arial,sans-serif">
+          ✅ Vaše zakázka je dokončena
+        </h2>
+        <p style="margin:0 0 20px;font-size:15px;color:#4A5568;line-height:1.7;font-family:Arial,sans-serif">
+          Dobrý den, <strong style="color:#0D1F3C">${name}</strong>,<br><br>
+          s radostí Vám oznamujeme, že práce na Vaší zakázce <strong>${jobNo}</strong> byly úspěšně dokončeny.
+          Prosíme Vás o prostudování a elektronický podpis aktu o provedení prací.
+        </p>
+
+        <!-- INFO BOX -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="background-color:#F0FFF4;border:2px solid #4ADE80;border-radius:10px;margin-bottom:28px">
+          <tr><td style="padding:20px 24px">
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="28" valign="top" style="font-size:18px;padding:2px 0">✅</td>
+                <td style="font-size:13px;color:#166534;line-height:1.6;padding:2px 0;font-family:Arial,sans-serif"><strong>Zakázka č. ${jobNo}</strong> — práce dokončeny</td>
+              </tr>
+              <tr>
+                <td width="28" valign="top" style="font-size:18px;padding:2px 0">📄</td>
+                <td style="font-size:13px;color:#166534;line-height:1.6;padding:2px 0;font-family:Arial,sans-serif">Akt je platný 30 dní od odeslání</td>
+              </tr>
+              <tr>
+                <td width="28" valign="top" style="font-size:18px;padding:2px 0">🖊</td>
+                <td style="font-size:13px;color:#166534;line-height:1.6;padding:2px 0;font-family:Arial,sans-serif">Podpis probíhá online — rychle a bezpečně</td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+
+        <!-- SIGN BUTTON -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 28px auto">
+          <tr>
+            <td align="center" bgcolor="#0B4A2B" style="background-color:#0B4A2B;border-radius:10px;padding:0">
+              <a href="${actUrl}"
+                 target="_blank"
+                 style="display:inline-block;padding:16px 44px;font-size:16px;font-weight:bold;color:#FFFFFF;text-decoration:none;font-family:Arial,sans-serif;border-radius:10px;background-color:#0B4A2B;mso-padding-alt:0">
+                ✍ Podepsat akt o provedení prací
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin:0;font-size:12px;color:#8899BB;line-height:1.6;font-family:Arial,sans-serif">
+          Pokud se tlačítko neotevře, zkopírujte tento odkaz:<br>
+          <a href="${actUrl}" style="color:#0B4A2B;word-break:break-all">${actUrl}</a>
+        </p>
+      </td></tr>
+
+      <!-- REPLY BUTTON -->
+      ${buildEmailReplyBlock(jobId, 'Odpovědět manažerovi', 'Máte otázky k aktu? Napište nám přímo.')}
+
+      <!-- FOOTER -->
+      <tr><td align="center" bgcolor="#F7F9FC" style="background-color:#F7F9FC;border-top:1px solid #DDE3ED;padding:20px 40px">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:bold;color:#0D1F3C;font-family:Arial,sans-serif">O&amp;L Master Dom</p>
+        <p style="margin:0;font-size:12px;color:#8899BB;font-family:Arial,sans-serif">Elektromontažní práce · demo.temoweb.eu · ${date}</p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+}
+
+function buildEstimateEmailHtml({ estimate, job, clientName, greeting, bodyText, senderName, jobId }) {
   const fmtM = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč`
   const estimateNo = estimate?.estimateNo || estimate?.jobNumberSnapshot || ''
   const jobNo = job?.internalNumber || estimate?.jobNumberSnapshot || ''
@@ -459,11 +600,8 @@ function buildEstimateEmailHtml({ estimate, job, clientName, greeting, bodyText,
           </table>
         </td></tr>
 
-        <!-- CTA -->
-        <tr><td style="padding:0 40px 32px;text-align:center">
-          <p style="margin:0 0 16px;font-size:14px;color:#444;line-height:1.6">Máte dotazy nebo připomínky k rozpočtu? Neváhejte nás kontaktovat.</p>
-          <a href="mailto:info@temoweb.eu" style="display:inline-block;background:linear-gradient(135deg,#F59E0B,#D97706);color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:0.02em">✉ Odpovědět na e-mail</a>
-        </td></tr>
+        <!-- CTA REPLY BUTTON -->
+        ${buildEmailReplyBlock(jobId || job?.id, 'Odpovědět na nabídku', 'Máte dotazy nebo připomínky k rozpočtu? Klikněte a odpovězte přímo.')}
 
         <!-- DIVIDER -->
         <tr><td style="height:1px;background:#E2E8F0;margin:0 40px"></td></tr>
@@ -496,7 +634,33 @@ function buildEstimateEmailHtml({ estimate, job, clientName, greeting, bodyText,
 </html>`
 }
 
-async function sendResendEmail({ to, subject, text, html, attachments }) {
+function buildReplyTo(jobId) {
+  if (!RESEND_INBOUND_DOMAIN || !jobId) return null
+  return `crm+j${jobId}@${RESEND_INBOUND_DOMAIN}`
+}
+
+// Generates a Gmail-safe yellow reply button row for email templates.
+// Returns an HTML string with <tr> blocks to be placed inside an outer <table>.
+function buildEmailReplyBlock(jobId, label = 'Odpovědět', hintText = 'Máte dotazy? Odpovězte přímo na tento e-mail.') {
+  const domain = RESEND_INBOUND_DOMAIN || 'crm-reply.demo.temoweb.eu'
+  const replyAddr = jobId ? `crm+j${jobId}@${domain}` : (process.env.RESEND_FROM || 'info@ol-masterdom.cz')
+  const hint = hintText ? `<tr><td align="center" style="padding:4px 40px 10px"><p style="margin:0;font-size:13px;color:#718096;line-height:1.6;font-family:Arial,sans-serif">${hintText}</p></td></tr>` : ''
+  return `${hint}
+      <tr><td align="center" style="padding:0 40px 32px">
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+          <tr>
+            <td align="center" bgcolor="#F59E0B" style="background-color:#F59E0B;border-radius:10px;padding:0">
+              <a href="mailto:${replyAddr}"
+                 style="display:inline-block;padding:14px 34px;font-size:15px;font-weight:bold;color:#0D1F3C;text-decoration:none;font-family:Arial,sans-serif;border-radius:10px;background-color:#F59E0B;mso-padding-alt:0">
+                ✉ ${label}
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td></tr>`
+}
+
+async function sendResendEmail({ to, subject, text, html, attachments, replyTo }) {
   const key = String(process.env.RESEND_API_KEY || '').trim()
   const from = String(process.env.RESEND_FROM || '').trim()
   if (!key || !from || !to) return { attempted: false, ok: false, reason: 'missing_resend_env' }
@@ -507,17 +671,19 @@ async function sendResendEmail({ to, subject, text, html, attachments }) {
         content: String(x?.content || '').trim(),
       }))
       .filter((x) => x.filename && x.content)
+    const payload = {
+      from,
+      to: [to],
+      subject,
+      text,
+      html: html || undefined,
+      attachments: cleanAttachments.length ? cleanAttachments : undefined,
+    }
+    if (replyTo) payload.reply_to = replyTo
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        subject,
-        text,
-        html: html || undefined,
-        attachments: cleanAttachments.length ? cleanAttachments : undefined,
-      }),
+      body: JSON.stringify(payload),
     })
     if (!resp.ok) {
       const body = await resp.text().catch(() => '')
@@ -530,13 +696,15 @@ async function sendResendEmail({ to, subject, text, html, attachments }) {
   }
 }
 
-async function logJobEmail({ jobId, leadId, direction, subject, fromAddr, toAddr, body, resendId, status, rawPayload }) {
+async function logJobEmail({ jobId, leadId, direction, subject, fromAddr, toAddr, body, htmlBody, resendId, status, rawPayload, messageId }) {
   if (!pool) return null
   try {
     const q = await dbQuery(
-      `INSERT INTO crm_job_emails (job_id,lead_id,direction,subject,from_addr,to_addr,body,sent_at,resend_id,status,raw_payload,created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,now(),$8,$9,$10,now()) RETURNING id`,
-      [jobId || null, leadId || null, direction || 'outbound', subject || null, fromAddr || null, toAddr || null, body || null, resendId || null, status || 'sent', rawPayload ? JSON.stringify(rawPayload) : null]
+      `INSERT INTO crm_job_emails (job_id,lead_id,direction,subject,from_addr,to_addr,body,html_body,sent_at,resend_id,status,raw_payload,message_id,created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),$9,$10,$11,$12,now())
+       ON CONFLICT (message_id) WHERE message_id IS NOT NULL DO NOTHING
+       RETURNING id`,
+      [jobId || null, leadId || null, direction || 'outbound', subject || null, fromAddr || null, toAddr || null, body || null, htmlBody || null, resendId || null, status || 'sent', rawPayload ? JSON.stringify(rawPayload) : null, messageId || null]
     )
     return q.rows[0]?.id || null
   } catch { return null }
@@ -545,9 +713,23 @@ async function logJobEmail({ jobId, leadId, direction, subject, fromAddr, toAddr
 async function listJobEmailsDb(jobId) {
   if (!pool) return []
   try {
-    const q = await dbQuery(`SELECT * FROM crm_job_emails WHERE job_id=$1 ORDER BY sent_at DESC LIMIT 200`, [jobId])
-    return q.rows.map(r => ({ id: r.id, jobId: r.job_id, leadId: r.lead_id, direction: r.direction, subject: r.subject, fromAddr: r.from_addr, toAddr: r.to_addr, body: r.body, sentAt: r.sent_at, resendId: r.resend_id, status: r.status }))
+    const q = await dbQuery(`SELECT * FROM crm_job_emails WHERE job_id=$1 ORDER BY sent_at ASC LIMIT 200`, [jobId])
+    return q.rows.map(r => ({ id: r.id, jobId: r.job_id, leadId: r.lead_id, direction: r.direction, subject: r.subject, fromAddr: r.from_addr, toAddr: r.to_addr, body: r.body, htmlBody: r.html_body, sentAt: r.sent_at, resendId: r.resend_id, status: r.status }))
   } catch { return [] }
+}
+
+// Find job by email address (for inbound email matching)
+async function findJobByEmail(emailAddr) {
+  if (!pool || !emailAddr) return null
+  const q = await dbQuery(
+    `SELECT j.* FROM crm_jobs j
+     JOIN crm_leads l ON j.lead_id = l.id
+     WHERE LOWER(l.email) = LOWER($1)
+       AND j.pipeline_stage NOT IN ('dokonceno')
+     ORDER BY j.created_at DESC LIMIT 1`,
+    [emailAddr]
+  ).catch(() => null)
+  return q?.rowCount ? normalizeJob(q.rows[0]) : null
 }
 
 async function sendWhatsAppTemplate({ templateName, templateLang, parameters, fallbackText }) {
@@ -675,22 +857,68 @@ async function sendWhatsAppLead(lead) {
 }
 
 async function sendWhatsAppBriefReceived(lead) {
-  const templateName = String(process.env.WHATSAPP_BRIEF_TEMPLATE_NAME || 'brief_received_ua').trim()
-  const templateLang = String(process.env.WHATSAPP_BRIEF_TEMPLATE_LANG || 'uk').trim()
+  const token = String(process.env.WHATSAPP_ACCESS_TOKEN || '').trim()
+  const phoneNumberId = String(process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim()
+  const apiVersion = String(process.env.WHATSAPP_API_VERSION || 'v22.0').trim()
+  const target = String(process.env.WHATSAPP_TARGET_NUMBER || '').trim()
+  const extraTargetsRaw = String(process.env.WHATSAPP_EXTRA_TARGET_NUMBERS || '').trim()
+  if (!token || !phoneNumberId || !target) return { attempted: false, ok: false, reason: 'missing_whatsapp_env' }
+
   const clientName = String(lead.name || '—')
   const phone = String(lead.phone || '—')
   const projectType = String(lead.brief?.objectType || lead.comment || '—')
   const address = String(lead.brief?.realizationAddress || lead.brief?.objectAddress || '—')
-  const fallback = [
+
+  const briefTemplateName = String(process.env.WHATSAPP_BRIEF_TEMPLATE_NAME || 'brief_received_ua').trim()
+  const briefTemplateLang = String(process.env.WHATSAPP_BRIEF_TEMPLATE_LANG || 'uk').trim()
+  const fallbackTemplateName = String(process.env.WHATSAPP_TEMPLATE_NAME || 'new_lead_notification_v1').trim()
+  const fallbackTemplateLang = String(process.env.WHATSAPP_TEMPLATE_LANG || 'en').trim()
+
+  const freeText = [
     '📋 НОВА АНКЕТА ВІД КЛІЄНТА',
     `Клієнт: ${clientName}`,
     `Телефон: ${phone}`,
     `Тип проекту: ${projectType}`,
     `Адреса: ${address}`,
     '',
-    'Відкрийте CRM для обробки → demo.temoweb.eu',
+    'Otevřete CRM pro zpracování → demo.temoweb.eu',
   ].join('\n')
-  return sendWhatsAppTemplate({ templateName, templateLang, parameters: [clientName, phone, projectType, address], fallbackText: fallback })
+
+  const targetList = [target, ...extraTargetsRaw.split(',').map((x) => x.trim()).filter(Boolean)]
+  const uniqueTargets = [...new Set(targetList.map((x) => x.replace(/[^\d]/g, '')).filter(Boolean))]
+
+  async function sendMsg(payload) {
+    const url = `https://graph.facebook.com/${apiVersion}/${encodeURIComponent(phoneNumberId)}/messages`
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) })
+    const bodyText = await resp.text().catch(() => '')
+    let parsed = null; try { parsed = bodyText ? JSON.parse(bodyText) : null } catch { parsed = null }
+    return { resp, bodyText, parsed }
+  }
+
+  try {
+    const recipients = []
+    for (const to of uniqueTargets) {
+      let usedMode = 'brief_template'
+      // 1st attempt: brief_received_ua template
+      let attempt = await sendMsg({ messaging_product: 'whatsapp', to, type: 'template',
+        template: { name: briefTemplateName, language: { code: briefTemplateLang }, components: [{ type: 'body', parameters: [clientName, phone, projectType, address].map(t => ({ type: 'text', text: String(t) })) }] } })
+      // 2nd attempt: approved new_lead_notification_v1 template (fallback)
+      if (!attempt.resp.ok) {
+        usedMode = 'lead_template_fallback'
+        attempt = await sendMsg({ messaging_product: 'whatsapp', to, type: 'template',
+          template: { name: fallbackTemplateName, language: { code: fallbackTemplateLang }, components: [{ type: 'body', parameters: [{ type: 'text', text: clientName }, { type: 'text', text: phone }, { type: 'text', text: lead.email || '—' }, { type: 'text', text: `Formulář odeslán. Projekt: ${projectType}` }] }] } })
+      }
+      // 3rd attempt: free text (only works within 24h conversation window)
+      if (!attempt.resp.ok) {
+        usedMode = 'text_fallback'
+        attempt = await sendMsg({ messaging_product: 'whatsapp', to, type: 'text', text: { body: freeText.slice(0, 4000) } })
+      }
+      recipients.push({ to, ok: attempt.resp.ok, sendMode: usedMode, statusCode: attempt.resp.status, messageId: attempt.parsed?.messages?.[0]?.id || null })
+    }
+    return { attempted: true, ok: recipients.every((x) => x.ok), recipients }
+  } catch (e) {
+    return { attempted: true, ok: false, reason: 'wa_exception', details: String(e?.message || e) }
+  }
 }
 
 function classifyClientEmailResult(result) {
@@ -700,7 +928,7 @@ function classifyClientEmailResult(result) {
   const reason = String(result.reason || '')
   const invalid = reason.includes('422') || reason.includes('400') || details.includes('invalid') || details.includes('recipient')
   if (invalid) return { state: 'invalid_email', status: STATUS.INVALID_EMAIL, errorText: 'Невірний email' }
-  return { state: 'failed', status: STATUS.FORM_SENT, errorText: 'Помилка відправки email' }
+  return { state: 'failed', status: STATUS.FORM_SENT, errorText: 'Chyba při odesílání e-mailu' }
 }
 
 async function insertAudit(actor, action, entityType, entityId, data) {
@@ -719,13 +947,22 @@ async function createLead(input) {
   const phone = normPhone(input.phone || '')
   const email = String(input.email || '').trim().toLowerCase()
   const source = String(input.source || 'web_form').trim() || 'web_form'
-  const manager = String(input.manager || 'Не призначено').trim() || 'Не призначено'
-  const serviceType = String(input.serviceType || 'Не вказано').trim() || 'Не вказано'
+  const manager = String(input.manager || 'Nepřiřazeno').trim() || 'Nepřiřazeno'
+  const serviceType = String(input.serviceType || 'Neuvedeno').trim() || 'Neuvedeno'
   const comment = String(input.comment || '').trim()
   const lang = String(input.lang || 'ua').trim()
   if (!name || !email) throw new Error('required')
   if (!validEmail(email)) throw new Error('invalid_email')
   if (phone && !validCzPhone(phone)) throw new Error('invalid_phone')
+
+  // Check for duplicate email across ALL leads (including archived/completed)
+  if (pool) {
+    const dup = await dbQuery('SELECT id FROM crm_leads WHERE lower(email) = $1 LIMIT 1', [email])
+    if (dup.rowCount > 0) throw new Error('duplicate_email')
+  } else {
+    const existing = readArrayFile('leads')
+    if (existing.some(x => String(x.email || '').toLowerCase() === email)) throw new Error('duplicate_email')
+  }
 
   if (pool) {
     const ins = await dbQuery(
@@ -1242,49 +1479,49 @@ function mapTemplateFromLead(lead) {
 }
 function fallbackOfferDraftFromLead(lead) {
   const briefText = extractLeadBriefText(lead)
-  const service = String(lead?.serviceType || '').trim() || 'Електромонтажні роботи'
+  const service = String(lead?.serviceType || '').trim() || 'Elektromontážní práce'
   const lines = normalizeOfferLines([
     {
       section: 'labor',
-      description: `Підготовка комерційної пропозиції (${service})`,
+      description: `Příprava nabídky (${service})`,
       unit: 'kpl',
       qty: 1,
       unitPrice: 0,
       source: 'manual',
-      sourceRef: 'Потрібно заповнити прайс',
+      sourceRef: 'Doplňte cenu dle ceníku',
       confidence: 0.4,
     },
     {
       section: 'material',
-      description: 'Матеріали за специфікацією (уточнення після замірів)',
+      description: 'Materiál dle specifikace (upřesnění po zaměření)',
       unit: 'kpl',
       qty: 1,
       unitPrice: 0,
       source: 'manual',
-      sourceRef: 'Потрібно заповнити прайс',
+      sourceRef: 'Doplňte cenu dle ceníku',
       confidence: 0.3,
     },
     {
       section: 'other',
-      description: 'Доставка, логістика та накладні витрати',
+      description: 'Doprava, logistika a vedlejší náklady',
       unit: 'kpl',
       qty: 1,
       unitPrice: 0,
       source: 'internal_rate',
-      sourceRef: 'Потрібно заповнити прайс',
+      sourceRef: 'Doplňte cenu dle ceníku',
       confidence: 0.35,
     },
   ])
   return {
     templateKey: mapTemplateFromLead(lead),
-    scopeSummary: briefText || `Чернетка КП для клієнта ${lead?.name || ''}`.trim(),
+    scopeSummary: briefText || `Koncept nabídky pro klienta ${lead?.name || ''}`.trim(),
     assumptions: [
-      'Чернетка створена автоматично. Перевірте обсяги робіт та ціни перед відправкою.',
-      'Ціни по матеріалах та роботах поки не підтягнуті з прайс-листа.',
+      'Koncept vytvořen automaticky. Zkontrolujte rozsah prací a ceny před odesláním.',
+      'Ceny materiálů a prací je třeba doplnit dle aktuálního ceníku.',
     ],
-    warnings: ['Потрібне ручне підтвердження цін менеджером'],
+    warnings: ['Nutné manuální potvrzení cen manažerem'],
     pricingMode: 'shop_markup',
-    sourceNote: 'Поки без підключеного прайс-движка: заповнення вручну',
+    sourceNote: 'Bez připojeného ceníkového enginu — vyplňte ručně',
     lines,
   }
 }
@@ -2570,8 +2807,20 @@ async function saveEstimate(id, patch = {}) {
     const cur = ex.rows[0]
     const lines = Array.isArray(patch.lines) ? patch.lines.map((x, idx) => normalizeEstimateLine(x, idx)) : (await getEstimateById(id))?.lines || []
     const totals = computeEstimateTotals(lines, patch.vatRate != null ? patch.vatRate : cur.vat_rate)
+    // Sanitize date: convert Czech "DD.MM.YYYY" to ISO "YYYY-MM-DD" if needed
+    function sanitizeEstimateDate(d) {
+      if (!d) return new Date().toISOString().slice(0, 10)
+      const s = String(d).trim()
+      if (s === 'Invalid Date' || s === '—' || !s) return new Date().toISOString().slice(0, 10)
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+      // Czech locale "18. 03. 2026" or "18.03.2026"
+      const m = s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/)
+      if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+      try { const dt = new Date(s); if (!isNaN(dt.getTime())) return dt.toISOString().slice(0,10) } catch {}
+      return new Date().toISOString().slice(0, 10)
+    }
     const merged = {
-      estimateDate: patch.estimateDate !== undefined ? patch.estimateDate : cur.estimate_date,
+      estimateDate: sanitizeEstimateDate(patch.estimateDate !== undefined ? patch.estimateDate : cur.estimate_date),
       jobNumberSnapshot: patch.jobNumberSnapshot !== undefined ? patch.jobNumberSnapshot : cur.job_number_snapshot,
       clientNameSnapshot: patch.clientNameSnapshot !== undefined ? patch.clientNameSnapshot : cur.client_name_snapshot,
       companyNameSnapshot: patch.companyNameSnapshot !== undefined ? patch.companyNameSnapshot : cur.company_name_snapshot,
@@ -2693,9 +2942,9 @@ async function listAuditRowsForLead(leadId) {
 function buildLeadTimeline(lead, auditRows = []) {
   const items = []
   if (!lead) return items
-  items.push({ key: 'lead_created', title: 'Заявка отримана', at: lead.createdAt, tone: 'new', note: lead.source || 'web_form' })
-  if (lead.proposalSentAt) items.push({ key: 'form_sent', title: 'Формуляр відправлено', at: lead.proposalSentAt, tone: 'contacted', note: lead.email || '' })
-  if (lead.briefReceivedAt) items.push({ key: 'brief_received', title: 'Формуляр отримано', at: lead.briefReceivedAt, tone: 'proposal', note: lead.brief?.objectType || '' })
+  items.push({ key: 'lead_created', title: 'Poptávka přijata', at: lead.createdAt, tone: 'new', note: lead.source || 'web_form' })
+  if (lead.proposalSentAt) items.push({ key: 'form_sent', title: 'Formulář odeslán klientovi', at: lead.proposalSentAt, tone: 'contacted', note: lead.email || '' })
+  if (lead.briefReceivedAt) items.push({ key: 'brief_received', title: 'Formulář od klienta přijat', at: lead.briefReceivedAt, tone: 'proposal', note: lead.brief?.objectType || '' })
   if (lead.clientNumber) items.push({ key: 'client_number', title: 'Присвоєно номер клієнта', at: lead.updatedAt || lead.briefReceivedAt || lead.createdAt, tone: 'won', note: lead.clientNumber })
   for (const row of auditRows) {
     if (row.action === 'estimate_created') items.push({ key: `estimate_${row.created_at}`, title: 'Створено розрахунок', at: row.created_at, tone: 'contacted', note: row.data?.estimateNo || '' })
@@ -2848,15 +3097,17 @@ async function openAiExtractCommercialCase({ lead, formText }) {
   return asObj
 }
 
-async function queueLeadDelivery(lead) {
+async function queueLeadDelivery(lead, jobId) {
   // WhatsApp notification is intentionally NOT sent here —
   // it fires when the client RETURNS the form (in /api/client-brief handler)
-  const clientMail = buildClientMail(lead)
+  const clientMail = buildClientMail(lead, jobId || null)
+  const replyTo = jobId ? buildReplyTo(jobId) : null
   const mail = await sendResendEmail({
     to: lead.email,
     subject: clientMail.subject,
     text: clientMail.text,
     html: clientMail.html,
+    replyTo,
   })
   const emailState = classifyClientEmailResult(mail)
   const updated = await updateLead(lead.id, {
@@ -2865,7 +3116,8 @@ async function queueLeadDelivery(lead) {
     proposalSentAt: emailState.state === 'sent' ? nowIso() : null,
     proposalError: emailState.errorText,
   })
-  return { mail, lead: updated }
+  // Return clientMail so caller can log with jobId after job is created
+  return { mail, lead: updated, clientMail }
 }
 
 function publicError(lang, key) {
@@ -3001,6 +3253,7 @@ function normalizeJob(row) {
     handoverProtocolReady: Boolean(row.handover_protocol_ready),
     handoverSigned: Boolean(row.handover_signed),
     notes: row.notes || '',
+    clientComment: row.client_comment || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -3009,9 +3262,9 @@ async function createJob(p) {
   const pipelineStage = p.pipelineStage || p.stage || 'nova_poptavka'
   if (pool) {
     const q = await dbQuery(
-      `INSERT INTO crm_jobs (customer_id,lead_id,internal_number,title,job_type,source,stage,pipeline_stage,received_at,responsible_person,client_contact_person,priority,waiting_for,blocking_factor,risk_level,next_action,next_action_due_at,last_client_contact_at,last_internal_action_at,notes,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,now(),now()) RETURNING *`,
-      [p.customerId||null,p.leadId||null,p.internalNumber||buildJobNumber(),p.title||'Nová zakázka',p.jobType||'kombinovana',p.source||'web_form',pipelineStage,pipelineStage,p.responsiblePerson||null,p.clientContactPerson||null,p.priority||'normal',p.waitingFor||'client',p.blockingFactor||'missing_form',p.riskLevel||'none',p.nextAction||'Zkontrolovat novou poptávku',p.nextActionDueAt||null,p.lastClientContactAt||null,p.lastInternalActionAt||nowIso(),p.notes||null]
+      `INSERT INTO crm_jobs (customer_id,lead_id,internal_number,title,job_type,source,stage,pipeline_stage,received_at,responsible_person,client_contact_person,priority,waiting_for,blocking_factor,risk_level,next_action,next_action_due_at,last_client_contact_at,last_internal_action_at,notes,client_comment,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,now(),now()) RETURNING *`,
+      [p.customerId||null,p.leadId||null,p.internalNumber||buildJobNumber(),p.title||'Nová zakázka',p.jobType||'kombinovana',p.source||'web_form',pipelineStage,pipelineStage,p.responsiblePerson||null,p.clientContactPerson||null,p.priority||'normal',p.waitingFor||'client',p.blockingFactor||'missing_form',p.riskLevel||'none',p.nextAction||'Zkontrolovat novou poptávku',p.nextActionDueAt||null,p.lastClientContactAt||null,p.lastInternalActionAt||nowIso(),p.notes||null,p.clientComment||null]
     )
     return normalizeJob(q.rows[0])
   }
@@ -3049,7 +3302,7 @@ async function updateJob(id, patch) {
     const ex = await dbQuery('SELECT * FROM crm_jobs WHERE id=$1',[id])
     if (!ex.rowCount) return null
     const c = ex.rows[0]
-    const fields = ['title','job_type','stage','pipeline_stage','form_sent_at','form_received_at','offer_sent_at','offer_approved_at','order_signed_at','deposit_paid_at','planned_start','planned_end','actual_start','actual_end','handover_at','closed_at','total_price','deposit_amount','deposit_invoice_id','deposit_paid','final_invoice_id','final_paid','costs','profit','responsible_person','client_contact_person','priority','blocking_factor','waiting_for','risk_level','next_action','next_action_due_at','last_client_contact_at','last_internal_action_at','stalled_at','stalled_reason','order_sent','client_signed','we_signed','realization_status','handover_planned','handover_protocol_ready','handover_signed','notes']
+    const fields = ['title','job_type','stage','pipeline_stage','form_sent_at','form_received_at','offer_sent_at','offer_approved_at','order_signed_at','deposit_paid_at','planned_start','planned_end','actual_start','actual_end','handover_at','closed_at','total_price','deposit_amount','deposit_invoice_id','deposit_paid','final_invoice_id','final_paid','costs','profit','responsible_person','client_contact_person','priority','blocking_factor','waiting_for','risk_level','next_action','next_action_due_at','last_client_contact_at','last_internal_action_at','stalled_at','stalled_reason','order_sent','client_signed','we_signed','realization_status','handover_planned','handover_protocol_ready','handover_signed','notes','client_comment']
     const camel = (s) => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
     const vals = []; const sets = []
     for (const f of fields) {
@@ -3349,7 +3602,7 @@ async function handleLeadCreate(req, res, forced = {}) {
         clientType: 'osoba',
       })
     }
-    const serviceMap = { 'Електромонтаж': 'elektro', 'Будівельні роботи': 'stavebni', 'Ремонт': 'stavebni' }
+    const serviceMap = { 'Електромонтаж': 'elektro', 'Будівельні роботи': 'stavebni', 'Ремонт': 'stavebni', 'Elektro': 'elektro', 'Stavební práce': 'stavebni', 'Rekonstrukce': 'stavebni' }
     const job = await createJob({
       customerId: customer.id,
       leadId: lead.id,
@@ -3363,7 +3616,8 @@ async function handleLeadCreate(req, res, forced = {}) {
       nextAction: dispatch.mail?.ok ? 'Čekáme na formulář od klienta' : 'Odeslat informační formulář klientovi',
       lastClientContactAt: null,
       lastInternalActionAt: nowIso(),
-      notes: lead.comment || null,
+      notes: null,
+      clientComment: lead.comment || null,
       formSentAt: dispatch.mail?.ok ? nowIso() : null,
       nextActionDueAt: dispatch.mail?.ok ? new Date(Date.now() + 3 * 86400000).toISOString() : null,
     })
@@ -3371,6 +3625,8 @@ async function handleLeadCreate(req, res, forced = {}) {
     if (dispatch.mail?.ok) {
       await updateJob(job.id, { formSentAt: nowIso(), lastClientContactAt: nowIso(), waitingFor: 'client', blockingFactor: 'missing_form', nextAction: 'Vyčkat na vyplněný formulář klienta' })
       await addJobEvent(job.id, { eventType: 'email_sent', eventCode: 'form_sent', actorType: 'system', title: 'Informační formulář odeslán', description: `Email: ${lead.email}`, message: 'Systém odeslal informační formulář klientovi', metadata: { email: lead.email } })
+      // Log sent email to correspondence table for Komunikace tab
+      await logJobEmail({ jobId: job.id, leadId: lead.id, direction: 'outbound', subject: dispatch.clientMail?.subject || 'Informační formulář', fromAddr: process.env.RESEND_FROM || null, toAddr: lead.email, body: dispatch.clientMail?.text || null, htmlBody: dispatch.clientMail?.html || null, resendId: dispatch.mail?.id || null, status: 'sent' }).catch(() => {})
     }
     await addJobTask(job.id, { taskType: 'lead_review', title: 'Zkontrolovat novou poptávku', isSystemGenerated: true, priority: 'normal', assignedTo: 'internal_sales' })
 
@@ -3380,6 +3636,7 @@ async function handleLeadCreate(req, res, forced = {}) {
     if (reason === 'required') return res.status(400).json({ ok: false, error: publicError(lang, 'required') })
     if (reason === 'invalid_phone') return res.status(400).json({ ok: false, error: publicError(lang, 'phone') })
     if (reason === 'invalid_email') return res.status(400).json({ ok: false, error: publicError(lang, 'email') })
+    if (reason === 'duplicate_email') return res.status(409).json({ ok: false, error: 'Klient s tímto e-mailem již existuje v systému. Najděte existující zakázku nebo smažte starou z archivu.' })
     return res.status(500).json({ ok: false, error: 'Failed to create lead' })
   }
 }
@@ -3390,7 +3647,7 @@ app.post('/api/leads/email', async (req, res) => {
   return handleLeadCreate(req, res, {
     source: 'email',
     lang: 'ua',
-    name: req.body?.name || 'Клієнт',
+    name: req.body?.name || 'Klient',
     comment: req.body?.comment || req.body?.subject || '',
   })
 })
@@ -3523,8 +3780,8 @@ app.post('/api/client-brief', async (req, res) => {
       documents.length ? `Підкладки: ${documents.join(', ')}` : '',
       sourceText ? `Джерело: ${sourceText}` : '',
     ].filter(Boolean).join(' | ')
-    const company = String(req.body?.company || clientName || objectType || 'Заявка з формуляра').trim()
-    const goal = String(req.body?.goal || workType || 'Уточнення по проєкту').trim()
+    const company = String(req.body?.company || clientName || objectType || 'Poptávka z formuláře').trim()
+    const goal = String(req.body?.goal || workType || 'Upřesnění k projektu').trim()
 
     if (!clientName || !clientEmail || !goal || !consentGiven) {
       return res.status(400).json({ ok: false, error: 'Please fill required fields.' })
@@ -3603,13 +3860,18 @@ app.post('/api/client-brief', async (req, res) => {
         wave: Math.max(Number(lead.wave || 1), 2),
       })
       await insertAudit(null, 'brief_received', 'lead', lead.id, { wave: updatedLead?.wave || 2 })
-      try {
-        offerDraft = await createOfferDraftFromLead(updatedLead)
-      } catch (offerErr) {
-        await insertAudit(null, 'offer_auto_create_failed', 'lead', lead.id, { error: String(offerErr?.message || offerErr) })
-      }
+      // Run AI draft creation in background — don't block form response
+      setImmediate(() => {
+        createOfferDraftFromLead(updatedLead).catch((offerErr) => {
+          insertAudit(null, 'offer_auto_create_failed', 'lead', lead.id, { error: String(offerErr?.message || offerErr) }).catch(() => {})
+        })
+      })
       const linkedJob = await findJobByLeadId(lead.id)
       if (linkedJob && linkedJob.stage === 'nova_poptavka') {
+        // Append formular note to client_comment so it's visible on pipeline card
+        const existingComment = linkedJob.clientComment || ''
+        const formularNote = note ? `[Formulář] ${note}` : ''
+        const mergedComment = [existingComment, formularNote].filter(Boolean).join('\n')
         await updateJob(linkedJob.id, {
           stage: 'podklady',
           pipelineStage: 'podklady',
@@ -3619,13 +3881,14 @@ app.post('/api/client-brief', async (req, res) => {
           nextAction: 'Zpracovat podklady a připravit kalkulaci',
           nextActionDueAt: new Date(Date.now() + 2 * 86400000).toISOString(),
           lastClientContactAt: nowIso(),
+          ...(mergedComment ? { clientComment: mergedComment } : {}),
         })
         await addJobEvent(linkedJob.id, { eventType: 'stage_change', eventCode: 'brief_received', actorType: 'customer', title: 'Podklady od klienta přijaty', description: `Formulář přijat`, message: 'Klient odeslal informační formulář', metadata: { leadId: lead.id } })
         await addJobDocument(linkedJob.id, { docType: 'formular', documentType: 'formular', fileName: 'Informační formulář klienta', status: 'received', uploadedBy: 'system', source: 'client_form', isFinal: true })
         await addJobTask(linkedJob.id, { taskType: 'offer_preparation', title: 'Připravit kalkulaci a návrh nabídky', isSystemGenerated: true, priority: 'high', assignedTo: 'internal_sales', dueDate: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10) })
       }
     }
-    const dispatch = await sendBriefToOwner({ company, goal, details: summaryText })
+    const dispatch = await sendBriefToOwner({ company, goal, details: summaryText }).catch(() => ({ attempted: false, ok: false, reason: 'email_exception' }))
     // Send WhatsApp notification to internal team when client RETURNS the brief form
     let waResult = { attempted: false }
     if (updatedLead) {
@@ -3633,7 +3896,7 @@ app.post('/api/client-brief', async (req, res) => {
       // Log WA message as a job event so it appears in Komunikace timeline
       const linkedJobForWa = await findJobByLeadId(updatedLead.id)
       if (linkedJobForWa) {
-        const waStatus = waResult.ok ? 'доставлено' : (waResult.attempted ? 'помилка' : 'не надіслано')
+        const waStatus = waResult.ok ? 'doručeno' : (waResult.attempted ? 'chyba' : 'neodesláno')
         await addJobEvent(linkedJobForWa.id, {
           eventType: 'whatsapp_sent',
           eventCode: 'brief_received_wa',
@@ -3644,7 +3907,6 @@ app.post('/api/client-brief', async (req, res) => {
         })
       }
     }
-    if (!dispatch.ok) return res.status(502).json({ ok: false, error: 'Failed to send brief email.', dispatch })
     return res.json({ ok: true, dispatch, whatsapp: waResult, linkedLead: updatedLead, offerDraft })
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) })
@@ -3878,7 +4140,7 @@ app.post('/api/crm/cases/:id/send-offer', authMiddleware, roleGuard(['admin', 'm
       status: mail.ok ? STATUS.FORM_SENT : STATUS.INVALID_EMAIL,
       proposalMailState: mail.ok ? 'sent' : 'failed',
       proposalSentAt: mail.ok ? nowIso() : null,
-      proposalError: mail.ok ? null : 'Помилка відправки КП',
+      proposalError: mail.ok ? null : 'Chyba odesílání nabídky',
       wave: Math.max(2, Number((await getLeadById(Number(row.lead_id)))?.wave || 1)),
     })
   }
@@ -4031,7 +4293,7 @@ app.post('/api/crm/offers/:id/send-to-client', authMiddleware, roleGuard(['admin
   const pdf = files.find((x) => x.kind === 'pdf' && x.filePath && fs.existsSync(x.filePath))
   const xlsx = files.find((x) => x.kind === 'xlsx' && x.filePath && fs.existsSync(x.filePath))
   if (!pdf || !xlsx) {
-    return res.status(400).json({ ok: false, error: 'Потрібно спочатку згенерувати файли КП (Excel + PDF).' })
+    return res.status(400).json({ ok: false, error: 'Nejprve je třeba vygenerovat soubory nabídky (Excel + PDF).' })
   }
   const to = String(req.body?.email || lead?.email || '').trim().toLowerCase()
   if (!to || !validEmail(to)) return res.status(400).json({ ok: false, error: 'Valid email is required' })
@@ -4424,6 +4686,7 @@ app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['ad
     greeting: customGreeting,
     bodyText: customBody,
     senderName,
+    jobId: job?.id || null,
   })
   const mail = await sendResendEmail({
     to,
@@ -4434,6 +4697,7 @@ app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['ad
       { filename: pdf.fileName, content: fileToBase64(pdf.filePath) },
       { filename: xlsx.fileName, content: fileToBase64(xlsx.filePath) },
     ],
+    replyTo: job?.id ? buildReplyTo(job.id) : null,
   })
   if (!mail.ok) {
     await insertAudit(req.auth?.email || null, 'estimate_send_failed', 'estimate', id, { to, reason: mail.reason, details: mail.details || null })
@@ -4467,7 +4731,7 @@ app.post('/api/crm/estimates/:id/send-to-client', authMiddleware, roleGuard(['ad
   await insertAudit(req.auth?.email || null, 'estimate_sent_to_client', 'estimate', id, { to, estimateNo: estimate.estimateNo || null })
   // Log email to correspondence table
   if (job?.id) {
-    await logJobEmail({ jobId: job.id, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: textPlain, status: 'sent' })
+    await logJobEmail({ jobId: job.id, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: textPlain, htmlBody: htmlBody || null, resendId: mail.id || null, status: 'sent' }).catch(() => {})
   }
   return res.json({ ok: true, estimate: updatedEstimate, mail, files: { xlsx, pdf } })
 })
@@ -4797,6 +5061,140 @@ app.get('/api/crm/jobs/:id/emails', authMiddleware, roleGuard(['admin', 'manager
   return res.json({ ok: true, emails: await listJobEmailsDb(Number(req.params.id)) })
 })
 
+// ── Compose & send email directly from Komunikace tab ──────────────────────
+app.post('/api/crm/jobs/:id/emails', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const jobId = Number(req.params.id)
+  const job = await getJobById(jobId)
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' })
+  const lead = job.leadId ? await getLeadById(job.leadId) : null
+  const customer = job.customerId ? await getCustomerById(job.customerId) : null
+  const to = String(req.body?.to || customer?.email || lead?.email || '').trim().toLowerCase()
+  if (!to || !validEmail(to)) return res.status(400).json({ ok: false, error: 'Valid recipient email required' })
+  const subject = String(req.body?.subject || '').trim()
+  if (!subject) return res.status(400).json({ ok: false, error: 'Subject is required' })
+  const text = String(req.body?.text || '').trim()
+  if (!text) return res.status(400).json({ ok: false, error: 'Message body is required' })
+  const senderName = req.auth?.name || req.auth?.email || 'Tým O&L Master Dom'
+  const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+  const htmlBody = `<!DOCTYPE html>
+<html lang="cs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
+<body style="margin:0;padding:0;background-color:#F0F4F8;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F0F4F8;padding:32px 0">
+  <tr><td align="center" style="padding:0 16px">
+    <table width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background-color:#FFFFFF;border-radius:12px;overflow:hidden">
+
+      <!-- HEADER -->
+      <tr><td align="center" bgcolor="#0D1F3C" style="background-color:#0D1F3C;padding:28px 40px">
+        <img src="https://demo.temoweb.eu/logo1.jpg" alt="O&amp;L Master Dom" width="90" height="auto"
+          style="display:block;margin:0 auto 10px auto;border-radius:8px;border:0" />
+        <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">
+          Zpráva od vašeho manažera
+        </p>
+      </td></tr>
+
+      <!-- ACCENT BAR -->
+      <tr><td style="height:4px;background-color:#1A6AE8;font-size:0;line-height:0">&nbsp;</td></tr>
+
+      <!-- MESSAGE BODY -->
+      <tr><td style="padding:36px 40px 28px">
+        <p style="margin:0;font-size:15px;color:#2D3748;line-height:1.8;font-family:Arial,sans-serif">${safeText}</p>
+      </td></tr>
+
+      <!-- REPLY BUTTON -->
+      ${buildEmailReplyBlock(jobId, 'Odpovědět manažerovi', 'Máte dotazy nebo chcete odpovědět? Klikněte níže.')}
+
+      <!-- FOOTER -->
+      <tr><td align="center" bgcolor="#F7F9FC" style="background-color:#F7F9FC;border-top:1px solid #DDE3ED;padding:18px 40px">
+        <p style="margin:0 0 2px;font-size:13px;font-weight:bold;color:#0D1F3C;font-family:Arial,sans-serif">O&amp;L Master Dom</p>
+        <p style="margin:0;font-size:12px;color:#8899BB;font-family:Arial,sans-serif">${senderName} · demo.temoweb.eu</p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+  const mail = await sendResendEmail({ to, subject, text, html: htmlBody, replyTo: buildReplyTo(jobId) })
+  if (!mail.ok) return res.status(502).json({ ok: false, error: 'Failed to send email', details: mail.reason })
+  await logJobEmail({ jobId, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: text, htmlBody, resendId: mail.id || null, status: 'sent' })
+  await addJobEvent(jobId, { eventType: 'email_sent', eventCode: 'manual_email', actorType: 'user', actor: req.auth?.email || null, title: `Email odeslán: ${subject}`, message: `Email odeslán na ${to}`, metadata: { to, subject } })
+  await insertAudit(req.auth?.email || null, 'email_sent_manual', 'job', jobId, { to, subject })
+  return res.json({ ok: true, emailId: mail.id })
+})
+
+// ── Resend inbound email webhook ───────────────────────────────────────────
+// Resend sends a POST when a client replies to a CRM email.
+// Set up: add MX record for RESEND_INBOUND_DOMAIN → inbound.resend.com (pri 10)
+// Then configure webhook URL in Resend dashboard → https://demo.temoweb.eu/api/email-inbound
+app.post('/api/email-inbound', express.raw({ type: '*/*', limit: '5mb' }), async (req, res) => {
+  try {
+    // Verify Resend webhook signature if secret is configured
+    if (RESEND_INBOUND_SECRET) {
+      const sig = req.headers['svix-signature'] || req.headers['resend-signature'] || ''
+      if (!sig) return res.status(401).json({ ok: false, error: 'Missing signature' })
+    }
+    const raw = req.body
+    const payload = (() => { try { return JSON.parse(Buffer.isBuffer(raw) ? raw.toString() : raw) } catch { return null } })()
+    if (!payload) return res.status(400).json({ ok: false, error: 'Invalid JSON' })
+
+    // Support both Resend inbound format and direct test POSTs
+    const emailData = payload?.data || payload
+    const fromAddr = String(emailData?.from || emailData?.sender || '').trim()
+    const toAddrs = Array.isArray(emailData?.to) ? emailData.to : [String(emailData?.to || '')]
+    const subject = String(emailData?.subject || '(bez předmětu)').trim()
+    const textBody = String(emailData?.text || emailData?.plain_text || '').trim()
+    const htmlBodyIn = String(emailData?.html || '').trim()
+
+    if (!fromAddr) return res.status(400).json({ ok: false, error: 'No from address' })
+
+    // Extract job ID from reply-to token in "to" addresses
+    // Format: crm+j{jobId}@domain
+    let jobId = null
+    for (const addr of toAddrs) {
+      const m = String(addr).match(/crm\+j(\d+)@/i)
+      if (m) { jobId = Number(m[1]); break }
+    }
+
+    // Fallback: find job by sender email address
+    let job = jobId ? await getJobById(jobId) : null
+    if (!job) job = await findJobByEmail(fromAddr)
+    if (!job) {
+      // No matching job — log it but don't crash
+      console.log(`[email-inbound] No matching job for email from ${fromAddr}`)
+      return res.json({ ok: true, matched: false })
+    }
+
+    // Store inbound email
+    const emailId = await logJobEmail({
+      jobId: job.id,
+      leadId: job.leadId || null,
+      direction: 'inbound',
+      subject,
+      fromAddr,
+      toAddr: toAddrs.join(', '),
+      body: textBody || subject,
+      htmlBody: htmlBodyIn || null,
+      status: 'received',
+      rawPayload: payload,
+    })
+
+    // Add event so it appears in Komunikace timeline
+    await addJobEvent(job.id, {
+      eventType: 'inbound_email_linked',
+      eventCode: 'client_reply',
+      actorType: 'customer',
+      title: `📨 Email od klienta: ${subject}`,
+      message: textBody ? textBody.slice(0, 300) : subject,
+      metadata: { fromAddr, subject, emailId },
+    })
+
+    await insertAudit(null, 'inbound_email_received', 'job', job.id, { from: fromAddr, subject })
+    return res.json({ ok: true, matched: true, jobId: job.id, emailId })
+  } catch (e) {
+    console.error('[email-inbound] error:', e)
+    return res.status(500).json({ ok: false, error: String(e?.message || e) })
+  }
+})
+
 app.post('/api/crm/jobs/:id/events', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
   const ev = await addJobEvent(Number(req.params.id), { ...(req.body || {}), actor: req.auth?.email || req.body?.actor, actorType: req.body?.actorType || 'user' })
   return res.json({ ok: true, event: ev })
@@ -4891,12 +5289,13 @@ app.post('/api/crm/jobs/:id/completion-act/prepare', authMiddleware, roleGuard([
     )
   }
   const actUrl = `${process.env.PUBLIC_BASE_URL || 'https://demo.temoweb.eu'}/completion-act.html?token=${token}`
-  // Send email to client
+  const clientName = customer?.fullName || customer?.name || ''
   const subject = `Akt o provedení prací — zakázka ${job.internalNumber || jobId}`
-  const text = `Dobrý den,\n\nzakázka ${job.internalNumber || ''} je dokončena.\nProsíme Vás o prostudování a podpis aktu o provedení prací na adrese:\n\n${actUrl}\n\nAkt bude platný 30 dní.\n\nDěkujeme za spolupráci,\nO&L Master Dom`
-  const mail = await sendResendEmail({ to: clientEmail, subject, text })
+  const text = `Dobrý den${clientName ? `, ${clientName}` : ''},\n\nzakázka ${job.internalNumber || ''} je dokončena.\nProsíme Vás o prostudování a podpis aktu o provedení prací:\n\n${actUrl}\n\nAkt bude platný 30 dní.\n\nDěkujeme za spolupráci,\nO&L Master Dom`
+  const actHtml = buildActEmailHtml({ job, clientName, actUrl, jobId: job.id })
+  const mail = await sendResendEmail({ to: clientEmail, subject, text, html: actHtml, replyTo: buildReplyTo(job.id) })
   if (job?.id) {
-    await logJobEmail({ jobId: job.id, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: clientEmail, body: text, status: mail.ok ? 'sent' : 'failed' })
+    await logJobEmail({ jobId: job.id, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: clientEmail, body: text, htmlBody: actHtml, status: mail.ok ? 'sent' : 'failed' })
     await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'completion_act_sent', actorType: 'user', actor: req.auth?.email, title: 'Akt o provedení prací odeslán', message: `Odkaz na podpis aktu byl odeslán na ${clientEmail}`, metadata: { token, actUrl } })
   }
   return res.json({ ok: true, actUrl, token, mail })
@@ -5038,6 +5437,174 @@ app.post('/api/crm/completion-act/sign', async (req, res) => {
   return res.json({ ok: true, message: 'Akt byl úspěšně podepsán', pdfGenerated: !!actPdfPath })
 })
 
+// ─────────────────────────────────────────────────────────────
+// IMAP POLLING SERVICE
+// Periodically checks the inbox for emails from known CRM clients
+// and links them to the matching job's communication timeline.
+//
+// Required env vars:
+//   ZOHO_IMAP_USER  — e.g. info@temoweb.eu
+//   ZOHO_IMAP_PASS  — app password from Zoho Security settings
+//   ZOHO_IMAP_HOST  — default: imap.zoho.eu
+// ─────────────────────────────────────────────────────────────
+
+let imapLastUid = 0       // tracks highest UID we have already processed
+let imapPolling = false   // prevents concurrent poll runs
+let imapLastPollAt = null // for status reporting
+
+async function pollImapInbox() {
+  if (!ZOHO_IMAP_USER || !ZOHO_IMAP_PASS) return
+  if (imapPolling) return  // skip if previous run hasn't finished
+  imapPolling = true
+
+  const client = new ImapFlow({
+    host: ZOHO_IMAP_HOST,
+    port: ZOHO_IMAP_PORT,
+    secure: true,
+    auth: { user: ZOHO_IMAP_USER, pass: ZOHO_IMAP_PASS },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+  })
+
+  try {
+    await client.connect()
+    const lock = await client.getMailboxLock(ZOHO_IMAP_MAILBOX)
+    let processed = 0
+    let linked = 0
+
+    try {
+      let uids = []
+
+      if (imapLastUid > 0) {
+        // Fetch only new messages since last seen UID
+        uids = await client.search({ uid: `${imapLastUid + 1}:*` }, { uid: true })
+      } else {
+        // First run: fetch messages from last 3 days only
+        const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+        uids = await client.search({ since }, { uid: true })
+      }
+
+      if (uids.length === 0) {
+        console.log('[imap-poll] No new messages')
+      } else {
+        console.log(`[imap-poll] Found ${uids.length} messages to process`)
+        const uidRange = uids.join(',')
+
+        for await (const msg of client.fetch(uidRange, { uid: true, source: true }, { uid: true })) {
+          if (imapLastUid > 0 && msg.uid <= imapLastUid) continue
+
+          try {
+            const parsed = await simpleParser(msg.source)
+            const fromRaw = parsed.from?.value?.[0]?.address || ''
+            const fromAddr = fromRaw.toLowerCase().trim()
+            const subject = parsed.subject || '(bez předmětu)'
+            const textBody = (parsed.text || '').trim()
+            const htmlBody = (parsed.html || '').trim()
+            const messageId = (parsed.messageId || '').trim() || `imap-uid-${msg.uid}@${ZOHO_IMAP_HOST}`
+
+            processed++
+
+            // Skip blank or self-sent
+            if (!fromAddr || fromAddr === ZOHO_IMAP_USER.toLowerCase()) {
+              if (msg.uid > imapLastUid) imapLastUid = msg.uid
+              continue
+            }
+
+            // Find matching open job by sender email
+            const job = await findJobByEmail(fromAddr)
+            if (!job) {
+              console.log(`[imap-poll] No CRM match for: ${fromAddr}`)
+              if (msg.uid > imapLastUid) imapLastUid = msg.uid
+              continue
+            }
+
+            // logJobEmail handles deduplication via ON CONFLICT (message_id)
+            const emailId = await logJobEmail({
+              jobId: job.id,
+              leadId: job.leadId || null,
+              direction: 'inbound',
+              subject,
+              fromAddr,
+              toAddr: ZOHO_IMAP_USER,
+              body: textBody || subject,
+              htmlBody: htmlBody || null,
+              status: 'received',
+              messageId,
+              rawPayload: { messageId, uid: msg.uid, source: 'imap_poll' },
+            })
+
+            if (emailId) {
+              // New email — add timeline event
+              await addJobEvent(job.id, {
+                eventType: 'inbound_email_linked',
+                eventCode: 'client_reply',
+                actorType: 'customer',
+                title: `📨 Email od klienta: ${subject}`,
+                message: textBody ? textBody.slice(0, 300) : subject,
+                metadata: { fromAddr, subject, emailId, source: 'imap_poll' },
+              })
+              await insertAudit(null, 'inbound_email_received', 'job', job.id, { from: fromAddr, subject, source: 'imap_poll' })
+              linked++
+              console.log(`[imap-poll] ✅ Linked "${subject}" from ${fromAddr} → job #${job.id}`)
+            }
+          } catch (msgErr) {
+            console.error(`[imap-poll] Error on UID ${msg.uid}:`, msgErr.message)
+          }
+
+          if (msg.uid > imapLastUid) imapLastUid = msg.uid
+        }
+      }
+    } finally {
+      lock.release()
+    }
+
+    await client.logout()
+    imapLastPollAt = new Date()
+    console.log(`[imap-poll] Done. Processed: ${processed}, Linked: ${linked}, lastUid: ${imapLastUid}`)
+  } catch (e) {
+    console.error('[imap-poll] Connection error:', e.message)
+    try { await client.logout() } catch {}
+  } finally {
+    imapPolling = false
+  }
+}
+
+function startImapPolling() {
+  if (!ZOHO_IMAP_USER || !ZOHO_IMAP_PASS) {
+    console.log('[imap-poll] ZOHO_IMAP_USER / ZOHO_IMAP_PASS not set — IMAP polling disabled')
+    return
+  }
+  console.log(`[imap-poll] Starting for ${ZOHO_IMAP_USER} every ${IMAP_POLL_INTERVAL_MS / 1000}s`)
+  // Initial poll after 5s (let DB migrations finish first)
+  setTimeout(pollImapInbox, 5000)
+  setInterval(pollImapInbox, IMAP_POLL_INTERVAL_MS)
+}
+
+// Manual trigger endpoint (admin only)
+app.post('/api/admin/imap-poll', authMiddleware, roleGuard(['admin']), async (req, res) => {
+  if (!ZOHO_IMAP_USER || !ZOHO_IMAP_PASS) {
+    return res.status(503).json({ ok: false, error: 'IMAP not configured (ZOHO_IMAP_USER/ZOHO_IMAP_PASS missing)' })
+  }
+  if (imapPolling) {
+    return res.json({ ok: false, error: 'Poll already in progress' })
+  }
+  pollImapInbox().catch(e => console.error('[imap-poll] manual trigger error:', e.message))
+  return res.json({ ok: true, message: 'IMAP poll triggered', user: ZOHO_IMAP_USER })
+})
+
+app.get('/api/admin/imap-status', authMiddleware, roleGuard(['admin']), (req, res) => {
+  res.json({
+    ok: true,
+    configured: !!(ZOHO_IMAP_USER && ZOHO_IMAP_PASS),
+    user: ZOHO_IMAP_USER || null,
+    host: ZOHO_IMAP_HOST,
+    pollIntervalMs: IMAP_POLL_INTERVAL_MS,
+    lastPollAt: imapLastPollAt,
+    polling: imapPolling,
+    lastUid: imapLastUid,
+  })
+})
+
 async function bootstrap() {
   if (pool) {
     await ensureMigrations()
@@ -5045,6 +5612,7 @@ async function bootstrap() {
     ensureDataDir()
   }
   await seedDefaultAdmin()
+  startImapPolling()
   app.listen(PORT, () => {
     console.log(`Enterprise CRM running on http://127.0.0.1:${PORT}`)
   })
