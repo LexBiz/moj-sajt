@@ -1084,11 +1084,14 @@
           const totU = lU + (hasMat ? mU : 0)
           const totT = lT + (hasMat ? mT : 0)
           const numCell = hasMat
-            ? `<div style="font-weight:800;font-size:12px;color:#1A2B4A;line-height:1.2">${workNum}</div><div style="font-size:9px;color:#888;font-weight:600;margin-top:1px">${workNum}.1 mat</div>`
+            ? `<div style="display:flex;align-items:stretch;height:100%;gap:0">
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#1A2B4A;border-right:1px solid #C8D4E8;padding:2px 4px">${workNum}</div>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:9px;color:#3D6090;font-weight:700;padding:2px 3px;line-height:1.2;text-align:center">${workNum}.1<br>mat</div>
+              </div>`
             : `<span style="font-weight:800;font-size:12px;color:#1A2B4A">${workNum}</span>`
           tableRows += `<tr>
             <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px">${esc(code)}</td>
-            <td style="text-align:center;width:40px;vertical-align:middle">${numCell}</td>
+            <td style="text-align:center;width:52px;padding:0;vertical-align:middle;overflow:hidden">${numCell}</td>
             <td style="background:#D9E1F2;padding:5px 7px;min-width:160px;font-size:11px;font-weight:600"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
             <td style="background:#C6E0B4;padding:5px 7px;min-width:120px;font-size:11px">${hasMat ? `<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(line.materialDescription)}</span>` : ''}</td>
             <td style="text-align:center;white-space:nowrap;font-size:11px">${line.quantity} ${esc(line.unit||'ks')}</td>
