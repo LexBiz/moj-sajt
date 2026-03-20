@@ -108,10 +108,10 @@
     .cart-del:hover{color:var(--red);background:rgba(232,58,58,.1)}
     /* price row */
     .cc-price-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;margin-bottom:4px;background:var(--c);border:1px solid var(--b);transition:border-color .2s,background .2s}
-    .cc-price-row.raised{background:rgba(251,191,36,.12);border-color:rgba(200,140,0,.35)}
-    .cc-price-row.mat-raised{background:rgba(11,189,122,.10);border-color:rgba(11,189,122,.35)}
-    .cc-price-row.lowered{background:rgba(208,40,40,.07);border-color:rgba(208,40,40,.28)}
-    .cc-price-row.mat-lowered{background:rgba(208,40,40,.07);border-color:rgba(208,40,40,.28)}
+    .cc-price-row.raised{border-left:3px solid rgba(180,120,0,.55)}
+    .cc-price-row.mat-raised{border-left:3px solid rgba(11,189,122,.55)}
+    .cc-price-row.lowered{border-left:3px solid rgba(208,40,40,.55)}
+    .cc-price-row.mat-lowered{border-left:3px solid rgba(208,40,40,.55)}
     .cc-pr-icon{font-size:13px;flex-shrink:0}
     .cc-pr-label{font-size:11px;color:var(--ink3);font-weight:600;flex-shrink:0;min-width:28px}
     .cc-mat-name{flex:1;font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -773,16 +773,23 @@
               const matRaised    = hasMat && line.materialUnitPrice > baseMat + 0.01
               const matLowered   = hasMat && baseMat > 0.01 && line.materialUnitPrice < baseMat - 0.01
               const laborTotal  = line.quantity * line.laborUnitPrice
-              const mkup = (pos, base, cur, type) => {
+                const mkup = (pos, base, cur, type) => {
                 const posPcts = [10,15,20,25,30]
                 const negPcts = [-20,-15,-10,-5]
                 const mkBtn = (p) => {
                   const exp = Math.round(base * (1 + p/100) * 10)/10
                   const act = Math.abs(cur - exp) < 0.05
                   const isDiscount = p < 0
-                  const style = isDiscount
-                    ? `background:rgba(208,40,40,.08);border-color:rgba(208,40,40,.25);color:#C82020${act?';background:rgba(208,40,40,.22)':''}`
-                    : (act ? 'background:rgba(26,106,232,.28);border-color:#1A6AE8;color:#fff' : '')
+                  let style
+                  if (act) {
+                    style = isDiscount
+                      ? 'background:#C82020;border-color:#C82020;color:#fff;font-weight:800;box-shadow:0 1px 6px rgba(200,40,40,.45)'
+                      : 'background:#1A6AE8;border-color:#1A6AE8;color:#fff;font-weight:800;box-shadow:0 1px 6px rgba(26,106,232,.45)'
+                  } else {
+                    style = isDiscount
+                      ? 'background:rgba(208,40,40,.07);border-color:rgba(208,40,40,.22);color:#C02020'
+                      : ''
+                  }
                   return `<button class="cmp-btn${act?' active':''}" data-mp="${p}" data-mppos="${pos}" data-mpbase="${base}" data-mptype="${type}" style="${style}">${p>0?'+':''}${p}%</button>`
                 }
                 return `<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
