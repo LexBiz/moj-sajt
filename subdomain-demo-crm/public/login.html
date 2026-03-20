@@ -7,29 +7,29 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    :root{--bg:#020C18;--s:#071626;--c:#0C1E38;--c2:#0F2442;--b:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--ink:#E6F0FF;--ink2:#7AA2C4;--ink3:#3D618A;--blue:#1A6AE8;--blue2:#3D87F8;--blue3:#60A5FF;--green:#14C98A;--red:#E83A3A;--r:10px}
+    :root{--bg:#D8E6F5;--s:#EEF4FF;--c:#DCE9F8;--c2:#CDE0F4;--b:rgba(20,60,120,.10);--b2:rgba(20,60,120,.18);--ink:#0F2440;--ink2:#2E5880;--ink3:#5A82A4;--blue:#1A6AE8;--blue2:#3D87F8;--blue3:#1252C0;--green:#0BBD7A;--red:#D02828;--r:10px}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
-    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;background-image:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(26,106,232,.18) 0%,transparent 60%)}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;background-image:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(26,106,232,.12) 0%,transparent 60%)}
     .box{width:100%;max-width:420px;padding:20px 16px}
     .brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px}
-    .logo-m{height:52px;width:52px;border-radius:14px;overflow:hidden;border:1px solid rgba(61,135,248,.35);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(26,106,232,.35);background:#0B1730}
+    .logo-m{height:52px;width:52px;border-radius:14px;overflow:hidden;border:1px solid rgba(26,106,232,.25);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(26,106,232,.18);background:#1A3254}
     .logo-m img{height:52px;width:auto;max-width:120px;object-fit:contain;display:block}
     .brand-text{text-align:left}
-    .brand-name{font-size:20px;font-weight:800;letter-spacing:-.4px}
+    .brand-name{font-size:20px;font-weight:800;letter-spacing:-.4px;color:var(--ink)}
     .brand-sub{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-    .card{background:var(--s);border:1px solid var(--b2);border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-    .card-title{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-.4px}
+    .card{background:var(--s);border:1px solid var(--b2);border-radius:20px;padding:32px 28px;box-shadow:0 8px 40px rgba(20,60,120,.14)}
+    .card-title{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-.4px;color:var(--ink)}
     .card-sub{font-size:13px;color:var(--ink2);margin-bottom:28px}
     .field{margin-bottom:18px}
     .field label{display:block;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
     .field input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:13px 14px;font:inherit;font-size:15px;outline:none;transition:border-color .15s}
-    .field input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
+    .field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
     .field input::placeholder{color:var(--ink3)}
-    .submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;border-radius:var(--r);font:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s;box-shadow:0 4px 18px rgba(26,106,232,.4)}
+    .submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;border-radius:var(--r);font:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s;box-shadow:0 4px 18px rgba(26,106,232,.35)}
     .submit-btn:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF);transform:translateY(-1px)}
     .submit-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
-    .err-msg{margin-top:14px;padding:12px 14px;background:rgba(232,58,58,.1);border:1px solid rgba(232,58,58,.25);border-radius:var(--r);color:#F07070;font-size:13px;display:none}
+    .err-msg{margin-top:14px;padding:12px 14px;background:rgba(208,40,40,.08);border:1px solid rgba(208,40,40,.22);border-radius:var(--r);color:#C82020;font-size:13px;display:none}
     .err-msg.show{display:block}
   </style>
 </head>

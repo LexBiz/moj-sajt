@@ -2023,7 +2023,7 @@ function publicFileUrl(filePath) {
   return `${CRM_PUBLIC_BASE_URL}/${rel}`
 }
 
-async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
+async function buildEstimateXlsxFile({ estimate, lead, job, customer, hidePriceCols = false }) {
   ensureDataDir()
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'TemoWeb CRM'
@@ -2086,6 +2086,13 @@ async function buildEstimateXlsxFile({ estimate, lead, job, customer }) {
   ws.getCell('A4').value = `Klient: ${customerName} · Adresa objektu: ${estimate?.customerAddressSnapshot || customer?.address || '—'} · Projektový manažer: ${estimate?.projectManagerSnapshot || job?.responsiblePerson || '—'} · Telefon: ${customer?.phone || lead?.phone || '—'} · Email: ${customer?.email || lead?.email || '—'}`
   ws.getCell('A4').font = { name: 'Calibri', size: 10 }
 
+  // When hidePriceCols, hide columns 8-11 (Cena práce MJ/total, Cena materiálu MJ/total)
+  if (hidePriceCols) {
+    ws.getColumn(8).hidden = true
+    ws.getColumn(9).hidden = true
+    ws.getColumn(10).hidden = true
+    ws.getColumn(11).hidden = true
+  }
   const headerRow = 6
   const headerLabels = ['Kategorie', 'Kód položky', 'Číslo položky', 'Popis práce', 'Popis materiálu', 'MJ', 'Množství', 'Cena práce (MJ)', 'Cena práce (celkem)', 'Cena materiálu (MJ)', 'Cena materiálu (celkem)', 'Cena celkem']
   headerLabels.forEach((label, idx) => {
@@ -4647,8 +4654,9 @@ app.post('/api/crm/estimates/:id/build-documents', authMiddleware, roleGuard(['a
   const customer = job?.customerId ? await getCustomerById(job.customerId) : null
   let lead = null
   if (estimate.leadId) lead = await getLeadById(estimate.leadId)
+  const hidePriceCols = req.body?.hidePriceCols === true
   try {
-    const xlsxPath = await buildEstimateXlsxFile({ estimate, lead, job, customer })
+    const xlsxPath = await buildEstimateXlsxFile({ estimate, lead, job, customer, hidePriceCols })
     const pdfResult = await convertXlsxToPdfIfPossible(xlsxPath)
     const docs = []
     docs.push(await addJobDocument(job?.id || 0, { documentType: 'kalkulace', fileName: path.basename(xlsxPath), filePath: xlsxPath, fileUrl: publicFileUrl(xlsxPath), storageKey: xlsxPath, status: 'created', version: 1, uploadedBy: 'system', source: 'estimate_builder', isFinal: true }))
