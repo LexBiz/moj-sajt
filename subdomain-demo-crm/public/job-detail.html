@@ -95,8 +95,31 @@
       .card-s-t{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px;color:var(--ink)}
       .card-s-t::before{content:'';width:4px;height:16px;border-radius:3px;background:linear-gradient(to bottom,var(--blue),var(--blue2));flex-shrink:0}
       .meta-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .meta-i{background:var(--s);border:1px solid var(--b2);border-radius:12px;padding:13px 15px;transition:all .18s;box-shadow:0 1px 5px rgba(20,50,90,.07)}
-      .meta-i:hover{border-color:rgba(26,106,232,.35);background:#fff;box-shadow:0 4px 16px rgba(20,50,90,.12);transform:translateY(-1px)}.meta-i b{display:block;color:var(--blue3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}.meta-i .val{font-size:14px;font-weight:500;color:var(--ink);line-height:1.45}
+      .meta-i{background:#fff;border:1px solid rgba(20,60,120,.1);border-left:3px solid rgba(26,106,232,.25);border-radius:0 12px 12px 0;padding:12px 14px 12px 13px;transition:all .2s;box-shadow:0 1px 6px rgba(20,50,90,.06)}
+      .meta-i:hover{border-left-color:var(--blue);background:#fafcff;box-shadow:0 4px 18px rgba(26,106,232,.1);transform:translateY(-1px)}
+      .meta-i b{display:flex;align-items:center;gap:5px;color:var(--ink3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.55px;margin-bottom:5px}
+      .meta-i .val{font-size:13.5px;font-weight:500;color:var(--ink);line-height:1.5}
+      /* wide meta-i for full-width fields */
+      .meta-i.full{grid-column:1/-1;border-left-color:rgba(96,72,208,.4)}
+      .meta-i.full:hover{border-left-color:var(--purple)}
+      /* job number edit box */
+      .job-num-edit{background:linear-gradient(135deg,rgba(26,106,232,.04),rgba(61,135,248,.07));border:1.5px solid rgba(26,106,232,.2);border-radius:14px;padding:16px 18px;margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+      .job-num-edit-lbl{font-size:11px;font-weight:700;color:var(--blue3);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+      .job-num-edit input{flex:1;min-width:140px;background:#fff;border:1.5px solid rgba(26,106,232,.2);border-radius:9px;color:var(--ink);font:inherit;font-size:15px;font-weight:700;padding:8px 13px;outline:none;transition:border-color .15s,box-shadow .15s}
+      .job-num-edit input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
+      /* AI summary card */
+      .ai-card{background:linear-gradient(135deg,#0F1B35,#1A2E56);border:none;border-radius:16px;padding:20px 22px;box-shadow:0 4px 24px rgba(10,20,60,.28);margin-bottom:18px;color:#E8F2FF}
+      .ai-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+      .ai-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#3B82F6,#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+      .ai-card-title{font-size:14px;font-weight:800;color:#fff;letter-spacing:-.2px}
+      .ai-card-sub{font-size:11px;color:rgba(232,242,255,.55);margin-top:1px}
+      .ai-card-body{font-size:13px;color:rgba(232,242,255,.82);line-height:1.75;white-space:pre-wrap}
+      /* client profile box */
+      .client-profile{display:flex;align-items:center;gap:14px;padding:14px 16px;background:linear-gradient(135deg,rgba(26,106,232,.06),rgba(61,135,248,.1));border:1.5px solid rgba(26,106,232,.18);border-radius:14px;margin-bottom:14px}
+      .client-avatar{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;flex-shrink:0;text-transform:uppercase}
+      .client-info{flex:1;min-width:0}
+      .client-name{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.2px;margin-bottom:2px}
+      .client-meta{font-size:12px;color:var(--ink3);display:flex;gap:10px;flex-wrap:wrap}
       .ev-list{display:grid;gap:10px}.ev-item{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
       .ev-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);margin-top:4px;box-shadow:0 0 0 3px rgba(26,106,232,.14);justify-self:center}
       .ev-title{font-size:13px;font-weight:600}.ev-meta{font-size:12px;color:var(--ink2);margin-top:2px}
@@ -398,29 +421,72 @@
           ['Poslední kontakt', job.lastClientContactAt ? fmtFull(job.lastClientContactAt) : '—'],
         ].filter(([,v]) => v && v !== '—')
 
+        // Icon map for known field labels
+        const FIELD_ICONS = {
+          'Jméno / Název':'👤','Email':'✉️','Telefon':'📞','Adresa / Sídlo':'📍',
+          'IČO':'🏢','DIČ':'🔖','Název firmy':'🏢','Sídlo':'📍',
+          'Typ objektu':'🏠','Adresa realizace':'📍','Požadované práce':'🔧',
+          'Jiné práce':'🔧','Rozsah zakázky':'📐','Plocha / rozsah (m²)':'📐',
+          'Orientační rozpočet':'💰','Požadovaný termín':'🗓','Podklady k dispozici':'📂',
+          'Jak nás našli':'📣','Zdroj (jiné)':'📣','Poznámka z formuláře':'💬',
+          'Typ zakázky':'⚡','Priorita':'🔴','Odpovědná osoba':'👤',
+          'Datum přijetí':'📅','Plánované zahájení':'📅','Plánované dokončení':'📅',
+          'Poslední kontakt':'📅','💬 Popis poptávky (klient)':'💬',
+        }
+        const fieldBox = (k, v, full = false) => {
+          const icon = FIELD_ICONS[k] || '•'
+          return `<div class="meta-i${full?' full':''}"><b><span>${icon}</span>${esc(k)}</b><div class="val">${esc(v)}</div></div>`
+        }
+        // Priority color
+        const priBadge = job.priority === 'high' || job.priority === 'urgent'
+          ? '<span class="badge b-red" style="margin-left:6px">⚡ Vysoká</span>'
+          : job.priority === 'low' ? '<span class="badge b-grey" style="margin-left:6px">Nízká</span>'
+          : '<span class="badge b-green" style="margin-left:6px">Normal</span>'
+        // Client avatar initials
+        const cName = c.name || c.companyName || '?'
+        const initials = cName.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?'
+
         document.getElementById('m-prehled').innerHTML = `
           <div class="card-s">
             <div class="card-s-t">Klient ${typeBadge}</div>
-            <div class="meta-g">${contactFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
+            <div class="client-profile">
+              <div class="client-avatar">${initials}</div>
+              <div class="client-info">
+                <div class="client-name">${esc(cName)}</div>
+                <div class="client-meta">
+                  ${c.email ? `<span>✉️ ${esc(c.email)}</span>` : ''}
+                  ${c.phone ? `<span>📞 ${esc(c.phone)}</span>` : ''}
+                  ${c.address ? `<span>📍 ${esc(c.address)}</span>` : ''}
+                </div>
+              </div>
+            </div>
           </div>
           ${icoBlock}
           ${briefFields.length ? `
           <div class="card-s">
-            <div class="card-s-t">Formulář klienta — plné údaje</div>
-            <div class="meta-g">${briefFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
+            <div class="card-s-t">📋 Formulář klienta</div>
+            <div class="meta-g">${briefFields.map(([k,v]) => fieldBox(k, v, k === 'Poznámka z formuláře' || k === '💬 Popis poptávky (klient)')).join('')}</div>
           </div>` : ''}
           <div class="card-s">
-            <div class="card-s-t">Informace o zakázce</div>
-            <div class="meta-g">${jobFields.map(([k,v]) => `<div class="meta-i"><b>${esc(k)}</b><div class="val">${esc(v)}</div></div>`).join('')}</div>
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--b)">
-              <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Číslo zakázky — změnit</div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input id="editJobNum" style="background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:8px 12px;font:inherit;font-size:14px;max-width:280px;outline:none" value="${esc(job.internalNumber || '')}" placeholder="Číslo zakázky" />
-                <button class="btn btn-p" id="saveJobNum">Uložit číslo</button>
-              </div>
+            <div class="card-s-t">⚡ Informace o zakázce</div>
+            <div class="meta-g">${jobFields.map(([k,v]) => fieldBox(k, v)).join('')}</div>
+            <div class="job-num-edit">
+              <span class="job-num-edit-lbl">🔖 Číslo zakázky</span>
+              <input id="editJobNum" value="${esc(job.internalNumber || '')}" placeholder="Zadejte číslo zakázky…" />
+              <button class="btn btn-p" id="saveJobNum" style="flex-shrink:0">💾 Uložit</button>
             </div>
           </div>
-          ${brief.summaryText ? `<div class="card-s"><div class="card-s-t">AI shrnutí formuláře</div><div style="font-size:12px;color:var(--ink3);line-height:1.65;white-space:pre-wrap">${esc(brief.summaryText)}</div></div>` : ''}
+          ${brief.summaryText ? `
+          <div class="ai-card">
+            <div class="ai-card-hdr">
+              <div class="ai-icon">🤖</div>
+              <div>
+                <div class="ai-card-title">AI shrnutí formuláře</div>
+                <div class="ai-card-sub">Automaticky vygenerováno na základě poptávky klienta</div>
+              </div>
+            </div>
+            <div class="ai-card-body">${esc(brief.summaryText)}</div>
+          </div>` : ''}
         `
 
         // ── Save job number ─────────────────────────────────────────
