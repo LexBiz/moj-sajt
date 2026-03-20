@@ -133,6 +133,134 @@
     document.body.appendChild(el)
   }
 
+  /* ── Toast notifications ──────────────────────────────────── */
+  let _toastWrap = null
+  function _ensureToastWrap() {
+    if (_toastWrap) return _toastWrap
+    const s = document.createElement('style')
+    s.textContent = `
+      #_crmToastWrap{position:fixed;top:20px;right:20px;z-index:999999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+      .crm-toast{pointer-events:all;display:flex;align-items:flex-start;gap:12px;min-width:280px;max-width:380px;padding:14px 16px 14px 14px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.22),0 1px 0 rgba(255,255,255,.08) inset;backdrop-filter:blur(14px);animation:_toastIn .32s cubic-bezier(.34,1.56,.64,1) both;border:1px solid rgba(255,255,255,.12);font-family:inherit}
+      .crm-toast.out{animation:_toastOut .28s ease-in both}
+      @keyframes _toastIn{from{opacity:0;transform:translateX(60px) scale(.9)}to{opacity:1;transform:translateX(0) scale(1)}}
+      @keyframes _toastOut{to{opacity:0;transform:translateX(60px) scale(.85)}}
+      .crm-toast.success{background:linear-gradient(135deg,rgba(8,130,82,.95),rgba(14,180,110,.92))}
+      .crm-toast.error{background:linear-gradient(135deg,rgba(170,28,28,.95),rgba(220,50,50,.92))}
+      .crm-toast.warn{background:linear-gradient(135deg,rgba(160,90,0,.95),rgba(220,130,0,.92))}
+      .crm-toast.info{background:linear-gradient(135deg,rgba(20,70,180,.95),rgba(40,110,240,.92))}
+      .crm-toast-icon{font-size:20px;flex-shrink:0;line-height:1;margin-top:1px}
+      .crm-toast-body{flex:1;min-width:0}
+      .crm-toast-title{font-size:13px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:2px}
+      .crm-toast-msg{font-size:12px;color:rgba(255,255,255,.82);line-height:1.45;white-space:pre-line;word-break:break-word}
+      .crm-toast-close{width:20px;height:20px;border-radius:6px;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:13px;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s;margin-top:0;padding:0}
+      .crm-toast-close:hover{background:rgba(255,255,255,.3)}
+    `
+    document.head.appendChild(s)
+    const w = document.createElement('div')
+    w.id = '_crmToastWrap'
+    document.body.appendChild(w)
+    return (_toastWrap = w)
+  }
+  const TOAST_META = {
+    success: { icon: '✅', title: 'Úspěch' },
+    error:   { icon: '❌', title: 'Chyba' },
+    warn:    { icon: '⚠️', title: 'Upozornění' },
+    info:    { icon: 'ℹ️', title: 'Info' },
+  }
+  window.crmToast = function(message, type = 'info', duration = 4500) {
+    const wrap = _ensureToastWrap()
+    const meta = TOAST_META[type] || TOAST_META.info
+    const t = document.createElement('div')
+    t.className = `crm-toast ${type}`
+    t.innerHTML = `
+      <div class="crm-toast-icon">${meta.icon}</div>
+      <div class="crm-toast-body">
+        <div class="crm-toast-title">${meta.title}</div>
+        <div class="crm-toast-msg">${String(message || '').replaceAll('<','&lt;')}</div>
+      </div>
+      <button class="crm-toast-close" title="Zavřít">✕</button>`
+    wrap.appendChild(t)
+    const dismiss = () => {
+      t.classList.add('out')
+      setTimeout(() => t.remove(), 300)
+    }
+    t.querySelector('.crm-toast-close').addEventListener('click', dismiss)
+    if (duration > 0) setTimeout(dismiss, duration)
+    return dismiss
+  }
+
+  /**
+   * crmPrompt(message, opts?) → Promise<string|null>
+   * opts: { title, placeholder, defaultValue, okLabel, cancelLabel }
+   */
+  window.crmPrompt = function(message, opts = {}) {
+    return new Promise((resolve) => {
+      _ensureConfirmModal()
+      const overlay = document.getElementById('_crmConfirmOverlay')
+      document.getElementById('_crmConfirmTitle').textContent = opts.title || 'Zadejte hodnotu'
+      const bodyEl = document.getElementById('_crmConfirmBody')
+      bodyEl.innerHTML = `<div style="margin-bottom:12px;white-space:pre-line">${String(message || '').replaceAll('<','&lt;')}</div><input id="_crmPromptInput" placeholder="${String(opts.placeholder||'').replaceAll('"','&quot;')}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.08);border:1px solid rgba(74,150,250,.35);border-radius:9px;color:#F2F8FF;font:inherit;font-size:14px;padding:9px 12px;outline:none;transition:border-color .15s" />`
+      const input = document.getElementById('_crmPromptInput')
+      if (opts.defaultValue != null) input.value = opts.defaultValue
+      const okBtn  = document.getElementById('_crmConfirmOk')
+      const canBtn = document.getElementById('_crmConfirmCancel')
+      okBtn.textContent  = opts.okLabel     || 'OK'
+      canBtn.textContent = opts.cancelLabel || 'Zrušit'
+      canBtn.style.display = ''
+      okBtn.className = ''
+      overlay.classList.add('open')
+      setTimeout(() => input.focus(), 80)
+      const close = (val) => {
+        overlay.classList.remove('open')
+        bodyEl.textContent = ''
+        okBtn.removeEventListener('click', onOk)
+        canBtn.removeEventListener('click', onCancel)
+        overlay.removeEventListener('click', onOut)
+        input.removeEventListener('keydown', onKey)
+        resolve(val)
+      }
+      const onOk     = () => close(input.value)
+      const onCancel = () => close(null)
+      const onOut    = (e) => { if (e.target === overlay) close(null) }
+      const onKey    = (e) => { if (e.key === 'Enter') close(input.value); if (e.key === 'Escape') close(null) }
+      okBtn.addEventListener('click', onOk)
+      canBtn.addEventListener('click', onCancel)
+      overlay.addEventListener('click', onOut)
+      input.addEventListener('keydown', onKey)
+    })
+  }
+
+  /**
+   * crmAlert(message, opts?) → Promise<void>
+   * opts: { title, type ('success'|'error'|'warn'|'info') }
+   */
+  window.crmAlert = function(message, opts = {}) {
+    const type = opts.type || (opts.danger ? 'error' : 'info')
+    const meta = TOAST_META[type] || TOAST_META.info
+    return new Promise((resolve) => {
+      _ensureConfirmModal()
+      const overlay = document.getElementById('_crmConfirmOverlay')
+      document.getElementById('_crmConfirmTitle').textContent = opts.title || meta.title
+      document.getElementById('_crmConfirmBody').textContent = message || ''
+      const okBtn  = document.getElementById('_crmConfirmOk')
+      const canBtn = document.getElementById('_crmConfirmCancel')
+      okBtn.textContent  = opts.okLabel || 'OK'
+      canBtn.style.display = 'none'
+      okBtn.className = opts.danger ? 'danger' : ''
+      overlay.classList.add('open')
+      const close = () => {
+        overlay.classList.remove('open')
+        canBtn.style.display = ''
+        okBtn.removeEventListener('click', close)
+        overlay.removeEventListener('click', onOut)
+        resolve()
+      }
+      const onOut = (e) => { if (e.target === overlay) close() }
+      okBtn.addEventListener('click', close)
+      overlay.addEventListener('click', onOut)
+    })
+  }
+
   /**
    * crmConfirm(message, options?) → Promise<boolean>
    * options: { title, okLabel, cancelLabel, danger }

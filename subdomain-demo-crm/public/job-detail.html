@@ -494,15 +494,15 @@
           const newNum = document.getElementById('editJobNum').value.trim()
           if (!newNum) return
           const r = await apiFetch(api(`/api/crm/jobs/${jobId}`), { method: 'PATCH', body: JSON.stringify({ internalNumber: newNum }) })
-          if (r.ok) { document.getElementById('jobNum').textContent = newNum; alert('Číslo zakázky uloženo: ' + newNum) }
-          else alert('Nepodařilo se uložit číslo zakázky')
+          if (r.ok) { document.getElementById('jobNum').textContent = newNum; crmToast('Číslo zakázky uloženo: ' + newNum, 'success') }
+          else crmToast('Nepodařilo se uložit číslo zakázky', 'error')
         })
         document.getElementById('fetchAresBtn')?.addEventListener('click', async () => {
           const ico = c.ico; if (!ico) return
           const r = await apiFetch(api(`/api/ares?ico=${encodeURIComponent(ico)}`))
           const d = await j(r)
-          if (!r.ok || !d?.ok) { alert('ARES: firma nenalezena nebo služba nedostupná'); return }
-          alert(`ARES: ${d.companyName || ''}\n${d.address || ''}`)
+          if (!r.ok || !d?.ok) { crmToast('ARES: firma nenalezena nebo služba nedostupná', 'warn'); return }
+          crmToast(`ARES: ${d.companyName || ''} · ${d.address || ''}`, 'info')
           loadJob()
         })
       }
@@ -727,7 +727,7 @@
           })
           const d = await r.json().catch(() => null)
           if (!r.ok || !d?.ok) {
-            alert('Chyba: ' + (d?.error || d?.details || 'neznámá chyba'))
+            crmToast('Chyba: ' + (d?.error || d?.details || 'neznámá chyba'), 'error')
           }
 
           document.getElementById('kommText').value = ''
@@ -756,7 +756,7 @@
         const r = await apiFetch(api(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', body: JSON.stringify({}) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze vygenerovat dokumenty')
-        alert(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel byl vygenerován, ale PDF se nepodařilo vytvořit')
+        crmToast(d?.pdf?.ok ? 'Excel i PDF byly vygenerovány' : 'Excel vygenerován, PDF selhalo', d?.pdf?.ok ? 'success' : 'warn')
         await loadJob()
       }
 
@@ -770,7 +770,7 @@
           body: JSON.stringify({ email, subject, text }) })
         const d = await j(r)
         if (!r.ok || !d?.ok) throw new Error(d?.error || 'Nelze odeslat email')
-        alert(`Rozpočet byl odeslán na ${email}`)
+        crmToast(`Rozpočet byl odeslán na ${email}`, 'success')
         await loadJob()
       }
 
@@ -875,7 +875,7 @@
         `
         document.getElementById('uploadFileBtn')?.addEventListener('click', async () => {
           const file = document.getElementById('fileUploadInput').files?.[0]
-          if (!file) { alert('Vyberte soubor'); return }
+          if (!file) { crmToast('Vyberte soubor', 'warn'); return }
           const btn = document.getElementById('uploadFileBtn')
           const prog = document.getElementById('uploadProgress')
           btn.disabled = true; btn.textContent = 'Nahrávám...'
@@ -893,10 +893,10 @@
           finally { btn.disabled = false; btn.textContent = '📤 Nahrát' }
         })
         document.getElementById('buildEstimateDocs')?.addEventListener('click', async () => {
-          try { await buildEstimateDocs() } catch (e) { alert(String(e?.message || e)) }
+          try { await buildEstimateDocs() } catch (e) { crmToast(String(e?.message || e), 'error') }
         })
         document.getElementById('sendEstimateBtn')?.addEventListener('click', async () => {
-          try { await sendEstimateToClient() } catch (e) { alert(String(e?.message || e)) }
+          try { await sendEstimateToClient() } catch (e) { crmToast(String(e?.message || e), 'error') }
         })
       }
 
@@ -973,9 +973,9 @@
             const r = await apiFetch(api(`/api/crm/fakturoid/invoices/create-and-send`), { method: 'POST', body: JSON.stringify({ jobId, invoiceType: 'advance', amount: job.depositAmount || job.totalPrice || 0, clientEmail: job.clientEmail || customer?.email || '' }) })
             const d = await r.json()
             if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba Fakturoid')
-            alert(`✓ Faktura vytvořena a odeslána přes Fakturoid\nID: ${d.invoice?.fakturoid_id || d.fakturoidId || '—'}`)
+            crmToast(`Faktura vytvořena · ID: ${d.invoice?.fakturoid_id || d.fakturoidId || '—'}`, 'success')
             loadJob()
-          } catch (e) { alert('Fakturoid chyba: ' + String(e?.message || e)) }
+          } catch (e) { crmToast('Fakturoid chyba: ' + String(e?.message || e), 'error') }
           finally { btn.disabled = false; btn.textContent = '⚡ Vytvořit zálohu (Fakturoid)' }
         })
         el.querySelectorAll('[data-mark-paid]').forEach(btn => {
@@ -1125,8 +1125,8 @@
               const r = await apiFetch(api(`/api/crm/jobs/${jobId}/completion-act/prepare`), { method: 'POST', body: JSON.stringify({ clientEmail: email }) })
               const d = await r.json()
               if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
-              alert(`✓ Akt odeslán!\nOdkaz: ${d.actUrl}`)
-            } catch (e) { alert('Chyba: ' + String(e?.message || e)) }
+              crmToast(`Akt odeslán — Odkaz: ${d.actUrl}`, 'success')
+            } catch (e) { crmToast('Chyba: ' + String(e?.message || e), 'error') }
             finally { actBtn.disabled = false; actBtn.textContent = '✍️ Odeslat akt o dílo klientovi' }
           })
         }
@@ -1140,8 +1140,8 @@
               const r = await apiFetch(api(`/api/crm/jobs/${jobId}/send-review-request`), { method: 'POST', body: JSON.stringify({ clientEmail: email }) })
               const d = await r.json()
               if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
-              alert('✓ Žádost o hodnocení odeslána!')
-            } catch (e) { alert('Chyba: ' + String(e?.message || e)) }
+              crmToast('Žádost o hodnocení odeslána!', 'success')
+            } catch (e) { crmToast('Chyba: ' + String(e?.message || e), 'error') }
             finally { reviewBtn.disabled = false; reviewBtn.textContent = '⭐ Odeslat žádost o recenzi (Google Maps)' }
           })
         }
@@ -1160,7 +1160,7 @@
               if (!r.ok || !d?.ok) throw new Error(d?.error || 'Chyba')
               loadJob()
             } catch (e) {
-              alert('Chyba: ' + String(e?.message || e))
+              crmToast('Chyba: ' + String(e?.message || e), 'error')
               archBtn.disabled = false; archBtn.textContent = '📦 Uzavřít a přesunout do archivu'
             }
           })
@@ -1214,7 +1214,7 @@
               if (!rr.ok || !dd?.ok) throw new Error(dd?.error || 'Chyba')
               loadJob()
             } catch (e) {
-              alert('Chyba: ' + String(e?.message || e))
+              crmToast('Chyba: ' + String(e?.message || e), 'error')
               archHdrBtn.disabled = false; archHdrBtn.textContent = '📦 Archivovat'
             }
           }
@@ -1236,7 +1236,7 @@
         const currentStage = (window._jobData?.job?.pipelineStage) || 'nova_poptavka'
         const idx = STAGES.indexOf(currentStage)
         const nextStage = idx >= 0 && idx < STAGES.length - 1 ? STAGES[idx + 1] : null
-        if (!nextStage) return alert('Zakázka je již v poslední etapě.')
+        if (!nextStage) return crmToast('Zakázka je již v poslední etapě.', 'warn')
         const nextLabel = SL[nextStage] || nextStage
         if (!await crmConfirm(`Posunout zakázku do etapy:\n"${nextLabel}"?`, { title: 'Další etapa', okLabel: 'Přesunout' })) return
         const btn = document.getElementById('moveBtn')
@@ -1245,7 +1245,7 @@
         const d = await j(r)
         btn.disabled = false; btn.textContent = 'Další etapa →'
         if (r.ok && d?.ok) loadJob()
-        else alert(d?.error || 'Nepodařilo se změnit etapu')
+        else crmToast(d?.error || 'Nepodařilo se změnit etapu', 'error')
       })
 
       document.querySelectorAll('.lang-btn').forEach((btn) => btn.addEventListener('click', () => {
@@ -1255,11 +1255,11 @@
       }))
 
       document.getElementById('buildEstimateDocsTop').addEventListener('click', async () => {
-        try { await buildEstimateDocs() } catch (e) { alert(String(e?.message || e)) }
+        try { await buildEstimateDocs() } catch (e) { crmToast(String(e?.message || e), 'error') }
       })
 
       document.getElementById('sendEstimateTop').addEventListener('click', async () => {
-        try { await sendEstimateToClient() } catch (e) { alert(String(e?.message || e)) }
+        try { await sendEstimateToClient() } catch (e) { crmToast(String(e?.message || e), 'error') }
       })
 
       // ── Poznámky tab ────────────────────────────────────────────

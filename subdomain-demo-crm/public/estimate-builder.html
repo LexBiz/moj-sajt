@@ -1422,7 +1422,7 @@
       }
       const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}`), { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       const d = await jParse(r)
-      if (!r.ok || !d?.ok) { if (!silent) alert(d?.error || 'Помилка збереження'); return }
+      if (!r.ok || !d?.ok) { if (!silent) crmToast(d?.error || 'Помилка збереження', 'error'); return }
 
       if (!silent) {
         // Full sync from server on explicit save
@@ -1461,7 +1461,7 @@
       // Validate required preview fields before generating PDF
       const missing = checkPreviewFieldsFilled()
       if (missing.length) {
-        alert(`❌ Před generováním PDF vyplňte v Poperednom perегляді:\n\n• ${missing.join('\n• ')}\n\nOtevřete "👁 Попередній перегляд", vyplňte pole a klikněte "Uložit úpravy".`)
+        crmToast('Před generováním vyplňte: ' + missing.join(', '), 'warn')
         return
       }
       document.getElementById('btnGenerate').disabled = true
@@ -1470,14 +1470,14 @@
         await saveEstimate()
         const r = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/build-documents`), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ hidePriceCols }) })
         const d = await jParse(r)
-        if (!r.ok || !d?.ok) { alert(d?.error || 'Помилка генерації'); return }
+        if (!r.ok || !d?.ok) { crmToast(d?.error || 'Помилка генерації', 'error'); return }
         const xlsxUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/xlsx`)
         const pdfUrl = apiUrl(`/api/crm/estimates/${estimate.id}/file/pdf`)
         document.getElementById('xlsxLink').href = xlsxUrl; document.getElementById('xlsxLink').style.display = 'inline'
         document.getElementById('pdfLink').href = pdfUrl; document.getElementById('pdfLink').style.display = 'inline'
         document.getElementById('sendPopover').style.display = 'block'
         const emailEl = document.getElementById('sendEmail'); if (emailEl && !emailEl.value) emailEl.value = lead?.email || ''
-        alert(d?.pdf?.ok ? '✓ Excel і PDF згенеровано' : '✓ Excel згенеровано (PDF не вдалось)')
+        crmToast(d?.pdf?.ok ? 'Excel і PDF згенеровано' : 'Excel згенеровано (PDF не вдалось)', d?.pdf?.ok ? 'success' : 'warn')
       } finally {
         document.getElementById('btnGenerate').disabled = false
         document.getElementById('btnGenerate').textContent = '⚡ Excel / PDF'
@@ -1486,10 +1486,10 @@
 
     async function sendEstimate() {
       const email = (document.getElementById('sendEmail').value || '').trim() || lead?.email || ''
-      if (!email) { alert('Вкажіть email клієнта'); return }
+      if (!email) { crmToast('Вкажіть email клієнта', 'warn'); return }
       const missing = checkPreviewFieldsFilled()
       if (missing.length) {
-        alert(`❌ Перед відправкою заповніть поля в Попередньому перегляді:\n\n• ${missing.join('\n• ')}`)
+        crmToast('Перед відправкою заповніть: ' + missing.join(', '), 'warn')
         return
       }
       document.getElementById('sendDoIt').disabled = true; document.getElementById('sendDoIt').textContent = '...'
@@ -1503,9 +1503,9 @@
           body: JSON.stringify({ email, subject:`Rozpočet ${estimate.estimateNo||''} — O&L Master Dom` })
         })
         const d2 = await jParse(r2)
-        if (r2.ok && d2?.ok) { alert(`✓ PDF відправлено на ${email}`); document.getElementById('sendPopover').style.display='none' }
+        if (r2.ok && d2?.ok) { crmToast(`PDF відправлено на ${email}`, 'success'); document.getElementById('sendPopover').style.display='none' }
         else throw new Error(d2?.error || 'Помилка відправки')
-      } catch(e) { alert(String(e?.message||e)) }
+      } catch(e) { crmToast(String(e?.message||e), 'error') }
       finally { document.getElementById('sendDoIt').disabled=false; document.getElementById('sendDoIt').textContent='Відправити PDF →' }
     }
 
@@ -1538,12 +1538,12 @@
       const d = await jParse(r)
       if (!r.ok || !d?.ok || !d.snapshots?.length) { dbgShow('Žádné zálohy k dispozici'); return }
       const list = d.snapshots.map((s, i) => `${i + 1}. [${new Date(s.createdAt).toLocaleString('cs-CZ')}] v${s.versionNo} — ${s.note || 'bez poznámky'} (${s.createdBy || 'auto'})`).join('\n')
-      const choice = prompt(`Historie zálon:\n\n${list}\n\nZadejte číslo zálohy pro obnovení (nebo zrušte):`)
+      const choice = await crmPrompt(`Historie záloh:\n\n${list}`, { title: 'Obnovit zálohu', placeholder: 'Číslo zálohy…', okLabel: 'Vybrat', cancelLabel: 'Zrušit' })
       if (!choice) return
       const idx = parseInt(choice) - 1
-      if (!Number.isFinite(idx) || idx < 0 || idx >= d.snapshots.length) { alert('Neplatné číslo'); return }
+      if (!Number.isFinite(idx) || idx < 0 || idx >= d.snapshots.length) { crmToast('Neplatné číslo', 'warn'); return }
       const snap = d.snapshots[idx]
-      if (!confirm(`Obnovit zálohu z ${new Date(snap.createdAt).toLocaleString('cs-CZ')}?\n⚠ Aktuální stav bude zálohovon automaticky.`)) return
+      if (!await crmConfirm(`Obnovit zálohu z ${new Date(snap.createdAt).toLocaleString('cs-CZ')}?`, { title: 'Obnovit zálohu', okLabel: 'Obnovit', cancelLabel: 'Zrušit' })) return
       const r2 = await apiFetch(apiUrl(`/api/crm/estimates/${estimate.id}/snapshots/${snap.id}/restore`), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) })
       const d2 = await jParse(r2)
       if (r2.ok && d2?.ok) { estimate = d2.estimate; estimate.lines = normalizeLines(estimate.lines || []); renderAll(); dbgShow('✅ Záloha obnovena') }

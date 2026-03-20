@@ -638,7 +638,7 @@
               if (!r.ok || !data?.ok) throw new Error(data?.error || 'Chyba')
               loadPipeline()
             } catch (ex) {
-              alert('Chyba: ' + String(ex?.message || ex))
+              crmToast('Chyba: ' + String(ex?.message || ex), 'error')
               btn.disabled = false; btn.textContent = '📦'
             }
           })
@@ -706,7 +706,7 @@
               if (!r.ok || !data?.ok) throw new Error(data?.error || 'Chyba')
               loadPipeline()
             } catch (ex) {
-              alert('Chyba: ' + String(ex?.message || ex))
+              crmToast('Chyba: ' + String(ex?.message || ex), 'error')
               btn.disabled = false; btn.textContent = '📦 Přesunout do archivu'
             }
           })
@@ -828,7 +828,7 @@
       document.getElementById('drApply').addEventListener('click', () => {
         const fromVal = document.getElementById('drFrom').value
         const toVal = document.getElementById('drTo').value
-        if (!fromVal && !toVal) { alert('Zvolte alespoň jedno datum'); return }
+        if (!fromVal && !toVal) { crmToast('Zvolte alespoň jedno datum', 'warn'); return }
         customDateFrom = fromVal ? new Date(fromVal + 'T00:00:00') : null
         customDateTo = toVal ? new Date(toVal + 'T23:59:59') : null
         activeDateFilter = 'custom'
@@ -888,7 +888,7 @@
             if (d.companyName) document.getElementById('ncCompanyName').value = d.companyName
             if (d.address) document.getElementById('ncCompanyAddress').value = d.address
             if (d.companyName) document.getElementById('ncName').value = d.companyName
-          } else alert('Firma nebyla nalezena v ARES')
+          } else crmToast('Firma nebyla nalezena v ARES', 'warn')
         } catch {}
         btn.disabled = false; btn.textContent = 'Ověřit ARES'
       })
@@ -1110,9 +1110,9 @@
             const d = await r.json()
             modal.classList.remove('show')
             if (d.ok) { loadArchive(false) }
-            else { alert('Chyba: ' + (d.error || 'Nelze smazat')) }
+            else { crmToast('Chyba: ' + (d.error || 'Nelze smazat'), 'error') }
           } catch(e) {
-            alert('Chyba sítě: ' + e.message)
+            crmToast('Chyba sítě: ' + e.message, 'error')
           } finally {
             document.getElementById('archDelConfirmBtn').textContent = 'Smazat trvale'
             document.getElementById('archDelConfirmBtn').disabled = false
