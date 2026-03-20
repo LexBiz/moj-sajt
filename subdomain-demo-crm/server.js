@@ -666,11 +666,13 @@ async function sendResendEmail({ to, subject, text, html, attachments, replyTo }
   if (!key || !from || !to) return { attempted: false, ok: false, reason: 'missing_resend_env' }
   try {
     const cleanAttachments = (Array.isArray(attachments) ? attachments : [])
-      .map((x) => ({
-        filename: String(x?.filename || '').trim(),
-        content: String(x?.content || '').trim(),
-      }))
-      .filter((x) => x.filename && x.content)
+      .map((x) => {
+        const a = { filename: String(x?.filename || '').trim() }
+        if (x?.path)    a.path    = String(x.path)
+        if (x?.content) a.content = String(x.content)
+        return a
+      })
+      .filter((x) => x.filename && (x.path || x.content))
     const payload = {
       from,
       to: [to],
@@ -714,7 +716,11 @@ async function listJobEmailsDb(jobId) {
   if (!pool) return []
   try {
     const q = await dbQuery(`SELECT * FROM crm_job_emails WHERE job_id=$1 ORDER BY sent_at ASC LIMIT 200`, [jobId])
-    return q.rows.map(r => ({ id: r.id, jobId: r.job_id, leadId: r.lead_id, direction: r.direction, subject: r.subject, fromAddr: r.from_addr, toAddr: r.to_addr, body: r.body, htmlBody: r.html_body, sentAt: r.sent_at, resendId: r.resend_id, status: r.status }))
+    return q.rows.map(r => {
+      let attachments = []
+      try { attachments = r.raw_payload?.attachments || [] } catch {}
+      return { id: r.id, jobId: r.job_id, leadId: r.lead_id, direction: r.direction, subject: r.subject, fromAddr: r.from_addr, toAddr: r.to_addr, body: r.body, htmlBody: r.html_body, sentAt: r.sent_at, resendId: r.resend_id, status: r.status, attachments }
+    })
   } catch { return [] }
 }
 
@@ -4941,6 +4947,7 @@ app.post('/api/crm/jobs/:id/move', authMiddleware, roleGuard(['admin', 'manager'
   const id = Number(req.params.id)
   const newStage = String(req.body?.stage || '').trim()
   if (!JOB_STAGES.includes(newStage)) return res.status(400).json({ ok: false, error: `Invalid stage. Must be one of: ${JOB_STAGES.join(', ')}` })
+  const jobBefore = await getJobById(id) // capture current stage for audit
   const dateFields = {}
   if (newStage === 'podklady') dateFields.formReceivedAt = nowIso()
   if (newStage === 'nabidka_odeslana') dateFields.offerSentAt = nowIso()
@@ -5004,7 +5011,8 @@ app.post('/api/crm/jobs/:id/move', authMiddleware, roleGuard(['admin', 'manager'
     await addJobTask(id, { taskType: 'handover_protocol', title: 'Připravit předávací protokol', isSystemGenerated: true, priority: 'high' })
     await addJobTask(id, { taskType: 'invoice', title: 'Vystavit finální fakturu', isSystemGenerated: true, priority: 'high' })
   }
-  await insertAudit(req.auth?.email || null, 'job_stage_moved', 'job', id, { stage: newStage })
+  const fromStage = jobBefore?.pipelineStage || jobBefore?.pipeline_stage || ''
+  await insertAudit(req.auth?.email || null, 'job_stage_moved', 'job', id, { stage: newStage, fromStage, internalNumber: jobBefore?.internalNumber || jobBefore?.internal_number || '' })
   return res.json({ ok: true, job: enrichJob(updated) })
 })
 
@@ -5036,11 +5044,13 @@ app.post('/api/crm/jobs/:id/documents/upload', authMiddleware, roleGuard(['admin
   try {
     if (!req.file) return res.status(400).json({ ok: false, error: 'No file uploaded' })
     const jobId = Number(req.params.id)
+    // multer may decode filename as latin1 — fix to utf8
+    const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8')
     const relPath = path.relative(path.join(__dirname), req.file.path).replace(/\\/g, '/')
     const fileUrl = `/${relPath}`
     const docType = req.body?.documentType || 'other'
     const doc = await addJobDocument(jobId, {
-      fileName: req.file.originalname,
+      fileName: originalName,
       filePath: req.file.path,
       fileUrl,
       storageKey: relPath,
@@ -5050,8 +5060,8 @@ app.post('/api/crm/jobs/:id/documents/upload', authMiddleware, roleGuard(['admin
       source: 'manual_upload',
       isFinal: false,
     })
-    await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'document_uploaded', actorType: 'user', title: `Soubor nahrán: ${req.file.originalname}`, actor: req.auth?.email, message: `Nahráno: ${req.file.originalname} (${Math.round(req.file.size / 1024)} kB)`, metadata: { documentType: docType } })
-    return res.json({ ok: true, document: doc })
+    await addJobEvent(jobId, { eventType: 'document_added', eventCode: 'document_uploaded', actorType: 'user', title: `Soubor nahrán: ${originalName}`, actor: req.auth?.email, message: `Nahráno: ${originalName} (${Math.round(req.file.size / 1024)} kB)`, metadata: { documentType: docType } })
+    return res.json({ ok: true, document: doc, url: fileUrl, filename: originalName })
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) })
   }
@@ -5100,6 +5110,9 @@ app.post('/api/crm/jobs/:id/emails', authMiddleware, roleGuard(['admin', 'manage
         <p style="margin:0;font-size:15px;color:#2D3748;line-height:1.8;font-family:Arial,sans-serif">${safeText}</p>
       </td></tr>
 
+      <!-- ATTACHMENTS -->
+      <!-- ATTACH_BLOCK -->
+
       <!-- REPLY BUTTON -->
       ${buildEmailReplyBlock(jobId, 'Odpovědět manažerovi', 'Máte dotazy nebo chcete odpovědět? Klikněte níže.')}
 
@@ -5113,10 +5126,28 @@ app.post('/api/crm/jobs/:id/emails', authMiddleware, roleGuard(['admin', 'manage
   </td></tr>
 </table>
 </body></html>`
-  const mail = await sendResendEmail({ to, subject, text, html: htmlBody, replyTo: buildReplyTo(jobId) })
+  // Build attachments for Resend — uploaded files are served publicly
+  const siteBase = process.env.SITE_URL || 'https://demo.temoweb.eu'
+  const rawAttachments = Array.isArray(req.body?.attachments) ? req.body.attachments.filter(a => a?.url) : []
+  const emailAttachments = rawAttachments.map(a => ({ filename: String(a.filename || 'soubor'), path: `${siteBase}${a.url}` }))
+
+  // Build HTML attachment section for email body
+  const attachHtml = rawAttachments.length ? `
+      <tr><td style="padding:0 40px 28px">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #DDE3ED;padding-top:20px;margin-top:4px">
+          <tr><td style="padding-bottom:10px;font-size:12px;font-weight:bold;color:#8899BB;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif">📎 Přílohy</td></tr>
+          ${rawAttachments.map(a => `<tr><td style="padding:4px 0">
+            <a href="${siteBase}${a.url}" style="display:inline-flex;align-items:center;gap:8px;background:#F0F4F8;border:1px solid #DDE3ED;border-radius:8px;padding:10px 16px;text-decoration:none;color:#1A6AE8;font-size:14px;font-family:Arial,sans-serif">
+              📄 ${a.filename || 'soubor'}
+            </a>
+          </td></tr>`).join('')}
+        </table>
+      </td></tr>` : ''
+
+  const mail = await sendResendEmail({ to, subject, text, html: htmlBody.replace('<!-- ATTACH_BLOCK -->', attachHtml), attachments: emailAttachments, replyTo: buildReplyTo(jobId) })
   if (!mail.ok) return res.status(502).json({ ok: false, error: 'Failed to send email', details: mail.reason })
-  await logJobEmail({ jobId, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: text, htmlBody, resendId: mail.id || null, status: 'sent' })
-  await addJobEvent(jobId, { eventType: 'email_sent', eventCode: 'manual_email', actorType: 'user', actor: req.auth?.email || null, title: `Email odeslán: ${subject}`, message: `Email odeslán na ${to}`, metadata: { to, subject } })
+  await logJobEmail({ jobId, leadId: lead?.id || null, direction: 'outbound', subject, fromAddr: process.env.RESEND_FROM || null, toAddr: to, body: text, htmlBody, resendId: mail.id || null, status: 'sent', rawPayload: rawAttachments.length ? { attachments: rawAttachments } : null })
+  await addJobEvent(jobId, { eventType: 'email_sent', eventCode: 'manual_email', actorType: 'user', actor: req.auth?.email || null, title: `Email odeslán: ${subject}`, message: `Email odeslán na ${to}`, metadata: { to, subject, attachments: rawAttachments } })
   await insertAudit(req.auth?.email || null, 'email_sent_manual', 'job', jobId, { to, subject })
   return res.json({ ok: true, emailId: mail.id })
 })
@@ -5125,15 +5156,26 @@ app.post('/api/crm/jobs/:id/emails', authMiddleware, roleGuard(['admin', 'manage
 // Resend sends a POST when a client replies to a CRM email.
 // Set up: add MX record for RESEND_INBOUND_DOMAIN → inbound.resend.com (pri 10)
 // Then configure webhook URL in Resend dashboard → https://demo.temoweb.eu/api/email-inbound
-app.post('/api/email-inbound', express.raw({ type: '*/*', limit: '5mb' }), async (req, res) => {
+app.post('/api/email-inbound', async (req, res) => {
   try {
     // Verify Resend webhook signature if secret is configured
     if (RESEND_INBOUND_SECRET) {
       const sig = req.headers['svix-signature'] || req.headers['resend-signature'] || ''
       if (!sig) return res.status(401).json({ ok: false, error: 'Missing signature' })
     }
+    // req.body is already parsed by global express.json() for application/json requests
+    // For raw/binary payloads (edge case), attempt manual parse
+    // req.body is already parsed by global express.json() for application/json requests
+    // For raw/binary payloads (edge case), attempt manual parse
     const raw = req.body
-    const payload = (() => { try { return JSON.parse(Buffer.isBuffer(raw) ? raw.toString() : raw) } catch { return null } })()
+    const payload = (() => {
+      try {
+        if (raw && typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw
+        if (Buffer.isBuffer(raw) && raw.length > 0) return JSON.parse(raw.toString())
+        if (typeof raw === 'string' && raw.length > 0) return JSON.parse(raw)
+        return null
+      } catch { return null }
+    })()
     if (!payload) return res.status(400).json({ ok: false, error: 'Invalid JSON' })
 
     // Support both Resend inbound format and direct test POSTs
@@ -5201,6 +5243,29 @@ app.post('/api/crm/jobs/:id/events', authMiddleware, roleGuard(['admin', 'manage
 })
 app.get('/api/crm/jobs/:id/events', authMiddleware, roleGuard(['admin', 'manager', 'viewer']), async (req, res) => {
   return res.json({ ok: true, events: await listJobEvents(Number(req.params.id)) })
+})
+app.delete('/api/crm/jobs/:id/events/:evId', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const evId = Number(req.params.evId)
+  if (!Number.isFinite(evId)) return res.status(400).json({ ok: false, error: 'Invalid event id' })
+  if (pool) {
+    await dbQuery('DELETE FROM crm_job_events WHERE id=$1 AND job_id=$2', [evId, Number(req.params.id)])
+  }
+  return res.json({ ok: true })
+})
+
+app.patch('/api/crm/jobs/:id/events/:evId', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
+  const evId = Number(req.params.evId)
+  if (!Number.isFinite(evId)) return res.status(400).json({ ok: false, error: 'Invalid event id' })
+  const { message, description } = req.body || {}
+  const newText = String(message || description || '').trim()
+  if (!newText) return res.status(400).json({ ok: false, error: 'Empty text' })
+  if (pool) {
+    await dbQuery(
+      'UPDATE crm_job_events SET message=$1, description=$2 WHERE id=$3 AND job_id=$4',
+      [newText, newText, evId, Number(req.params.id)]
+    )
+  }
+  return res.json({ ok: true })
 })
 
 app.post('/api/crm/jobs/:id/tasks', authMiddleware, roleGuard(['admin', 'manager']), async (req, res) => {
@@ -5590,6 +5655,39 @@ app.post('/api/admin/imap-poll', authMiddleware, roleGuard(['admin']), async (re
   }
   pollImapInbox().catch(e => console.error('[imap-poll] manual trigger error:', e.message))
   return res.json({ ok: true, message: 'IMAP poll triggered', user: ZOHO_IMAP_USER })
+})
+
+// ── Activity / Audit log ────────────────────────────────────────────────────
+app.get('/api/admin/activity', authMiddleware, roleGuard(['admin', 'owner']), async (req, res) => {
+  try {
+    const limit  = Math.min(Number(req.query.limit  || 200), 500)
+    const offset = Number(req.query.offset || 0)
+    const q      = String(req.query.q || '').trim()
+    const dateFrom = req.query.from || null
+    const dateTo   = req.query.to   || null
+
+    if (pool) {
+      let where = 'WHERE 1=1'
+      const params = []
+      if (q) {
+        params.push(`%${q}%`)
+        where += ` AND (actor_email ILIKE $${params.length} OR action ILIKE $${params.length} OR entity_type ILIKE $${params.length})`
+      }
+      if (dateFrom) { params.push(dateFrom); where += ` AND created_at >= $${params.length}::date` }
+      if (dateTo)   { params.push(dateTo);   where += ` AND created_at < ($${params.length}::date + interval '1 day')` }
+      params.push(limit);  const limitN  = params.length
+      params.push(offset); const offsetN = params.length
+      const rows = await dbQuery(
+        `SELECT id, actor_email, action, entity_type, entity_id, data, created_at FROM crm_audit_log ${where} ORDER BY created_at DESC LIMIT $${limitN} OFFSET $${offsetN}`,
+        params
+      )
+      const countR = await dbQuery(`SELECT COUNT(*) AS n FROM crm_audit_log ${where}`, params.slice(0, params.length - 2))
+      return res.json({ ok: true, rows: rows.rows, total: Number(countR.rows[0]?.n || 0) })
+    }
+    return res.json({ ok: true, rows: [], total: 0 })
+  } catch(e) {
+    return res.status(500).json({ ok: false, error: String(e?.message || e) })
+  }
 })
 
 app.get('/api/admin/imap-status', authMiddleware, roleGuard(['admin']), (req, res) => {

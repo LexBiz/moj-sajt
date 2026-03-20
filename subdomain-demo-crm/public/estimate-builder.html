@@ -6,16 +6,7 @@
   <title>O&L Master Dom · Кошторис</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script>
-    ;(function(){
-      const tok = localStorage.getItem('crmToken')
-      if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
-      try {
-        const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
-        if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
-      } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
-    })()
-  </script>
+  <script src="./crm-utils.js"></script>
   <style>
     :root{
       --bg:#020C18;--s:#071626;--s2:#091B30;--c:#0C1E38;--c2:#0F2442;
@@ -407,6 +398,12 @@
       <button class="markup-btn" data-pct="25">+25%</button>
       <button class="markup-btn" data-pct="30">+30%</button>
     </div>
+    <div class="markup-row" id="ppDiscountRow" style="margin-top:2px">
+      <button class="markup-btn" data-pct="-5" style="background:rgba(232,58,58,.08);border-color:rgba(232,58,58,.25);color:#F07070">−5%</button>
+      <button class="markup-btn" data-pct="-10" style="background:rgba(232,58,58,.08);border-color:rgba(232,58,58,.25);color:#F07070">−10%</button>
+      <button class="markup-btn" data-pct="-15" style="background:rgba(232,58,58,.08);border-color:rgba(232,58,58,.25);color:#F07070">−15%</button>
+      <button class="markup-btn" data-pct="-20" style="background:rgba(232,58,58,.08);border-color:rgba(232,58,58,.25);color:#F07070">−20%</button>
+    </div>
     <button class="price-popup-reset" id="ppReset">↺ Základní cena</button>
   </div>
 
@@ -438,24 +435,10 @@
     const leadId = Number(params.get('leadId') || 0)
     const jobId = Number(params.get('jobId') || 0)
     const estimateIdFromUrl = Number(params.get('estimateId') || 0)
-    const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
-    const apiUrl = (p) => `${base}${p}`
-    const crmToken = () => localStorage.getItem('crmToken') || ''
-    const apiFetch = async (url, opts = {}) => {
-      const h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) }
-      const resp = await fetch(url, { ...opts, headers: h })
-      if (resp.status === 401) {
-        localStorage.removeItem('crmToken')
-        localStorage.removeItem('crmUser')
-        location.href = `${base}/login.html?next=${encodeURIComponent(location.href)}`
-        return resp
-      }
-      return resp
-    }
-    const esc = (s) => String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-    const fmtMoney = (n) => `${Number(n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč`
-    const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' }) } catch { return '—' } }
-    async function jParse(resp) { try { return await resp.json() } catch { return null } }
+    // base, api, crmToken, apiFetch, uploadFile, esc, fmt, fmtFull, fmtMoney, j — from crm-utils.js
+    const apiUrl = (p) => api(p)  // alias used in this file
+    const fmtDate = fmt           // alias
+    const jParse = j              // alias
 
     let lead = null, job = null, estimate = null, catalog = [], customPriceOverrides = new Map()
     let activeGroup = 'all', searchQ = '', cartOpen = false
@@ -745,11 +728,13 @@
               const laborRaised = line.laborUnitPrice > baseLabor + 0.01
               const matRaised   = hasMat && line.materialUnitPrice > baseMat + 0.01
               const laborTotal  = line.quantity * line.laborUnitPrice
-              const pcts = [10,15,20,25,30]
+              const pcts = [-20,-10,10,15,20,25,30]
               const mkup = (pos, base, cur, type) => pcts.map(p => {
                 const exp = Math.round(base * (1 + p/100) * 10)/10
                 const act = Math.abs(cur - exp) < 0.05
-                return `<button class="cmp-btn${act?' active':''}" data-mp="${p}" data-mppos="${pos}" data-mpbase="${base}" data-mptype="${type}">+${p}%</button>`
+                const isDiscount = p < 0
+                const style = isDiscount ? 'background:rgba(232,58,58,.08);border-color:rgba(232,58,58,.22);color:#F07070' : ''
+                return `<button class="cmp-btn${act?' active':''}" data-mp="${p}" data-mppos="${pos}" data-mpbase="${base}" data-mptype="${type}" style="${style}">${p>0?'+':''}${p}%</button>`
               }).join('')
 
               const coef = Number(line.matCoefficient || 1)
@@ -976,22 +961,41 @@
         for (const line of rows) {
           const lU = Number(line.laborUnitPrice || 0), mU = Number(line.materialUnitPrice || 0)
           const lT = Number(line.laborTotal || 0), mT = Number(line.materialTotal || 0)
-          const lineT = Number(line.lineTotal || 0)
+          const hasMat = !!(line.materialDescription)
+          const coef = Number(line.matCoefficient || 1)
           catL += lT; catM += mT
-          const noMat = !line.materialDescription
-          tableRows += `<tr>
-            <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px">${esc(code)}</td>
-            <td style="text-align:center;font-weight:600;font-size:11px;width:40px">${rowNum++}</td>
-            <td style="background:#D9E1F2;padding:5px 7px;min-width:200px;font-size:11px"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
-            <td style="background:${noMat?'#FECACA':'#C6E0B4'};padding:5px 7px;min-width:140px;font-size:11px;${noMat?'color:#991B1B;font-style:italic':''}">${noMat?`<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">(položka neobsahuje materiál)</span>`:`<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(line.materialDescription)}</span>`}</td>
+          const workNum = rowNum++
+          const matNum = `${workNum}.1`
+          // Work row
+          tableRows += `<tr style="border-bottom:${hasMat?'none':''}">
+            <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px;${hasMat?'border-bottom:none':''}">${esc(code)}</td>
+            <td style="text-align:center;font-weight:800;font-size:12px;width:40px;color:#1A2B4A">${workNum}</td>
+            <td style="background:#D9E1F2;padding:5px 7px;min-width:200px;font-size:11px;font-weight:600" colspan="2"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
             <td style="text-align:center;white-space:nowrap;font-size:11px">${line.quantity} ${esc(line.unit||'ks')}</td>
             <td style="text-align:right;background:#BDD7EE;font-size:11px">${fmtMoney(lU)}</td>
             <td style="text-align:right;background:#BDD7EE;font-weight:600;font-size:11px">${fmtMoney(lT)}</td>
-            <td style="text-align:right;background:#F8CBAD;font-size:11px">${mU>0?fmtMoney(mU):''}</td>
-            <td style="text-align:right;background:#F8CBAD;font-weight:600;font-size:11px">${mT>0?fmtMoney(mT):''}</td>
-            <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(lU+mU)}</td>
-            <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(lineT)}</td>
+            <td style="background:#F8CBAD"></td>
+            <td style="background:#F8CBAD"></td>
+            <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(lU)}</td>
+            <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(lT)}</td>
           </tr>`
+          // Material row (if exists)
+          if (hasMat) {
+            const matQty = line.quantity * coef
+            tableRows += `<tr style="background:#FAFCF8">
+              <td style="background:${bg};color:${fg};font-size:10px;text-align:center;opacity:.6">${esc(code)}</td>
+              <td style="text-align:center;font-size:11px;color:#666;font-weight:600">${matNum}</td>
+              <td style="padding:4px 7px;font-size:11px;color:#555;font-style:italic">↳ materiál</td>
+              <td style="background:#C6E0B4;padding:5px 7px;min-width:140px;font-size:11px"><span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(line.materialDescription)}</span></td>
+              <td style="text-align:center;white-space:nowrap;font-size:11px">${matQty} ${esc(line.unit||'ks')}</td>
+              <td style="background:#BDD7EE"></td>
+              <td style="background:#BDD7EE"></td>
+              <td style="text-align:right;background:#F8CBAD;font-size:11px">${fmtMoney(mU)}</td>
+              <td style="text-align:right;background:#F8CBAD;font-weight:600;font-size:11px">${fmtMoney(mT)}</td>
+              <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(mU)}</td>
+              <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(mT)}</td>
+            </tr>`
+          }
         }
         globalLabor += catL; globalMat += catM
         tableRows += `<tr style="background:#EDF0F5">
@@ -1107,8 +1111,19 @@
       document.getElementById('pvSaveEdits')?.addEventListener('click', () => {
         if (!estimate) return
         const g = id => (document.getElementById(id)?.textContent || '').trim()
+        // Parse Czech date "DD.MM.YYYY" or "DD. MM. YYYY" back to ISO "YYYY-MM-DD"
+        function parseCzDate(str) {
+          if (!str || str === '—') return null
+          const s = str.trim()
+          // Already ISO
+          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+          // Czech locale: "18. 03. 2026" or "18.03.2026"
+          const m = s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/)
+          if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+          return null
+        }
         estimate.title = g('pvTitleEdit') || estimate.title
-        estimate.estimateDate = g('pvDateEdit') || estimate.estimateDate
+        estimate.estimateDate = parseCzDate(g('pvDateEdit')) || estimate.estimateDate
         estimate.clientNameSnapshot = g('pvClientEdit') || estimate.clientNameSnapshot
         estimate.customerAddressSnapshot = (document.getElementById('pvAddrEdit')?.value || g('pvAddrEdit') || estimate.customerAddressSnapshot)
         estimate.projectManagerSnapshot = g('pvPmEdit') || estimate.projectManagerSnapshot
@@ -1286,7 +1301,7 @@
         title: estimate.title || `Rozpočet ze dne ${new Date().toLocaleDateString('cs-CZ')}`,
         tradeType: 'electro',
         note: estimate.note || '',
-        estimateDate: estimate.estimateDate || new Date().toISOString().slice(0,10),
+        estimateDate: (estimate.estimateDate && /^\d{4}-\d{2}-\d{2}$/.test(estimate.estimateDate)) ? estimate.estimateDate : new Date().toISOString().slice(0,10),
         jobNumberSnapshot: estimate.jobNumberSnapshot || job?.internalNumber || null,
         clientNumberSnapshot: estimate.clientNumberSnapshot || lead?.clientNumber || null,
         clientNameSnapshot: estimate.clientNameSnapshot || lead?.fullName || lead?.name || null,
@@ -1323,8 +1338,25 @@
       // silent: keep current in-memory state (already up to date), just persist to server
     }
 
+    function checkPreviewFieldsFilled() {
+      const missing = []
+      const client = (document.getElementById('pvClientEdit')?.textContent || estimate?.clientNameSnapshot || '').trim()
+      const addr = (document.getElementById('pvAddrEdit')?.value || estimate?.customerAddressSnapshot || '').trim()
+      const dateVal = (document.getElementById('pvDateEdit')?.textContent || estimate?.estimateDate || '').trim()
+      if (!client || client === '—') missing.push('Jméno klienta (Klient)')
+      if (!addr || addr === '—') missing.push('Adresa objektu')
+      if (!dateVal || dateVal === '—') missing.push('Datum')
+      return missing
+    }
+
     async function buildEstimateDocs() {
       if (!estimate?.id) return
+      // Validate required preview fields before generating PDF
+      const missing = checkPreviewFieldsFilled()
+      if (missing.length) {
+        alert(`❌ Před generováním PDF vyplňte v Poperednom perегляді:\n\n• ${missing.join('\n• ')}\n\nOtevřete "👁 Попередній перегляд", vyplňte pole a klikněte "Uložit úpravy".`)
+        return
+      }
       document.getElementById('btnGenerate').disabled = true
       document.getElementById('btnGenerate').textContent = '...'
       try {
@@ -1348,6 +1380,11 @@
     async function sendEstimate() {
       const email = (document.getElementById('sendEmail').value || '').trim() || lead?.email || ''
       if (!email) { alert('Вкажіть email клієнта'); return }
+      const missing = checkPreviewFieldsFilled()
+      if (missing.length) {
+        alert(`❌ Перед відправкою заповніть поля в Попередньому перегляді:\n\n• ${missing.join('\n• ')}`)
+        return
+      }
       document.getElementById('sendDoIt').disabled = true; document.getElementById('sendDoIt').textContent = '...'
       try {
         await saveEstimate()

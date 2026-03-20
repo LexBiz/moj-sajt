@@ -26,21 +26,11 @@
     .field input{width:100%;background:var(--c);border:1px solid var(--b2);border-radius:var(--r);color:var(--ink);padding:13px 14px;font:inherit;font-size:15px;outline:none;transition:border-color .15s}
     .field input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.12)}
     .field input::placeholder{color:var(--ink3)}
-    .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
-    .role-btn{border:1px solid var(--b2);background:var(--c);color:var(--ink2);border-radius:10px;padding:10px 6px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s}
-    .role-btn:hover{border-color:var(--b2);background:var(--c2)}
-    .role-btn.active{background:rgba(26,106,232,.2);color:var(--blue3);border-color:rgba(61,135,248,.4)}
-    .role-icon{font-size:18px;display:block;margin-bottom:4px}
-    .role-name{display:block;font-size:11px}
     .submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;border-radius:var(--r);font:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .18s;box-shadow:0 4px 18px rgba(26,106,232,.4)}
     .submit-btn:hover{background:linear-gradient(135deg,#2070F0,#3A8CFF);transform:translateY(-1px)}
     .submit-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
     .err-msg{margin-top:14px;padding:12px 14px;background:rgba(232,58,58,.1);border:1px solid rgba(232,58,58,.25);border-radius:var(--r);color:#F07070;font-size:13px;display:none}
     .err-msg.show{display:block}
-    .hints{margin-top:20px;padding:14px;background:rgba(26,106,232,.06);border:1px solid rgba(61,135,248,.14);border-radius:var(--r);font-size:12px;color:var(--ink2);line-height:1.7}
-    .hints strong{color:var(--ink)}
-    .hint-row{display:flex;justify-content:space-between;gap:8px}
-    .hint-pw{font-family:monospace;background:rgba(255,255,255,.07);padding:2px 7px;border-radius:5px;color:var(--blue3)}
   </style>
 </head>
 <body>
@@ -56,21 +46,6 @@
       <div class="card-title">Přihlášení</div>
       <div class="card-sub">Přihlaste se svým pracovním účtem</div>
 
-      <div class="roles" id="roleHints">
-        <button class="role-btn" data-email="owner@ol-masterdom.cz" data-pw="owner123">
-          <span class="role-icon">👑</span>
-          <span class="role-name">Vlastník</span>
-        </button>
-        <button class="role-btn" data-email="manager@ol-masterdom.cz" data-pw="manager123">
-          <span class="role-icon">📋</span>
-          <span class="role-name">Manažer</span>
-        </button>
-        <button class="role-btn" data-email="pm@ol-masterdom.cz" data-pw="pm123">
-          <span class="role-icon">🔧</span>
-          <span class="role-name">Proj. manažer</span>
-        </button>
-      </div>
-
       <div class="field">
         <label>Email</label>
         <input type="email" id="loginEmail" placeholder="email@ol-masterdom.cz" autocomplete="username" />
@@ -82,13 +57,6 @@
 
       <button class="submit-btn" id="loginBtn">Přihlásit se</button>
       <div class="err-msg" id="errMsg"></div>
-
-      <div class="hints">
-        <strong>Přihlašovací údaje:</strong><br>
-        <div class="hint-row"><span>👑 Vlastník</span><span class="hint-pw">owner123</span></div>
-        <div class="hint-row"><span>📋 Manažer</span><span class="hint-pw">manager123</span></div>
-        <div class="hint-row"><span>🔧 Proj. manažer</span><span class="hint-pw">pm123</span></div>
-      </div>
     </div>
   </div>
 
@@ -101,15 +69,6 @@
       const redir = new URLSearchParams(location.search).get('next') || './index.html'
       location.replace(redir)
     }
-
-    document.querySelectorAll('.role-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'))
-        btn.classList.add('active')
-        document.getElementById('loginEmail').value = btn.getAttribute('data-email')
-        document.getElementById('loginPassword').value = btn.getAttribute('data-pw')
-      })
-    })
 
     document.getElementById('loginPassword').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('loginBtn').click()

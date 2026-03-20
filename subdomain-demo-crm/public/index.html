@@ -71,6 +71,9 @@
       .card{background:var(--c);border:1px solid var(--b);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .15s;position:relative}
       .card::after{content:'';position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;background:#0B1730 url('./logo1.jpg') center/cover no-repeat;border:1px solid rgba(61,135,248,.35);box-shadow:0 2px 10px rgba(26,106,232,.25)}
       .card:hover{border-color:var(--b3);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+      .card-arch-btn{display:none;width:100%;margin-top:8px;padding:6px 10px;border:1px solid rgba(20,201,138,.3);border-radius:8px;background:rgba(20,201,138,.07);color:var(--green);font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center}
+      .card-arch-btn:hover{background:rgba(20,201,138,.18);border-color:rgba(20,201,138,.55)}
+      .card:hover .card-arch-btn{display:block}
       .card-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.3}
       .card-meta{font-size:11px;color:var(--ink2);line-height:1.5}
       .card-meta strong{color:var(--ink)}
@@ -93,9 +96,45 @@
       .date-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
       .df-btn{border:1px solid var(--b2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:var(--c);color:var(--ink2);font-family:inherit;transition:all .15s}
       .df-btn.active{background:rgba(26,106,232,.2);color:var(--blue3);border-color:rgba(61,135,248,.4)}
+      /* Custom date range picker */
+      .dr-popup{display:none;position:absolute;z-index:200;top:calc(100% + 8px);left:0;background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.55);min-width:300px;backdrop-filter:blur(12px)}
+      .dr-popup.open{display:block}
+      .dr-popup label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;margin-top:12px}
+      .dr-popup label:first-child{margin-top:0}
+      .dr-popup input[type=date]{background:var(--c);border:1px solid var(--b2);border-radius:9px;color:var(--ink);font:inherit;font-size:13px;padding:9px 12px;width:100%;outline:none;color-scheme:dark}
+      .dr-popup input[type=date]:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(26,106,232,.15)}
+      .dr-apply{margin-top:14px;width:100%;padding:10px;background:linear-gradient(135deg,#1A6AE8,#2D80F8);color:#fff;border:none;border-radius:9px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+      .dr-clear{margin-top:6px;width:100%;padding:7px;background:transparent;color:var(--ink3);border:1px solid var(--b2);border-radius:9px;font:inherit;font-size:12px;cursor:pointer}
+      .dr-wrap{position:relative}
       .prob-info{padding:14px 16px;background:rgba(26,106,232,.07);border:1px solid rgba(61,135,248,.16);border-radius:12px;font-size:13px;color:var(--ink2);margin-bottom:16px;line-height:1.6}
       .empty{padding:40px 20px;text-align:center;color:var(--ink2);border:1px dashed var(--b2);border-radius:var(--r-lg);font-size:14px}
       .loading{padding:40px;text-align:center;color:var(--ink2)}
+      /* ── ARCHIVE CARDS ─────────────────────────────────────── */
+      .arch-card{background:var(--s);border:1px solid var(--b2);border-radius:var(--r-lg);overflow:hidden;transition:all .16s;display:flex;flex-direction:column}
+      .arch-card:hover{border-color:var(--b3);box-shadow:0 6px 24px rgba(0,0,0,.35);transform:translateY(-2px)}
+      .arch-card-head{padding:16px 16px 12px;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+      .arch-card-num{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+      .arch-card-name{font-size:15px;font-weight:800;line-height:1.3;color:var(--ink)}
+      .arch-card-date{font-size:11px;color:var(--ink3);white-space:nowrap;text-align:right;margin-top:2px}
+      .arch-card-body{padding:12px 16px;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      .arch-stat{display:flex;flex-direction:column;gap:2px}
+      .arch-stat-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px}
+      .arch-stat-val{font-size:14px;font-weight:700;color:var(--ink)}
+      .arch-stat-val.green{color:var(--green)}
+      .arch-stat-val.blue{color:var(--blue3)}
+      .arch-card-foot{padding:12px 16px;border-top:1px solid var(--b);display:flex;gap:8px;align-items:center}
+      .arch-del-btn{border:1px solid rgba(232,58,58,.3);background:rgba(232,58,58,.07);color:#F07070;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;margin-left:auto}
+      .arch-del-btn:hover{background:rgba(232,58,58,.18);border-color:rgba(232,58,58,.5);color:#FF8080}
+      .arch-del-confirm{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+      .arch-del-confirm.show{display:flex}
+      .arch-del-box{background:var(--s2);border:1px solid rgba(232,58,58,.4);border-radius:var(--r-lg);padding:32px 36px;max-width:420px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+      .arch-del-box h3{font-size:18px;font-weight:800;margin-bottom:8px;color:var(--ink)}
+      .arch-del-box p{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:24px}
+      .arch-del-actions{display:flex;gap:10px}
+      .arch-pager-btn{border:1px solid var(--b2);background:var(--c);color:var(--ink2);border-radius:8px;padding:8px 16px;font:inherit;font-size:13px;cursor:pointer;transition:all .15s}
+      .arch-pager-btn:hover:not(:disabled){background:var(--c2);color:var(--ink)}
+      .arch-pager-btn:disabled{opacity:.35;cursor:default}
+      .arch-pager-btn.active{background:rgba(26,106,232,.18);color:var(--blue3);border-color:rgba(61,135,248,.35)}
       .user-chip{display:flex;align-items:center;gap:8px;background:var(--c);border:1px solid var(--b2);border-radius:999px;padding:5px 12px 5px 8px;font-size:12px;font-weight:600;cursor:default}
       .user-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#1A6AE8,#14C98A);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
       .user-role{font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
@@ -103,18 +142,32 @@
       .btn-logout:hover{background:rgba(232,58,58,.14)}
       @media(max-width:900px){.form-grid{grid-template-columns:1fr}.pipe{grid-auto-columns:200px}}
       @media(max-width:600px){.hdr-in,.nav-in,.wrap{padding-left:14px;padding-right:14px}.tab{padding:10px 12px;font-size:12px}}
+      /* ── Activity log ── */
+      .act-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+      .act-search{min-width:200px;max-width:280px;background:var(--c);border:1px solid var(--b2);border-radius:12px;color:var(--ink);padding:9px 13px;font:inherit;font-size:13px;outline:none}
+      .act-search:focus{border-color:var(--blue2)}
+      .act-date{background:var(--c);border:1px solid var(--b2);border-radius:10px;color:var(--ink);padding:8px 10px;font:inherit;font-size:13px;outline:none}
+      .act-day{margin-bottom:20px}
+      .act-day-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.7px;padding:5px 0 10px;border-bottom:1px solid var(--b);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+      .act-day-label::before{content:'';display:block;width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0}
+      .act-row{display:grid;grid-template-columns:44px 32px 1fr;gap:10px;align-items:center;padding:9px 12px;border-radius:var(--r);background:var(--s);border:1px solid var(--b);margin-bottom:5px;transition:border-color .15s,background .15s}
+      .act-row:hover{border-color:var(--b2);background:var(--c)}
+      .act-row-critical{border-color:rgba(232,58,58,.3)!important;background:rgba(232,58,58,.04)!important}
+      .act-row-critical:hover{border-color:rgba(232,58,58,.5)!important}
+      .act-time{font-size:12px;font-weight:700;color:var(--ink3);text-align:right;white-space:nowrap}
+      .act-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+      .act-body{min-width:0;overflow:hidden}
+      .act-action{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .act-meta-row{display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
+      .act-actor{font-size:11px;font-weight:700;color:var(--blue3);white-space:nowrap}
+      .act-detail{font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+      .act-empty{padding:48px;text-align:center;color:var(--ink2);font-size:14px;border:2px dashed var(--b);border-radius:var(--r-lg)}
+      .act-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+      .act-stat{background:var(--s);border:1px solid var(--b2);border-radius:14px;padding:12px 18px;min-width:120px;transition:border-color .15s}
+      .act-stat b{display:block;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;margin-bottom:6px}
+      .act-stat span{font-size:22px;font-weight:800}
     </style>
-    <script>
-      // Auth guard — runs before page renders
-      ;(function(){
-        const tok = localStorage.getItem('crmToken')
-        if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
-        try {
-          const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
-          if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
-        } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
-      })()
-    </script>
+    <script src="./crm-utils.js"></script>
   </head>
   <body>
     <header class="hdr">
@@ -141,7 +194,10 @@
       <button class="tab active" data-tab="pipeline">Pipeline zakázek</button>
       <button class="tab" data-tab="registry">Seznam zakázek</button>
       <button class="tab" data-tab="form">Nová poptávka</button>
+      <button class="tab" data-tab="newclient">➕ Nový klient</button>
       <button class="tab" data-tab="problems">Problémy</button>
+      <button class="tab" data-tab="archive">🗂 Archiv</button>
+      <button class="tab" data-tab="activity" id="tabActivity" style="display:none">📊 Aktivita</button>
     </div></div>
 
     <div class="wrap">
@@ -161,6 +217,18 @@
           <button class="df-btn" data-df="yesterday">Včera</button>
           <button class="df-btn" data-df="week">Tento týden</button>
           <button class="df-btn" data-df="month">Tento měsíc</button>
+          <div class="dr-wrap">
+            <button class="df-btn" id="drToggleBtn" data-df="custom">📅 Vlastní rozsah</button>
+            <div class="dr-popup" id="drPopup">
+              <label>Od data</label>
+              <input type="date" id="drFrom" />
+              <label>Do data</label>
+              <input type="date" id="drTo" />
+              <button class="dr-apply" id="drApply">Použít filtr</button>
+              <button class="dr-clear" id="drClear">Zrušit filtr</button>
+            </div>
+          </div>
+          <span id="drActiveLabel" style="font-size:11px;color:var(--blue3);font-weight:700;display:none"></span>
         </div>
         <div class="summary" id="pipeSummary"></div>
         <div class="pipe-wrap"><div class="pipe" id="pipeBoard"><div class="loading">Načítání...</div></div></div>
@@ -247,6 +315,113 @@
       </section>
 
       <!-- PROBLEMS -->
+      <!-- NEW CLIENT MANUALLY -->
+      <section id="sec-newclient" style="display:none">
+        <div class="panel" style="max-width:720px;margin:0 auto">
+          <div class="panel-t">➕ Nový klient — ruční zadání</div>
+          <div class="panel-sub">Přidejte klienta a zakázku ručně — bez potřeby formuláře nebo poptávky. Vhodné pro klienty přicházející osobně nebo přes telefon.</div>
+
+          <div style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" id="ncTypeOsoba" data-nct="osoba" style="border-color:rgba(61,135,248,.5);color:var(--blue3);background:rgba(26,106,232,.12)">👤 Fyzická osoba</button>
+            <button class="btn" id="ncTypeFirma" data-nct="firma" style="">🏢 Firma / IČO</button>
+          </div>
+
+          <div class="form-grid" id="ncForm">
+            <div class="field field-full"><label>Jméno / Název *</label><input id="ncName" placeholder="Jan Novák" /></div>
+            <div class="field"><label>Telefon *</label><input id="ncPhone" placeholder="+420 737 ..." /></div>
+            <div class="field"><label>E-mail</label><input id="ncEmail" type="email" placeholder="klient@email.cz" /></div>
+
+            <div id="ncCompanyFields" style="display:none;grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:18px">
+              <div class="field"><label>IČO</label>
+                <div style="display:flex;gap:8px">
+                  <input id="ncIco" placeholder="12345678" style="flex:1" />
+                  <button class="btn" id="ncFetchAres" style="white-space:nowrap;padding:0 12px">Ověřit ARES</button>
+                </div>
+              </div>
+              <div class="field"><label>Název firmy</label><input id="ncCompanyName" placeholder="Firma s.r.o." /></div>
+              <div class="field field-full"><label>Adresa firmy</label><input id="ncCompanyAddress" placeholder="Václavské náměstí 1, Praha 1" /></div>
+            </div>
+
+            <div class="field field-full"><label>Adresa realizace *</label><input id="ncRealizationAddress" placeholder="Kde se bude pracovat..." /></div>
+            <div class="field"><label>Typ zakázky</label>
+              <select id="ncJobType">
+                <option value="kombinovana">Kombinovaná</option>
+                <option value="elektro">Elektromontáž</option>
+                <option value="stavebni">Stavební práce</option>
+              </select>
+            </div>
+            <div class="field"><label>Priorita</label>
+              <select id="ncPriority">
+                <option value="normal">Normální</option>
+                <option value="high">Vysoká</option>
+                <option value="urgent">Urgentní</option>
+              </select>
+            </div>
+            <div class="field field-full"><label>Popis poptávky / poznámka</label><textarea id="ncNote" placeholder="Co klient požaduje, rozsah, specifikace..."></textarea></div>
+            <div class="field"><label>Plánované zahájení</label><input id="ncStart" type="date" /></div>
+            <div class="field"><label>Odpovědná osoba</label><input id="ncResponsible" placeholder="Jméno manažera / technika" /></div>
+          </div>
+
+          <div class="form-foot">
+            <button class="btn btn-p" id="ncSubmit" style="padding:12px 28px;font-size:15px">✅ Vytvořit klienta a zakázku</button>
+            <div id="ncMsg" class="msg"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ARCHIVE -->
+      <section id="sec-archive" style="display:none">
+        <div class="toolbar" style="margin-bottom:16px">
+          <div class="toolbar-left" style="gap:14px">
+            <div class="panel-t" style="margin:0" id="archiveTitle">🗂 Архів закázek</div>
+            <div class="pill" id="archivePill" style="display:none">0 záznamů</div>
+          </div>
+          <button class="btn" id="refreshArchive">↻ Obnovit</button>
+        </div>
+        <!-- Archive toolbar -->
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:14px 16px;background:var(--c);border:1px solid var(--b2);border-radius:14px">
+          <input id="archSearch" class="search" placeholder="Hledat klienta, číslo zakázky..." style="min-width:240px;max-width:360px" />
+          <span style="font-size:12px;color:var(--ink3)">Uzavřeno od:</span>
+          <input type="date" id="archFrom" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px" />
+          <span style="font-size:12px;color:var(--ink3)">do:</span>
+          <input type="date" id="archTo" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px" />
+          <select id="archSort" style="background:var(--s);border:1px solid var(--b2);border-radius:8px;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px">
+            <option value="closed">↓ Datum uzavření</option>
+            <option value="amount">↓ Objem prací</option>
+            <option value="name">A–Z Klient</option>
+          </select>
+          <button class="btn" id="archClearFilter" style="font-size:11px;padding:7px 12px">✕ Vymazat</button>
+          <span id="archCount" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--ink2)"></span>
+        </div>
+        <!-- Summary bar -->
+        <div id="archSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div>
+        <!-- Grid of archive cards -->
+        <div id="archGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+          <div class="loading" style="grid-column:1/-1">Načítání archivu...</div>
+        </div>
+        <!-- Pagination -->
+        <div id="archPaging" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:24px;padding:12px 0"></div>
+      </section>
+
+      <!-- ACTIVITY LOG -->
+      <section id="sec-activity" style="display:none">
+        <div class="toolbar" style="margin-bottom:16px">
+          <div class="toolbar-left">
+            <div class="panel-t" style="margin:0">📊 Aktivita systému</div>
+          </div>
+          <button class="btn" id="refreshActivity">↻ Obnovit</button>
+        </div>
+        <div class="act-stats" id="actStats"></div>
+        <div class="act-toolbar">
+          <input class="act-search" id="actSearch" placeholder="Hledat uživatele, akci…" />
+          <input type="date" class="act-date" id="actFrom" title="Od data" />
+          <input type="date" class="act-date" id="actTo" title="Do data" />
+          <button class="btn" id="actClear">✕ Reset</button>
+        </div>
+        <div id="actBody"><div class="act-empty">Načítám…</div></div>
+        <div id="actPaging" style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap"></div>
+      </section>
+
       <section id="sec-problems" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
           <div class="panel-t" style="margin:0">Dashboard problémů</div>
@@ -258,14 +433,7 @@
     </div>
 
     <script>
-      const base = location.pathname.startsWith('/demo-crm') ? '/demo-crm' : ''
-      const api = (p) => `${base}${p}`
-      const crmToken = () => localStorage.getItem('crmToken') || ''
-      const apiFetch = async (url, opts = {}) => {
-        const resp = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + crmToken(), ...(opts.headers || {}) } })
-        if (resp.status === 401) { localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser'); location.href = `${base}/login.html`; }
-        return resp
-      }
+      // base, api, crmToken, apiFetch, uploadFile, esc, fmt, fmtFull, fmtMoney, j — from crm-utils.js
       // Show user info
       ;(function(){
         try {
@@ -281,10 +449,6 @@
         localStorage.removeItem('crmToken'); localStorage.removeItem('crmUser')
         location.replace('./login.html')
       })
-      const esc = (s) => String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      async function j(r) { try { return await r.json() } catch { return null } }
-      const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('cs-CZ',{day:'2-digit',month:'2-digit',year:'numeric'}) } catch { return '—' } }
-
       const STAGE_LABELS = {
         nova_poptavka:'Nová poptávka',podklady:'Podklady od klienta',zpracovani_nabidky:'Zpracování nabídky',
         nabidka_odeslana:'Nabídka odeslána',schvaleni_objednavka:'Schválení / objednávka',zaloha_priprava:'Záloha / příprava',
@@ -295,7 +459,7 @@
       const UI_TEXT = {
         cs: {
           system: 'Systém aktivní',
-          tabs: ['Pipeline zakázek','Seznam zakázek','Nová poptávka','Problémy'],
+          tabs: ['Pipeline zakázek','Seznam zakázek','Nová poptávka','➕ Nový klient','Problémy','🗂 Archiv'],
           pipelineTitle: 'Pipeline zakázek',
           registryTitle: 'Seznam zakázek',
           search: 'Hledat klienta, číslo zakázky nebo typ...',
@@ -304,7 +468,7 @@
         },
         uk: {
           system: 'Система активна',
-          tabs: ['Pipeline замовлень','Список замовлень','Нова заявка','Проблеми'],
+          tabs: ['Pipeline замовлень','Список замовлень','Нова заявка','➕ Новий клієнт','Проблеми','🗂 Архів'],
           pipelineTitle: 'Pipeline замовлень',
           registryTitle: 'Список замовлень',
           search: 'Шукати клієнта, номер замовлення або тип...',
@@ -312,10 +476,11 @@
           summary: ['Усі замовлення','Чекаємо клієнта','Ризикові','Завершено'],
         },
       }
-      let uiLang = localStorage.getItem('crmUiLang') || 'uk'
+      let uiLang = localStorage.getItem('crmUiLang') || 'cs'
       let lastPipelineData = null
       let activeDateFilter = 'all'
 
+      let customDateFrom = null, customDateTo = null
       function jobMatchesDateFilter(job) {
         if (activeDateFilter === 'all') return true
         const raw = job.receivedAt || job.createdAt
@@ -326,6 +491,11 @@
         if (activeDateFilter === 'yesterday') { const y = new Date(now); y.setDate(y.getDate()-1); return jd.toDateString() === y.toDateString() }
         if (activeDateFilter === 'week') { const w = new Date(now); w.setDate(w.getDate()-7); return jd >= w }
         if (activeDateFilter === 'month') return jd.getMonth() === now.getMonth() && jd.getFullYear() === now.getFullYear()
+        if (activeDateFilter === 'custom') {
+          if (customDateFrom && jd < customDateFrom) return false
+          if (customDateTo && jd > customDateTo) return false
+          return true
+        }
         return true
       }
 
@@ -349,10 +519,15 @@
           document.getElementById('sec-pipeline').style.display = t === 'pipeline' ? '' : 'none'
           document.getElementById('sec-registry').style.display = t === 'registry' ? '' : 'none'
           document.getElementById('sec-form').style.display = t === 'form' ? '' : 'none'
+          document.getElementById('sec-newclient').style.display = t === 'newclient' ? '' : 'none'
           document.getElementById('sec-problems').style.display = t === 'problems' ? '' : 'none'
+          document.getElementById('sec-archive').style.display = t === 'archive' ? '' : 'none'
+          document.getElementById('sec-activity').style.display = t === 'activity' ? '' : 'none'
           if (t === 'pipeline') loadPipeline()
           if (t === 'registry') loadPipeline()
           if (t === 'problems') loadProblems()
+          if (t === 'archive') loadArchive()
+          if (t === 'activity') loadActivity()
         })
       })
 
@@ -369,9 +544,12 @@
         const financeStatus = job.finalPaid ? 'Uhrazeno' : job.depositPaid ? 'Záloha uhrazena' : job.depositAmount > 0 ? 'Čeká na zálohu' : 'Bez zálohy'
         const start = job.plannedStart ? fmt(job.plannedStart) : '—'
         const waitLabel = job.waitingFor || 'none'
+        const isArchived = (job.pipelineStage || job.stage) === 'dokonceno'
+        const clientNote = job.clientComment || ''
         return `
           <div class="card" data-job="${job.id}">
             <div class="card-name">${esc(name)}</div>
+            ${clientNote ? `<div style="font-size:11px;color:var(--ink2);background:rgba(26,106,232,.07);border-radius:6px;padding:5px 8px;margin:4px 0 2px;line-height:1.4;border-left:3px solid var(--blue)">💬 ${esc(clientNote.length > 80 ? clientNote.slice(0,80)+'…' : clientNote)}</div>` : ''}
             <div class="card-meta">
               <strong>${esc(job.internalNumber || '')}</strong><br>
               Klient: ${esc(name)}<br>
@@ -387,6 +565,10 @@
               ${job.computedBlocking && job.computedBlocking !== 'none' ? '<span class="badge b-grey">' + esc(job.computedBlocking) + '</span>' : ''}
             </div>
             ${riskBadge(job.computedRisk)}
+            ${isArchived
+              ? '<div style="margin-top:8px;font-size:10px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:4px">✅ V archivu</div>'
+              : `<button class="card-arch-btn" data-arch-job="${job.id}" data-arch-name="${esc(name)}">📦 Přesunout do archivu</button>`
+            }
           </div>
         `
       }
@@ -428,9 +610,37 @@
             <td>${risk ? `<span class="badge ${riskColors[risk] || 'b-grey'}">${esc(riskLabels[risk] || risk)}</span>` : '—'}</td>
             <td style="font-size:12px;color:var(--ink2)">${esc(job.waitingFor || '—')}</td>
             <td style="font-size:12px;max-width:180px">${esc(job.nextAction || '—')}</td>
-            <td><div class="registry-actions"><a class="btn" href="./job-detail.html?jobId=${job.id}">Otevřít</a><a class="btn" href="./estimate-builder.html?jobId=${job.id}">Kalkulace</a></div></td>
+            <td><div class="registry-actions">
+              <a class="btn" href="./job-detail.html?jobId=${job.id}">Otevřít</a>
+              <a class="btn" href="./estimate-builder.html?jobId=${job.id}">Kalkulace</a>
+              ${(job.pipelineStage || job.stage) !== 'dokonceno'
+                ? `<button class="btn reg-arch-btn" style="border-color:rgba(20,201,138,.3);color:var(--green);background:rgba(20,201,138,.06);font-size:12px" data-reg-arch="${job.id}" data-reg-name="${esc((customers[job.customerId]||{}).name || job.title || '')}">📦</button>`
+                : `<span style="font-size:11px;font-weight:700;color:var(--green);padding:0 4px">✅</span>`
+              }
+            </div></td>
           </tr>`
         }).join('') : '<tr><td colspan="8" class="empty">Žádné zakázky odpovídají filtrům</td></tr>'
+        // Archive buttons in registry
+        document.querySelectorAll('.reg-arch-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const jobId   = Number(btn.getAttribute('data-reg-arch'))
+            const jobName = btn.getAttribute('data-reg-name') || `#${jobId}`
+            if (!await crmConfirm(`"${jobName}"\n\nZakázka se přesune do stádia Dokončeno a bude viditelná v záložce Archiv.`, { title: 'Archivovat zakázku?', okLabel: 'Archivovat', danger: true })) return
+            btn.disabled = true; btn.textContent = '⏳'
+            try {
+              const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), {
+                method: 'POST',
+                body: JSON.stringify({ stage: 'dokonceno', note: 'Zakázka uzavřena z přehledu zakázek.' })
+              })
+              const data = await r.json()
+              if (!r.ok || !data?.ok) throw new Error(data?.error || 'Chyba')
+              loadPipeline()
+            } catch (ex) {
+              alert('Chyba: ' + String(ex?.message || ex))
+              btn.disabled = false; btn.textContent = '📦'
+            }
+          })
+        })
       }
       function renderPipeline(d) {
         const q = document.getElementById('pipeSearch').value.trim().toLowerCase()
@@ -472,8 +682,31 @@
           `
         }).join('')
         document.getElementById('pipeBoard').querySelectorAll('[data-job]').forEach(el => {
-          el.addEventListener('click', () => {
+          el.addEventListener('click', (e) => {
+            // Don't navigate if archive button was clicked
+            if (e.target.closest('[data-arch-job]')) return
             window.location.href = `./job-detail.html?jobId=${el.getAttribute('data-job')}`
+          })
+        })
+        document.getElementById('pipeBoard').querySelectorAll('[data-arch-job]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation()
+            const jobId   = Number(btn.getAttribute('data-arch-job'))
+            const jobName = btn.getAttribute('data-arch-name') || `#${jobId}`
+            if (!await crmConfirm(`"${jobName}"\n\nZakázka se přesune do stádia Dokončeno a bude viditelná v záložce Archiv.`, { title: 'Archivovat zakázku?', okLabel: 'Archivovat', danger: true })) return
+            btn.disabled = true; btn.textContent = '⏳...'
+            try {
+              const r = await apiFetch(api(`/api/crm/jobs/${jobId}/move`), {
+                method: 'POST',
+                body: JSON.stringify({ stage: 'dokonceno', note: 'Zakázka uzavřena a přesunuta do archivu z pipeline.' })
+              })
+              const data = await r.json()
+              if (!r.ok || !data?.ok) throw new Error(data?.error || 'Chyba')
+              loadPipeline()
+            } catch (ex) {
+              alert('Chyba: ' + String(ex?.message || ex))
+              btn.disabled = false; btn.textContent = '📦 Přesunout do archivu'
+            }
           })
         })
         renderRegistry(d)
@@ -555,9 +788,10 @@
         try {
           const r = await apiFetch(api('/api/leads'), { method: 'POST', body: JSON.stringify(body) })
           const d = await j(r); btn.disabled = false; btn.innerHTML = orig
-          if (!r.ok || !d?.ok) { msg.className = 'msg err'; msg.textContent = d?.error || 'Chyba'; return }
+          if (!r.ok || !d?.ok) { msg.className = 'msg err'; msg.innerHTML = esc(d?.error || 'Chyba'); return }
           msg.className = 'msg ok'; msg.textContent = `Poptávka vytvořena. Zakázka: ${d.job?.internalNumber || '—'}`
           document.getElementById('fName').value = ''; document.getElementById('fEmail').value = ''; document.getElementById('fComment').value = ''; document.getElementById('fPhone').value = '+420'
+          loadPipeline()
         } catch { btn.disabled = false; btn.innerHTML = orig; msg.className = 'msg err'; msg.textContent = 'Chyba sítě' }
       })
 
@@ -573,11 +807,49 @@
         document.getElementById('regDateTo').value = ''
         if (lastPipelineData) renderRegistry(lastPipelineData)
       })
-      document.querySelectorAll('.df-btn').forEach((btn) => btn.addEventListener('click', () => {
+      document.querySelectorAll('.df-btn:not(#drToggleBtn)').forEach((btn) => btn.addEventListener('click', () => {
         activeDateFilter = btn.getAttribute('data-df') || 'all'
         document.querySelectorAll('.df-btn').forEach((b) => b.classList.toggle('active', b === btn))
+        document.getElementById('drPopup').classList.remove('open')
+        document.getElementById('drActiveLabel').style.display = 'none'
+        customDateFrom = null; customDateTo = null
         if (lastPipelineData) renderPipeline(lastPipelineData)
       }))
+      // Custom date range popup toggle
+      document.getElementById('drToggleBtn').addEventListener('click', (e) => {
+        e.stopPropagation()
+        document.getElementById('drPopup').classList.toggle('open')
+      })
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dr-wrap')) document.getElementById('drPopup').classList.remove('open')
+      })
+      document.getElementById('drApply').addEventListener('click', () => {
+        const fromVal = document.getElementById('drFrom').value
+        const toVal = document.getElementById('drTo').value
+        if (!fromVal && !toVal) { alert('Zvolte alespoň jedno datum'); return }
+        customDateFrom = fromVal ? new Date(fromVal + 'T00:00:00') : null
+        customDateTo = toVal ? new Date(toVal + 'T23:59:59') : null
+        activeDateFilter = 'custom'
+        document.querySelectorAll('.df-btn').forEach((b) => b.classList.toggle('active', b.id === 'drToggleBtn'))
+        document.getElementById('drPopup').classList.remove('open')
+        const label = document.getElementById('drActiveLabel')
+        const parts = []
+        if (fromVal) parts.push('od ' + fromVal.split('-').reverse().join('.'))
+        if (toVal) parts.push('do ' + toVal.split('-').reverse().join('.'))
+        label.textContent = '📅 ' + parts.join(' ')
+        label.style.display = 'inline'
+        if (lastPipelineData) renderPipeline(lastPipelineData)
+      })
+      document.getElementById('drClear').addEventListener('click', () => {
+        customDateFrom = null; customDateTo = null
+        activeDateFilter = 'all'
+        document.getElementById('drFrom').value = ''
+        document.getElementById('drTo').value = ''
+        document.querySelectorAll('.df-btn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-df') === 'all'))
+        document.getElementById('drActiveLabel').style.display = 'none'
+        document.getElementById('drPopup').classList.remove('open')
+        if (lastPipelineData) renderPipeline(lastPipelineData)
+      })
       document.getElementById('refreshProb').addEventListener('click', loadProblems)
       document.getElementById('pipeSearch').addEventListener('input', () => { if (lastPipelineData) renderPipeline(lastPipelineData) })
       document.querySelectorAll('.lang-btn').forEach((btn) => btn.addEventListener('click', () => {
@@ -587,7 +859,511 @@
         if (lastPipelineData) renderPipeline(lastPipelineData)
       }))
       applyUiLang()
-      loadPipeline()
+      /* ══════════════════════════════════════════════════════
+         NEW CLIENT MANUALLY
+         ══════════════════════════════════════════════════════ */
+      let ncClientType = 'osoba'
+      document.querySelectorAll('[data-nct]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          ncClientType = btn.getAttribute('data-nct')
+          document.querySelectorAll('[data-nct]').forEach(b => {
+            b.style.borderColor = b === btn ? 'rgba(61,135,248,.5)' : ''
+            b.style.color = b === btn ? 'var(--blue3)' : ''
+            b.style.background = b === btn ? 'rgba(26,106,232,.12)' : ''
+          })
+          document.getElementById('ncCompanyFields').style.display = ncClientType === 'firma' ? 'grid' : 'none'
+        })
+      })
+      // ARES lookup
+      document.getElementById('ncFetchAres')?.addEventListener('click', async () => {
+        const ico = document.getElementById('ncIco').value.trim()
+        if (!ico) return
+        const btn = document.getElementById('ncFetchAres'); btn.disabled = true; btn.textContent = '...'
+        try {
+          const r = await apiFetch(api(`/api/ares?ico=${encodeURIComponent(ico)}`))
+          const d = await j(r)
+          if (r.ok && d?.ok) {
+            if (d.companyName) document.getElementById('ncCompanyName').value = d.companyName
+            if (d.address) document.getElementById('ncCompanyAddress').value = d.address
+            if (d.companyName) document.getElementById('ncName').value = d.companyName
+          } else alert('Firma nebyla nalezena v ARES')
+        } catch {}
+        btn.disabled = false; btn.textContent = 'Ověřit ARES'
+      })
+      document.getElementById('ncSubmit')?.addEventListener('click', async () => {
+        const msg = document.getElementById('ncMsg')
+        msg.className = 'msg'; msg.textContent = ''
+        const name    = document.getElementById('ncName').value.trim()
+        const phone   = document.getElementById('ncPhone').value.trim()
+        const email   = document.getElementById('ncEmail').value.trim()
+        const address = document.getElementById('ncRealizationAddress').value.trim()
+        if (!name || !phone) { msg.className = 'msg err'; msg.textContent = '⚠️ Vyplňte jméno a telefon'; return }
+        const btn = document.getElementById('ncSubmit'); const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '⏳ Vytvářím...'
+        try {
+          // 1) Create customer
+          const custR = await apiFetch(api('/api/crm/customers'), { method: 'POST', body: JSON.stringify({
+            name, phone, email: email || null,
+            clientType: ncClientType,
+            companyName: document.getElementById('ncCompanyName')?.value?.trim() || null,
+            ico:         document.getElementById('ncIco')?.value?.trim() || null,
+            address:     document.getElementById('ncCompanyAddress')?.value?.trim() || address || null,
+          }) })
+          const custD = await j(custR)
+          if (!custR.ok || !custD?.ok) throw new Error(custD?.error || 'Nelze vytvořit zákazníka')
+          const customerId = custD.customer.id
+          // 2) Create job
+          const jobBody = {
+            customerId,
+            title: `${name} — ${document.getElementById('ncNote').value.trim() || 'Nová zakázka'}`.slice(0, 120),
+            jobType:           document.getElementById('ncJobType').value,
+            priority:          document.getElementById('ncPriority').value,
+            pipelineStage:     'nova_poptavka',
+            source:            'manual_crm',
+            address:           address || null,
+            responsiblePerson: document.getElementById('ncResponsible').value.trim() || null,
+            plannedStart:      document.getElementById('ncStart').value || null,
+            notes:             document.getElementById('ncNote').value.trim() || null,
+          }
+          const jobR = await apiFetch(api('/api/crm/jobs'), { method: 'POST', body: JSON.stringify(jobBody) })
+          const jobD = await j(jobR)
+          if (!jobR.ok || !jobD?.ok) throw new Error(jobD?.error || 'Nelze vytvořit zakázku')
+          const jobId = jobD.job.id
+          msg.className = 'msg ok'
+          msg.innerHTML = `✅ Klient a zakázka vytvořeny! <a href="./job-detail.html?jobId=${jobId}" style="color:var(--green);font-weight:700;margin-left:8px">→ Otevřít zakázku #${jobD.job.internalNumber || jobId}</a>`
+          // Reset form
+          document.getElementById('ncName').value = ''
+          document.getElementById('ncPhone').value = ''
+          document.getElementById('ncEmail').value = ''
+          document.getElementById('ncRealizationAddress').value = ''
+          document.getElementById('ncNote').value = ''
+          document.getElementById('ncStart').value = ''
+          document.getElementById('ncResponsible').value = ''
+          if (document.getElementById('ncIco')) document.getElementById('ncIco').value = ''
+          if (document.getElementById('ncCompanyName')) document.getElementById('ncCompanyName').value = ''
+          if (document.getElementById('ncCompanyAddress')) document.getElementById('ncCompanyAddress').value = ''
+        } catch(e) {
+          msg.className = 'msg err'; msg.textContent = '⚠️ Chyba: ' + (e?.message || e)
+        }
+        btn.disabled = false; btn.innerHTML = orig
+      })
+
+      // Auto-open tab from link (e.g. "Zobrazit archiv" from job detail)
+      ;(function() {
+        const openTab = localStorage.getItem('crmOpenTab')
+        if (openTab) {
+          localStorage.removeItem('crmOpenTab')
+          const btn = document.querySelector(`.tab[data-tab="${openTab}"]`)
+          if (btn) btn.click()
+          return
+        }
+        loadPipeline()
+      })()
+
+      /* ══════════════════════════════════════════════════════
+         ARCHIVE
+         ══════════════════════════════════════════════════════ */
+      let archState = { page: 0, limit: 24, total: 0, loading: false }
+      let archSearchDebounce = null
+      // Check if user is owner/admin (can delete)
+      function canDeleteArchive() {
+        try { const u = JSON.parse(localStorage.getItem('crmUser') || '{}'); return ['owner','admin'].includes(u.role) } catch { return false }
+      }
+      function archParams(extra = {}) {
+        const q    = document.getElementById('archSearch')?.value?.trim() || ''
+        const from = document.getElementById('archFrom')?.value || ''
+        const to   = document.getElementById('archTo')?.value || ''
+        const sort = document.getElementById('archSort')?.value || 'closed'
+        const p    = new URLSearchParams({ limit: archState.limit, offset: archState.page * archState.limit, sort, ...extra })
+        if (q)    p.set('q', q)
+        if (from) p.set('from', from)
+        if (to)   p.set('to', to)
+        return p.toString()
+      }
+      async function loadArchive(resetPage = true) {
+        if (archState.loading) return
+        if (resetPage) archState.page = 0
+        archState.loading = true
+        const grid   = document.getElementById('archGrid')
+        const paging = document.getElementById('archPaging')
+        const countEl = document.getElementById('archCount')
+        const summaryEl = document.getElementById('archSummary')
+        grid.innerHTML = '<div class="loading" style="grid-column:1/-1">Načítání archivu...</div>'
+        paging.innerHTML = ''
+        try {
+          const r = await apiFetch(api('/api/crm/archive?' + archParams()))
+          const d = await r.json()
+          if (!d?.ok) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Chyba načítání archivu</div>'; return }
+          const { jobs, total } = d
+          archState.total = total
+          if (countEl) countEl.textContent = `${total} uzavřených zakázek`
+          // Summary stats
+          const totInv   = jobs.reduce((s, j) => s + (j.invTotal || 0), 0)
+          const totEst   = jobs.reduce((s, j) => s + (j.estTotal || 0), 0)
+          if (summaryEl) summaryEl.innerHTML = `
+            <div class="summary-card"><b>Zakázky na stránce</b><span>${jobs.length}</span></div>
+            <div class="summary-card"><b>Celkem uzavřeno</b><span>${total}</span></div>
+            <div class="summary-card"><b>Objem (tato stránka)</b><span style="font-size:14px">${totEst > 0 ? (totEst/1000).toFixed(0)+'k Kč' : '—'}</span></div>
+            <div class="summary-card"><b>Fakturováno (tato stránka)</b><span style="font-size:14px">${totInv > 0 ? (totInv/1000).toFixed(0)+'k Kč' : '—'}</span></div>
+          `
+          if (!jobs.length) {
+            grid.innerHTML = '<div class="empty" style="grid-column:1/-1">📭 Archiv je prázdný — žádné dokončené zakázky nevyhovují filtru.</div>'
+          } else {
+            grid.innerHTML = jobs.map(j => renderArchCard(j)).join('')
+            grid.querySelectorAll('[data-arch-open]').forEach(el => {
+              el.addEventListener('click', () => window.location.href = `./job-detail.html?jobId=${el.getAttribute('data-arch-open')}`)
+            })
+            grid.querySelectorAll('[data-arch-del]').forEach(el => {
+              el.addEventListener('click', (e) => { e.stopPropagation(); confirmDelete(Number(el.getAttribute('data-arch-del')), el.getAttribute('data-arch-name')) })
+            })
+          }
+          renderArchPaging(total)
+        } catch(e) {
+          grid.innerHTML = `<div class="empty" style="grid-column:1/-1">Chyba: ${e.message}</div>`
+        } finally { archState.loading = false }
+      }
+      function renderArchCard(j) {
+        const name   = j.custName || j.title || '—'
+        const closed = j.closedAt ? fmt(j.closedAt) : (j.actualEnd ? fmt(j.actualEnd) : '—')
+        const est    = j.estTotal  ? j.estTotal.toLocaleString('cs-CZ')  + ' Kč' : '—'
+        const inv    = j.invTotal  ? j.invTotal.toLocaleString('cs-CZ')  + ' Kč' : '—'
+        const typeMap = { elektro:'⚡ Elektro', stavebni:'🏗 Stavební', kombinovana:'🔧 Kombinovaná' }
+        const type   = typeMap[j.jobType] || j.jobType || '—'
+        const phone  = j.custPhone || ''
+        const delBtn = canDeleteArchive()
+          ? `<button class="arch-del-btn" data-arch-del="${j.id}" data-arch-name="${esc(name)}">🗑 Smazat</button>`
+          : ''
+        return `
+          <div class="arch-card">
+            <div class="arch-card-head">
+              <div style="flex:1;min-width:0">
+                <div class="arch-card-num">${esc(j.internalNumber || '—')}</div>
+                <div class="arch-card-name">${esc(name)}</div>
+                ${phone ? `<div style="font-size:11px;color:var(--ink3);margin-top:3px">📞 ${esc(phone)}</div>` : ''}
+              </div>
+              <div class="arch-card-date">
+                <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Uzavřeno</div>
+                <div style="font-weight:700;color:var(--green);font-size:13px">${closed}</div>
+              </div>
+            </div>
+            <div class="arch-card-body">
+              <div class="arch-stat">
+                <div class="arch-stat-label">Typ zakázky</div>
+                <div class="arch-stat-val">${esc(type)}</div>
+              </div>
+              <div class="arch-stat">
+                <div class="arch-stat-label">Dokumenty</div>
+                <div class="arch-stat-val blue">${j.docCount || 0} souborů</div>
+              </div>
+              <div class="arch-stat">
+                <div class="arch-stat-label">Objem prací</div>
+                <div class="arch-stat-val green">${est}</div>
+              </div>
+              <div class="arch-stat">
+                <div class="arch-stat-label">Fakturováno</div>
+                <div class="arch-stat-val">${inv}</div>
+              </div>
+            </div>
+            <div class="arch-card-foot">
+              <button class="btn btn-p" style="font-size:12px;padding:8px 14px" data-arch-open="${j.id}">📂 Otevřít</button>
+              <a class="btn" style="font-size:12px;padding:8px 14px" href="./estimate-builder.html?jobId=${j.id}">📋 Kalkulace</a>
+              ${delBtn}
+            </div>
+          </div>
+        `
+      }
+      function renderArchPaging(total) {
+        const pages = Math.ceil(total / archState.limit)
+        if (pages <= 1) { document.getElementById('archPaging').innerHTML = ''; return }
+        const cur = archState.page
+        let html = ''
+        html += `<button class="arch-pager-btn" id="archPrevBtn" ${cur === 0 ? 'disabled' : ''}>← Předchozí</button>`
+        const maxShow = 7
+        const start = Math.max(0, cur - 3)
+        const end   = Math.min(pages - 1, start + maxShow - 1)
+        if (start > 0) html += `<button class="arch-pager-btn" data-arch-page="0">1</button>${start > 1 ? '<span style="color:var(--ink3);padding:0 4px">…</span>' : ''}`
+        for (let i = start; i <= end; i++) {
+          html += `<button class="arch-pager-btn ${i === cur ? 'active' : ''}" data-arch-page="${i}">${i + 1}</button>`
+        }
+        if (end < pages - 1) html += `${end < pages - 2 ? '<span style="color:var(--ink3);padding:0 4px">…</span>' : ''}<button class="arch-pager-btn" data-arch-page="${pages-1}">${pages}</button>`
+        html += `<button class="arch-pager-btn" id="archNextBtn" ${cur >= pages - 1 ? 'disabled' : ''}>Další →</button>`
+        html += `<span style="font-size:12px;color:var(--ink3);margin-left:8px">Stránka ${cur+1} / ${pages}</span>`
+        const paging = document.getElementById('archPaging')
+        paging.innerHTML = html
+        paging.querySelector('#archPrevBtn')?.addEventListener('click', () => { archState.page--; loadArchive(false) })
+        paging.querySelector('#archNextBtn')?.addEventListener('click', () => { archState.page++; loadArchive(false) })
+        paging.querySelectorAll('[data-arch-page]').forEach(btn => {
+          btn.addEventListener('click', () => { archState.page = Number(btn.getAttribute('data-arch-page')); loadArchive(false) })
+        })
+      }
+      // Delete confirmation modal
+      function confirmDelete(jobId, jobName) {
+        const modal = document.getElementById('archDelModal')
+        document.getElementById('archDelJobName').textContent = jobName
+        modal.classList.add('show')
+        document.getElementById('archDelConfirmBtn').onclick = async () => {
+          document.getElementById('archDelConfirmBtn').textContent = 'Mažu...'
+          document.getElementById('archDelConfirmBtn').disabled = true
+          try {
+            const r = await apiFetch(api(`/api/crm/archive/${jobId}`), { method: 'DELETE' })
+            const d = await r.json()
+            modal.classList.remove('show')
+            if (d.ok) { loadArchive(false) }
+            else { alert('Chyba: ' + (d.error || 'Nelze smazat')) }
+          } catch(e) {
+            alert('Chyba sítě: ' + e.message)
+          } finally {
+            document.getElementById('archDelConfirmBtn').textContent = 'Smazat trvale'
+            document.getElementById('archDelConfirmBtn').disabled = false
+          }
+        }
+        document.getElementById('archDelCancelBtn').onclick = () => modal.classList.remove('show')
+      }
+      // Event listeners
+      document.getElementById('refreshArchive')?.addEventListener('click', () => loadArchive(true))
+      document.getElementById('archSort')?.addEventListener('change', () => loadArchive(true))
+      document.getElementById('archFrom')?.addEventListener('change', () => loadArchive(true))
+      document.getElementById('archTo')?.addEventListener('change', () => loadArchive(true))
+      document.getElementById('archClearFilter')?.addEventListener('click', () => {
+        document.getElementById('archSearch').value = ''
+        document.getElementById('archFrom').value = ''
+        document.getElementById('archTo').value = ''
+        document.getElementById('archSort').value = 'closed'
+        loadArchive(true)
+      })
+      document.getElementById('archSearch')?.addEventListener('input', () => {
+        clearTimeout(archSearchDebounce)
+        archSearchDebounce = setTimeout(() => loadArchive(true), 350)
+      })
+
+      /* ══════════════════════════════════════════════════════
+         ACTIVITY LOG — owner only
+         ══════════════════════════════════════════════════════ */
+      ;(function() {
+        try {
+          const u = JSON.parse(localStorage.getItem('crmUser') || '{}')
+          if (u.role === 'owner' || u.role === 'admin') {
+            const t = document.getElementById('tabActivity')
+            if (t) t.style.display = ''
+          }
+        } catch {}
+      })()
+
+      // Events that matter to owner — everything else is noise
+      const IMPORTANT_ACTIONS = new Set([
+        'login',
+        'job_created', 'job_stage_moved', 'job_deleted_from_archive',
+        'lead_created', 'lead_deleted',
+        'email_sent_manual', 'inbound_email_received',
+        'offer_sent_to_client', 'case_offer_accepted_invoice_sent',
+        'estimate_created_from_job',
+      ])
+
+      const SL_ACT = {
+        nova_poptavka:'Nová poptávka', podklady_od_klienta:'Podklady od klienta',
+        zpracovani_nabidky:'Zpracování nabídky', nabidka_odeslana:'Nabídka odeslána',
+        schvaleni_objednavka:'Schválení / objednávka', zaloha_priprava:'Záloha / příprava',
+        realizace:'Realizace zakázky', predani_fakturace:'Předání / fakturace',
+        dokonceno:'Dokončeno / uzavřeno',
+      }
+
+      const ACT_CFG = {
+        login:                          { icon:'🔐', label:'Přihlášení do systému',          color:'rgba(20,201,138,.15)', badge:'b-green',  critical:false },
+        job_created:                    { icon:'📁', label:'Nová zakázka vytvořena',          color:'rgba(26,106,232,.15)', badge:'b-blue',   critical:false },
+        job_stage_moved:                { icon:'🔄', label:'Etapa zakázky posunuta',          color:'rgba(122,94,232,.15)', badge:'b-purple', critical:false },
+        job_deleted_from_archive:       { icon:'🗑',  label:'Zakázka smazána z archivu',       color:'rgba(232,58,58,.15)',  badge:'b-red',    critical:true  },
+        lead_created:                   { icon:'📋', label:'Nová poptávka přijata',           color:'rgba(26,106,232,.15)', badge:'b-blue',   critical:false },
+        lead_deleted:                   { icon:'🗑',  label:'Poptávka smazána',               color:'rgba(232,58,58,.15)',  badge:'b-red',    critical:true  },
+        email_sent_manual:              { icon:'✉️', label:'Email odeslán klientovi',         color:'rgba(96,165,255,.12)', badge:'b-blue',   critical:false },
+        inbound_email_received:         { icon:'📨', label:'Příchozí email od klienta',       color:'rgba(20,201,138,.12)', badge:'b-green',  critical:false },
+        offer_sent_to_client:           { icon:'📤', label:'Nabídka odeslána klientovi',      color:'rgba(122,94,232,.15)', badge:'b-purple', critical:false },
+        case_offer_accepted_invoice_sent:{ icon:'✅', label:'Nabídka přijata — faktura vystavena', color:'rgba(20,201,138,.18)', badge:'b-green', critical:false },
+        estimate_created_from_job:      { icon:'📄', label:'Kalkulace vytvořena',             color:'rgba(96,165,255,.12)', badge:'b-blue',   critical:false },
+      }
+
+      function actEsc(s) { const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML }
+      function fmtActTime(iso) {
+        if (!iso) return ''
+        return new Date(iso).toLocaleTimeString('cs-CZ', { hour:'2-digit', minute:'2-digit' })
+      }
+      function fmtActDay(iso) {
+        if (!iso) return ''
+        const d = new Date(iso)
+        const now = new Date()
+        if (d.toDateString() === now.toDateString()) return 'Dnes'
+        const yest = new Date(now); yest.setDate(now.getDate()-1)
+        if (d.toDateString() === yest.toDateString()) return 'Včera'
+        return d.toLocaleDateString('cs-CZ', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+      }
+      function actKey(iso) { return new Date(iso).toDateString() }
+
+      function actDetail(action, rawData) {
+        try {
+          const data = typeof rawData === 'string' ? JSON.parse(rawData) : (rawData || {})
+          if (action === 'login') {
+            return data.ip ? `IP: ${data.ip}` : ''
+          }
+          if (action === 'job_stage_moved') {
+            const to = SL_ACT[data.stage] || data.stage || '?'
+            const from = SL_ACT[data.fromStage] || (data.fromStage ? data.fromStage : '')
+            return from ? `${from} → ${to}` : `→ ${to}`
+          }
+          if (action === 'job_deleted_from_archive') {
+            return data.internalNumber ? `Zakázka: ${data.internalNumber}` : ''
+          }
+          if (action === 'email_sent_manual') {
+            const parts = []
+            if (data.to) parts.push(`Komu: ${data.to}`)
+            if (data.subject) parts.push(data.subject)
+            return parts.join(' · ').slice(0, 80)
+          }
+          if (action === 'inbound_email_received') {
+            const parts = []
+            if (data.from) parts.push(`Od: ${data.from}`)
+            if (data.subject) parts.push(data.subject)
+            return parts.join(' · ').slice(0, 80)
+          }
+          if (action === 'offer_sent_to_client') {
+            return data.to ? `Komu: ${data.to}` : ''
+          }
+          if (action === 'lead_deleted' || action === 'job_created' || action === 'lead_created') {
+            return data.internalNumber || data.source || ''
+          }
+        } catch {}
+        return ''
+      }
+
+      const ACT_LIMIT = 150
+      let actOffset = 0
+      let actTotal  = 0
+      let actDebounce = null
+
+      async function loadActivity(resetPage = true) {
+        if (resetPage) actOffset = 0
+        const body = document.getElementById('actBody')
+        if (!body) return
+        body.innerHTML = '<div class="act-empty">Načítám…</div>'
+        const q    = document.getElementById('actSearch')?.value?.trim() || ''
+        const from = document.getElementById('actFrom')?.value || ''
+        const to   = document.getElementById('actTo')?.value   || ''
+        const p    = new URLSearchParams({ limit: ACT_LIMIT, offset: actOffset })
+        if (q)    p.set('q', q)
+        if (from) p.set('from', from)
+        if (to)   p.set('to', to)
+        try {
+          const r = await apiFetch(api('/api/admin/activity?' + p.toString()))
+          const d = await r.json()
+          if (!d?.ok) { body.innerHTML = '<div class="act-empty">⚠️ Přístup odepřen nebo chyba načítání</div>'; return }
+
+          // Filter to important events only
+          const allRows = d.rows || []
+          const rows = allRows.filter(row => IMPORTANT_ACTIONS.has(row.action))
+          actTotal = d.total || 0
+
+          // Stats
+          const statsEl = document.getElementById('actStats')
+          if (statsEl) {
+            const deletions  = allRows.filter(r => r.action === 'job_deleted_from_archive' || r.action === 'lead_deleted').length
+            const stageMovs  = allRows.filter(r => r.action === 'job_stage_moved').length
+            const logins     = allRows.filter(r => r.action === 'login').length
+            const emails     = allRows.filter(r => r.action === 'email_sent_manual' || r.action === 'inbound_email_received').length
+            statsEl.innerHTML = `
+              <div class="act-stat"><b>Přihlášení</b><span>${logins}</span></div>
+              <div class="act-stat"><b>Etapy posunuty</b><span>${stageMovs}</span></div>
+              <div class="act-stat"><b>Emaily</b><span>${emails}</span></div>
+              <div class="act-stat" style="${deletions>0?'border-color:rgba(232,58,58,.3);background:rgba(232,58,58,.06)':''}"><b style="${deletions>0?'color:var(--red)':''}">Smazáno</b><span style="${deletions>0?'color:var(--red)':''}">${deletions}</span></div>`
+          }
+
+          if (!rows.length) {
+            body.innerHTML = '<div class="act-empty">📭 Žádné důležité události za zvolené období</div>'
+            document.getElementById('actPaging').innerHTML = ''
+            return
+          }
+
+          // Group by day
+          const byDay = []
+          let curDay = null; let curGroup = null
+          for (const row of rows) {
+            const dk = actKey(row.created_at)
+            if (dk !== curDay) {
+              curDay = dk
+              curGroup = { label: fmtActDay(row.created_at), rows: [] }
+              byDay.push(curGroup)
+            }
+            curGroup.rows.push(row)
+          }
+
+          body.innerHTML = byDay.map(g => `
+            <div class="act-day">
+              <div class="act-day-label">
+                ${actEsc(g.label)}
+                <span style="margin-left:auto;font-size:10px;font-weight:600;color:var(--ink3)">${g.rows.length} událost${g.rows.length===1?'':'í'}</span>
+              </div>
+              ${g.rows.map(row => {
+                const cfg = ACT_CFG[row.action] || { icon:'•', label: row.action, color:'rgba(255,255,255,.05)', badge:'b-grey', critical:false }
+                const detail = actDetail(row.action, row.data)
+                const actor = row.actor_email ? row.actor_email.split('@')[0] : 'Systém'
+                const actorFull = row.actor_email || 'Systém'
+                return `<div class="act-row${cfg.critical?' act-row-critical':''}">
+                  <div class="act-time">${actEsc(fmtActTime(row.created_at))}</div>
+                  <div class="act-icon" style="background:${cfg.color};font-size:15px">${cfg.icon}</div>
+                  <div class="act-body">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                      <span class="act-action">${actEsc(cfg.label)}</span>
+                      ${cfg.critical ? '<span class="badge b-red" style="padding:1px 6px;font-size:9px">KRITICKÁ</span>' : ''}
+                    </div>
+                    <div class="act-meta-row">
+                      <span class="act-actor" title="${actEsc(actorFull)}">👤 ${actEsc(actor)}</span>
+                      ${detail ? `<span class="act-detail">· ${actEsc(detail)}</span>` : ''}
+                    </div>
+                  </div>
+                </div>`
+              }).join('')}
+            </div>`).join('')
+
+          // Paging
+          const paging = document.getElementById('actPaging')
+          if (paging) {
+            const pages = Math.ceil(actTotal / ACT_LIMIT)
+            const cur   = Math.floor(actOffset / ACT_LIMIT)
+            if (pages <= 1) { paging.innerHTML = ''; return }
+            paging.innerHTML = `
+              <button class="arch-pager-btn" id="actPrev" ${cur===0?'disabled':''}>← Zpět</button>
+              <span style="font-size:12px;color:var(--ink3)">Str. ${cur+1} / ${pages}</span>
+              <button class="arch-pager-btn" id="actNext" ${cur>=pages-1?'disabled':''}>Dále →</button>`
+            paging.querySelector('#actPrev')?.addEventListener('click', () => { actOffset -= ACT_LIMIT; loadActivity(false) })
+            paging.querySelector('#actNext')?.addEventListener('click', () => { actOffset += ACT_LIMIT; loadActivity(false) })
+          }
+        } catch(e) {
+          body.innerHTML = `<div class="act-empty">Chyba: ${actEsc(e.message)}</div>`
+        }
+      }
+
+      document.getElementById('refreshActivity')?.addEventListener('click', () => loadActivity(true))
+      document.getElementById('actClear')?.addEventListener('click', () => {
+        document.getElementById('actSearch').value = ''
+        document.getElementById('actFrom').value = ''
+        document.getElementById('actTo').value = ''
+        loadActivity(true)
+      })
+      document.getElementById('actSearch')?.addEventListener('input', () => {
+        clearTimeout(actDebounce)
+        actDebounce = setTimeout(() => loadActivity(true), 350)
+      })
+      ;['actFrom','actTo'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', () => loadActivity(true))
+      })
     </script>
+
+    <!-- Archive delete confirmation modal -->
+    <div class="arch-del-confirm" id="archDelModal">
+      <div class="arch-del-box">
+        <h3>🗑 Smazat ze archivu?</h3>
+        <p>Chystáte se <strong>trvale smazat</strong> zakázku:<br><strong id="archDelJobName" style="color:var(--ink)"></strong><br><br>Tato akce je nevratná. Všechna data zakázky, dokumenty, faktury a události budou nenávratně smazány.</p>
+        <div class="arch-del-actions">
+          <button class="btn" id="archDelCancelBtn" style="flex:1">Zrušit</button>
+          <button class="btn" id="archDelConfirmBtn" style="flex:1;background:rgba(232,58,58,.15);color:#F07070;border-color:rgba(232,58,58,.3)">Smazat trvale</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

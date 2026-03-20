@@ -96,14 +96,21 @@
         background: linear-gradient(135deg, #2558BC, #3670D8);
         box-shadow: 0 4px 20px rgba(37,88,188,.4);
         transition: all .18s;
+        display: inline-flex; align-items: center; gap: 10px;
       }
-      button[type="submit"]:hover {
+      button[type="submit"]:hover:not(:disabled) {
         background: linear-gradient(135deg, #2C64CC, #3E7CEE);
         box-shadow: 0 6px 26px rgba(37,88,188,.52);
       }
-      .msg { font-size: 14px; display: none; font-weight: 500; }
-      .msg.ok { color: var(--ok); display: flex; align-items: center; gap: 8px; }
-      .msg.err { color: var(--err); display: flex; align-items: center; gap: 8px; }
+      button[type="submit"]:disabled {
+        opacity: .65; cursor: not-allowed;
+        background: linear-gradient(135deg, #2558BC, #3670D8);
+      }
+      .submit-spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; flex-shrink: 0; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .msg { font-size: 14px; display: none; font-weight: 500; align-items: center; gap: 8px; }
+      .msg.ok { color: var(--ok); }
+      .msg.err { color: var(--err); }
       @media (max-width: 800px) {
         .grid, .choice-list { grid-template-columns: 1fr; }
         form, .head { padding-left: 16px; padding-right: 16px; }
@@ -121,16 +128,7 @@
       .addr-item:last-child { border-bottom: none; }
       .addr-item:hover { background: rgba(68,144,238,.12); }
     </style>
-    <script>
-      ;(function(){
-        const tok = localStorage.getItem('crmToken')
-        if (!tok) { location.replace('./login.html?next=' + encodeURIComponent(location.href)); return }
-        try {
-          const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
-          if (p.exp && Date.now() / 1000 > p.exp) { localStorage.removeItem('crmToken'); location.replace('./login.html?next=' + encodeURIComponent(location.href)) }
-        } catch { localStorage.removeItem('crmToken'); location.replace('./login.html') }
-      })()
-    </script>
+    <!-- public page - no auth required -->
   </head>
   <body>
     <div class="wrap">
@@ -301,9 +299,12 @@
           </section>
 
           <div class="actions">
-            <button type="submit">Odeslat formulář →</button>
-            <div id="ok" class="msg ok">Děkujeme, formulář byl odeslán.</div>
-            <div id="err" class="msg err">Nepodařilo se odeslat formulář. Zkuste to prosím znovu.</div>
+            <button type="submit" id="submitBtn">
+              <div class="submit-spinner" id="submitSpinner"></div>
+              <span id="submitBtnText">Odeslat formulář →</span>
+            </button>
+            <div id="ok" class="msg ok">✅ Děkujeme! Formulář byl úspěšně odeslán. Náš manažer vás brzy kontaktuje.</div>
+            <div id="err" class="msg err">⚠️ Nepodařilo se odeslat formulář. Zkuste to prosím znovu.</div>
           </div>
         </form>
       </div>
@@ -362,10 +363,19 @@
         return x ? String(x.value || '').trim() : ''
       }
 
+      let _submitting = false
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
+        if (_submitting) return          // prevent double-submit
+        _submitting = true
         ok.style.display = 'none'
         err.style.display = 'none'
+        const btn = document.getElementById('submitBtn')
+        const spinner = document.getElementById('submitSpinner')
+        const btnText = document.getElementById('submitBtnText')
+        btn.disabled = true
+        spinner.style.display = 'block'
+        btnText.textContent = 'Odesílám…'
 
         const payload = {
           leadId,
@@ -402,10 +412,20 @@
           })
           const d = await r.json().catch(() => null)
           if (!r.ok || !d?.ok) throw new Error(d?.error || 'send_failed')
-          ok.style.display = 'block'
+          ok.style.display = 'flex'
           form.reset()
+          // Keep button disabled + show success permanently
+          spinner.style.display = 'none'
+          btnText.textContent = '✅ Formulář odeslán'
+          btn.style.background = 'linear-gradient(135deg,#14856A,#1AA882)'
+          // Don't re-enable — form already sent
         } catch {
-          err.style.display = 'block'
+          err.style.display = 'flex'
+          // Re-enable on error so user can retry
+          _submitting = false
+          btn.disabled = false
+          spinner.style.display = 'none'
+          btnText.textContent = 'Odeslat formulář →'
         }
       })
     </script>
