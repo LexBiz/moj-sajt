@@ -3533,7 +3533,16 @@ async function listJobInvoices(jobId) {
 
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
-app.use(express.static(path.join(__dirname, 'public')))
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  setHeaders (res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      res.set('Pragma', 'no-cache')
+      res.set('Expires', '0')
+    }
+  }
+}))
 app.use('/generated', express.static(path.join(__dirname, 'generated')))
 app.use('/uploads', express.static(UPLOADS_DIR))
 
