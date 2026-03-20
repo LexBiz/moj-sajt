@@ -2434,6 +2434,7 @@ function estimateLineFromRow(row) {
     matCoefficient: row.mat_coefficient != null ? Number(row.mat_coefficient) : 1,
     lineTotal: roundMoney(row.line_total != null ? row.line_total : row.total_client),
     basePrice: roundMoney(row.base_price),
+    baseMatPrice: roundMoney(row.base_mat_price),
     clientPrice: roundMoney(row.client_price),
     totalBase: roundMoney(row.total_base),
     totalClient: roundMoney(row.total_client),
@@ -2475,6 +2476,7 @@ function normalizeEstimateLine(input = {}, idx = 0) {
     materialTotal,
     lineTotal,
     basePrice: roundMoney(toNum(input.basePrice, laborUnitPrice)),
+    baseMatPrice: roundMoney(toNum(input.baseMatPrice, materialUnitPrice)),
     clientPrice: laborUnitPrice,
     totalBase: laborTotal,
     totalClient: lineTotal,
@@ -2897,16 +2899,17 @@ async function saveEstimate(id, patch = {}) {
             id, line.catalogItemId, line.sourceCatalogCode, line.lineCode, line.sectionType, line.groupKey, line.groupLabel,
             line.phaseKey, line.categoryKey, line.itemName, line.workDescription, line.materialDescription, line.unit,
             line.quantity, line.laborUnitPrice, line.laborTotal, line.materialUnitPrice, line.materialTotal, line.lineTotal,
-            line.basePrice, line.clientPrice, line.totalBase, line.totalClient, line.positionOrder,
+            line.basePrice, line.baseMatPrice != null ? line.baseMatPrice : line.materialUnitPrice,
+            line.clientPrice, line.totalBase, line.totalClient, line.positionOrder,
             line.matCoefficient != null ? line.matCoefficient : 1,
           ]
           const start = params.length + 1
           params.push(...row)
-          values.push(`($${start},$${start+1},$${start+2},$${start+3},$${start+4},$${start+5},$${start+6},$${start+7},$${start+8},$${start+9},$${start+10},$${start+11},$${start+12},$${start+13},$${start+14},$${start+15},$${start+16},$${start+17},$${start+18},$${start+19},$${start+20},$${start+21},$${start+22},$${start+23},$${start+24},now(),now())`)
+          values.push(`($${start},$${start+1},$${start+2},$${start+3},$${start+4},$${start+5},$${start+6},$${start+7},$${start+8},$${start+9},$${start+10},$${start+11},$${start+12},$${start+13},$${start+14},$${start+15},$${start+16},$${start+17},$${start+18},$${start+19},$${start+20},$${start+21},$${start+22},$${start+23},$${start+24},$${start+25},now(),now())`)
         }
         await dbQuery(
           `INSERT INTO crm_estimate_lines
-          (estimate_id, catalog_item_id, source_catalog_code, line_code, section_type, group_key, group_label, phase_key, category_key, item_name, work_description, material_description, unit, quantity, labor_unit_price, labor_total, material_unit_price, material_total, line_total, base_price, client_price, total_base, total_client, position_order, mat_coefficient, created_at, updated_at)
+          (estimate_id, catalog_item_id, source_catalog_code, line_code, section_type, group_key, group_label, phase_key, category_key, item_name, work_description, material_description, unit, quantity, labor_unit_price, labor_total, material_unit_price, material_total, line_total, base_price, base_mat_price, client_price, total_base, total_client, position_order, mat_coefficient, created_at, updated_at)
           VALUES ${values.join(',')}`,
           params
         )

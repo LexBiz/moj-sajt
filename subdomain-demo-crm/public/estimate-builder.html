@@ -600,6 +600,7 @@
       if (!existing && delta <= 0) return
       if (!existing) {
         const ep = effectivePrice(item)
+        const origBase = Number(item.basePrice || ep)
         estimate.lines.push({
           catalogItemId: item.id,
           sourceCatalogCode: item.sourceCode || null,
@@ -610,8 +611,10 @@
           unit: item.unit || 'ks',
           quantity: 1,
           laborUnitPrice: ep,
-          _basePrice: Number(item.basePrice || ep),
+          basePrice: origBase,    // persisted to DB → survives page reload
+          _basePrice: origBase,   // in-memory shortcut
           materialUnitPrice: 0,
+          baseMatPrice: 0,
         })
       } else {
         existing.quantity = Math.max(0, Number(existing.quantity || 0) + delta)
@@ -766,8 +769,9 @@
           return `<div class="cart-cat-head">${esc(CAT_LABELS[cat] || cat)}</div>` +
             rows.map(line => {
               const hasMat = !!(line.materialDescription && line.materialDescription.trim())
-              const baseLabor = Number(line._basePrice || line.laborUnitPrice || 0)
-              const baseMat   = Number(line._baseMatPrice || line.materialUnitPrice || 0)
+              // _base* = in-memory; basePrice/baseMatPrice = from DB (survive reload)
+              const baseLabor = Number(line._basePrice || line.basePrice || line.laborUnitPrice || 0)
+              const baseMat   = Number(line._baseMatPrice || line.baseMatPrice || line.materialUnitPrice || 0)
               const laborRaised  = line.laborUnitPrice > baseLabor + 0.01
               const laborLowered = baseLabor > 0.01 && line.laborUnitPrice < baseLabor - 0.01
               const matRaised    = hasMat && line.materialUnitPrice > baseMat + 0.01
@@ -1674,7 +1678,8 @@
           line.materialDescription = matSelected.itemName
           const matBase = Number(matSelected.basePrice || 0)
           line.materialUnitPrice = matBase
-          line._baseMatPrice = matBase
+          line.baseMatPrice = matBase    // persisted to DB
+          line._baseMatPrice = matBase   // in-memory shortcut
         }
         renderAll(); saveEstimate(true)
       }
