@@ -118,8 +118,19 @@
     .cc-mat-coef{display:flex;align-items:center;gap:2px;flex-shrink:0;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:6px;padding:1px 3px}
     .cc-coef-lbl{font-size:11px;color:#FBBF24;font-weight:700}
     .cc-coef-inp{width:44px;background:transparent;border:none;color:#FBBF24;font:inherit;font-size:11px;font-weight:700;padding:2px 2px;text-align:center;outline:none}
-    .cc-pr-inp{width:62px;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);font:inherit;font-size:12px;font-weight:700;padding:3px 5px;text-align:right;outline:none;transition:all .15s;flex-shrink:0}
-    .cc-pr-inp:focus{border-color:var(--blue)}
+    .cc-pr-inp{width:70px;background:var(--c);border:1px solid var(--b2);border-radius:6px;color:var(--ink);font:inherit;font-size:12px;font-weight:700;padding:3px 5px 3px 5px;text-align:right;outline:none;transition:all .15s;flex-shrink:0}
+    .cc-pr-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(26,106,232,.12)}
+    /* ── Beautiful custom number spinners ── */
+    input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    input[type=number]{-moz-appearance:textfield}
+    /* Wrapper for price/coef inputs with custom ▲▼ buttons */
+    .num-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
+    .num-wrap input{padding-right:18px!important}
+    .num-arrows{position:absolute;right:0;top:0;bottom:0;width:18px;display:flex;flex-direction:column;border-left:1px solid var(--b2);border-radius:0 6px 6px 0;overflow:hidden;cursor:pointer}
+    .num-arr{flex:1;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--blue3);background:rgba(26,106,232,.05);border:none;padding:0;cursor:pointer;transition:background .12s;line-height:1;font-family:inherit}
+    .num-arr:hover{background:rgba(26,106,232,.18);color:var(--blue)}
+    .num-arr:first-child{border-bottom:1px solid var(--b2)}
     .cc-pr-inp.raised{border-color:rgba(200,140,0,.6);color:#C08000}
     .cc-pr-inp.mat-raised{border-color:rgba(11,189,122,.5);color:#0A9960}
     .cc-pr-inp.lowered{border-color:rgba(208,40,40,.55);color:#C02020}
@@ -812,7 +823,7 @@
                       <span class="cc-coef-lbl">×</span>
                       <input class="cc-coef-inp" type="number" min="0.01" step="0.1" value="${coef}" data-coef-pos="${line.positionOrder}" title="Koeficient materiálu" />
                     </div>
-                    <input class="cc-pr-inp${matRaised?' mat-raised':matLowered?' mat-lowered':''}" type="number" min="0" step="0.5" value="${line.materialUnitPrice}" data-mat-price-pos="${line.positionOrder}" data-mat-base="${baseMat}" />
+                    <div class="num-wrap"><input class="cc-pr-inp${matRaised?' mat-raised':matLowered?' mat-lowered':''}" type="number" min="0" step="0.5" value="${line.materialUnitPrice}" data-mat-price-pos="${line.positionOrder}" data-mat-base="${baseMat}" /><div class="num-arrows"><button class="num-arr" data-num-step="0.5" data-num-pos="${line.positionOrder}" data-num-type="mat">▴</button><button class="num-arr" data-num-step="-0.5" data-num-pos="${line.positionOrder}" data-num-type="mat">▾</button></div></div>
                     <span class="cc-pr-unit">Kč/ks</span>
                     <div class="cc-markup">${mkup(line.positionOrder, baseMat, line.materialUnitPrice, 'mat')}</div>
                     <span class="cc-pr-total">${fmtMoney(matTotal)}</span>
@@ -834,7 +845,7 @@
                 <div class="cc-price-row${laborRaised?' raised':laborLowered?' lowered':''}">
                   <span class="cc-pr-icon">⚡</span>
                   <span class="cc-pr-label">Práce</span>
-                  <input class="cc-pr-inp${laborRaised?' raised':laborLowered?' lowered':''}" type="number" min="0" step="0.5" value="${line.laborUnitPrice}" data-price-pos="${line.positionOrder}" data-base-price="${baseLabor}" />
+                  <div class="num-wrap"><input class="cc-pr-inp${laborRaised?' raised':laborLowered?' lowered':''}" type="number" min="0" step="0.5" value="${line.laborUnitPrice}" data-price-pos="${line.positionOrder}" data-base-price="${baseLabor}" /><div class="num-arrows"><button class="num-arr" data-num-step="0.5" data-num-pos="${line.positionOrder}" data-num-type="labor">▴</button><button class="num-arr" data-num-step="-0.5" data-num-pos="${line.positionOrder}" data-num-type="labor">▾</button></div></div>
                   <span class="cc-pr-unit">Kč/${esc(line.unit||'ks')}</span>
                   <div class="cc-markup">${mkup(line.positionOrder, baseLabor, line.laborUnitPrice, 'labor')}</div>
                   <span class="cc-pr-total">${fmtMoney(laborTotal)}</span>
@@ -970,6 +981,26 @@
             estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
           })
         })
+
+        // Custom ▲▼ step buttons for price inputs
+        body.querySelectorAll('.num-arr').forEach(btn => {
+          btn.addEventListener('click', e => {
+            e.stopPropagation()
+            const pos = Number(btn.getAttribute('data-num-pos'))
+            const step = parseFloat(btn.getAttribute('data-num-step'))
+            const type = btn.getAttribute('data-num-type')
+            const line = estimate.lines.find(x => x.positionOrder === pos)
+            if (!line) return
+            if (type === 'labor') {
+              const newVal = Math.max(0, Math.round((line.laborUnitPrice + step) * 100) / 100)
+              line.laborUnitPrice = newVal
+            } else if (type === 'mat') {
+              const newVal = Math.max(0, Math.round((line.materialUnitPrice + step) * 100) / 100)
+              line.materialUnitPrice = newVal
+            }
+            estimate.lines = normalizeLines(estimate.lines); renderAll(); saveEstimate(true)
+          })
+        })
       }
 
       // Totals
@@ -997,9 +1028,20 @@
     }
 
     // ── PREVIEW ──
-    function renderPreview() {
+    async function renderPreview() {
       const overlay = document.getElementById('previewOverlay')
       overlay.classList.add('show')
+      // Re-fetch job to get the latest internalNumber (may have been changed in another tab)
+      if (jobId > 0) {
+        try {
+          const jr = await apiFetch(apiUrl(`/api/crm/jobs/${jobId}`))
+          const jd = await jParse(jr)
+          if (jr.ok && jd?.ok && jd.job) {
+            job = jd.job
+            if (job.internalNumber) { estimate.jobNumberSnapshot = job.internalNumber; updateCtxHeader() }
+          }
+        } catch {}
+      }
       // Apply current variant state
       setTimeout(() => {
         const pv = document.getElementById('previewContent')
@@ -1038,37 +1080,22 @@
           const coef = Number(line.matCoefficient || 1)
           catL += lT; catM += mT
           const workNum = rowNum++
-          const matNum = `${workNum}.1`
-          // Work row
-          tableRows += `<tr style="border-bottom:${hasMat?'none':''}">
-            <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px;${hasMat?'border-bottom:none':''}">${esc(code)}</td>
+          // Single combined row: work + material inline
+          const totU = lU + (hasMat ? mU : 0)
+          const totT = lT + (hasMat ? mT : 0)
+          tableRows += `<tr>
+            <td style="background:${bg};color:${fg};font-weight:700;text-align:center;font-size:11px;width:36px">${esc(code)}</td>
             <td style="text-align:center;font-weight:800;font-size:12px;width:40px;color:#1A2B4A">${workNum}</td>
-            <td style="background:#D9E1F2;padding:5px 7px;min-width:200px;font-size:11px;font-weight:600" colspan="2"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
+            <td style="background:#D9E1F2;padding:5px 7px;min-width:160px;font-size:11px;font-weight:600"><span class="pdf-editable" contenteditable="true" data-field="workDescription" data-lid="${esc(String(line.id||''))}">${esc(line.workDescription||'')}</span></td>
+            <td style="background:#C6E0B4;padding:5px 7px;min-width:120px;font-size:11px">${hasMat ? `<span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(line.materialDescription)}</span>` : ''}</td>
             <td style="text-align:center;white-space:nowrap;font-size:11px">${line.quantity} ${esc(line.unit||'ks')}</td>
             <td style="text-align:right;background:#BDD7EE;font-size:11px" data-col="prace">${fmtMoney(lU)}</td>
             <td style="text-align:right;background:#BDD7EE;font-weight:600;font-size:11px" data-col="prace">${fmtMoney(lT)}</td>
-            <td style="background:#F8CBAD" data-col="material"></td>
-            <td style="background:#F8CBAD" data-col="material"></td>
-            <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(lU)}</td>
-            <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(lT)}</td>
+            <td style="text-align:right;background:#F8CBAD;font-size:11px" data-col="material">${hasMat ? fmtMoney(mU) : ''}</td>
+            <td style="text-align:right;background:#F8CBAD;font-weight:600;font-size:11px" data-col="material">${hasMat ? fmtMoney(mT) : ''}</td>
+            <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(totU)}</td>
+            <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(totT)}</td>
           </tr>`
-          // Material row (if exists)
-          if (hasMat) {
-            const matQty = line.quantity * coef
-            tableRows += `<tr style="background:#FAFCF8">
-              <td style="background:${bg};color:${fg};font-size:10px;text-align:center;opacity:.6">${esc(code)}</td>
-              <td style="text-align:center;font-size:11px;color:#666;font-weight:600">${matNum}</td>
-              <td style="padding:4px 7px;font-size:11px;color:#555;font-style:italic">↳ materiál</td>
-              <td style="background:#C6E0B4;padding:5px 7px;min-width:140px;font-size:11px"><span class="pdf-editable" contenteditable="true" data-field="materialDescription" data-lid="${esc(String(line.id||''))}">${esc(line.materialDescription)}</span></td>
-              <td style="text-align:center;white-space:nowrap;font-size:11px">${matQty} ${esc(line.unit||'ks')}</td>
-              <td style="background:#BDD7EE" data-col="prace"></td>
-              <td style="background:#BDD7EE" data-col="prace"></td>
-              <td style="text-align:right;background:#F8CBAD;font-size:11px" data-col="material">${fmtMoney(mU)}</td>
-              <td style="text-align:right;background:#F8CBAD;font-weight:600;font-size:11px" data-col="material">${fmtMoney(mT)}</td>
-              <td style="text-align:right;background:#D9D9D9;font-size:11px">${fmtMoney(mU)}</td>
-              <td style="text-align:right;background:#D9D9D9;font-weight:700;font-size:11px">${fmtMoney(mT)}</td>
-            </tr>`
-          }
         }
         globalLabor += catL; globalMat += catM
         tableRows += `<tr style="background:#EDF0F5">
