@@ -308,9 +308,9 @@
     </div>
     <div class="hdr-actions">
       <a href="./index.html" id="backLink" class="btn">← Pipeline</a>
-      <button id="btnSave" class="btn">💾 Зберегти</button>
-      <button id="btnSnapshot" class="btn" title="Uložit zálohu verze koshtorusu">📸 Záloha</button>
-      <button id="btnSnapshots" class="btn" title="Historie verzí">🕐</button>
+      <button id="btnSave" class="btn" title="Uložit změny cen a množství do databáze">💾 Uložit</button>
+      <button id="btnSnapshot" class="btn" title="Uložit zálohu (snapshot) aktuální verze — lze obnovit později">📸 Záloha</button>
+      <button id="btnSnapshots" class="btn" title="Historie záloh — obnovit starší verzi">🕐 Historie</button>
       <button id="btnGenerate" class="btn orange">⚡ Excel / PDF</button>
       <button id="btnPreview" class="btn">👁 Перегляд</button>
       <button id="cartToggle" class="btn green" style="font-weight:800">🧾 Кошик<span class="cart-badge" id="cartCountBadge">0</span></button>
@@ -370,7 +370,7 @@
       <div class="cart-totals" id="cartTotals"></div>
       <div class="cart-btns">
         <button class="btn green" id="cartPreviewBtn" style="justify-content:center;font-size:14px;padding:12px">👁 Попередній перегляд</button>
-        <button class="btn primary" id="cartSaveBtn" style="justify-content:center;font-size:13px;padding:10px">💾 Зберегти кошторис</button>
+        <button class="btn primary" id="cartSaveBtn" style="justify-content:center;font-size:13px;padding:10px" title="Uložit aktuální ceny a množství do databáze">💾 Uložit do DB</button>
       </div>
     </div>
   </div>
@@ -1513,7 +1513,13 @@
     document.getElementById('cartToggle').addEventListener('click', toggleCart)
     document.getElementById('drawerClose').addEventListener('click', closeCart)
     document.getElementById('drawerBackdrop').addEventListener('click', closeCart)
-    document.getElementById('cartSaveBtn').addEventListener('click', saveEstimate)
+    document.getElementById('cartSaveBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('cartSaveBtn')
+      btn.disabled = true; btn.textContent = '⏳ Ukládám…'
+      try { await saveEstimate() } finally {
+        btn.disabled = false; btn.textContent = '💾 Uložit do DB'
+      }
+    })
     document.getElementById('btnSave').addEventListener('click', saveEstimate)
     document.getElementById('btnGenerate').addEventListener('click', buildEstimateDocs)
 
@@ -1588,19 +1594,152 @@
     })
 
     // Ostatní quick-add
-    document.getElementById('btnAddOstatni').addEventListener('click', () => {
-      const desc = prompt('Пізіція (опис витрати):')
-      if (!desc) return
-      const amtStr = prompt('Сума (Kč):', '0')
-      const amt = Number(amtStr || 0)
-      estimate.lines.push({
-        sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
-        workDescription: desc, materialDescription: '',
-        unit: 'pau', quantity: 1, laborUnitPrice: amt, materialUnitPrice: 0,
+    // ── Ostatní modal ────────────────────────────────────────────────
+    function openOstatniModal() {
+      const existing = estimate.lines.filter(l => l.sectionType === 'ostatni_naklady')
+      const listHtml = existing.length
+        ? existing.map((l, i) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:#F8FAFF;border:1px solid rgba(20,60,120,.1);margin-bottom:6px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:#0F2440">${esc(l.workDescription||'')}</div>
+              <div style="font-size:11px;color:#5A82A4;margin-top:2px">${esc(l.quantity)} ${esc(l.unit||'pau')} · ${fmtMoney(l.lineTotal)}</div>
+            </div>
+            <button data-ost-del="${l.positionOrder}" style="border:none;background:rgba(220,38,38,.08);border-radius:8px;width:28px;height:28px;cursor:pointer;color:#DC2626;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+          </div>`).join('')
+        : '<div style="color:#8BACC8;font-size:13px;text-align:center;padding:12px 0">Zatím žádné ostatní položky</div>'
+
+      const modal = document.createElement('div')
+      modal.id = '_ostModal'
+      modal.innerHTML = `
+        <style>
+          #_ostModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit}
+          #_ostModal::before{content:'';position:absolute;inset:0;background:rgba(8,15,30,.65);backdrop-filter:blur(16px)}
+          #_ostBox{position:relative;width:100%;max-width:500px;background:#fff;border-radius:22px;box-shadow:0 32px 80px rgba(0,0,0,.4);animation:_ostIn .35s cubic-bezier(.34,1.46,.64,1);overflow:hidden}
+          @keyframes _ostIn{from{opacity:0;transform:scale(.85) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+          #_ostBox-head{background:linear-gradient(135deg,#1E3A6E,#2563EB);padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
+          #_ostBox-body{padding:22px 24px;max-height:60vh;overflow-y:auto}
+          #_ostBox-foot{padding:16px 24px;border-top:1px solid rgba(20,60,120,.1);display:flex;gap:10px}
+          .ost-form-row{display:grid;grid-template-columns:1fr 90px 90px;gap:10px;align-items:end;margin-bottom:14px}
+          .ost-label{font-size:11px;font-weight:700;color:#5A82A4;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+          .ost-input{width:100%;box-sizing:border-box;background:#F8FAFF;border:1.5px solid rgba(20,60,120,.15);border-radius:10px;color:#0F2440;font:inherit;font-size:14px;font-weight:500;padding:9px 12px;outline:none;transition:border-color .15s}
+          .ost-input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+          .ost-select{width:100%;box-sizing:border-box;background:#F8FAFF;border:1.5px solid rgba(20,60,120,.15);border-radius:10px;color:#0F2440;font:inherit;font-size:13px;padding:9px 10px;outline:none}
+          #_ostAddBtn{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#fff;font:inherit;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,.35);transition:all .18s}
+          #_ostAddBtn:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(37,99,235,.5)}
+          #_ostClose{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+          #_ostClose:hover{background:rgba(255,255,255,.28)}
+        </style>
+        <div id="_ostBox">
+          <div id="_ostBox-head">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Ostatní náklady</div>
+              <div style="font-size:17px;font-weight:900;color:#fff">+ Přidat položku</div>
+            </div>
+            <button id="_ostClose">✕</button>
+          </div>
+          <div id="_ostBox-body">
+            <div style="margin-bottom:18px">
+              <div class="ost-label">Popis položky *</div>
+              <input id="_ostDesc" class="ost-input" placeholder="Např. Doprava, Lešení, Strojní práce…" />
+            </div>
+            <div class="ost-form-row">
+              <div>
+                <div class="ost-label">Jednotka</div>
+                <select id="_ostUnit" class="ost-select">
+                  <option value="pau">pau (paušál)</option>
+                  <option value="hod">hod (hodiny)</option>
+                  <option value="m">m (metry)</option>
+                  <option value="m2">m² (metry²)</option>
+                  <option value="ks">ks (kusy)</option>
+                  <option value="t">t (tony)</option>
+                </select>
+              </div>
+              <div>
+                <div class="ost-label">Množství</div>
+                <input id="_ostQty" class="ost-input" type="number" min="0.01" step="0.5" value="1" />
+              </div>
+              <div>
+                <div class="ost-label">Cena Kč</div>
+                <input id="_ostPrice" class="ost-input" type="number" min="0" step="10" value="0" placeholder="0" />
+              </div>
+            </div>
+            <div style="font-size:12px;color:#8BACC8;margin-bottom:18px">Cena za celou položku (množství × cena za jed.)</div>
+            <div style="font-size:11px;font-weight:700;color:#5A82A4;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Přidané položky (${existing.length})</div>
+            <div id="_ostList">${listHtml}</div>
+          </div>
+          <div id="_ostBox-foot">
+            <button id="_ostAddBtn">➕ Přidat do rozpočtu</button>
+          </div>
+        </div>`
+      document.body.appendChild(modal)
+
+      const close = () => modal.remove()
+      document.getElementById('_ostClose').addEventListener('click', close)
+      modal.addEventListener('click', e => { if (e.target === modal) close() })
+      document.getElementById('_ostDesc').focus()
+
+      // Delete existing
+      modal.querySelectorAll('[data-ost-del]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pos = Number(btn.getAttribute('data-ost-del'))
+          estimate.lines = estimate.lines.filter(x => x.positionOrder !== pos)
+          estimate.lines = normalizeLines(estimate.lines)
+          renderAll(); saveEstimate(true)
+          close(); openOstatniModal()
+        })
       })
-      estimate.lines = normalizeLines(estimate.lines)
-      renderAll()
-    })
+
+      document.getElementById('_ostAddBtn').addEventListener('click', async () => {
+        const desc  = document.getElementById('_ostDesc').value.trim()
+        const unit  = document.getElementById('_ostUnit').value
+        const qty   = Math.max(0.01, Number(document.getElementById('_ostQty').value) || 1)
+        const price = Math.max(0, Number(document.getElementById('_ostPrice').value) || 0)
+        if (!desc) { document.getElementById('_ostDesc').focus(); document.getElementById('_ostDesc').style.borderColor='#EF4444'; return }
+        estimate.lines.push({
+          sectionType: 'ostatni_naklady', category: 'ostatni_naklady',
+          workDescription: desc, materialDescription: '',
+          unit, quantity: qty,
+          laborUnitPrice: price, materialUnitPrice: 0,
+          basePrice: price, baseMatPrice: 0,
+        })
+        estimate.lines = normalizeLines(estimate.lines)
+        renderAll()
+        await saveEstimate(true)
+        // Reset form for another entry
+        document.getElementById('_ostDesc').value = ''
+        document.getElementById('_ostPrice').value = '0'
+        document.getElementById('_ostQty').value = '1'
+        document.getElementById('_ostDesc').style.borderColor = ''
+        // Refresh list
+        const newExisting = estimate.lines.filter(l => l.sectionType === 'ostatni_naklady')
+        const el = document.getElementById('_ostList')
+        if (el) {
+          el.innerHTML = newExisting.length
+            ? newExisting.map(l => `
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:#F8FAFF;border:1px solid rgba(20,60,120,.1);margin-bottom:6px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;color:#0F2440">${esc(l.workDescription||'')}</div>
+                  <div style="font-size:11px;color:#5A82A4;margin-top:2px">${esc(l.quantity)} ${esc(l.unit||'pau')} · ${fmtMoney(l.lineTotal)}</div>
+                </div>
+                <button data-ost-del="${l.positionOrder}" style="border:none;background:rgba(220,38,38,.08);border-radius:8px;width:28px;height:28px;cursor:pointer;color:#DC2626;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+              </div>`).join('')
+            : '<div style="color:#8BACC8;font-size:13px;text-align:center;padding:12px 0">Zatím žádné ostatní položky</div>'
+          el.querySelectorAll('[data-ost-del]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const pos = Number(btn.getAttribute('data-ost-del'))
+              estimate.lines = estimate.lines.filter(x => x.positionOrder !== pos)
+              estimate.lines = normalizeLines(estimate.lines)
+              renderAll(); saveEstimate(true)
+              close(); openOstatniModal()
+            })
+          })
+        }
+        crmToast(`"${desc}" přidáno`, 'success')
+        document.getElementById('_ostDesc').focus()
+      })
+    }
+
+    document.getElementById('btnAddOstatni').addEventListener('click', openOstatniModal)
 
     // User display
     ;(function(){

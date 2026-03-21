@@ -164,12 +164,17 @@
       .komm-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-bottom:2px}
       .komm-bubble{max-width:100%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.6;word-break:break-word;position:relative}
       .komm-bubble.in{background:rgba(11,189,122,.1);border:1px solid rgba(11,189,122,.22);border-bottom-left-radius:4px;color:var(--ink)}
-      .komm-bubble.out{background:linear-gradient(135deg,#1A6AE8,#3D87F8);border:none;border-bottom-right-radius:4px;color:#fff}
+      .komm-bubble.out{background:linear-gradient(135deg,#2563EB,#3B82F6);border:none;border-bottom-right-radius:4px;color:#EFF6FF;font-weight:400}
       .komm-bubble.wa{background:rgba(37,180,90,.12);border:1px solid rgba(37,180,90,.25);color:var(--ink)}
       .komm-bubble.sys-bubble{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:5px 12px;font-size:11px;color:var(--ink2)}
       .komm-bubble.call-bubble{background:rgba(26,106,232,.08);border:1px solid rgba(26,106,232,.2);border-radius:14px;color:var(--ink)}
       .komm-bubble.meet-bubble{background:rgba(96,72,208,.08);border:1px solid rgba(96,72,208,.2);border-radius:14px;color:var(--ink)}
       .komm-bubble.doc{background:rgba(26,106,232,.08);border:1px solid rgba(26,106,232,.18);color:var(--ink)}
+      .est-list-row{border:1.5px solid rgba(20,60,120,.1);border-radius:12px;background:#fff;padding:10px 12px;transition:all .18s;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .est-list-row:hover{border-color:rgba(26,106,232,.3);background:#fafcff;box-shadow:0 4px 14px rgba(20,50,90,.09)}
+      .est-list-row-active{border-color:rgba(26,106,232,.45)!important;background:linear-gradient(135deg,rgba(26,106,232,.04),rgba(61,135,248,.07))!important;box-shadow:0 2px 12px rgba(26,106,232,.12)!important}
+      .est-list-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+      .est-list-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
       .komm-meta{font-size:11px;color:var(--ink3);margin-top:5px;display:flex;align-items:center;gap:5px}
       .komm-msg.out .komm-meta{justify-content:flex-end}
       .komm-subj{font-size:12px;font-weight:700;color:var(--ink3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
@@ -260,8 +265,6 @@
         </div>
         <div class="job-actions">
           <a class="btn" id="goEstimate" href="./estimate-builder.html">Otevřít kalkulaci</a>
-          <button class="btn" id="buildEstimateDocsTop">Excel / PDF</button>
-          <button class="btn btn-p" id="sendEstimateTop">Odeslat klientovi</button>
         </div>
       </div>
 
@@ -789,8 +792,12 @@
         await loadJob()
       }
 
+      let _selectedEstimateId = null
       function renderEstimateHero(job, customer, estimates, docs) {
-        activeEstimate = Array.isArray(estimates) && estimates.length ? estimates[0] : null
+        const allEsts = Array.isArray(estimates) ? estimates : []
+        // Use selected or first
+        activeEstimate = allEsts.find(e => e.id === _selectedEstimateId) || (allEsts.length ? allEsts[0] : null)
+        if (_selectedEstimateId == null && activeEstimate) _selectedEstimateId = activeEstimate.id
         if (!activeEstimate) {
           return `
             <div class="estimate-hero">
@@ -846,6 +853,40 @@
         const el = document.getElementById('m-dokumenty')
         const DOC_TYPE_LABELS = { formular:'Formulář', kalkulace:'Kalkulace', nabidka:'Nabídka', objednavka:'Objednávka', faktura:'Faktura', protokol:'Protokol', foto:'Fotografie', plan:'Plán', smlouva:'Smlouva', akt:'Akt o dílo', other:'Jiné' }
         const STATUS_COLORS = { uploaded:'#14C98A', created:'#7AA2C4', sent:'#F59E0B', signed_client:'#A78BFA', signed_both:'#34D399', received:'#60A5FF' }
+        const allEsts = Array.isArray(estimates) ? estimates : []
+
+        // Estimates list HTML
+        const estListHtml = allEsts.length ? `
+          <div class="card-s" style="margin-top:16px">
+            <div class="card-s-t">📊 Rozpočty zakázky <span style="color:var(--ink2);font-weight:400;font-size:12px">(${allEsts.length})</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              ${allEsts.map(est => {
+                const isActive = est.id === _selectedEstimateId
+                const estDocs = docs.filter(d => d.estimateId === est.id || (d.docType === 'kalkulace' && allEsts.length === 1))
+                const hasXlsx = estDocs.some(d => /\.xlsx$/i.test(d.fileName || ''))
+                const hasPdf  = estDocs.some(d => /\.pdf$/i.test(d.fileName || ''))
+                return `<div class="est-list-row${isActive?' est-list-row-active':''}" data-est-id="${est.id}" style="cursor:pointer">
+                  <div class="est-list-main" onclick="window._selectEstimate(${est.id})">
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                      <div style="width:34px;height:34px;border-radius:10px;background:${isActive?'linear-gradient(135deg,#2563EB,#3B82F6)':'rgba(26,106,232,.1)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
+                      <div style="min-width:0">
+                        <div style="font-size:13px;font-weight:700;color:var(--ink)">${esc(est.estimateNo || '—')}</div>
+                        <div style="font-size:11px;color:var(--ink3);margin-top:1px">${esc(fmt(est.estimateDate))} · ${esc(est.status || 'draft')} · ${esc(fmtMoney(est.totalWithVat))}</div>
+                      </div>
+                    </div>
+                    ${isActive ? '<span style="font-size:10px;font-weight:700;color:var(--blue3);background:rgba(26,106,232,.1);border-radius:6px;padding:2px 8px;flex-shrink:0">Vybraný</span>' : ''}
+                  </div>
+                  <div class="est-list-actions">
+                    ${hasXlsx ? `<a class="btn" href="${estimateFileUrl(est.id,'xlsx')}" target="_blank" style="padding:5px 10px;font-size:11px" title="Stáhnout Excel" onclick="event.stopPropagation()">📥 Excel</a>` : ''}
+                    ${hasPdf  ? `<a class="btn" href="${estimateFileUrl(est.id,'pdf')}"  target="_blank" style="padding:5px 10px;font-size:11px" title="Stáhnout PDF" onclick="event.stopPropagation()">📄 PDF</a>` : ''}
+                    <a class="btn" href="./estimate-builder.html?jobId=${jobId}&estimateId=${est.id}" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation()">✏️ Upravit</a>
+                    <button class="btn" style="padding:5px 10px;font-size:11px;border-color:rgba(220,38,38,.3);color:#DC2626;background:rgba(220,38,38,.05)" onclick="event.stopPropagation();window._deleteEstimate(${est.id},'${esc(est.estimateNo||'tento rozpočet')}')" title="Smazat rozpočet">🗑</button>
+                  </div>
+                </div>`
+              }).join('')}
+            </div>
+          </div>` : ''
+
         el.innerHTML = `
           ${renderEstimateHero(job, customer, estimates, docs)}
           <div class="card-s">
@@ -868,6 +909,7 @@
               </div>
             `).join('')}</div>` : '<div class="empty">Žádné dokumenty</div>'}
           </div>
+          ${estListHtml}
           <div class="card-s">
             <div class="card-s-t">📤 Nahrát soubor</div>
             <div style="display:flex;flex-direction:column;gap:10px">
@@ -888,6 +930,22 @@
             </div>
           </div>
         `
+        // Select estimate — click row to populate hero
+        window._selectEstimate = (id) => {
+          _selectedEstimateId = id
+          const d = window._jobData || {}
+          renderDokumenty(d.documents || [], d.estimates || [], d.customer, d.job)
+          document.getElementById('m-dokumenty')?.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+        // Delete estimate
+        window._deleteEstimate = async (id, label) => {
+          const ok = await crmConfirm(`Smazat rozpočet „${label}"?\n\nTato akce je nevratná.`, { title: '🗑 Smazat rozpočet', okLabel: 'Smazat', danger: true })
+          if (!ok) return
+          const r = await apiFetch(api(`/api/crm/estimates/${id}`), { method: 'DELETE' })
+          if (r.ok) { if (_selectedEstimateId === id) _selectedEstimateId = null; crmToast(`Rozpočet smazán`, 'success'); loadJob() }
+          else crmToast('Nepodařilo se smazat rozpočet', 'error')
+        }
+
         document.getElementById('uploadFileBtn')?.addEventListener('click', async () => {
           const file = document.getElementById('fileUploadInput').files?.[0]
           if (!file) { crmToast('Vyberte soubor', 'warn'); return }
@@ -1195,6 +1253,8 @@
         window._jobData = d
         d.estimates = er.ok && ed?.ok ? (ed.estimates || []) : []
         const job = d.job; const customer = d.customer; const lead = d.lead
+        // make sub-keys easily accessible for callbacks
+        window._jobData.customer = customer; window._jobData.job = job
         document.getElementById('jobNum').textContent = job.internalNumber || '—'
         document.getElementById('jobTitle').textContent = job.title || 'Zakázka'
         document.getElementById('jobSub').textContent = `${customer?.name || '—'} · ${SL[job.stage] || job.stage} · Priorita: ${job.priority}`
@@ -1269,13 +1329,6 @@
         applyUiLang()
       }))
 
-      document.getElementById('buildEstimateDocsTop').addEventListener('click', async () => {
-        try { await buildEstimateDocs() } catch (e) { crmToast(String(e?.message || e), 'error') }
-      })
-
-      document.getElementById('sendEstimateTop').addEventListener('click', async () => {
-        try { await sendEstimateToClient() } catch (e) { crmToast(String(e?.message || e), 'error') }
-      })
 
       // ── Poznámky tab ────────────────────────────────────────────
       async function renderPoznamky() {
@@ -1446,18 +1499,26 @@
       }
 
       // ── Auto-refresh ─────────────────────────────────────────────
-      // Full page refresh every 5 minutes
       setInterval(loadJob, 5 * 60 * 1000)
-      // Komunikace auto-poll every 30 seconds when that tab is active
+
+      // Smart Komunikace poll every 30s — only appends NEW messages, no DOM rebuild
+      let _kommLastTs = Date.now()
       setInterval(async () => {
         const kommEl = document.getElementById('m-komunikace')
-        if (kommEl && kommEl.classList.contains('show')) {
-          try {
-            const r = await apiFetch(api(`/api/crm/jobs/${jobId}/events`))
-            const d = await r.json()
-            if (r.ok && d?.ok) await renderKomunikace(d.events || [])
-          } catch {}
-        }
+        const scroll = document.getElementById('kommScroll')
+        if (!kommEl || !kommEl.classList.contains('show') || !scroll) return
+        try {
+          const r = await apiFetch(api(`/api/crm/jobs/${jobId}/events`))
+          const d = await r.json()
+          if (!r.ok || !d?.ok) return
+          const newEvs = (d.events || []).filter(ev => ev.createdAt && new Date(ev.createdAt).getTime() > _kommLastTs)
+          if (!newEvs.length) return
+          _kommLastTs = Math.max(...newEvs.map(ev => new Date(ev.createdAt).getTime()))
+          // Full re-render only if new events exist — preserve scroll position
+          const wasAtBottom = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 60
+          await renderKomunikace(d.events || [])
+          if (wasAtBottom) scroll.scrollTop = scroll.scrollHeight
+        } catch {}
       }, 30 * 1000)
 
       applyUiLang()
