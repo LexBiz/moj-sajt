@@ -151,20 +151,31 @@
       .act-day{margin-bottom:20px}
       .act-day-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.7px;padding:5px 0 10px;border-bottom:1px solid var(--b);margin-bottom:10px;display:flex;align-items:center;gap:8px}
       .act-day-label::before{content:'';display:block;width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0}
-      .act-row{display:grid;grid-template-columns:44px 32px 1fr;gap:10px;align-items:center;padding:9px 12px;border-radius:var(--r);background:var(--s);border:1px solid var(--b2);margin-bottom:5px;transition:all .18s;box-shadow:0 1px 4px rgba(20,50,90,.05)}
-      .act-row:hover{border-color:rgba(26,106,232,.25);background:var(--s2)}
-      .act-row-critical{border-color:rgba(232,58,58,.3)!important;background:rgba(232,58,58,.04)!important}
+      .act-row{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid rgba(20,60,120,.09);margin-bottom:6px;transition:all .18s;box-shadow:0 1px 6px rgba(20,50,90,.06);cursor:default}
+      .act-row:hover{border-color:rgba(26,106,232,.28);background:#fafcff;box-shadow:0 4px 18px rgba(20,50,90,.11);transform:translateY(-1px)}
+      .act-row-critical{border-color:rgba(232,58,58,.3)!important;background:rgba(255,248,248,1)!important;border-left:3px solid #EF4444!important}
       .act-row-critical:hover{border-color:rgba(232,58,58,.5)!important}
-      .act-time{font-size:12px;font-weight:700;color:var(--ink3);text-align:right;white-space:nowrap}
-      .act-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
-      .act-body{min-width:0;overflow:hidden}
-      .act-action{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .act-meta-row{display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
-      .act-actor{font-size:11px;font-weight:700;color:var(--blue3);white-space:nowrap}
-      .act-detail{font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+      .act-row.clickable{cursor:pointer}
+      .act-left{display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:2px}
+      .act-avatar{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.3px;text-transform:uppercase}
+      .act-ev-icon{font-size:14px;line-height:1;margin-top:2px}
+      .act-body{min-width:0}
+      .act-top-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+      .act-actor-name{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.1px}
+      .act-action-label{font-size:12.5px;font-weight:600;color:var(--ink2)}
+      .act-time{font-size:11px;font-weight:600;color:var(--ink3);margin-left:auto;white-space:nowrap;flex-shrink:0}
+      .act-detail-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px}
+      .act-job-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(26,106,232,.08);border:1px solid rgba(26,106,232,.18);border-radius:7px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--blue3);text-decoration:none;transition:all .15s}
+      .act-job-badge:hover{background:rgba(26,106,232,.16);color:var(--blue)}
+      .act-stage-arrow{font-size:11px;color:var(--ink3);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+      .act-stage-from{color:var(--ink3);font-weight:600;font-size:11px}
+      .act-stage-to{color:var(--blue3);font-weight:700;font-size:11px;background:rgba(26,106,232,.07);border-radius:5px;padding:1px 6px}
+      .act-no-actor{font-size:11px;font-style:italic;color:var(--ink3)}
+      .act-icon{display:none}
+      .act-meta-row{display:none}
       .act-empty{padding:48px;text-align:center;color:var(--ink2);font-size:14px;border:2px dashed var(--b);border-radius:var(--r-lg)}
       .act-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-      .act-stat{background:var(--s);border:1px solid var(--b2);border-radius:14px;padding:12px 18px;min-width:120px;transition:all .18s;box-shadow:0 1px 6px rgba(20,50,90,.07)}
+      .act-stat{background:#fff;border:1px solid rgba(20,60,120,.09);border-radius:14px;padding:12px 18px;min-width:120px;transition:all .18s;box-shadow:0 1px 6px rgba(20,50,90,.07)}
       .act-stat:hover{border-color:rgba(26,106,232,.3);transform:translateY(-1px);box-shadow:0 4px 14px rgba(20,50,90,.12)}
       .act-stat b{display:block;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.45px;margin-bottom:6px}
       .act-stat span{font-size:22px;font-weight:800}
@@ -1294,6 +1305,18 @@
             curGroup.rows.push(row)
           }
 
+          // Avatar color palette by username hash
+          function actAvatarColor(str) {
+            const palettes = [
+              ['#2563EB','#1D4ED8'],['#7C3AED','#6D28D9'],['#059669','#047857'],
+              ['#DC2626','#B91C1C'],['#D97706','#B45309'],['#0891B2','#0E7490'],
+              ['#DB2777','#BE185D'],['#65A30D','#4D7C0F'],
+            ]
+            let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) & 0xffffffff
+            const [a, b] = palettes[Math.abs(h) % palettes.length]
+            return `linear-gradient(135deg,${a},${b})`
+          }
+
           body.innerHTML = byDay.map(g => `
             <div class="act-day">
               <div class="act-day-label">
@@ -1301,22 +1324,48 @@
                 <span style="margin-left:auto;font-size:10px;font-weight:600;color:var(--ink3)">${g.rows.length} událost${g.rows.length===1?'':'í'}</span>
               </div>
               ${g.rows.map(row => {
-                const cfg = ACT_CFG[row.action] || { icon:'•', label: row.action, color:'rgba(255,255,255,.05)', badge:'b-grey', critical:false }
-                const detail = actDetail(row.action, row.data)
-                const actor = row.actor_email ? row.actor_email.split('@')[0] : 'Systém'
-                const actorFull = row.actor_email || 'Systém'
-                return `<div class="act-row${cfg.critical?' act-row-critical':''}">
-                  <div class="act-time">${actEsc(fmtActTime(row.created_at))}</div>
-                  <div class="act-icon" style="background:${cfg.color};font-size:15px">${cfg.icon}</div>
+                const cfg = ACT_CFG[row.action] || { icon:'•', label: row.action, color:'rgba(26,106,232,.1)', badge:'b-grey', critical:false }
+                const data = (() => { try { return typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}) } catch { return {} } })()
+                const actorEmail = row.actor_email || ''
+                const actorName  = actorEmail ? actorEmail.split('@')[0] : ''
+                const actorInit  = actorName ? actorName.slice(0,2).toUpperCase() : '?'
+                const isSystem   = !actorEmail
+                const avatarGrad = isSystem ? 'linear-gradient(135deg,#94A3B8,#64748B)' : actAvatarColor(actorEmail)
+
+                // Build detail badges
+                let detailHtml = ''
+                if (row.action === 'job_stage_moved') {
+                  const toLabel   = SL_ACT[data.stage] || data.stage || '?'
+                  const fromLabel = data.fromStage ? (SL_ACT[data.fromStage] || data.fromStage) : ''
+                  const jobNum    = data.internalNumber || ''
+                  const jobId_    = row.entity_id ? Number(row.entity_id) : null
+                  const jobLink   = jobId_ ? `<a class="act-job-badge" href="job-detail.html?jobId=${jobId_}" title="Otevřít zakázku">🔖 ${actEsc(jobNum || '#'+jobId_)}</a>` : (jobNum ? `<span class="act-job-badge">🔖 ${actEsc(jobNum)}</span>` : '')
+                  detailHtml = `${jobLink}<span class="act-stage-arrow">${fromLabel ? `<span class="act-stage-from">${actEsc(fromLabel)}</span><span>→</span>` : ''}<span class="act-stage-to">${actEsc(toLabel)}</span></span>`
+                } else if (data.internalNumber || row.entity_id) {
+                  const jobId_ = row.entity_id ? Number(row.entity_id) : null
+                  const jobNum = data.internalNumber || ''
+                  if (jobId_) detailHtml = `<a class="act-job-badge" href="job-detail.html?jobId=${jobId_}" title="Otevřít zakázku">🔖 ${actEsc(jobNum || '#'+jobId_)}</a>`
+                  else if (jobNum) detailHtml = `<span class="act-job-badge">🔖 ${actEsc(jobNum)}</span>`
+                  const extra = actDetail(row.action, row.data)
+                  if (extra) detailHtml += `<span style="font-size:11px;color:var(--ink3)">${actEsc(extra)}</span>`
+                } else {
+                  const extra = actDetail(row.action, row.data)
+                  if (extra) detailHtml = `<span style="font-size:11px;color:var(--ink3)">${actEsc(extra)}</span>`
+                }
+
+                return `<div class="act-row${cfg.critical?' act-row-critical':''}${row.entity_id?' clickable':''}" ${row.entity_id?`onclick="location.href='job-detail.html?jobId=${Number(row.entity_id)}'"`:''}>
+                  <div class="act-left">
+                    <div class="act-avatar" style="background:${avatarGrad}" title="${actEsc(actorEmail||'Systém')}">${isSystem ? '⚙️' : actEsc(actorInit)}</div>
+                    <div class="act-ev-icon">${cfg.icon}</div>
+                  </div>
                   <div class="act-body">
-                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-                      <span class="act-action">${actEsc(cfg.label)}</span>
+                    <div class="act-top-row">
+                      <span class="act-actor-name">${isSystem ? '<span class="act-no-actor">Systém</span>' : actEsc(actorName)}</span>
+                      <span class="act-action-label">${actEsc(cfg.label)}</span>
                       ${cfg.critical ? '<span class="badge b-red" style="padding:1px 6px;font-size:9px">KRITICKÁ</span>' : ''}
+                      <span class="act-time">${actEsc(fmtActTime(row.created_at))}</span>
                     </div>
-                    <div class="act-meta-row">
-                      <span class="act-actor" title="${actEsc(actorFull)}">👤 ${actEsc(actor)}</span>
-                      ${detail ? `<span class="act-detail">· ${actEsc(detail)}</span>` : ''}
-                    </div>
+                    ${detailHtml ? `<div class="act-detail-row">${detailHtml}</div>` : ''}
                   </div>
                 </div>`
               }).join('')}

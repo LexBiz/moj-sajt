@@ -540,8 +540,8 @@
           return new Date(iso).toLocaleTimeString('cs-CZ', { hour:'2-digit', minute:'2-digit' })
         }
 
-        // Keep only real communication — no notes, no stage changes, no standalone doc uploads
-        const KOMM_SYS_SKIP = new Set(['stage_change','brief_received','finance_update','note','document_added','email_sent'])
+        // Keep real communication + stage_change (to show who moved the job); skip internal noise
+        const KOMM_SYS_SKIP = new Set(['brief_received','finance_update','note','document_added','email_sent'])
         const kommTimeline = timeline.filter(item => {
           if (item._type === 'email') return true
           if (KOMM_SYS_SKIP.has(item.eventType)) return false
@@ -655,6 +655,21 @@
               html += `<div class="komm-msg sys">
                 <div class="komm-bubble sys-bubble">📨 ${esc(item.title)}</div>
                 <div class="komm-meta" style="justify-content:center">${esc(t)}</div>
+              </div>`
+            } else if (evType === 'stage_change') {
+              const stageLabel = item.metadata?.pipelineStage
+                ? (SL[item.metadata.pipelineStage] || item.metadata.pipelineStage)
+                : (item.title || '').replace('Přesun do: ', '')
+              const who = actorShort || 'systém'
+              html += `<div class="komm-msg sys">
+                <div class="komm-bubble" style="background:linear-gradient(135deg,rgba(122,94,232,.1),rgba(26,106,232,.08));border:1px solid rgba(122,94,232,.2);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:380px">
+                  <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,rgba(122,94,232,.2),rgba(26,106,232,.15));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🔄</div>
+                  <div style="min-width:0">
+                    <div style="font-size:11px;font-weight:700;color:var(--purple,#7C3AED);letter-spacing:.3px;text-transform:uppercase;margin-bottom:2px">Změna etapy</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--ink)">→ ${esc(stageLabel)}</div>
+                  </div>
+                </div>
+                <div class="komm-meta" style="justify-content:center">${esc(t)} · <strong style="color:var(--blue3)">${esc(who)}</strong></div>
               </div>`
             } else {
               // Unknown/other — skip or show minimal
